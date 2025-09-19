@@ -1,11 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ApiResponse, ApiError, RequestConfig } from '@/types'
+import { env } from '@/config/env'
 
 class ApiClient {
   private client: AxiosInstance
   private token: string | null = null
 
-  constructor(baseURL: string = import.meta.env.VITE_API_URL || 'http://localhost:4000') {
+  constructor(baseURL: string = env.API_BASE_URL) {
     this.client = axios.create({
       baseURL,
       timeout: 10000,

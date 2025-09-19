@@ -1,8 +1,9 @@
 import { Router, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { validateQuery, validateParams } from '../middleware/validation';
+import { validateQuery, validateParams, validateBody } from '../middleware/validation';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
+import { ExecutionService, NodeService } from '../services';
 import {
   ExecutionQuerySchema,
   IdParamSchema,
@@ -11,6 +12,39 @@ import {
 
 const router = Router();
 const prisma = new PrismaClient();
+const nodeService = new NodeService(prisma);
+const executionService = new ExecutionService(prisma, nodeService);
+
+// POST /api/executions - Execute a workflow
+router.post(
+  '/',
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { workflowId, triggerData, options } = req.body;
+
+    if (!workflowId) {
+      throw new AppError('Workflow ID is required', 400, 'MISSING_WORKFLOW_ID');
+    }
+
+    const result = await executionService.executeWorkflow(
+      workflowId,
+      req.user!.id,
+      triggerData,
+      options
+    );
+
+    if (!result.success) {
+      throw new AppError(result.error!.message, 400, 'EXECUTION_FAILED');
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: result.data
+    };
+
+    res.status(201).json(response);
+  })
+);
 
 // GET /api/executions - List executions
 router.get(
@@ -18,55 +52,28 @@ router.get(
   authenticateToken,
   validateQuery(ExecutionQuerySchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { page = 1, limit = 10, workflowId, status, startedAfter, startedBefore, sortBy = 'startedAt', sortOrder = 'desc' } = req.query as any;
-    const skip = (page - 1) * limit;
+    const { page = 1, limit = 10, workflowId, status, startedAfter, startedBefore } = req.query as any;
+    const offset = (page - 1) * limit;
 
-    const where: any = {
-      workflow: {
-        userId: req.user!.id
-      }
+    const filters = {
+      workflowId,
+      status,
+      startDate: startedAfter ? new Date(startedAfter) : undefined,
+      endDate: startedBefore ? new Date(startedBefore) : undefined,
+      limit: parseInt(limit),
+      offset: parseInt(offset.toString())
     };
 
-    if (workflowId) {
-      where.workflowId = workflowId;
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (startedAfter || startedBefore) {
-      where.startedAt = {};
-      if (startedAfter) where.startedAt.gte = new Date(startedAfter);
-      if (startedBefore) where.startedAt.lte = new Date(startedBefore);
-    }
-
-    const [executions, total] = await Promise.all([
-      prisma.execution.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          workflow: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      }),
-      prisma.execution.count({ where })
-    ]);
+    const result = await executionService.listExecutions(req.user!.id, filters);
 
     const response: ApiResponse = {
       success: true,
-      data: executions,
+      data: result.executions,
       pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages
       }
     };
 
@@ -80,27 +87,7 @@ router.get(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const execution = await prisma.execution.findFirst({
-      where: {
-        id: req.params.id,
-        workflow: {
-          userId: req.user!.id
-        }
-      },
-      include: {
-        workflow: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        nodeExecutions: {
-          orderBy: {
-            startedAt: 'asc'
-          }
-        }
-      }
-    });
+    const execution = await executionService.getExecution(req.params.id, req.user!.id);
 
     if (!execution) {
       throw new AppError('Execution not found', 404, 'EXECUTION_NOT_FOUND');
@@ -115,37 +102,43 @@ router.get(
   })
 );
 
+// GET /api/executions/:id/progress - Get execution progress
+router.get(
+  '/:id/progress',
+  authenticateToken,
+  validateParams(IdParamSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const progress = await executionService.getExecutionProgress(req.params.id, req.user!.id);
+
+    if (!progress) {
+      throw new AppError('Execution not found', 404, 'EXECUTION_NOT_FOUND');
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: progress
+    };
+
+    res.json(response);
+  })
+);
+
 // DELETE /api/executions/:id - Delete execution
 router.delete(
   '/:id',
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const execution = await prisma.execution.findFirst({
-      where: {
-        id: req.params.id,
-        workflow: {
-          userId: req.user!.id
-        }
-      }
-    });
+    const result = await executionService.deleteExecution(req.params.id, req.user!.id);
 
-    if (!execution) {
-      throw new AppError('Execution not found', 404, 'EXECUTION_NOT_FOUND');
+    if (!result.success) {
+      const statusCode = result.error!.message.includes('not found') ? 404 : 400;
+      throw new AppError(result.error!.message, statusCode, 'EXECUTION_DELETE_FAILED');
     }
-
-    // Don't allow deletion of running executions
-    if (execution.status === 'RUNNING') {
-      throw new AppError('Cannot delete running execution', 400, 'EXECUTION_RUNNING');
-    }
-
-    await prisma.execution.delete({
-      where: { id: req.params.id }
-    });
 
     const response: ApiResponse = {
       success: true,
-      data: { message: 'Execution deleted successfully' }
+      data: result.data
     };
 
     res.json(response);
@@ -158,37 +151,108 @@ router.post(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const execution = await prisma.execution.findFirst({
-      where: {
-        id: req.params.id,
-        workflow: {
-          userId: req.user!.id
-        }
-      }
-    });
+    const result = await executionService.cancelExecution(req.params.id, req.user!.id);
 
-    if (!execution) {
-      throw new AppError('Execution not found', 404, 'EXECUTION_NOT_FOUND');
+    if (!result.success) {
+      const statusCode = result.error!.message.includes('not found') ? 404 : 400;
+      throw new AppError(result.error!.message, statusCode, 'EXECUTION_CANCEL_FAILED');
     }
-
-    if (execution.status !== 'RUNNING') {
-      throw new AppError('Can only cancel running executions', 400, 'EXECUTION_NOT_RUNNING');
-    }
-
-    // Update execution status to cancelled
-    const updatedExecution = await prisma.execution.update({
-      where: { id: req.params.id },
-      data: {
-        status: 'CANCELLED',
-        finishedAt: new Date()
-      }
-    });
-
-    // TODO: Implement actual execution cancellation logic in execution engine
 
     const response: ApiResponse = {
       success: true,
-      data: updatedExecution
+      data: result.data
+    };
+
+    res.json(response);
+  })
+);
+
+// POST /api/executions/:id/retry - Retry execution
+router.post(
+  '/:id/retry',
+  authenticateToken,
+  validateParams(IdParamSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const result = await executionService.retryExecution(req.params.id, req.user!.id);
+
+    if (!result.success) {
+      const statusCode = result.error!.message.includes('not found') ? 404 : 400;
+      throw new AppError(result.error!.message, statusCode, 'EXECUTION_RETRY_FAILED');
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: result.data
+    };
+
+    res.status(201).json(response);
+  })
+);
+
+// GET /api/executions/stats - Get execution statistics
+router.get(
+  '/stats',
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const stats = await executionService.getExecutionStats(req.user!.id);
+
+    const response: ApiResponse = {
+      success: true,
+      data: stats
+    };
+
+    res.json(response);
+  })
+);
+
+// GET /api/executions/realtime/info - Get real-time monitoring info
+router.get(
+  '/realtime/info',
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const socketService = global.socketService;
+    
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        websocketUrl: `ws://localhost:${process.env.PORT || 4000}`,
+        connectedUsers: socketService ? socketService.getConnectedUsersCount() : 0,
+        supportedEvents: [
+          'execution-event',
+          'execution-progress', 
+          'execution-log',
+          'node-execution-event',
+          'execution-status'
+        ],
+        subscriptionEvents: [
+          'subscribe-execution',
+          'unsubscribe-execution',
+          'subscribe-workflow',
+          'unsubscribe-workflow'
+        ]
+      }
+    };
+
+    res.json(response);
+  })
+);
+
+// GET /api/executions/:id/subscribers - Get execution subscribers count
+router.get(
+  '/:id/subscribers',
+  authenticateToken,
+  validateParams(IdParamSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const socketService = global.socketService;
+    const subscribersCount = socketService ? 
+      socketService.getExecutionSubscribersCount(req.params.id) : 0;
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        executionId: req.params.id,
+        subscribersCount
+      }
     };
 
     res.json(response);

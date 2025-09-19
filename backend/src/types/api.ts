@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Common schemas
 export const IdParamSchema = z.object({
-  id: z.string().uuid('Invalid ID format')
+  id: z.string().min(1, 'ID is required').regex(/^[a-z0-9]+$/, 'Invalid ID format')
 });
 
 export const PaginationQuerySchema = z.object({
@@ -44,8 +44,8 @@ export const CreateWorkflowSchema = z.object({
   settings: z.object({
     timezone: z.string().optional(),
     saveExecutionProgress: z.boolean().default(true),
-    saveDataErrorExecution: z.boolean().default(true),
-    saveDataSuccessExecution: z.boolean().default(true),
+    saveDataErrorExecution: z.enum(['all', 'none']).default('all'),
+    saveDataSuccessExecution: z.enum(['all', 'none']).default('all'),
     callerPolicy: z.enum(['workflowsFromSameOwner', 'workflowsFromAList', 'any']).default('workflowsFromSameOwner')
   }).default({}),
   active: z.boolean().default(false)

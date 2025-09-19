@@ -1,5 +1,6 @@
 export { CustomNode } from './CustomNode'
 export { NodePalette } from './NodePalette'
 export { NodeConfigPanel } from './NodeConfigPanel'
+export { TitleManager } from './TitleManager'
 export { WorkflowEditor, WorkflowEditorWrapper } from './WorkflowEditor'
 export { WorkflowToolbar } from './WorkflowToolbar'

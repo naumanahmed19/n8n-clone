@@ -7,7 +7,8 @@ export class AuthService {
     
     if (response.success && response.data.token) {
       apiClient.setToken(response.data.token)
-      localStorage.setItem('refresh_token', response.data.refreshToken)
+      // Note: Backend doesn't return refreshToken yet, so we'll skip storing it for now
+      // localStorage.setItem('refresh_token', response.data.refreshToken)
     }
     
     return response.data
@@ -18,7 +19,8 @@ export class AuthService {
     
     if (response.success && response.data.token) {
       apiClient.setToken(response.data.token)
-      localStorage.setItem('refresh_token', response.data.refreshToken)
+      // Note: Backend doesn't return refreshToken yet, so we'll skip storing it for now
+      // localStorage.setItem('refresh_token', response.data.refreshToken)
     }
     
     return response.data

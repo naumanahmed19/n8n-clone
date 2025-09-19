@@ -1,7 +1,14 @@
-import React from 'react'
-import { Search, Filter, Play, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import React, { useState } from 'react'
+import { Search, Filter, Play, AlertCircle, CheckCircle, Clock, Monitor } from 'lucide-react'
+import { ExecutionMonitor } from '../components/execution/ExecutionMonitor'
+import { ExecutionStatusIndicator } from '../components/execution/ExecutionStatusIndicator'
+import { useExecutionMonitoring } from '../hooks/useExecutionMonitoring'
 
 export const ExecutionsPage: React.FC = () => {
+  const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
+  const [showMonitor, setShowMonitor] = useState(false);
+  const { isConnected } = useExecutionMonitoring();
+
   const executions = [
     {
       id: '1',
@@ -60,7 +67,24 @@ export const ExecutionsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Executions</h1>
           <p className="text-gray-600">Monitor your workflow execution history</p>
+          <div className="flex items-center space-x-2 mt-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm text-gray-500">
+              Real-time monitoring {isConnected ? 'connected' : 'disconnected'}
+            </span>
+          </div>
         </div>
+        <button
+          onClick={() => setShowMonitor(!showMonitor)}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+            showMonitor 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Monitor className="w-4 h-4" />
+          <span>{showMonitor ? 'Hide Monitor' : 'Show Monitor'}</span>
+        </button>
       </div>
 
       {/* Search and Filters */}
@@ -78,6 +102,16 @@ export const ExecutionsPage: React.FC = () => {
           <span>Filters</span>
         </button>
       </div>
+
+      {/* Real-time Monitor */}
+      {showMonitor && (
+        <div className="mb-6">
+          <ExecutionMonitor 
+            executionId={selectedExecutionId} 
+            className="w-full"
+          />
+        </div>
+      )}
 
       {/* Executions Table */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
@@ -104,14 +138,28 @@ export const ExecutionsPage: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {executions.map((execution) => (
-                <tr key={execution.id} className="hover:bg-gray-50">
+                <tr 
+                  key={execution.id} 
+                  className={`hover:bg-gray-50 cursor-pointer ${
+                    selectedExecutionId === execution.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                  }`}
+                  onClick={() => setSelectedExecutionId(execution.id)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(execution.status)}
-                      <span className={getStatusBadge(execution.status)}>
-                        {execution.status}
-                      </span>
-                    </div>
+                    {isConnected ? (
+                      <ExecutionStatusIndicator 
+                        executionId={execution.id}
+                        showProgress={true}
+                        showNodeCount={true}
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(execution.status)}
+                        <span className={getStatusBadge(execution.status)}>
+                          {execution.status}
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -125,11 +173,21 @@ export const ExecutionsPage: React.FC = () => {
                     {execution.duration}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-primary-600 hover:text-primary-900 mr-4">
-                      View
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedExecutionId(execution.id);
+                        setShowMonitor(true);
+                      }}
+                      className="text-primary-600 hover:text-primary-900 mr-4"
+                    >
+                      Monitor
                     </button>
                     {execution.status === 'error' && (
-                      <button className="text-green-600 hover:text-green-900 flex items-center space-x-1">
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-green-600 hover:text-green-900 flex items-center space-x-1"
+                      >
                         <Play className="w-3 h-3" />
                         <span>Retry</span>
                       </button>

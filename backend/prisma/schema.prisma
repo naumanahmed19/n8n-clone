@@ -85,13 +85,14 @@ model NodeExecution {
 }
 
 model Credential {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   type      String
   userId    String
-  data      String   // Encrypted credential data
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  data      String    // Encrypted credential data
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

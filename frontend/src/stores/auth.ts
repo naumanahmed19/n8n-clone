@@ -39,6 +39,8 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           })
+
+          // Socket authentication will be handled by Layout component
         } catch (error: any) {
           set({
             user: null,
@@ -64,6 +66,8 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           })
+
+          // Socket authentication will be handled by Layout component
         } catch (error: any) {
           set({
             user: null,
@@ -116,6 +120,8 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.warn('Logout error:', error)
         } finally {
+          // Socket disconnection will be handled by Layout component
+          
           set({
             user: null,
             token: null,

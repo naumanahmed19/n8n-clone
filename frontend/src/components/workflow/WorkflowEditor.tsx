@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react'
+import { useCallback, useRef, useState, useEffect, Component, ErrorInfo, ReactNode } from 'react'
 import ReactFlow, {
     addEdge,
     useNodesState,
@@ -20,12 +20,82 @@ import 'reactflow/dist/style.css'
 import { CustomNode } from './CustomNode'
 import { NodePalette } from './NodePalette'
 import { NodeConfigPanel } from './NodeConfigPanel'
+import { NodeContextMenu } from './NodeContextMenu'
 import { WorkflowToolbar } from './WorkflowToolbar'
 import { useWorkflowStore } from '@/stores'
+import { useAuthStore } from '@/stores'
+import { workflowService } from '@/services'
 import { WorkflowNode, WorkflowConnection, NodeType } from '@/types'
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
+}
+
+// Error Boundary Component
+interface ErrorBoundaryState {
+    hasError: boolean
+    error?: Error
+    errorInfo?: ErrorInfo
+}
+
+class WorkflowErrorBoundary extends Component<
+    { children: ReactNode; onError?: (error: string) => void },
+    ErrorBoundaryState
+> {
+    constructor(props: { children: ReactNode; onError?: (error: string) => void }) {
+        super(props)
+        this.state = { hasError: false }
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error }
+    }
+
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        console.error('WorkflowEditor Error Boundary caught an error:', error, errorInfo)
+        this.setState({ error, errorInfo })
+        
+        if (this.props.onError) {
+            this.props.onError(`Workflow editor error: ${error.message}`)
+        }
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex items-center justify-center h-full bg-red-50">
+                    <div className="text-center p-8">
+                        <h2 className="text-2xl font-bold text-red-600 mb-4">
+                            Workflow Editor Error
+                        </h2>
+                        <p className="text-gray-700 mb-4">
+                            Something went wrong with the workflow editor.
+                        </p>
+                        <details className="text-left bg-white p-4 rounded border">
+                            <summary className="cursor-pointer font-semibold">
+                                Error Details
+                            </summary>
+                            <pre className="mt-2 text-sm text-red-600 whitespace-pre-wrap">
+                                {this.state.error?.message}
+                                {this.state.errorInfo?.componentStack}
+                            </pre>
+                        </details>
+                        <button
+                            onClick={() => {
+                                this.setState({ hasError: false, error: undefined, errorInfo: undefined })
+                                window.location.reload()
+                            }}
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                            Reload Editor
+                        </button>
+                    </div>
+                </div>
+            )
+        }
+
+        return this.props.children
+    }
 }
 
 interface WorkflowEditorProps {
@@ -46,14 +116,54 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         redo,
         canUndo,
         canRedo,
-        validateWorkflow
+        validateWorkflow,
+        setWorkflow,
+        isDirty,
+        setDirty,
+        // Title management
+        workflowTitle,
+        updateTitle,
+        saveTitle,
+        isTitleDirty,
+        titleValidationError,
+        // Import/Export
+        exportWorkflow,
+        importWorkflow,
+        isExporting,
+        isImporting,
+        exportProgress,
+        importProgress,
+        exportError,
+        importError,
+        clearImportExportErrors,
+        // Execution
+        executeWorkflow,
+        stopExecution,
+        executionState,
+        // Node interaction
+        showPropertyPanel,
+        propertyPanelNodeId,
+        contextMenuVisible,
+        contextMenuPosition,
+        contextMenuNodeId,
+        setShowPropertyPanel,
+        setPropertyPanelNode,
+        showContextMenu,
+        hideContextMenu,
+        openNodeProperties,
+        closeNodeProperties
     } = useWorkflowStore()
+    
+    const { user } = useAuthStore()
 
     const reactFlowWrapper = useRef<HTMLDivElement>(null)
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
     const [nodes, setNodes, onNodesChange] = useNodesState([])
     const [edges, setEdges, onEdgesChange] = useEdgesState([])
-    const [showConfigPanel, setShowConfigPanel] = useState(false)
+    // Remove local showConfigPanel state - now using store state
+    const [isSaving, setIsSaving] = useState(false)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
     // Convert workflow data to React Flow format
     useEffect(() => {
@@ -68,8 +178,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                 nodeType: node.type,
                 parameters: node.parameters,
                 disabled: node.disabled,
-                // TODO: Add status from execution state
-                status: 'idle' as const
+                // Add status from execution state
+                status: executionState.status === 'running' ? 'running' : 'idle' as const
             }
         }))
 
@@ -83,17 +193,18 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
         setNodes(reactFlowNodes)
         setEdges(reactFlowEdges)
-    }, [workflow, setNodes, setEdges])
+    }, [workflow, executionState.status, setNodes, setEdges])
 
-    // Handle node selection
+    // Handle node selection (but don't automatically open property panel)
     const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
         const selectedNode = params.nodes[0]
         if (selectedNode) {
             setSelectedNode(selectedNode.id)
-            setShowConfigPanel(true)
+            // Don't automatically open config panel - only set selection
         } else {
             setSelectedNode(null)
-            setShowConfigPanel(false)
+            // Close config panel if no node is selected
+            closeNodeProperties()
         }
     }, [setSelectedNode])
 
@@ -191,6 +302,54 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         // This is handled in NodePalette component
     }, [])
 
+    // Handle node double-click to open properties
+    const handleNodeDoubleClick = useCallback((event: React.MouseEvent, nodeId: string) => {
+        event.preventDefault()
+        event.stopPropagation()
+        openNodeProperties(nodeId)
+    }, [openNodeProperties])
+
+    // Handle node right-click to show context menu
+    const handleNodeRightClick = useCallback((event: React.MouseEvent, nodeId: string) => {
+        event.preventDefault()
+        event.stopPropagation()
+        
+        const position = {
+            x: event.clientX,
+            y: event.clientY
+        }
+        
+        showContextMenu(nodeId, position)
+    }, [showContextMenu])
+
+    // Handle context menu actions
+    const handleContextMenuOpenProperties = useCallback((nodeId: string) => {
+        openNodeProperties(nodeId)
+    }, [openNodeProperties])
+
+    const handleContextMenuDuplicate = useCallback((nodeId: string) => {
+        const nodeToClone = workflow?.nodes.find(n => n.id === nodeId)
+        if (nodeToClone) {
+            const clonedNode: WorkflowNode = {
+                ...nodeToClone,
+                id: `node-${Date.now()}`,
+                name: `${nodeToClone.name} (Copy)`,
+                position: {
+                    x: nodeToClone.position.x + 50,
+                    y: nodeToClone.position.y + 50
+                }
+            }
+            addNode(clonedNode)
+        }
+    }, [workflow, addNode])
+
+    const handleContextMenuDelete = useCallback((nodeId: string) => {
+        // Show confirmation dialog in a real implementation
+        if (window.confirm('Are you sure you want to delete this node?')) {
+            removeNode(nodeId)
+        }
+    }, [removeNode])
+
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -210,14 +369,15 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                         break
                     case 's':
                         event.preventDefault()
-                        // TODO: Implement save
+                        // Save both workflow and title changes
+                        handleSave()
                         break
                 }
             }
 
             if (event.key === 'Delete' && selectedNodeId) {
                 removeNode(selectedNodeId)
-                setShowConfigPanel(false)
+                closeNodeProperties()
             }
         }
 
@@ -225,12 +385,165 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [undo, redo, selectedNodeId, removeNode])
 
+    // Error and success notification handlers
+    const handleShowError = useCallback((error: string) => {
+        setErrorMessage(error)
+        // Auto-clear error after 5 seconds
+        setTimeout(() => setErrorMessage(null), 5000)
+    }, [])
+
+    const handleShowSuccess = useCallback((message: string) => {
+        setSuccessMessage(message)
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000)
+    }, [])
+
+    // Title management handlers
+    const handleTitleChange = useCallback((title: string) => {
+        updateTitle(title)
+    }, [updateTitle])
+
+    const handleTitleSave = useCallback((title: string) => {
+        try {
+            updateTitle(title)
+            saveTitle()
+            handleShowSuccess('Title saved successfully')
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to save title'
+            handleShowError(errorMessage)
+        }
+    }, [updateTitle, saveTitle, handleShowError, handleShowSuccess])
+
+    // Import/Export handlers
+    const handleExport = useCallback(async () => {
+        try {
+            await exportWorkflow()
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Export failed'
+            handleShowError(errorMessage)
+        }
+    }, [exportWorkflow, handleShowError])
+
+    const handleImport = useCallback(async (file: File) => {
+        try {
+            await importWorkflow(file)
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Import failed'
+            handleShowError(errorMessage)
+        }
+    }, [importWorkflow, handleShowError])
+
+    // Execution handlers
+    const handleExecute = useCallback(async () => {
+        try {
+            await executeWorkflow()
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Execution failed'
+            handleShowError(errorMessage)
+        }
+    }, [executeWorkflow, handleShowError])
+
+    const handleStopExecution = useCallback(async () => {
+        try {
+            await stopExecution()
+            handleShowSuccess('Execution stopped')
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to stop execution'
+            handleShowError(errorMessage)
+        }
+    }, [stopExecution, handleShowError, handleShowSuccess])
+
+    // Save workflow function
+    const handleSave = useCallback(async () => {
+        if (!workflow || !user) return
+        
+        setIsSaving(true)
+        try {
+            // Save title changes first if needed
+            if (isTitleDirty) {
+                saveTitle()
+            }
+
+            if (workflow.id === 'new') {
+                // Create new workflow
+                const workflowData = {
+                    name: workflowTitle || workflow.name,
+                    description: workflow.description,
+                    nodes: workflow.nodes,
+                    connections: workflow.connections,
+                    settings: workflow.settings,
+                    active: workflow.active
+                }
+                
+                const savedWorkflow = await workflowService.createWorkflow(workflowData)
+                setWorkflow(savedWorkflow)
+                setDirty(false)
+                
+                // Update URL to reflect the new workflow ID
+                window.history.replaceState(null, '', `/workflows/${savedWorkflow.id}/edit`)
+                handleShowSuccess('Workflow created successfully')
+            } else {
+                // Update existing workflow
+                const workflowData = {
+                    name: workflowTitle || workflow.name,
+                    description: workflow.description,
+                    nodes: workflow.nodes,
+                    connections: workflow.connections,
+                    settings: workflow.settings,
+                    active: workflow.active
+                }
+                
+                const updatedWorkflow = await workflowService.updateWorkflow(workflow.id, workflowData)
+                setWorkflow(updatedWorkflow)
+                setDirty(false)
+                handleShowSuccess('Workflow saved successfully')
+            }
+        } catch (error) {
+            console.error('Failed to save workflow:', error)
+            const errorMessage = error instanceof Error ? error.message : 'Failed to save workflow. Please try again.'
+            handleShowError(errorMessage)
+        } finally {
+            setIsSaving(false)
+        }
+    }, [workflow, user, workflowTitle, isTitleDirty, saveTitle, setWorkflow, setDirty, handleShowError, handleShowSuccess])
+
     // Get selected node data for config panel
-    const selectedNode = workflow?.nodes.find(node => node.id === selectedNodeId)
+    const selectedNode = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
     const selectedNodeType = selectedNode ? availableNodeTypes.find(nt => nt.type === selectedNode.type) : null
 
     return (
-        <div className="flex h-full w-full">
+        <div className="flex h-screen w-screen">
+            {/* Error/Success Notifications */}
+            {errorMessage && (
+                <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg">
+                    <div className="flex items-center space-x-2">
+                        <span>⚠️</span>
+                        <span>{errorMessage}</span>
+                        <button 
+                            onClick={() => setErrorMessage(null)}
+                            className="ml-2 text-white hover:text-gray-200"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
+            
+            {successMessage && (
+                <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg">
+                    <div className="flex items-center space-x-2">
+                        <span>✅</span>
+                        <span>{successMessage}</span>
+                        <button 
+                            onClick={() => setSuccessMessage(null)}
+                            className="ml-2 text-white hover:text-gray-200"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Node Palette */}
             <NodePalette
                 nodeTypes={availableNodeTypes}
@@ -239,52 +552,96 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
             {/* Main Editor */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Toolbar */}
-                <WorkflowToolbar
-                    canUndo={canUndo()}
-                    canRedo={canRedo()}
-                    onUndo={undo}
-                    onRedo={redo}
-                    onSave={() => {/* TODO: Implement save */ }}
-                    onValidate={() => {
-                        const result = validateWorkflow()
-                        if (result.isValid) {
-                            alert('Workflow is valid!')
-                        } else {
-                            alert(`Workflow has errors:\n${result.errors.join('\n')}`)
-                        }
-                    }}
-                />
+                <WorkflowErrorBoundary onError={handleShowError}>
+                    {/* Toolbar */}
+                    <WorkflowToolbar
+                        // Existing props
+                        canUndo={canUndo()}
+                        canRedo={canRedo()}
+                        onUndo={undo}
+                        onRedo={redo}
+                        onSave={handleSave}
+                        isSaving={isSaving}
+                        isDirty={isDirty}
+                        onValidate={() => {
+                            const result = validateWorkflow()
+                            if (result.isValid) {
+                                handleShowSuccess('Workflow is valid!')
+                            } else {
+                                handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
+                            }
+                        }}
+                        // Title management props
+                        workflowTitle={workflowTitle}
+                        onTitleChange={handleTitleChange}
+                        onTitleSave={handleTitleSave}
+                        isTitleDirty={isTitleDirty}
+                        titleValidationError={titleValidationError}
+                        // Import/Export props
+                        onExport={handleExport}
+                        onImport={handleImport}
+                        isExporting={isExporting}
+                        isImporting={isImporting}
+                        exportProgress={exportProgress}
+                        importProgress={importProgress}
+                        exportError={exportError}
+                        importError={importError}
+                        onClearImportExportErrors={clearImportExportErrors}
+                        // Execution props
+                        onExecute={handleExecute}
+                        onStopExecution={handleStopExecution}
+                        isExecuting={executionState.status === 'running'}
+                        executionState={executionState}
+                        // Error handling props
+                        onShowError={handleShowError}
+                        onShowSuccess={handleShowSuccess}
+                    />
 
-                {/* React Flow Canvas */}
-                <div className="flex-1 min-h-0" ref={reactFlowWrapper}>
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={handleNodesChange}
-                        onEdgesChange={handleEdgesChange}
-                        onConnect={handleConnect}
-                        onInit={setReactFlowInstance}
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onSelectionChange={handleSelectionChange}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        attributionPosition="bottom-left"
-                    >
-                        <Controls />
-                        <MiniMap />
-                        <Background variant={'dots' as any} gap={12} size={1} />
-                    </ReactFlow>
-                </div>
+                    {/* React Flow Canvas */}
+                    <div className="flex-1 min-h-0" ref={reactFlowWrapper}>
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={handleNodesChange}
+                            onEdgesChange={handleEdgesChange}
+                            onConnect={handleConnect}
+                            onInit={setReactFlowInstance}
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                            onSelectionChange={handleSelectionChange}
+                            onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
+                            onNodeContextMenu={(event, node) => handleNodeRightClick(event, node.id)}
+                            nodeTypes={nodeTypes}
+                            fitView
+                            attributionPosition="bottom-left"
+                        >
+                            <Controls />
+                            <MiniMap />
+                            <Background variant={'dots' as any} gap={12} size={1} />
+                        </ReactFlow>
+                    </div>
+                </WorkflowErrorBoundary>
             </div>
 
             {/* Node Configuration Panel */}
-            {showConfigPanel && selectedNode && selectedNodeType && (
+            {showPropertyPanel && selectedNode && selectedNodeType && (
                 <NodeConfigPanel
                     node={selectedNode}
                     nodeType={selectedNodeType}
-                    onClose={() => setShowConfigPanel(false)}
+                    onClose={closeNodeProperties}
+                />
+            )}
+
+            {/* Node Context Menu */}
+            {contextMenuVisible && contextMenuNodeId && contextMenuPosition && (
+                <NodeContextMenu
+                    nodeId={contextMenuNodeId}
+                    position={contextMenuPosition}
+                    isVisible={contextMenuVisible}
+                    onClose={hideContextMenu}
+                    onOpenProperties={handleContextMenuOpenProperties}
+                    onDuplicate={handleContextMenuDuplicate}
+                    onDelete={handleContextMenuDelete}
                 />
             )}
         </div>

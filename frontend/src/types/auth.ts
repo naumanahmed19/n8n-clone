@@ -2,9 +2,9 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'admin' | 'user'
+  role: 'ADMIN' | 'USER' // Match backend enum values
   createdAt: string
-  updatedAt: string
+  updatedAt?: string // Optional since backend might not always return it
 }
 
 export interface LoginCredentials {
@@ -21,7 +21,7 @@ export interface RegisterCredentials {
 export interface AuthResponse {
   user: User
   token: string
-  refreshToken: string
+  refreshToken?: string // Optional since backend doesn't return it yet
 }
 
 export interface AuthState {

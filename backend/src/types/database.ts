@@ -1,4 +1,10 @@
 // Core database types matching Prisma schema
+import { NodeProperty } from './node.types';
+import { 
+  ExecutionStatus, 
+  NodeExecutionStatus,
+  UserRole
+} from '@prisma/client';
 
 export interface User {
   id: string
@@ -114,25 +120,8 @@ export interface NodeType {
   updatedAt: Date
 }
 
-// Enums
-export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN'
-}
-
-export enum ExecutionStatus {
-  RUNNING = 'RUNNING',
-  SUCCESS = 'SUCCESS',
-  ERROR = 'ERROR',
-  CANCELLED = 'CANCELLED'
-}
-
-export enum NodeExecutionStatus {
-  WAITING = 'WAITING',
-  RUNNING = 'RUNNING',
-  SUCCESS = 'SUCCESS',
-  ERROR = 'ERROR'
-}
+// Re-export Prisma enums for consistency
+export { ExecutionStatus, NodeExecutionStatus, UserRole };
 
 // Error types
 export interface ExecutionError {
@@ -149,20 +138,7 @@ export interface NodeError {
   httpCode?: number
 }
 
-// Node property types
-export interface NodeProperty {
-  displayName: string
-  name: string
-  type: 'string' | 'number' | 'boolean' | 'options' | 'multiOptions' | 'json' | 'dateTime'
-  required?: boolean
-  default?: any
-  description?: string
-  options?: Array<{ name: string; value: any }>
-  displayOptions?: {
-    show?: Record<string, any[]>
-    hide?: Record<string, any[]>
-  }
-}
+// Node property types are defined in node.types.ts
 
 // Filter types
 export interface WorkflowFilters {

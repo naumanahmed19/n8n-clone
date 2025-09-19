@@ -405,11 +405,11 @@ export class WorkflowService {
       if (settings.saveExecutionProgress !== undefined && typeof settings.saveExecutionProgress !== 'boolean') {
         errors.push('saveExecutionProgress must be a boolean');
       }
-      if (settings.saveDataErrorExecution !== undefined && typeof settings.saveDataErrorExecution !== 'boolean') {
-        errors.push('saveDataErrorExecution must be a boolean');
+      if (settings.saveDataErrorExecution !== undefined && !['all', 'none'].includes(settings.saveDataErrorExecution)) {
+        errors.push('saveDataErrorExecution must be "all" or "none"');
       }
-      if (settings.saveDataSuccessExecution !== undefined && typeof settings.saveDataSuccessExecution !== 'boolean') {
-        errors.push('saveDataSuccessExecution must be a boolean');
+      if (settings.saveDataSuccessExecution !== undefined && !['all', 'none'].includes(settings.saveDataSuccessExecution)) {
+        errors.push('saveDataSuccessExecution must be "all" or "none"');
       }
     }
 

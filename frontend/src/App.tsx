@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout, ProtectedRoute } from '@/components'
-import { LoginPage, WorkflowsPage, WorkflowEditorPage, ExecutionsPage } from '@/pages'
+import { LoginPage, RegisterPage, WorkspacePage, WorkflowEditorPage, ExecutionsPage, CredentialsPage, CustomNodesPage } from '@/pages'
 
 function App() {
   return (
@@ -15,18 +15,51 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/register"
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <RegisterPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Main application routes - allow guest access */}
-        <Route path="/" element={<Layout />}>
+        {/* Main application routes with layout */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="/workflows" replace />} />
-          <Route path="workflows" element={<WorkflowsPage />} />
-          <Route path="workflows/:id/edit" element={<WorkflowEditorPage />} />
-          <Route path="workflows/new" element={<WorkflowEditorPage />} />
+          <Route path="workflows" element={<WorkspacePage />} />
           <Route path="executions" element={<ExecutionsPage />} />
+          <Route path="credentials" element={<CredentialsPage />} />
+          <Route path="custom-nodes" element={<CustomNodesPage />} />
         </Route>
 
+        {/* Workflow editor routes without layout */}
+        <Route
+          path="/workflows/:id/edit"
+          element={
+            <ProtectedRoute>
+              <WorkflowEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workflows/new"
+          element={
+            <ProtectedRoute>
+              <WorkflowEditorPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/workflows" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   )

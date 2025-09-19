@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
 
@@ -14,7 +14,35 @@ const mockProps = {
   onExport: vi.fn(),
   onImport: vi.fn(),
   isExecuting: false,
-  isSaving: false
+  isSaving: false,
+  isDirty: false,
+  
+  // New required props
+  workflowTitle: 'Test Workflow',
+  onTitleChange: vi.fn(),
+  onTitleSave: vi.fn(),
+  isTitleDirty: false,
+  titleValidationError: null,
+  
+  // Optional new props with defaults
+  isExporting: false,
+  isImporting: false,
+  exportProgress: 0,
+  importProgress: 0,
+  exportError: null,
+  importError: null,
+  onClearImportExportErrors: vi.fn(),
+  executionState: {
+    status: 'idle' as const,
+    progress: 0,
+    startTime: undefined,
+    endTime: undefined,
+    error: undefined,
+    executionId: undefined
+  },
+  onStopExecution: vi.fn(),
+  onShowError: vi.fn(),
+  onShowSuccess: vi.fn()
 }
 
 describe('WorkflowToolbar', () => {
@@ -49,8 +77,8 @@ describe('WorkflowToolbar', () => {
     expect(mockProps.onRedo).toHaveBeenCalledTimes(1)
   })
 
-  it('should call onSave when save button is clicked', () => {
-    render(<WorkflowToolbar {...mockProps} />)
+  it('should call onSave when save button is clicked and there are changes', () => {
+    render(<WorkflowToolbar {...mockProps} isDirty={true} />)
     
     fireEvent.click(screen.getByText('Save'))
     expect(mockProps.onSave).toHaveBeenCalledTimes(1)
@@ -94,25 +122,26 @@ describe('WorkflowToolbar', () => {
     expect(saveButton).toBeDisabled()
   })
 
-  it('should show stop button when isExecuting is true', () => {
-    render(<WorkflowToolbar {...mockProps} isExecuting={true} />)
+  it('should show stop button when execution status is running', () => {
+    render(<WorkflowToolbar {...mockProps} executionState={{ ...mockProps.executionState, status: 'running' }} />)
     
     expect(screen.getByText('Stop')).toBeInTheDocument()
     expect(screen.queryByText('Execute')).not.toBeInTheDocument()
   })
 
-  it('should call onStop when stop button is clicked', () => {
-    render(<WorkflowToolbar {...mockProps} isExecuting={true} />)
+  it('should call onStopExecution when stop button is clicked', () => {
+    render(<WorkflowToolbar {...mockProps} executionState={{ ...mockProps.executionState, status: 'running' }} />)
     
     fireEvent.click(screen.getByText('Stop'))
-    expect(mockProps.onStop).toHaveBeenCalledTimes(1)
+    expect(mockProps.onStopExecution).toHaveBeenCalledTimes(1)
   })
 
-  it('should call onImport when import button is clicked', () => {
+  it('should render import button', () => {
     render(<WorkflowToolbar {...mockProps} />)
     
-    fireEvent.click(screen.getByTitle('Import workflow'))
-    expect(mockProps.onImport).toHaveBeenCalledTimes(1)
+    const importButton = screen.getByTitle('Import workflow')
+    expect(importButton).toBeInTheDocument()
+    expect(importButton).not.toBeDisabled()
   })
 
   it('should call onExport when export button is clicked', () => {
@@ -129,7 +158,12 @@ describe('WorkflowToolbar', () => {
       onUndo: vi.fn(),
       onRedo: vi.fn(),
       onSave: vi.fn(),
-      onValidate: vi.fn()
+      onValidate: vi.fn(),
+      // Required new props
+      workflowTitle: 'Test',
+      onTitleChange: vi.fn(),
+      onTitleSave: vi.fn(),
+      isTitleDirty: false
     }
     
     render(<WorkflowToolbar {...minimalProps} />)
@@ -150,7 +184,7 @@ describe('WorkflowToolbar', () => {
   })
 
   it('should show correct button colors', () => {
-    render(<WorkflowToolbar {...mockProps} />)
+    render(<WorkflowToolbar {...mockProps} isDirty={true} />)
     
     const saveButton = screen.getByText('Save').closest('button')
     const executeButton = screen.getByText('Execute').closest('button')
@@ -162,9 +196,96 @@ describe('WorkflowToolbar', () => {
   })
 
   it('should show stop button with correct styling when executing', () => {
-    render(<WorkflowToolbar {...mockProps} isExecuting={true} />)
+    render(<WorkflowToolbar {...mockProps} executionState={{ ...mockProps.executionState, status: 'running' }} />)
     
     const stopButton = screen.getByText('Stop').closest('button')
     expect(stopButton).toHaveClass('bg-red-600', 'text-white')
+  })
+
+  it('should render TitleManager component', () => {
+    render(<WorkflowToolbar {...mockProps} />)
+    
+    expect(screen.getByText('Test Workflow')).toBeInTheDocument()
+    expect(screen.getByTitle('Click to edit title')).toBeInTheDocument()
+  })
+
+  it('should show progress bar when execution is running with progress', () => {
+    render(<WorkflowToolbar {...mockProps} executionState={{ 
+      ...mockProps.executionState, 
+      status: 'running',
+      progress: 50
+    }} />)
+    
+    expect(screen.getByText('50%')).toBeInTheDocument()
+    const progressBar = document.querySelector('.bg-blue-500')
+    expect(progressBar).toHaveStyle({ width: '50%' })
+  })
+
+  it('should show loading spinner when importing', () => {
+    render(<WorkflowToolbar {...mockProps} isImporting={true} importProgress={25} />)
+    
+    const importButton = screen.getByTitle('Importing workflow...')
+    expect(importButton).toBeInTheDocument()
+    expect(screen.getByText('25%')).toBeInTheDocument()
+  })
+
+  it('should show loading spinner when exporting', () => {
+    render(<WorkflowToolbar {...mockProps} isExporting={true} exportProgress={75} />)
+    
+    const exportButton = screen.getByTitle('Exporting workflow...')
+    expect(exportButton).toBeInTheDocument()
+    expect(screen.getByText('75%')).toBeInTheDocument()
+  })
+
+  it('should show error state for import', () => {
+    render(<WorkflowToolbar {...mockProps} importError="Invalid file format" />)
+    
+    const importButton = screen.getByTitle('Import failed: Invalid file format')
+    expect(importButton).toBeInTheDocument()
+  })
+
+  it('should show error state for export', () => {
+    render(<WorkflowToolbar {...mockProps} exportError="Export failed" />)
+    
+    const exportButton = screen.getByTitle('Export failed: Export failed')
+    expect(exportButton).toBeInTheDocument()
+  })
+
+  it('should show success execution status', () => {
+    render(<WorkflowToolbar {...mockProps} executionState={{ 
+      ...mockProps.executionState, 
+      status: 'success'
+    }} />)
+    
+    const executeButton = screen.getByTitle('Execute workflow (last execution successful)')
+    expect(executeButton).toHaveClass('bg-green-600', 'text-white')
+  })
+
+  it('should show error execution status', () => {
+    render(<WorkflowToolbar {...mockProps} executionState={{ 
+      ...mockProps.executionState, 
+      status: 'error'
+    }} />)
+    
+    const executeButton = screen.getByTitle('Execute workflow (last execution failed)')
+    expect(executeButton).toHaveClass('bg-red-600', 'text-white')
+  })
+
+  it('should enable save button when title is dirty', () => {
+    render(<WorkflowToolbar {...mockProps} isTitleDirty={true} />)
+    
+    const saveButton = screen.getByText('Save').closest('button')
+    expect(saveButton).not.toBeDisabled()
+    expect(saveButton).toHaveClass('bg-blue-600', 'text-white')
+  })
+
+  it('should disable import/export buttons when operations are in progress', () => {
+    render(<WorkflowToolbar {...mockProps} isImporting={true} isExporting={true} />)
+    
+    const importButton = screen.getByTitle('Importing workflow...')
+    const exportButton = screen.getByTitle('Exporting workflow...')
+    
+    expect(importButton).toBeDisabled()
+    expect(exportButton).toBeDisabled()
   })
 })

@@ -20,11 +20,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (token && token !== 'guest-token' && !isAuthenticated && !isLoading) {
       getCurrentUser()
     }
-    // If no authentication and we're accessing the app directly, login as guest
-    else if (!token && !isAuthenticated && !isLoading && requireAuth) {
-      loginAsGuest()
-    }
-  }, [token, isAuthenticated, isLoading, getCurrentUser, loginAsGuest, requireAuth])
+    // Remove automatic guest login - users must explicitly choose guest mode
+  }, [token, isAuthenticated, isLoading, getCurrentUser])
 
   // Show loading spinner while checking authentication
   if (isLoading) {

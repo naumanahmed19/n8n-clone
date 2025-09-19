@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
 import { useAuthStore } from '@/stores'
 import { LoginCredentials } from '@/types'
 
 export const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const { login, loginAsGuest, isLoading, error, clearError } = useAuthStore()
   const navigate = useNavigate()
 
@@ -36,6 +38,20 @@ export const LoginForm: React.FC = () => {
     }
   }
 
+  useEffect(() => {
+    // Check if user was redirected from registration
+    if (searchParams.get('registered') === 'true') {
+      setShowSuccessMessage(true)
+      // Clear the URL parameter
+      const newSearchParams = new URLSearchParams(searchParams)
+      newSearchParams.delete('registered')
+      navigate({ search: newSearchParams.toString() }, { replace: true })
+
+      // Hide success message after 5 seconds
+      setTimeout(() => setShowSuccessMessage(false), 5000)
+    }
+  }, [searchParams, navigate])
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -55,6 +71,13 @@ export const LoginForm: React.FC = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {showSuccessMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4" />
+              <span>Account created successfully! Please sign in with your credentials.</span>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
               {error}
@@ -143,7 +166,7 @@ export const LoginForm: React.FC = () => {
                 'Sign in'
               )}
             </button>
-            
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
@@ -152,7 +175,7 @@ export const LoginForm: React.FC = () => {
                 <span className="px-2 bg-gray-50 text-gray-500">Or</span>
               </div>
             </div>
-            
+
             <button
               type="button"
               onClick={handleGuestLogin}

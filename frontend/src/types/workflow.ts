@@ -24,6 +24,19 @@ export interface WorkflowSettings {
   callerPolicy?: 'workflowsFromSameOwner' | 'workflowsFromAList' | 'any'
 }
 
+export interface WorkflowMetadata {
+  title: string
+  lastTitleUpdate: string
+  exportVersion: string
+  importSource?: string
+  createdBy?: string
+  lastModifiedBy?: string
+  version?: number
+  schemaVersion?: string
+  tags?: string[]
+  customProperties?: Record<string, any>
+}
+
 export interface Workflow {
   id: string
   name: string
@@ -33,8 +46,67 @@ export interface Workflow {
   connections: WorkflowConnection[]
   settings: WorkflowSettings
   active: boolean
+  tags?: string[]
+  category?: string
+  isTemplate?: boolean
+  isPublic?: boolean
+  sharedWith?: WorkflowShare[]
+  analytics?: WorkflowAnalytics
+  metadata?: WorkflowMetadata
   createdAt: string
   updatedAt: string
+}
+
+export interface WorkflowShare {
+  userId: string
+  userEmail: string
+  permission: 'view' | 'edit' | 'admin'
+  sharedAt: string
+}
+
+export interface WorkflowAnalytics {
+  totalExecutions: number
+  successfulExecutions: number
+  failedExecutions: number
+  averageExecutionTime: number
+  lastExecutedAt?: string
+  popularityScore: number
+}
+
+export interface WorkflowTemplate {
+  id: string
+  name: string
+  description: string
+  category: string
+  tags: string[]
+  nodes: WorkflowNode[]
+  connections: WorkflowConnection[]
+  settings: WorkflowSettings
+  author: string
+  downloads: number
+  rating: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WorkflowFilters {
+  search?: string
+  tags?: string[]
+  category?: string
+  active?: boolean
+  isTemplate?: boolean
+  isPublic?: boolean
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' | 'popularity' | 'executions'
+  sortOrder?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}
+
+export interface WorkflowImportExport {
+  workflow: Omit<Workflow, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  version: string
+  exportedAt: string
+  exportedBy: string
 }
 
 export interface NodeType {
@@ -50,6 +122,14 @@ export interface NodeType {
   icon?: string
   color?: string
   properties: NodeProperty[]
+  credentials?: CredentialDefinition[]
+}
+
+export interface CredentialDefinition {
+  name: string
+  displayName: string
+  description?: string
+  required?: boolean
 }
 
 export interface NodeProperty {
@@ -105,4 +185,36 @@ export interface ReactFlowEdge {
   target: string
   sourceHandle?: string
   targetHandle?: string
+}
+
+// Execution-related types
+export interface ExecutionState {
+  status: 'idle' | 'running' | 'success' | 'error' | 'cancelled'
+  progress?: number
+  startTime?: number
+  endTime?: number
+  error?: string
+  executionId?: string
+}
+
+export interface WorkflowExecutionResult {
+  executionId: string
+  workflowId: string
+  status: 'success' | 'error' | 'cancelled'
+  startTime: number
+  endTime: number
+  duration: number
+  nodeResults: NodeExecutionResult[]
+  error?: string
+}
+
+export interface NodeExecutionResult {
+  nodeId: string
+  nodeName: string
+  status: 'success' | 'error' | 'skipped'
+  startTime: number
+  endTime: number
+  duration: number
+  data?: any
+  error?: string
 }

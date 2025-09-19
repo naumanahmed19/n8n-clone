@@ -5,10 +5,57 @@ import {
   WorkflowNode, 
   WorkflowConnection, 
   WorkflowEditorState, 
-  WorkflowHistoryEntry
+  WorkflowHistoryEntry,
+  ExecutionState,
+  WorkflowExecutionResult
 } from '@/types'
+import { workflowFileService, ValidationResult } from '@/services/workflowFile'
+import { 
+  validateWorkflow, 
+  validateWorkflowForExecution,
+  handleWorkflowError,
+  createWorkflowError,
+  WorkflowErrorCodes
+} from '@/utils/workflowErrorHandling'
+import { 
+  validateTitle as validateTitleUtil,
+  validateImportFile as validateImportFileUtil,
+  createAsyncErrorHandler,
+  retryOperation
+} from '@/utils/errorHandling'
+import {
+  ensureWorkflowMetadata,
+  updateWorkflowTitle,
+  updateMetadata,
+  validateMetadata,
+  migrateMetadata
+} from '@/utils/workflowMetadata'
 
 interface WorkflowStore extends WorkflowEditorState {
+  // Title management state
+  workflowTitle: string
+  isTitleDirty: boolean
+  titleValidationError: string | null
+  
+  // Import/Export state
+  isExporting: boolean
+  isImporting: boolean
+  importProgress: number
+  exportProgress: number
+  importError: string | null
+  exportError: string | null
+  
+  // Execution state
+  executionState: ExecutionState
+  lastExecutionResult: WorkflowExecutionResult | null
+  
+  // Node interaction state
+  showPropertyPanel: boolean
+  propertyPanelNodeId: string | null
+  contextMenuVisible: boolean
+  contextMenuPosition: { x: number; y: number } | null
+  contextMenuNodeId: string | null
+  
   // Actions
   setWorkflow: (workflow: Workflow | null) => void
   updateWorkflow: (updates: Partial<Workflow>) => void
@@ -21,6 +68,13 @@ interface WorkflowStore extends WorkflowEditorState {
   setLoading: (loading: boolean) => void
   setDirty: (dirty: boolean) => void
   
+  // Title management actions
+  updateTitle: (title: string) => void
+  saveTitle: () => void
+  setTitleDirty: (dirty: boolean) => void
+  validateTitle: (title: string) => { isValid: boolean; error: string | null }
+  sanitizeTitle: (title: string) => string
+  
   // History management
   saveToHistory: (action: string) => void
   undo: () => void
@@ -28,9 +82,37 @@ interface WorkflowStore extends WorkflowEditorState {
   canUndo: () => boolean
   canRedo: () => boolean
   
+  // Import/Export actions
+  exportWorkflow: () => Promise<void>
+  importWorkflow: (file: File) => Promise<void>
+  validateImportFile: (file: File) => Promise<ValidationResult>
+  setImportProgress: (progress: number) => void
+  setExportProgress: (progress: number) => void
+  clearImportExportErrors: () => void
+  
+  // Execution actions
+  executeWorkflow: () => Promise<void>
+  stopExecution: () => Promise<void>
+  setExecutionState: (state: Partial<ExecutionState>) => void
+  clearExecutionState: () => void
+  setExecutionProgress: (progress: number) => void
+  setExecutionError: (error: string) => void
+  
   // Validation
   validateWorkflow: () => { isValid: boolean; errors: string[] }
   validateConnection: (sourceId: string, targetId: string) => boolean
+  
+  // Node interaction actions
+  setShowPropertyPanel: (show: boolean) => void
+  setPropertyPanelNode: (nodeId: string | null) => void
+  showContextMenu: (nodeId: string, position: { x: number; y: number }) => void
+  hideContextMenu: () => void
+  openNodeProperties: (nodeId: string) => void
+  closeNodeProperties: () => void
+  
+  // Error handling
+  handleError: (error: unknown, operation: string, showToast?: (type: 'error' | 'warning', title: string, options?: any) => void) => void
+  getWorkflowHealth: () => { score: number; issues: string[]; suggestions: string[] }
 }
 
 const MAX_HISTORY_SIZE = 50
@@ -45,11 +127,63 @@ export const useWorkflowStore = create<WorkflowStore>()(
       isDirty: false,
       history: [],
       historyIndex: -1,
+      
+      // Title management state
+      workflowTitle: '',
+      isTitleDirty: false,
+      titleValidationError: null,
+      
+      // Import/Export state
+      isExporting: false,
+      isImporting: false,
+      importProgress: 0,
+      exportProgress: 0,
+      importError: null,
+      exportError: null,
+      
+      // Execution state
+      executionState: {
+        status: 'idle',
+        progress: 0,
+        startTime: undefined,
+        endTime: undefined,
+        error: undefined,
+        executionId: undefined
+      },
+      lastExecutionResult: null,
+      
+      // Node interaction state
+      showPropertyPanel: false,
+      propertyPanelNodeId: null,
+      contextMenuVisible: false,
+      contextMenuPosition: null,
+      contextMenuNodeId: null,
 
       // Actions
       setWorkflow: (workflow) => {
-        set({ workflow, isDirty: false })
+        let processedWorkflow = workflow
+        
+        // Ensure workflow has proper metadata
         if (workflow) {
+          processedWorkflow = ensureWorkflowMetadata(workflow)
+        }
+        
+        const title = processedWorkflow?.metadata?.title || processedWorkflow?.name || ''
+        set({ 
+          workflow: processedWorkflow, 
+          isDirty: false, 
+          workflowTitle: title,
+          isTitleDirty: false,
+          titleValidationError: null,
+          // Reset node interaction state when loading new workflow
+          selectedNodeId: null,
+          showPropertyPanel: false,
+          propertyPanelNodeId: null,
+          contextMenuVisible: false,
+          contextMenuPosition: null,
+          contextMenuNodeId: null
+        })
+        if (processedWorkflow) {
           get().saveToHistory('Load workflow')
         }
       },
@@ -99,7 +233,22 @@ export const useWorkflowStore = create<WorkflowStore>()(
             conn => conn.sourceNodeId !== nodeId && conn.targetNodeId !== nodeId
           )
         }
-        set({ workflow: updated, isDirty: true, selectedNodeId: null })
+        
+        // Clean up node interaction state if the removed node was selected
+        const stateUpdates: any = { workflow: updated, isDirty: true, selectedNodeId: null }
+        
+        if (get().propertyPanelNodeId === nodeId) {
+          stateUpdates.showPropertyPanel = false
+          stateUpdates.propertyPanelNodeId = null
+        }
+        
+        if (get().contextMenuNodeId === nodeId) {
+          stateUpdates.contextMenuVisible = false
+          stateUpdates.contextMenuNodeId = null
+          stateUpdates.contextMenuPosition = null
+        }
+        
+        set(stateUpdates)
         get().saveToHistory(`Remove node: ${nodeId}`)
       },
 
@@ -142,6 +291,67 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
       setDirty: (dirty) => {
         set({ isDirty: dirty })
+      },
+
+      // Title management actions
+      updateTitle: (title) => {
+        const sanitized = get().sanitizeTitle(title)
+        const validation = get().validateTitle(sanitized)
+        
+        set({ 
+          workflowTitle: sanitized,
+          isTitleDirty: true,
+          titleValidationError: validation.error
+        })
+      },
+
+      saveTitle: () => {
+        const { workflowTitle, workflow, titleValidationError } = get()
+        
+        if (!workflow || titleValidationError) {
+          return
+        }
+
+        // Update workflow title through metadata management
+        const updated = updateWorkflowTitle(workflow, workflowTitle)
+        set({ 
+          workflow: updated, 
+          isDirty: true,
+          isTitleDirty: false 
+        })
+        get().saveToHistory(`Update title: ${workflowTitle}`)
+      },
+
+      setTitleDirty: (dirty) => {
+        set({ isTitleDirty: dirty })
+      },
+
+      validateTitle: (title) => {
+        const validationErrors = validateTitleUtil(title)
+        
+        if (validationErrors.length > 0) {
+          return { isValid: false, error: validationErrors[0].message }
+        }
+        
+        return { isValid: true, error: null }
+      },
+
+      sanitizeTitle: (title) => {
+        // Remove leading/trailing whitespace
+        let sanitized = title.trim()
+        
+        // Replace multiple consecutive spaces with single space
+        sanitized = sanitized.replace(/\s+/g, ' ')
+        
+        // Remove or replace invalid characters
+        sanitized = sanitized.replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+        
+        // Truncate if too long
+        if (sanitized.length > 100) {
+          sanitized = sanitized.substring(0, 100).trim()
+        }
+        
+        return sanitized
       },
 
       // History management
@@ -204,55 +414,401 @@ export const useWorkflowStore = create<WorkflowStore>()(
         return historyIndex < history.length - 1
       },
 
+      // Import/Export actions
+      exportWorkflow: async () => {
+        const { workflow } = get()
+        if (!workflow) {
+          set({ exportError: 'No workflow to export' })
+          return
+        }
+
+        set({ 
+          isExporting: true, 
+          exportProgress: 0, 
+          exportError: null 
+        })
+
+        try {
+          // Simulate progress for user feedback
+          set({ exportProgress: 25 })
+          
+          // Validate workflow before export
+          const validation = get().validateWorkflow()
+          if (!validation.isValid) {
+            throw new Error(`Cannot export invalid workflow: ${validation.errors.join(', ')}`)
+          }
+
+          set({ exportProgress: 50 })
+
+          // Export using the file service
+          await workflowFileService.exportWorkflow(workflow)
+          
+          set({ exportProgress: 100 })
+          
+          // Clear progress after a short delay
+          setTimeout(() => {
+            set({ exportProgress: 0, isExporting: false })
+          }, 1000)
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown export error'
+          set({ 
+            exportError: errorMessage,
+            isExporting: false,
+            exportProgress: 0
+          })
+        }
+      },
+
+      importWorkflow: async (file: File) => {
+        set({ 
+          isImporting: true, 
+          importProgress: 0, 
+          importError: null 
+        })
+
+        try {
+          // Validate file first
+          set({ importProgress: 20 })
+          const validation = await workflowFileService.validateWorkflowFile(file)
+          
+          if (!validation.isValid) {
+            throw new Error(`Invalid workflow file: ${validation.errors.join(', ')}`)
+          }
+
+          // Show warnings if any
+          if (validation.warnings.length > 0) {
+            console.warn('Import warnings:', validation.warnings)
+          }
+
+          set({ importProgress: 50 })
+
+          // Import the workflow
+          const importedWorkflow = await workflowFileService.importWorkflow(file)
+          
+          set({ importProgress: 80 })
+
+          // Check if current workflow has unsaved changes
+          const { isDirty, isTitleDirty } = get()
+          if (isDirty || isTitleDirty) {
+            // In a real implementation, you might want to show a confirmation dialog
+            // For now, we'll proceed with the import
+            console.warn('Importing workflow will overwrite unsaved changes')
+          }
+
+          // Set the imported workflow
+          get().setWorkflow(importedWorkflow)
+          
+          set({ importProgress: 100 })
+          
+          // Clear progress after a short delay
+          setTimeout(() => {
+            set({ importProgress: 0, isImporting: false })
+          }, 1000)
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown import error'
+          set({ 
+            importError: errorMessage,
+            isImporting: false,
+            importProgress: 0
+          })
+        }
+      },
+
+      validateImportFile: async (file: File) => {
+        try {
+          // First do basic file validation
+          const basicValidation = validateImportFileUtil(file)
+          if (basicValidation.length > 0) {
+            return {
+              isValid: false,
+              errors: basicValidation.map(error => error.message),
+              warnings: []
+            }
+          }
+
+          // Then do content validation
+          return await workflowFileService.validateWorkflowFile(file)
+        } catch (error) {
+          return {
+            isValid: false,
+            errors: [error instanceof Error ? error.message : 'Unknown validation error'],
+            warnings: []
+          }
+        }
+      },
+
+      setImportProgress: (progress: number) => {
+        set({ importProgress: Math.max(0, Math.min(100, progress)) })
+      },
+
+      setExportProgress: (progress: number) => {
+        set({ exportProgress: Math.max(0, Math.min(100, progress)) })
+      },
+
+      clearImportExportErrors: () => {
+        set({ 
+          importError: null, 
+          exportError: null 
+        })
+      },
+
+      // Execution actions
+      executeWorkflow: async () => {
+        const { workflow, executionState } = get()
+        
+        if (!workflow) {
+          get().setExecutionError('No workflow to execute')
+          return
+        }
+
+        // Prevent multiple simultaneous executions
+        if (executionState.status === 'running') {
+          console.warn('Workflow is already executing')
+          return
+        }
+
+        // Validate workflow before execution using enhanced validation
+        const validation = validateWorkflowForExecution(workflow)
+        if (!validation.isValid) {
+          const errorMessage = `Cannot execute invalid workflow: ${validation.errors.map(e => e.message).join(', ')}`
+          get().setExecutionError(errorMessage)
+          return
+        }
+
+        // Log warnings if any
+        if (validation.warnings.length > 0) {
+          console.warn('Execution warnings:', validation.warnings.map(w => w.message))
+        }
+
+        const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const startTime = Date.now()
+
+        // Set initial execution state
+        get().setExecutionState({
+          status: 'running',
+          progress: 0,
+          startTime,
+          endTime: undefined,
+          error: undefined,
+          executionId
+        })
+
+        try {
+          // Simulate workflow execution with progress updates
+          // In a real implementation, this would call the backend API
+          
+          // Phase 1: Initialize execution
+          get().setExecutionProgress(10)
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          // Phase 2: Execute nodes sequentially
+          const totalNodes = workflow.nodes.length
+          for (let i = 0; i < totalNodes; i++) {
+            const node = workflow.nodes[i]
+            
+            // Check if execution was cancelled
+            const currentState = get().executionState
+            if (currentState.status === 'cancelled') {
+              throw new Error('Execution was cancelled by user')
+            }
+
+            // Simulate node execution
+            const nodeProgress = 20 + (i / totalNodes) * 60 // 20% to 80%
+            get().setExecutionProgress(nodeProgress)
+            
+            // Simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 700))
+
+            // Simulate occasional node failures for testing
+            if (Math.random() < 0.05) { // 5% chance of failure
+              throw new Error(`Node "${node.name}" failed during execution`)
+            }
+          }
+
+          // Phase 3: Finalize execution
+          get().setExecutionProgress(90)
+          await new Promise(resolve => setTimeout(resolve, 300))
+
+          const endTime = Date.now()
+          const duration = endTime - startTime
+
+          // Create execution result
+          const executionResult: WorkflowExecutionResult = {
+            executionId,
+            workflowId: workflow.id,
+            status: 'success',
+            startTime,
+            endTime,
+            duration,
+            nodeResults: workflow.nodes.map(node => ({
+              nodeId: node.id,
+              nodeName: node.name,
+              status: 'success' as const,
+              startTime: startTime + Math.random() * 1000,
+              endTime: endTime - Math.random() * 500,
+              duration: Math.random() * 1000 + 200,
+              data: { result: `Output from ${node.name}` }
+            }))
+          }
+
+          // Set final success state
+          set({
+            executionState: {
+              status: 'success',
+              progress: 100,
+              startTime,
+              endTime,
+              error: undefined,
+              executionId
+            },
+            lastExecutionResult: executionResult
+          })
+
+          // Save execution to history
+          get().saveToHistory(`Execute workflow: ${workflow.name}`)
+
+          // Clear execution state after a delay
+          setTimeout(() => {
+            get().clearExecutionState()
+          }, 3000)
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown execution error'
+          const endTime = Date.now()
+          
+          // Create failed execution result
+          const executionResult: WorkflowExecutionResult = {
+            executionId,
+            workflowId: workflow.id,
+            status: 'error',
+            startTime,
+            endTime,
+            duration: endTime - startTime,
+            nodeResults: [],
+            error: errorMessage
+          }
+
+          set({
+            executionState: {
+              status: 'error',
+              progress: 0,
+              startTime,
+              endTime,
+              error: errorMessage,
+              executionId
+            },
+            lastExecutionResult: executionResult
+          })
+        }
+      },
+
+      stopExecution: async () => {
+        const { executionState } = get()
+        
+        if (executionState.status !== 'running') {
+          console.warn('No execution to stop')
+          return
+        }
+
+        try {
+          // In a real implementation, this would call the backend to cancel execution
+          // For now, we'll just update the state
+          
+          const endTime = Date.now()
+          const startTime = executionState.startTime || endTime
+          
+          // Create cancelled execution result
+          const executionResult: WorkflowExecutionResult = {
+            executionId: executionState.executionId || `cancelled_${Date.now()}`,
+            workflowId: get().workflow?.id || '',
+            status: 'cancelled',
+            startTime,
+            endTime,
+            duration: endTime - startTime,
+            nodeResults: [],
+            error: 'Execution cancelled by user'
+          }
+
+          set({
+            executionState: {
+              status: 'cancelled',
+              progress: 0,
+              startTime,
+              endTime,
+              error: 'Execution cancelled by user',
+              executionId: executionState.executionId
+            },
+            lastExecutionResult: executionResult
+          })
+
+          // Save cancellation to history
+          get().saveToHistory('Cancel workflow execution')
+
+          // Clear execution state after a delay
+          setTimeout(() => {
+            get().clearExecutionState()
+          }, 2000)
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to stop execution'
+          get().setExecutionError(errorMessage)
+        }
+      },
+
+      setExecutionState: (state: Partial<ExecutionState>) => {
+        const currentState = get().executionState
+        set({
+          executionState: { ...currentState, ...state }
+        })
+      },
+
+      clearExecutionState: () => {
+        set({
+          executionState: {
+            status: 'idle',
+            progress: 0,
+            startTime: undefined,
+            endTime: undefined,
+            error: undefined,
+            executionId: undefined
+          }
+        })
+      },
+
+      setExecutionProgress: (progress: number) => {
+        const clampedProgress = Math.max(0, Math.min(100, progress))
+        get().setExecutionState({ progress: clampedProgress })
+      },
+
+      setExecutionError: (error: string) => {
+        const endTime = Date.now()
+        const startTime = get().executionState.startTime || endTime
+        
+        set({
+          executionState: {
+            status: 'error',
+            progress: 0,
+            startTime,
+            endTime,
+            error,
+            executionId: get().executionState.executionId
+          }
+        })
+      },
+
       // Validation
       validateWorkflow: () => {
         const { workflow } = get()
-        if (!workflow) return { isValid: false, errors: ['No workflow loaded'] }
-
-        const errors: string[] = []
-
-        // Check for nodes
-        if (workflow.nodes.length === 0) {
-          errors.push('Workflow must contain at least one node')
-        }
-
-        // Check for orphaned nodes (nodes with no connections)
-        const connectedNodeIds = new Set([
-          ...workflow.connections.map(c => c.sourceNodeId),
-          ...workflow.connections.map(c => c.targetNodeId)
-        ])
-
-        const orphanedNodes = workflow.nodes.filter(node => 
-          !connectedNodeIds.has(node.id) && workflow.nodes.length > 1
-        )
-
-        if (orphanedNodes.length > 0) {
-          errors.push(`Orphaned nodes found: ${orphanedNodes.map(n => n.name).join(', ')}`)
-        }
-
-        // Check for circular dependencies
-        const hasCircularDependency = (nodeId: string, visited = new Set<string>()): boolean => {
-          if (visited.has(nodeId)) return true
-          visited.add(nodeId)
-
-          const outgoingConnections = workflow.connections.filter(c => c.sourceNodeId === nodeId)
-          return outgoingConnections.some(conn => hasCircularDependency(conn.targetNodeId, visited))
-        }
-
-        const startNodes = workflow.nodes.filter(node => 
-          !workflow.connections.some(c => c.targetNodeId === node.id)
-        )
-
-        for (const startNode of startNodes) {
-          if (hasCircularDependency(startNode.id)) {
-            errors.push('Circular dependency detected in workflow')
-            break
-          }
-        }
-
+        const workflowErrors = validateWorkflow(workflow)
+        const metadataErrors = workflow ? validateMetadata(workflow.metadata) : []
+        
+        const allErrors = [...workflowErrors, ...metadataErrors]
+        
         return {
-          isValid: errors.length === 0,
-          errors
+          isValid: allErrors.length === 0,
+          errors: allErrors.map(error => error.message)
         }
       },
 
@@ -280,6 +836,66 @@ export const useWorkflowStore = create<WorkflowStore>()(
         }
 
         return !wouldCreateCircle(targetId, sourceId)
+      },
+
+      // Node interaction actions
+      setShowPropertyPanel: (show: boolean) => {
+        set({ showPropertyPanel: show })
+        if (!show) {
+          set({ propertyPanelNodeId: null })
+        }
+      },
+
+      setPropertyPanelNode: (nodeId: string | null) => {
+        set({ 
+          propertyPanelNodeId: nodeId,
+          showPropertyPanel: nodeId !== null
+        })
+      },
+
+      showContextMenu: (nodeId: string, position: { x: number; y: number }) => {
+        set({
+          contextMenuVisible: true,
+          contextMenuNodeId: nodeId,
+          contextMenuPosition: position,
+          selectedNodeId: nodeId
+        })
+      },
+
+      hideContextMenu: () => {
+        set({
+          contextMenuVisible: false,
+          contextMenuNodeId: null,
+          contextMenuPosition: null
+        })
+      },
+
+      openNodeProperties: (nodeId: string) => {
+        set({
+          propertyPanelNodeId: nodeId,
+          showPropertyPanel: true,
+          selectedNodeId: nodeId
+        })
+        // Hide context menu if it's open
+        get().hideContextMenu()
+      },
+
+      closeNodeProperties: () => {
+        set({
+          showPropertyPanel: false,
+          propertyPanelNodeId: null
+        })
+      },
+
+      // Error handling
+      handleError: (error, operation, showToast) => {
+        handleWorkflowError(error, operation, showToast)
+      },
+
+      getWorkflowHealth: () => {
+        const { workflow } = get()
+        const { getWorkflowHealthScore } = require('@/utils/workflowErrorHandling')
+        return getWorkflowHealthScore(workflow)
       }
     }),
     { name: 'workflow-store' }

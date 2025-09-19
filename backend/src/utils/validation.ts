@@ -116,12 +116,14 @@ export const nodeExecutionUpdateSchema = z.object({
 export const credentialCreateSchema = z.object({
   name: z.string().min(1, 'Credential name is required'),
   type: z.string().min(1, 'Credential type is required'),
-  data: z.string(), // Encrypted data
+  data: z.any(), // Raw credential data (will be encrypted)
+  expiresAt: z.date().optional(),
 })
 
 export const credentialUpdateSchema = z.object({
   name: z.string().min(1, 'Credential name is required').optional(),
-  data: z.string().optional(), // Encrypted data
+  data: z.any().optional(), // Raw credential data (will be encrypted)
+  expiresAt: z.date().optional(),
 })
 
 // Node type validation schemas

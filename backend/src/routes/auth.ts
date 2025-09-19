@@ -15,6 +15,23 @@ const signToken = (payload: object, secret: string, expiresIn: string = '7d'): s
   return jwt.sign(payload, secret, { expiresIn } as any);
 };
 
+// GET /api/auth - Auth endpoints info (should use specific endpoints)
+router.get('/', (req: Request, res: Response) => {
+  res.status(400).json({
+    success: false,
+    error: {
+      code: 'INVALID_METHOD',
+      message: 'Use specific auth endpoints',
+      availableEndpoints: {
+        login: 'POST /api/auth/login',
+        register: 'POST /api/auth/register',
+        me: 'GET /api/auth/me',
+        refresh: 'POST /api/auth/refresh'
+      }
+    }
+  });
+});
+
 // POST /api/auth/register - Register new user
 router.post(
   '/register',
