@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      UserRole @default(USER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflows   Workflow[]
+  credentials Credential[]
+
+  @@map("users")
+}
+
+model Workflow {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  nodes       Json              @default("[]")
+  connections Json              @default("[]")
+  triggers    Json              @default("[]")
+  settings    Json              @default("{}")
+  active      Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  executions Execution[]
+
+  @@map("workflows")
+}
+
+model Execution {
+  id             String          @id @default(cuid())
+  workflowId     String
+  status         ExecutionStatus @default(RUNNING)
+  startedAt      DateTime        @default(now())
+  finishedAt     DateTime?
+  triggerData    Json?
+  error          Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  workflow       Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeExecutions NodeExecution[]
+
+  @@map("executions")
+}
+
+model NodeExecution {
+  id          String              @id @default(cuid())
+  nodeId      String
+  executionId String
+  status      NodeExecutionStatus @default(WAITING)
+  inputData   Json?
+  outputData  Json?
+  error       Json?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@map("node_executions")
+}
+
+model Credential {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  userId    String
+  data      String   // Encrypted credential data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@map("credentials")
+}
+
+model NodeType {
+  id          String   @id @default(cuid())
+  type        String   @unique
+  displayName String
+  name        String
+  group       String[]
+  version     Int      @default(1)
+  description String
+  defaults    Json     @default("{}")
+  inputs      String[]
+  outputs     String[]
+  properties  Json     @default("[]")
+  icon        String?
+  color       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("node_types")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ExecutionStatus {
+  RUNNING
+  SUCCESS
+  ERROR
+  CANCELLED
+}
+
+enum NodeExecutionStatus {
+  WAITING
+  RUNNING
+  SUCCESS
+  ERROR
+}
