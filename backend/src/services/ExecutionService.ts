@@ -29,7 +29,11 @@ export class ExecutionService {
   private nodeService: NodeService;
   private executionHistoryService: ExecutionHistoryService;
 
-  constructor(prisma: PrismaClient, nodeService: NodeService, executionHistoryService: ExecutionHistoryService) {
+  constructor(
+    prisma: PrismaClient,
+    nodeService: NodeService,
+    executionHistoryService: ExecutionHistoryService
+  ) {
     this.prisma = prisma;
     this.nodeService = nodeService;
     this.executionHistoryService = executionHistoryService;
@@ -61,7 +65,11 @@ export class ExecutionService {
       nodeService,
       queueConfig
     );
-    this.flowExecutionEngine = new FlowExecutionEngine(prisma, nodeService, executionHistoryService);
+    this.flowExecutionEngine = new FlowExecutionEngine(
+      prisma,
+      nodeService,
+      executionHistoryService
+    );
     this.setupEventHandlers();
   }
 
@@ -725,25 +733,49 @@ export class ExecutionService {
 
     this.flowExecutionEngine.on("nodeExecuted", (nodeEventData) => {
       logger.info("Flow node executed event received:", nodeEventData);
+      console.log("=== NODE EXECUTED EVENT ===", {
+        executionId: nodeEventData.executionId,
+        nodeId: nodeEventData.nodeId,
+        status: nodeEventData.status,
+        error: nodeEventData.result?.error
+      });
 
       // Broadcast node execution updates for flow
       if (global.socketService) {
+        // Determine if node succeeded or failed - fix the logic here
+        const eventType = nodeEventData.status === "FAILED" || nodeEventData.result?.status === "failed" ? "node-failed" : "node-completed";
+        
         logger.info("Broadcasting node execution event via socket", {
           executionId: nodeEventData.executionId,
           nodeId: nodeEventData.nodeId,
-          status: "completed"
+          eventType,
+          status: nodeEventData.status,
         });
-        global.socketService.broadcastNodeExecutionEvent(
+        
+        console.log("=== BROADCASTING WEBSOCKET EVENT ===", {
+          executionId: nodeEventData.executionId,
+          type: eventType,
+          nodeId: nodeEventData.nodeId,
+          status: nodeEventData.status,
+          error: nodeEventData.result?.error
+        });
+        
+        global.socketService.broadcastExecutionEvent(
           nodeEventData.executionId,
-          nodeEventData.nodeId,
-          "completed",
           {
+            executionId: nodeEventData.executionId,
+            type: eventType,
+            nodeId: nodeEventData.nodeId,
             status: nodeEventData.status,
-            result: nodeEventData.result,
+            data: nodeEventData.result,
+            error: nodeEventData.result?.error,
+            timestamp: new Date(),
           }
         );
       } else {
-        logger.warn("Global socketService is not available for node execution broadcast");
+        logger.warn(
+          "Global socketService is not available for node execution broadcast"
+        );
       }
     });
 
@@ -755,19 +787,24 @@ export class ExecutionService {
         logger.info("Broadcasting node start event via socket", {
           executionId: nodeEventData.executionId,
           nodeId: nodeEventData.nodeId,
-          status: "started"
+          status: "started",
         });
-        global.socketService.broadcastNodeExecutionEvent(
+        
+        global.socketService.broadcastExecutionEvent(
           nodeEventData.executionId,
-          nodeEventData.nodeId,
-          "started",
           {
-            status: "started",
-            node: nodeEventData.node,
+            executionId: nodeEventData.executionId,
+            type: "node-started",
+            nodeId: nodeEventData.nodeId,
+            status: "RUNNING",
+            data: nodeEventData.node,
+            timestamp: new Date(),
           }
         );
       } else {
-        logger.warn("Global socketService is not available for node start broadcast");
+        logger.warn(
+          "Global socketService is not available for node start broadcast"
+        );
       }
     });
 
@@ -903,7 +940,7 @@ export class ExecutionService {
         workflowId,
         userId,
         nodeParameters,
-        inputDataSize: JSON.stringify(nodeInputData).length
+        inputDataSize: JSON.stringify(nodeInputData).length,
       });
 
       try {
@@ -935,7 +972,7 @@ export class ExecutionService {
           flowStatus: flowResult.status,
           executedNodes: flowResult.executedNodes.length,
           failedNodes: flowResult.failedNodes.length,
-          executionId: flowResult.executionId
+          executionId: flowResult.executionId,
         });
 
         return {
@@ -944,42 +981,51 @@ export class ExecutionService {
             executionId: flowResult.executionId,
             nodeId,
             status: flowResult.status === "completed" ? "success" : "failed",
-            data: flowResult.nodeResults ? Array.from(flowResult.nodeResults.values()).map(result => ({ main: result.data || [] })) : [],
+            data: flowResult.nodeResults
+              ? Array.from(flowResult.nodeResults.values()).map((result) => ({
+                  main: result.data || [],
+                }))
+              : [],
             startTime: Date.now() - flowResult.totalDuration,
             endTime: Date.now(),
             duration: flowResult.totalDuration,
             executedNodes: flowResult.executedNodes,
             failedNodes: flowResult.failedNodes,
           },
-          error: flowResult.status !== "completed" ? {
-            message: `Flow execution ${flowResult.status}`,
-            timestamp: new Date(),
-          } : undefined,
+          error:
+            flowResult.status !== "completed"
+              ? {
+                  message: `Flow execution ${flowResult.status}`,
+                  timestamp: new Date(),
+                }
+              : undefined,
         };
       } catch (flowError) {
         logger.error(`FlowExecutionEngine failed for node ${nodeId}:`, {
           error: flowError,
-          errorMessage: flowError instanceof Error ? flowError.message : String(flowError),
+          errorMessage:
+            flowError instanceof Error ? flowError.message : String(flowError),
           errorStack: flowError instanceof Error ? flowError.stack : undefined,
           nodeId,
           workflowId,
-          userId
+          userId,
         });
-        
+
         // Return more specific error information
-        const errorMessage = flowError instanceof Error 
-          ? flowError.message 
-          : typeof flowError === 'string' 
-            ? flowError 
-            : 'Flow execution failed with unknown error';
-            
+        const errorMessage =
+          flowError instanceof Error
+            ? flowError.message
+            : typeof flowError === "string"
+            ? flowError
+            : "Flow execution failed with unknown error";
+
         return {
           success: false,
           error: {
             message: errorMessage,
             stack: flowError instanceof Error ? flowError.stack : undefined,
             timestamp: new Date(),
-            nodeId: nodeId
+            nodeId: nodeId,
           },
         };
       }

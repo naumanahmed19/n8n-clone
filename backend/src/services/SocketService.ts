@@ -17,7 +17,7 @@ export interface AuthenticatedSocket extends Socket {
 }
 
 export interface SocketAuthPayload {
-  userId: string;
+  id: string;
   email: string;
 }
 
@@ -32,6 +32,11 @@ export interface ExecutionLogEntry {
 export class SocketService {
   private io: SocketIOServer;
   private authenticatedSockets: Map<string, AuthenticatedSocket> = new Map();
+  
+  // Event buffering for late subscribers
+  private executionEventBuffer: Map<string, ExecutionEventData[]> = new Map();
+  private bufferRetentionMs = 10000; // Keep events for 10 seconds
+  private bufferCleanupInterval: NodeJS.Timeout;
 
   constructor(httpServer: HTTPServer) {
     this.io = new SocketIOServer(httpServer, {
@@ -44,6 +49,11 @@ export class SocketService {
 
     this.setupAuthentication();
     this.setupConnectionHandlers();
+    
+    // Start cleanup interval for event buffer
+    this.bufferCleanupInterval = setInterval(() => {
+      this.cleanupEventBuffer();
+    }, 5000); // Clean up every 5 seconds
   }
 
   /**
@@ -66,13 +76,13 @@ export class SocketService {
           process.env.JWT_SECRET!
         ) as SocketAuthPayload;
 
-        socket.userId = decoded.userId;
+        socket.userId = decoded.id;
         socket.user = {
-          id: decoded.userId,
+          id: decoded.id,
           email: decoded.email,
         };
 
-        logger.info(`Socket authenticated for user ${decoded.userId}`);
+        logger.info(`Socket authenticated for user ${decoded.id}`);
         next();
       } catch (error) {
         logger.error("Socket authentication failed:", error);
@@ -96,13 +106,13 @@ export class SocketService {
       socket.join(`user:${authSocket.userId}`);
 
       // Handle execution subscription
-      socket.on("subscribe-execution", (executionId: string) => {
-        this.handleExecutionSubscription(authSocket, executionId);
+      socket.on("subscribe-execution", (executionId: string, callback?: Function) => {
+        this.handleExecutionSubscription(authSocket, executionId, callback);
       });
 
       // Handle execution unsubscription
-      socket.on("unsubscribe-execution", (executionId: string) => {
-        this.handleExecutionUnsubscription(authSocket, executionId);
+      socket.on("unsubscribe-execution", (executionId: string, callback?: Function) => {
+        this.handleExecutionUnsubscription(authSocket, executionId, callback);
       });
 
       // Handle workflow subscription (for all executions of a workflow)
@@ -135,20 +145,45 @@ export class SocketService {
    */
   private handleExecutionSubscription(
     socket: AuthenticatedSocket,
-    executionId: string
+    executionId: string,
+    callback?: Function
   ): void {
     logger.debug(
       `User ${socket.userId} subscribing to execution ${executionId}`
     );
 
-    // Join execution-specific room
-    socket.join(`execution:${executionId}`);
+    try {
+      // Join execution-specific room
+      socket.join(`execution:${executionId}`);
 
-    // Confirm subscription
-    socket.emit("execution-subscribed", {
-      executionId,
-      timestamp: new Date().toISOString(),
-    });
+      // Send any buffered events for this execution to the new subscriber
+      const bufferedEvents = this.executionEventBuffer.get(executionId);
+      if (bufferedEvents && bufferedEvents.length > 0) {
+        logger.info(`Sending ${bufferedEvents.length} buffered events for execution ${executionId} to late subscriber`);
+        bufferedEvents.forEach(eventData => {
+          socket.emit("execution-event", eventData);
+        });
+      }
+
+      // Confirm subscription with callback if provided
+      if (callback) {
+        callback({ success: true, executionId });
+      }
+
+      // Also emit the traditional event for compatibility
+      socket.emit("execution-subscribed", {
+        executionId,
+        timestamp: new Date().toISOString(),
+      });
+
+      logger.info(`User ${socket.userId} successfully subscribed to execution ${executionId}`);
+    } catch (error) {
+      logger.error(`Failed to subscribe user ${socket.userId} to execution ${executionId}:`, error);
+      
+      if (callback) {
+        callback({ success: false, error: 'Subscription failed' });
+      }
+    }
   }
 
   /**
@@ -156,20 +191,36 @@ export class SocketService {
    */
   private handleExecutionUnsubscription(
     socket: AuthenticatedSocket,
-    executionId: string
+    executionId: string,
+    callback?: Function
   ): void {
     logger.debug(
       `User ${socket.userId} unsubscribing from execution ${executionId}`
     );
 
-    // Leave execution-specific room
-    socket.leave(`execution:${executionId}`);
+    try {
+      // Leave execution-specific room
+      socket.leave(`execution:${executionId}`);
 
-    // Confirm unsubscription
-    socket.emit("execution-unsubscribed", {
-      executionId,
-      timestamp: new Date().toISOString(),
-    });
+      // Confirm unsubscription with callback if provided
+      if (callback) {
+        callback({ success: true, executionId });
+      }
+
+      // Also emit the traditional event for compatibility
+      socket.emit("execution-unsubscribed", {
+        executionId,
+        timestamp: new Date().toISOString(),
+      });
+
+      logger.info(`User ${socket.userId} successfully unsubscribed from execution ${executionId}`);
+    } catch (error) {
+      logger.error(`Failed to unsubscribe user ${socket.userId} from execution ${executionId}:`, error);
+      
+      if (callback) {
+        callback({ success: false, error: 'Unsubscription failed' });
+      }
+    }
   }
 
   /**
@@ -224,11 +275,18 @@ export class SocketService {
       eventData.type
     );
 
-    // Emit to execution-specific room
-    this.io.to(`execution:${executionId}`).emit("execution-event", {
+    // Add timestamp if not present
+    const eventWithTimestamp = {
       ...eventData,
       executionId,
-    });
+      timestamp: eventData.timestamp || new Date(),
+    };
+
+    // Buffer the event for late subscribers
+    this.bufferExecutionEvent(executionId, eventWithTimestamp);
+
+    // Emit to execution-specific room
+    this.io.to(`execution:${executionId}`).emit("execution-event", eventWithTimestamp);
   }
 
   /**
@@ -424,6 +482,11 @@ export class SocketService {
   public async shutdown(): Promise<void> {
     logger.info("Shutting down Socket.io service...");
 
+    // Clear the buffer cleanup interval
+    if (this.bufferCleanupInterval) {
+      clearInterval(this.bufferCleanupInterval);
+    }
+
     // Disconnect all clients
     this.io.disconnectSockets();
 
@@ -431,5 +494,48 @@ export class SocketService {
     this.io.close();
 
     logger.info("Socket.io service shutdown complete");
+  }
+
+  /**
+   * Buffer execution event for late subscribers
+   */
+  private bufferExecutionEvent(executionId: string, eventData: ExecutionEventData): void {
+    if (!this.executionEventBuffer.has(executionId)) {
+      this.executionEventBuffer.set(executionId, []);
+    }
+    
+    const buffer = this.executionEventBuffer.get(executionId)!;
+    buffer.push(eventData);
+    
+    // Limit buffer size to prevent memory issues (keep last 50 events per execution)
+    if (buffer.length > 50) {
+      buffer.splice(0, buffer.length - 50);
+    }
+    
+    logger.debug(`Buffered event for execution ${executionId}, buffer size: ${buffer.length}`);
+  }
+
+  /**
+   * Clean up old buffered events
+   */
+  private cleanupEventBuffer(): void {
+    const now = Date.now();
+    
+    for (const [executionId, events] of this.executionEventBuffer.entries()) {
+      // Remove events older than retention period
+      const filteredEvents = events.filter(event => {
+        const eventTime = event.timestamp instanceof Date ? event.timestamp.getTime() : new Date(event.timestamp).getTime();
+        return (now - eventTime) < this.bufferRetentionMs;
+      });
+      
+      if (filteredEvents.length === 0) {
+        // Remove empty buffers
+        this.executionEventBuffer.delete(executionId);
+        logger.debug(`Cleaned up event buffer for execution ${executionId}`);
+      } else {
+        // Update buffer with filtered events
+        this.executionEventBuffer.set(executionId, filteredEvents);
+      }
+    }
   }
 }

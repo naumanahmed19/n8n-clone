@@ -62,7 +62,7 @@ describe('SocketService', () => {
 
     it('should accept connection with valid token', (done) => {
       const token = jwt.sign(
-        { userId: 'test-user', email: 'test@example.com' },
+        { id: 'test-user', email: 'test@example.com' },
         'test-secret'
       );
 
@@ -76,7 +76,7 @@ describe('SocketService', () => {
       });
 
       clientSocket.on('connected', (data) => {
-        expect(data.userId).toBe('test-user');
+        expect(data.id).toBe('test-user');
         expect(data.message).toContain('Successfully connected');
       });
     });
@@ -87,7 +87,7 @@ describe('SocketService', () => {
 
     beforeEach(() => {
       token = jwt.sign(
-        { userId: 'test-user', email: 'test@example.com' },
+        { id: 'test-user', email: 'test@example.com' },
         'test-secret'
       );
     });
@@ -146,7 +146,7 @@ describe('SocketService', () => {
 
     beforeEach(() => {
       token = jwt.sign(
-        { userId: 'test-user', email: 'test@example.com' },
+        { id: 'test-user', email: 'test@example.com' },
         'test-secret'
       );
     });

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Common schemas
 export const IdParamSchema = z.object({
-  id: z.string().min(1, 'ID is required').regex(/^[a-z0-9]+$/, 'Invalid ID format')
+  id: z.string().min(1, 'ID is required').regex(/^(c[a-z0-9]{24}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i, 'Invalid ID format')
 });
 
 export const PaginationQuerySchema = z.object({

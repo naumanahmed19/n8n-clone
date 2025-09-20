@@ -1,24 +1,27 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 import {
+  BuiltInNodeTypes,
   NodeDefinition,
-  NodeSchema,
-  NodeValidationResult,
-  NodeValidationError,
-  NodeRegistrationResult,
+  NodeExecutionContext,
   NodeExecutionResult,
   NodeInputData,
   NodeOutputData,
-  NodeExecutionContext,
   NodeProperty,
-  BuiltInNodeTypes,
-  NodeTypeInfo
-} from '../types/node.types';
-import { logger } from '../utils/logger';
-import { SecureExecutionService, CredentialData, SecureExecutionOptions } from './SecureExecutionService';
-import { UrlSecurityValidator, SecurityErrorType } from '../utils/security/UrlSecurityValidator';
-import { ResourceLimitsEnforcer } from '../utils/security/ResourceLimitsEnforcer';
-import { HttpExecutionErrorFactory, HttpErrorType } from '../utils/errors/HttpExecutionError';
-import { RetryHandler } from '../utils/retry/RetryStrategy';
+  NodeRegistrationResult,
+  NodeSchema,
+  NodeTypeInfo,
+  NodeValidationError,
+  NodeValidationResult,
+} from "../types/node.types";
+import { HttpExecutionErrorFactory } from "../utils/errors/HttpExecutionError";
+import { logger } from "../utils/logger";
+import { RetryHandler } from "../utils/retry/RetryStrategy";
+import { ResourceLimitsEnforcer } from "../utils/security/ResourceLimitsEnforcer";
+import { UrlSecurityValidator } from "../utils/security/UrlSecurityValidator";
+import {
+  SecureExecutionOptions,
+  SecureExecutionService,
+} from "./SecureExecutionService";
 
 export class NodeService {
   private prisma: PrismaClient;
@@ -34,20 +37,22 @@ export class NodeService {
   /**
    * Register a new node type
    */
-  async registerNode(nodeDefinition: NodeDefinition): Promise<NodeRegistrationResult> {
+  async registerNode(
+    nodeDefinition: NodeDefinition
+  ): Promise<NodeRegistrationResult> {
     try {
       // Validate node definition
       const validation = this.validateNodeDefinition(nodeDefinition);
       if (!validation.valid) {
         return {
           success: false,
-          errors: validation.errors.map(e => e.message)
+          errors: validation.errors.map((e) => e.message),
         };
       }
 
       // Check if node type already exists
       const existingNode = await this.prisma.nodeType.findUnique({
-        where: { type: nodeDefinition.type }
+        where: { type: nodeDefinition.type },
       });
 
       if (existingNode) {
@@ -66,8 +71,8 @@ export class NodeService {
             properties: nodeDefinition.properties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
-            active: true
-          }
+            active: true,
+          },
         });
       } else {
         // Create new node
@@ -85,8 +90,8 @@ export class NodeService {
             properties: nodeDefinition.properties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
-            active: true
-          }
+            active: true,
+          },
         });
       }
 
@@ -96,13 +101,20 @@ export class NodeService {
       logger.info(`Node type registered: ${nodeDefinition.type}`);
       return {
         success: true,
-        nodeType: nodeDefinition.type
+        nodeType: nodeDefinition.type,
       };
     } catch (error) {
-      logger.error('Failed to register node', { error, nodeType: nodeDefinition.type });
+      logger.error("Failed to register node", {
+        error,
+        nodeType: nodeDefinition.type,
+      });
       return {
         success: false,
-        errors: [`Failed to register node: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [
+          `Failed to register node: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        ],
       };
     }
   }
@@ -114,14 +126,18 @@ export class NodeService {
     try {
       await this.prisma.nodeType.update({
         where: { type: nodeType },
-        data: { active: false }
+        data: { active: false },
       });
 
       this.nodeRegistry.delete(nodeType);
       logger.info(`Node type unregistered: ${nodeType}`);
     } catch (error) {
-      logger.error('Failed to unregister node', { error, nodeType });
-      throw new Error(`Failed to unregister node: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.error("Failed to unregister node", { error, nodeType });
+      throw new Error(
+        `Failed to unregister node: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -144,23 +160,32 @@ export class NodeService {
           outputs: true,
           properties: true,
           icon: true,
-          color: true
+          color: true,
         },
-        orderBy: { displayName: 'asc' }
+        orderBy: { displayName: "asc" },
       });
 
-      return nodeTypes.map(node => ({
+      return nodeTypes.map((node) => ({
         ...node,
         icon: node.icon || undefined,
         color: node.color || undefined,
-        properties: Array.isArray(node.properties) ? node.properties as unknown as NodeProperty[] : [],
-        defaults: (typeof node.defaults === 'object' && node.defaults !== null) ? node.defaults as Record<string, any> : {},
-        inputs: Array.isArray(node.inputs) ? node.inputs : ['main'],
-        outputs: Array.isArray(node.outputs) ? node.outputs : ['main']
+        properties: Array.isArray(node.properties)
+          ? (node.properties as unknown as NodeProperty[])
+          : [],
+        defaults:
+          typeof node.defaults === "object" && node.defaults !== null
+            ? (node.defaults as Record<string, any>)
+            : {},
+        inputs: Array.isArray(node.inputs) ? node.inputs : ["main"],
+        outputs: Array.isArray(node.outputs) ? node.outputs : ["main"],
       }));
     } catch (error) {
-      logger.error('Failed to get node types', { error });
-      throw new Error(`Failed to get node types: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.error("Failed to get node types", { error });
+      throw new Error(
+        `Failed to get node types: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -170,7 +195,7 @@ export class NodeService {
   async getNodeSchema(nodeType: string): Promise<NodeSchema | null> {
     try {
       const node = await this.prisma.nodeType.findUnique({
-        where: { type: nodeType, active: true }
+        where: { type: nodeType, active: true },
       });
 
       if (!node) {
@@ -187,13 +212,17 @@ export class NodeService {
         defaults: node.defaults as Record<string, any>,
         inputs: node.inputs,
         outputs: node.outputs,
-        properties: (node.properties as unknown) as NodeProperty[],
+        properties: node.properties as unknown as NodeProperty[],
         icon: node.icon || undefined,
-        color: node.color || undefined
+        color: node.color || undefined,
       };
     } catch (error) {
-      logger.error('Failed to get node schema', { error, nodeType });
-      throw new Error(`Failed to get node schema: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.error("Failed to get node schema", { error, nodeType });
+      throw new Error(
+        `Failed to get node schema: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -208,8 +237,10 @@ export class NodeService {
     executionId?: string,
     options?: SecureExecutionOptions
   ): Promise<NodeExecutionResult> {
-    const execId = executionId || `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    const execId =
+      executionId ||
+      `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       const nodeDefinition = this.nodeRegistry.get(nodeType);
       if (!nodeDefinition) {
@@ -217,9 +248,12 @@ export class NodeService {
       }
 
       // Validate input data
-      const inputValidation = this.secureExecutionService.validateInputData(inputData);
+      const inputValidation =
+        this.secureExecutionService.validateInputData(inputData);
       if (!inputValidation.valid) {
-        throw new Error(`Invalid input data: ${inputValidation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid input data: ${inputValidation.errors.join(", ")}`
+        );
       }
 
       // Create secure execution context
@@ -228,18 +262,24 @@ export class NodeService {
         parameters,
         inputValidation.sanitizedData!,
         credentialIds,
-        'system',
+        "system",
         execId,
         options
       );
 
       // Execute the node in secure context
-      const result = await nodeDefinition.execute.call(context, inputValidation.sanitizedData!);
+      const result = await nodeDefinition.execute.call(
+        context,
+        inputValidation.sanitizedData!
+      );
 
       // Validate output data
-      const outputValidation = this.secureExecutionService.validateOutputData(result);
+      const outputValidation =
+        this.secureExecutionService.validateOutputData(result);
       if (!outputValidation.valid) {
-        throw new Error(`Invalid output data: ${outputValidation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid output data: ${outputValidation.errors.join(", ")}`
+        );
       }
 
       // Cleanup execution resources
@@ -247,29 +287,30 @@ export class NodeService {
 
       return {
         success: true,
-        data: outputValidation.sanitizedData as NodeOutputData[]
+        data: outputValidation.sanitizedData as NodeOutputData[],
       };
     } catch (error) {
-      logger.error('Secure node execution failed', { 
+      logger.error("Secure node execution failed", {
         error: {
           message: error instanceof Error ? error.message : String(error),
           name: error instanceof Error ? error.name : typeof error,
-          stack: error instanceof Error ? error.stack : undefined
-        }, 
-        nodeType, 
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        nodeType,
         parameters,
-        executionId: execId 
+        executionId: execId,
       });
-      
+
       // Cleanup execution resources on error
       await this.secureExecutionService.cleanupExecution(execId);
-      
+
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : 'Unknown execution error',
-          stack: error instanceof Error ? error.stack : undefined
-        }
+          message:
+            error instanceof Error ? error.message : "Unknown execution error",
+          stack: error instanceof Error ? error.stack : undefined,
+        },
       };
     }
   }
@@ -281,44 +322,68 @@ export class NodeService {
     const errors: NodeValidationError[] = [];
 
     // Required fields validation
-    if (!definition.type || typeof definition.type !== 'string') {
-      errors.push({ property: 'type', message: 'Node type is required and must be a string' });
+    if (!definition.type || typeof definition.type !== "string") {
+      errors.push({
+        property: "type",
+        message: "Node type is required and must be a string",
+      });
     }
 
-    if (!definition.displayName || typeof definition.displayName !== 'string') {
-      errors.push({ property: 'displayName', message: 'Display name is required and must be a string' });
+    if (!definition.displayName || typeof definition.displayName !== "string") {
+      errors.push({
+        property: "displayName",
+        message: "Display name is required and must be a string",
+      });
     }
 
-    if (!definition.name || typeof definition.name !== 'string') {
-      errors.push({ property: 'name', message: 'Name is required and must be a string' });
+    if (!definition.name || typeof definition.name !== "string") {
+      errors.push({
+        property: "name",
+        message: "Name is required and must be a string",
+      });
     }
 
     if (!Array.isArray(definition.group) || definition.group.length === 0) {
-      errors.push({ property: 'group', message: 'Group is required and must be a non-empty array' });
+      errors.push({
+        property: "group",
+        message: "Group is required and must be a non-empty array",
+      });
     }
 
-    if (typeof definition.version !== 'number' || definition.version < 1) {
-      errors.push({ property: 'version', message: 'Version is required and must be a positive number' });
+    if (typeof definition.version !== "number" || definition.version < 1) {
+      errors.push({
+        property: "version",
+        message: "Version is required and must be a positive number",
+      });
     }
 
-    if (!definition.description || typeof definition.description !== 'string') {
-      errors.push({ property: 'description', message: 'Description is required and must be a string' });
+    if (!definition.description || typeof definition.description !== "string") {
+      errors.push({
+        property: "description",
+        message: "Description is required and must be a string",
+      });
     }
 
     if (!Array.isArray(definition.inputs)) {
-      errors.push({ property: 'inputs', message: 'Inputs must be an array' });
+      errors.push({ property: "inputs", message: "Inputs must be an array" });
     }
 
     if (!Array.isArray(definition.outputs)) {
-      errors.push({ property: 'outputs', message: 'Outputs must be an array' });
+      errors.push({ property: "outputs", message: "Outputs must be an array" });
     }
 
     if (!Array.isArray(definition.properties)) {
-      errors.push({ property: 'properties', message: 'Properties must be an array' });
+      errors.push({
+        property: "properties",
+        message: "Properties must be an array",
+      });
     }
 
-    if (typeof definition.execute !== 'function') {
-      errors.push({ property: 'execute', message: 'Execute function is required' });
+    if (typeof definition.execute !== "function") {
+      errors.push({
+        property: "execute",
+        message: "Execute function is required",
+      });
     }
 
     // Validate properties
@@ -326,11 +391,11 @@ export class NodeService {
       definition.properties.forEach((prop, index) => {
         const validation = this.validateNodeProperty(prop);
         if (!validation.valid) {
-          validation.errors.forEach(error => {
+          validation.errors.forEach((error) => {
             errors.push({
               property: `properties[${index}].${error.property}`,
               message: error.message,
-              value: error.value
+              value: error.value,
             });
           });
         }
@@ -339,7 +404,7 @@ export class NodeService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -349,31 +414,49 @@ export class NodeService {
   private validateNodeProperty(property: NodeProperty): NodeValidationResult {
     const errors: NodeValidationError[] = [];
 
-    if (!property.displayName || typeof property.displayName !== 'string') {
-      errors.push({ property: 'displayName', message: 'Property display name is required' });
+    if (!property.displayName || typeof property.displayName !== "string") {
+      errors.push({
+        property: "displayName",
+        message: "Property display name is required",
+      });
     }
 
-    if (!property.name || typeof property.name !== 'string') {
-      errors.push({ property: 'name', message: 'Property name is required' });
+    if (!property.name || typeof property.name !== "string") {
+      errors.push({ property: "name", message: "Property name is required" });
     }
 
-    const validTypes = ['string', 'number', 'boolean', 'options', 'multiOptions', 'json', 'dateTime', 'collection'];
+    const validTypes = [
+      "string",
+      "number",
+      "boolean",
+      "options",
+      "multiOptions",
+      "json",
+      "dateTime",
+      "collection",
+    ];
     if (!validTypes.includes(property.type)) {
-      errors.push({ 
-        property: 'type', 
-        message: `Property type must be one of: ${validTypes.join(', ')}`,
-        value: property.type
+      errors.push({
+        property: "type",
+        message: `Property type must be one of: ${validTypes.join(", ")}`,
+        value: property.type,
       });
     }
 
     // Validate options for option-based types
-    if ((property.type === 'options' || property.type === 'multiOptions') && !Array.isArray(property.options)) {
-      errors.push({ property: 'options', message: 'Options are required for options/multiOptions type' });
+    if (
+      (property.type === "options" || property.type === "multiOptions") &&
+      !Array.isArray(property.options)
+    ) {
+      errors.push({
+        property: "options",
+        message: "Options are required for options/multiOptions type",
+      });
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -392,19 +475,19 @@ export class NodeService {
       getCredentials: async (type: string) => {
         return credentials?.[type] || {};
       },
-      getInputData: (inputName = 'main') => {
+      getInputData: (inputName = "main") => {
         return inputData;
       },
       helpers: {
         request: async (options) => {
           // Basic HTTP request implementation
-          const fetch = (await import('node-fetch')).default;
+          const fetch = (await import("node-fetch")).default;
           const response = await fetch(options.url, {
-            method: options.method || 'GET',
+            method: options.method || "GET",
             headers: options.headers,
-            body: options.body ? JSON.stringify(options.body) : undefined
+            body: options.body ? JSON.stringify(options.body) : undefined,
           });
-          
+
           if (options.json !== false) {
             return response.json();
           }
@@ -412,21 +495,25 @@ export class NodeService {
         },
         requestWithAuthentication: async (credentialType: string, options) => {
           // TODO: Implement authentication logic
-          return this.createExecutionContext(parameters, inputData, credentials).helpers.request(options);
+          return this.createExecutionContext(
+            parameters,
+            inputData,
+            credentials
+          ).helpers.request(options);
         },
         returnJsonArray: (jsonData: any[]) => {
           return { main: jsonData };
         },
         normalizeItems: (items: any[]) => {
-          return items.map(item => ({ json: item }));
-        }
+          return items.map((item) => ({ json: item }));
+        },
       },
       logger: {
         debug: (message: string, extra?: any) => logger.debug(message, extra),
         info: (message: string, extra?: any) => logger.info(message, extra),
         warn: (message: string, extra?: any) => logger.warn(message, extra),
-        error: (message: string, extra?: any) => logger.error(message, extra)
-      }
+        error: (message: string, extra?: any) => logger.error(message, extra),
+      },
     };
   }
 
@@ -437,9 +524,9 @@ export class NodeService {
     try {
       // Register built-in nodes
       await this.registerBuiltInNodes();
-      logger.info('Built-in nodes initialized');
+      logger.info("Built-in nodes initialized");
     } catch (error) {
-      logger.error('Failed to initialize built-in nodes', { error });
+      logger.error("Failed to initialize built-in nodes", { error });
     }
   }
 
@@ -448,15 +535,16 @@ export class NodeService {
    */
   private async registerBuiltInNodes(): Promise<void> {
     // Import trigger nodes
-    const { WebhookTriggerNode, ScheduleTriggerNode, ManualTriggerNode } = await import('../nodes/triggers');
-    
+    const { WebhookTriggerNode, ScheduleTriggerNode, ManualTriggerNode } =
+      await import("../nodes/triggers");
+
     const builtInNodes = [
       this.createHttpRequestNode(),
       this.createJsonNode(),
       this.createSetNode(),
       WebhookTriggerNode,
       ScheduleTriggerNode,
-      ManualTriggerNode
+      ManualTriggerNode,
     ];
 
     for (const nodeDefinition of builtInNodes) {
@@ -470,118 +558,124 @@ export class NodeService {
   private createHttpRequestNode(): NodeDefinition {
     return {
       type: BuiltInNodeTypes.HTTP_REQUEST,
-      displayName: 'HTTP Request',
-      name: 'httpRequest',
-      group: ['transform'],
+      displayName: "HTTP Request",
+      name: "httpRequest",
+      group: ["transform"],
       version: 1,
-      description: 'Make HTTP requests to any URL',
-      icon: 'fa:globe',
-      color: '#2196F3',
+      description: "Make HTTP requests to any URL",
+      icon: "fa:globe",
+      color: "#2196F3",
       defaults: {
-        method: 'GET',
-        url: '',
+        method: "GET",
+        url: "",
         headers: {},
-        body: '',
+        body: "",
         timeout: 30000,
         followRedirects: true,
-        maxRedirects: 5
+        maxRedirects: 5,
       },
-      inputs: ['main'],
-      outputs: ['main'],
+      inputs: ["main"],
+      outputs: ["main"],
       properties: [
         {
-          displayName: 'Method',
-          name: 'method',
-          type: 'options',
+          displayName: "Method",
+          name: "method",
+          type: "options",
           required: true,
-          default: 'GET',
+          default: "GET",
           options: [
-            { name: 'GET', value: 'GET' },
-            { name: 'POST', value: 'POST' },
-            { name: 'PUT', value: 'PUT' },
-            { name: 'DELETE', value: 'DELETE' },
-            { name: 'PATCH', value: 'PATCH' }
-          ]
+            { name: "GET", value: "GET" },
+            { name: "POST", value: "POST" },
+            { name: "PUT", value: "PUT" },
+            { name: "DELETE", value: "DELETE" },
+            { name: "PATCH", value: "PATCH" },
+          ],
         },
         {
-          displayName: 'URL',
-          name: 'url',
-          type: 'string',
+          displayName: "URL",
+          name: "url",
+          type: "string",
           required: true,
-          default: '',
-          description: 'The URL to make the request to'
+          default: "",
+          description: "The URL to make the request to",
         },
         {
-          displayName: 'Headers',
-          name: 'headers',
-          type: 'json',
+          displayName: "Headers",
+          name: "headers",
+          type: "json",
           required: false,
-          default: '{}',
-          description: 'Headers to send with the request'
+          default: "{}",
+          description: "Headers to send with the request",
         },
         {
-          displayName: 'Body',
-          name: 'body',
-          type: 'json',
+          displayName: "Body",
+          name: "body",
+          type: "json",
           required: false,
-          default: '',
-          description: 'Body data to send with the request',
+          default: "",
+          description: "Body data to send with the request",
           displayOptions: {
             show: {
-              method: ['POST', 'PUT', 'PATCH']
-            }
-          }
+              method: ["POST", "PUT", "PATCH"],
+            },
+          },
         },
         {
-          displayName: 'Timeout (ms)',
-          name: 'timeout',
-          type: 'number',
+          displayName: "Timeout (ms)",
+          name: "timeout",
+          type: "number",
           required: false,
           default: 30000,
-          description: 'Request timeout in milliseconds'
+          description: "Request timeout in milliseconds",
         },
         {
-          displayName: 'Follow Redirects',
-          name: 'followRedirects',
-          type: 'boolean',
+          displayName: "Follow Redirects",
+          name: "followRedirects",
+          type: "boolean",
           required: false,
           default: true,
-          description: 'Whether to follow HTTP redirects'
+          description: "Whether to follow HTTP redirects",
         },
         {
-          displayName: 'Max Redirects',
-          name: 'maxRedirects',
-          type: 'number',
+          displayName: "Max Redirects",
+          name: "maxRedirects",
+          type: "number",
           required: false,
           default: 5,
-          description: 'Maximum number of redirects to follow',
+          description: "Maximum number of redirects to follow",
           displayOptions: {
             show: {
-              followRedirects: [true]
-            }
-          }
-        }
+              followRedirects: [true],
+            },
+          },
+        },
       ],
-      execute: async function(inputData: NodeInputData): Promise<NodeOutputData[]> {
-        const method = this.getNodeParameter('method') as string;
-        const url = this.getNodeParameter('url') as string;
-        const headers = this.getNodeParameter('headers') as Record<string, string> || {};
-        const body = this.getNodeParameter('body');
-        const timeout = this.getNodeParameter('timeout') as number || 30000;
-        const followRedirects = this.getNodeParameter('followRedirects') as boolean;
-        const maxRedirects = this.getNodeParameter('maxRedirects') as number || 5;
+      execute: async function (
+        inputData: NodeInputData
+      ): Promise<NodeOutputData[]> {
+        const method = this.getNodeParameter("method") as string;
+        const url = this.getNodeParameter("url") as string;
+        const headers =
+          (this.getNodeParameter("headers") as Record<string, string>) || {};
+        const body = this.getNodeParameter("body");
+        const timeout = (this.getNodeParameter("timeout") as number) || 30000;
+        const followRedirects = this.getNodeParameter(
+          "followRedirects"
+        ) as boolean;
+        const maxRedirects =
+          (this.getNodeParameter("maxRedirects") as number) || 5;
 
         if (!url) {
-          throw new Error('URL is required');
+          throw new Error("URL is required");
         }
 
         // Parse headers if they're a string
         let parsedHeaders: Record<string, string> = {};
-        if (typeof headers === 'string') {
+        if (typeof headers === "string") {
           try {
             parsedHeaders = JSON.parse(headers);
           } catch (error) {
-            throw new Error('Invalid headers JSON format');
+            throw new Error("Invalid headers JSON format");
           }
         } else {
           parsedHeaders = headers;
@@ -590,11 +684,13 @@ export class NodeService {
         // Security validation
         const urlValidation = UrlSecurityValidator.validateUrl(url);
         if (!urlValidation.isValid) {
-          const errorMessages = urlValidation.errors.map(e => e.message).join('; ');
-          this.logger.warn('HTTP Request blocked by security validation', {
+          const errorMessages = urlValidation.errors
+            .map((e) => e.message)
+            .join("; ");
+          this.logger.warn("HTTP Request blocked by security validation", {
             url,
             errors: urlValidation.errors,
-            riskLevel: urlValidation.riskLevel
+            riskLevel: urlValidation.riskLevel,
           });
           throw new Error(`Security validation failed: ${errorMessages}`);
         }
@@ -602,21 +698,28 @@ export class NodeService {
         // Validate request parameters
         const paramValidation = UrlSecurityValidator.validateRequestParameters({
           headers: parsedHeaders,
-          body: body
+          body: body,
         });
         if (!paramValidation.isValid) {
-          const errorMessages = paramValidation.errors.map(e => e.message).join('; ');
-          this.logger.warn('HTTP Request parameters blocked by security validation', {
-            errors: paramValidation.errors,
-            riskLevel: paramValidation.riskLevel
-          });
+          const errorMessages = paramValidation.errors
+            .map((e) => e.message)
+            .join("; ");
+          this.logger.warn(
+            "HTTP Request parameters blocked by security validation",
+            {
+              errors: paramValidation.errors,
+              riskLevel: paramValidation.riskLevel,
+            }
+          );
           throw new Error(`Parameter validation failed: ${errorMessages}`);
         }
 
         // Check memory limits before execution
         const memoryCheck = ResourceLimitsEnforcer.checkMemoryLimits();
         if (!memoryCheck.isValid) {
-          this.logger.warn('HTTP Request blocked due to memory limits', { error: memoryCheck.error });
+          this.logger.warn("HTTP Request blocked due to memory limits", {
+            error: memoryCheck.error,
+          });
           throw new Error(`Resource limit exceeded: ${memoryCheck.error}`);
         }
 
@@ -625,24 +728,28 @@ export class NodeService {
 
         // Prepare request body
         let requestBody: string | undefined;
-        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
-          if (typeof body === 'string') {
+        if (body && ["POST", "PUT", "PATCH"].includes(method)) {
+          if (typeof body === "string") {
             requestBody = body;
           } else {
             requestBody = JSON.stringify(body);
             // Set content-type if not already set
-            if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
-              parsedHeaders['Content-Type'] = 'application/json';
+            if (
+              !parsedHeaders["Content-Type"] &&
+              !parsedHeaders["content-type"]
+            ) {
+              parsedHeaders["Content-Type"] = "application/json";
             }
           }
 
           // Validate request body size
-          const bodySize = Buffer.byteLength(requestBody, 'utf8');
-          const bodySizeCheck = ResourceLimitsEnforcer.validateRequestSize(bodySize);
+          const bodySize = Buffer.byteLength(requestBody, "utf8");
+          const bodySizeCheck =
+            ResourceLimitsEnforcer.validateRequestSize(bodySize);
           if (!bodySizeCheck.isValid) {
-            this.logger.warn('HTTP Request body size exceeds limits', { 
-              bodySize, 
-              error: bodySizeCheck.error 
+            this.logger.warn("HTTP Request body size exceeds limits", {
+              bodySize,
+              error: bodySizeCheck.error,
             });
             throw new Error(`Request body too large: ${bodySizeCheck.error}`);
           }
@@ -653,8 +760,8 @@ export class NodeService {
           const result = await RetryHandler.executeWithRetry(
             async () => {
               // Import node-fetch dynamically
-              const fetch = (await import('node-fetch')).default;
-              const { AbortController } = await import('abort-controller');
+              const fetch = (await import("node-fetch")).default;
+              const { AbortController } = await import("abort-controller");
 
               // Create abort controller for timeout handling
               const controller = new AbortController();
@@ -668,9 +775,9 @@ export class NodeService {
                   headers: parsedHeaders,
                   body: requestBody,
                   signal: controller.signal as any,
-                  redirect: followRedirects ? 'follow' : 'manual',
+                  redirect: followRedirects ? "follow" : "manual",
                   follow: followRedirects ? maxRedirects : 0,
-                  timeout: timeout
+                  timeout: timeout,
                 });
 
                 // Clear timeout
@@ -690,25 +797,28 @@ export class NodeService {
                 }
 
                 // Validate response size
-                const contentLength = response.headers.get('content-length');
+                const contentLength = response.headers.get("content-length");
                 if (contentLength) {
                   const responseSize = parseInt(contentLength, 10);
-                  const responseSizeCheck = ResourceLimitsEnforcer.validateResponseSize(responseSize);
+                  const responseSizeCheck =
+                    ResourceLimitsEnforcer.validateResponseSize(responseSize);
                   if (!responseSizeCheck.isValid) {
-                    this.logger.warn('HTTP Response size exceeds limits', { 
-                      responseSize, 
-                      error: responseSizeCheck.error 
+                    this.logger.warn("HTTP Response size exceeds limits", {
+                      responseSize,
+                      error: responseSizeCheck.error,
                     });
-                    throw new Error(`Response too large: ${responseSizeCheck.error}`);
+                    throw new Error(
+                      `Response too large: ${responseSizeCheck.error}`
+                    );
                   }
                 }
 
                 // Parse response based on content type
-                const contentType = response.headers.get('content-type') || '';
+                const contentType = response.headers.get("content-type") || "";
                 let responseData: any;
 
                 try {
-                  if (contentType.includes('application/json')) {
+                  if (contentType.includes("application/json")) {
                     responseData = await response.json();
                   } else {
                     responseData = await response.text();
@@ -737,12 +847,11 @@ export class NodeService {
                   data: responseData,
                   responseTime,
                   url: response.url, // Final URL after redirects
-                  ok: response.ok
+                  ok: response.ok,
                 };
-
               } catch (fetchError) {
                 clearTimeout(timeoutId);
-                
+
                 // Create structured error
                 const httpError = HttpExecutionErrorFactory.createFromError(
                   fetchError,
@@ -756,37 +865,37 @@ export class NodeService {
               maxRetries: 3,
               retryDelay: 1000,
               backoffMultiplier: 2,
-              maxRetryDelay: 10000
+              maxRetryDelay: 10000,
             },
             { url: sanitizedUrl, method }
           );
 
-          this.logger.info('HTTP Request completed', {
+          this.logger.info("HTTP Request completed", {
             method,
             url: sanitizedUrl,
             status: result.status,
-            responseTime: result.responseTime
+            responseTime: result.responseTime,
           });
 
           return [{ main: [{ json: result }] }];
-
         } catch (error) {
           // Handle final error after all retries
           const httpError = error as any;
-          
-          this.logger.error('HTTP Request failed after retries', {
+
+          this.logger.error("HTTP Request failed after retries", {
             method,
             url: sanitizedUrl,
             errorType: httpError.httpErrorType,
             statusCode: httpError.statusCode,
-            error: httpError.message
+            error: httpError.message,
           });
 
           // Throw user-friendly error message
-          const userMessage = HttpExecutionErrorFactory.getUserFriendlyMessage(httpError);
+          const userMessage =
+            HttpExecutionErrorFactory.getUserFriendlyMessage(httpError);
           throw new Error(userMessage);
         }
-      }
+      },
     };
   }
 
@@ -796,38 +905,45 @@ export class NodeService {
   private createJsonNode(): NodeDefinition {
     return {
       type: BuiltInNodeTypes.JSON,
-      displayName: 'JSON',
-      name: 'json',
-      group: ['transform'],
+      displayName: "JSON",
+      name: "json",
+      group: ["transform"],
       version: 1,
-      description: 'Compose a JSON object',
-      icon: 'fa:code',
-      color: '#FF9800',
+      description: "Compose a JSON object",
+      icon: "fa:code",
+      color: "#FF9800",
       defaults: {
-        jsonData: '{}'
+        jsonData: "{}",
       },
-      inputs: ['main'],
-      outputs: ['main'],
+      inputs: ["main"],
+      outputs: ["main"],
       properties: [
         {
-          displayName: 'JSON Data',
-          name: 'jsonData',
-          type: 'json',
+          displayName: "JSON Data",
+          name: "jsonData",
+          type: "json",
           required: true,
-          default: '{}',
-          description: 'The JSON data to output'
-        }
+          default: "{}",
+          description: "The JSON data to output",
+        },
       ],
-      execute: async function(inputData: NodeInputData): Promise<NodeOutputData[]> {
-        const jsonData = this.getNodeParameter('jsonData') as string;
+      execute: async function (
+        inputData: NodeInputData
+      ): Promise<NodeOutputData[]> {
+        const jsonData = this.getNodeParameter("jsonData") as string;
 
         try {
-          const parsedData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+          const parsedData =
+            typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
           return [{ main: [{ json: parsedData }] }];
         } catch (error) {
-          throw new Error(`Invalid JSON data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          throw new Error(
+            `Invalid JSON data: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
         }
-      }
+      },
     };
   }
 
@@ -837,39 +953,44 @@ export class NodeService {
   private createSetNode(): NodeDefinition {
     return {
       type: BuiltInNodeTypes.SET,
-      displayName: 'Set',
-      name: 'set',
-      group: ['transform'],
+      displayName: "Set",
+      name: "set",
+      group: ["transform"],
       version: 1,
-      description: 'Set values on the data',
-      icon: 'fa:pen',
-      color: '#4CAF50',
+      description: "Set values on the data",
+      icon: "fa:pen",
+      color: "#4CAF50",
       defaults: {
-        values: []
+        values: [],
       },
-      inputs: ['main'],
-      outputs: ['main'],
+      inputs: ["main"],
+      outputs: ["main"],
       properties: [
         {
-          displayName: 'Values',
-          name: 'values',
-          type: 'collection',
+          displayName: "Values",
+          name: "values",
+          type: "collection",
           required: false,
           default: [],
-          description: 'The values to set',
+          description: "The values to set",
           typeOptions: {
             multipleValues: true,
-            multipleValueButtonText: 'Add Value'
-          }
-        }
+            multipleValueButtonText: "Add Value",
+          },
+        },
       ],
-      execute: async function(inputData: NodeInputData): Promise<NodeOutputData[]> {
-        const values = this.getNodeParameter('values') as Array<{ name: string; value: any }>;
+      execute: async function (
+        inputData: NodeInputData
+      ): Promise<NodeOutputData[]> {
+        const values = this.getNodeParameter("values") as Array<{
+          name: string;
+          value: any;
+        }>;
         const items = inputData.main?.[0] || [{}];
 
-        const outputItems = items.map(item => {
+        const outputItems = items.map((item) => {
           const newItem = { ...item };
-          
+
           values.forEach(({ name, value }) => {
             if (name) {
               newItem[name] = value;
@@ -880,7 +1001,7 @@ export class NodeService {
         });
 
         return [{ main: outputItems }];
-      }
+      },
     };
   }
 }

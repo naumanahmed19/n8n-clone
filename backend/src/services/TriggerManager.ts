@@ -1,11 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import { logger } from "../utils/logger";
+import ExecutionHistoryService from "./ExecutionHistoryService";
 import {
   FlowExecutionEngine,
   FlowExecutionResult,
 } from "./FlowExecutionEngine";
-import ExecutionHistoryService from "./ExecutionHistoryService";
 import { NodeService } from "./NodeService";
 import { SocketService } from "./SocketService";
 import {
@@ -84,7 +84,11 @@ export class TriggerManager extends EventEmitter {
   ) {
     super();
     this.prisma = prisma;
-    this.flowExecutionEngine = new FlowExecutionEngine(prisma, nodeService, executionHistoryService);
+    this.flowExecutionEngine = new FlowExecutionEngine(
+      prisma,
+      nodeService,
+      executionHistoryService
+    );
     this.socketService = socketService;
     this.resourceManager = new TriggerResourceManager();
 

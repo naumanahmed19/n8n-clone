@@ -82,7 +82,8 @@ const mockNodeType = {
 
 const mockWorkflowStore = {
   updateNode: vi.fn(),
-  removeNode: vi.fn()
+  removeNode: vi.fn(),
+  getNodeExecutionResult: vi.fn()
 }
 
 const mockCredentialStore = {
@@ -255,6 +256,10 @@ describe('NodeConfigPanel', () => {
     fireEvent.click(screen.getByText('Docs'))
     expect(screen.getByTestId('node-documentation')).toBeInTheDocument()
 
+    // Switch to response tab
+    fireEvent.click(screen.getByText('Response'))
+    expect(screen.getByText('No execution data')).toBeInTheDocument()
+
     // Switch back to config tab
     fireEvent.click(screen.getByText('Config'))
     expect(screen.getByText('Method')).toBeInTheDocument()
@@ -391,6 +396,68 @@ describe('NodeConfigPanel', () => {
 
     expect(mockCredentialStore.fetchCredentials).toHaveBeenCalled()
     expect(mockCredentialStore.fetchCredentialTypes).toHaveBeenCalled()
+  })
+
+  it('should show response data when execution result is available', () => {
+    const mockExecutionResult = {
+      nodeId: 'node-1',
+      nodeName: 'HTTP Request',
+      status: 'success' as const,
+      startTime: Date.now(),
+      endTime: Date.now() + 1000,
+      duration: 1000,
+      data: {
+        main: [{
+          json: {
+            status: 200,
+            data: { message: 'Success' }
+          }
+        }]
+      }
+    }
+
+    // Mock the execution result
+    mockWorkflowStore.getNodeExecutionResult.mockReturnValue(mockExecutionResult)
+    
+    const onClose = vi.fn()
+    
+    render(
+      <NodeConfigPanel
+        node={mockNode}
+        nodeType={mockNodeType}
+        onClose={onClose}
+      />
+    )
+
+    // Switch to response tab
+    fireEvent.click(screen.getByText('Response'))
+    
+    expect(screen.getByText('Execution Response')).toBeInTheDocument()
+    expect(screen.getByText('SUCCESS')).toBeInTheDocument()
+    expect(screen.getByText('1000ms')).toBeInTheDocument()
+    expect(screen.getByText('Response Data')).toBeInTheDocument()
+    expect(screen.getByText('Copy Response')).toBeInTheDocument()
+  })
+
+  it('should show no execution data message when no result is available', () => {
+    // Mock no execution result
+    mockWorkflowStore.getNodeExecutionResult.mockReturnValue(undefined)
+    
+    const onClose = vi.fn()
+    
+    render(
+      <NodeConfigPanel
+        node={mockNode}
+        nodeType={mockNodeType}
+        onClose={onClose}
+      />
+    )
+
+    // Switch to response tab
+    fireEvent.click(screen.getByText('Response'))
+    
+    expect(screen.getByText('No execution data')).toBeInTheDocument()
+    expect(screen.getByText('Execute the workflow to see the response data for this node')).toBeInTheDocument()
   })
 
   it.skip('should handle conditional property display', async () => {

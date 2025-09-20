@@ -983,6 +983,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
             executionId: executionResponse.executionId,
           });
 
+          // Subscribe to real-time updates IMMEDIATELY
+          await get().subscribeToExecution(executionResponse.executionId);
+
           // Initialize flow execution tracking
           const nodeIds = workflow.nodes.map((node) => node.id);
           get().initializeFlowExecution(executionResponse.executionId, nodeIds);
@@ -993,9 +996,6 @@ export const useWorkflowStore = create<WorkflowStore>()(
             message: `Execution started with ID: ${executionResponse.executionId}`,
             data: { executionId: executionResponse.executionId },
           });
-
-          // Subscribe to real-time updates
-          await get().subscribeToExecution(executionResponse.executionId);
 
           console.log(
             `Started real execution ${executionResponse.executionId} for workflow ${workflow.id}`
@@ -1080,11 +1080,19 @@ export const useWorkflowStore = create<WorkflowStore>()(
           const nodeResults: NodeExecutionResult[] =
             executionDetails.nodeExecutions.map((nodeExec) => {
               // Map backend node status to frontend node status
-              let nodeStatus: NodeExecutionResult["status"] = "error";
-              if (nodeExec.status === "success") nodeStatus = "success";
-              else if (nodeExec.status === "error") nodeStatus = "error";
-              // If node didn't run, mark as skipped
-              else if (!nodeExec.startedAt) nodeStatus = "skipped";
+              let nodeStatus: NodeExecutionResult["status"] = "skipped"; // Default to skipped instead of error
+              
+              // Handle various success status values from backend
+              const successStatuses = ["success", "completed", "SUCCESS", "COMPLETED"];
+              const errorStatuses = ["error", "failed", "ERROR", "FAILED"];
+              
+              if (successStatuses.includes(nodeExec.status)) {
+                nodeStatus = "success";
+              } else if (errorStatuses.includes(nodeExec.status)) {
+                nodeStatus = "error";
+              } else if (!nodeExec.startedAt) {
+                nodeStatus = "skipped"; // If node didn't run, mark as skipped
+              }
 
               const nodeResult: NodeExecutionResult = {
                 nodeId: nodeExec.nodeId,
@@ -1190,8 +1198,15 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // Save execution to history
           get().saveToHistory(`Execute workflow: ${workflow.name}`);
 
-          // Unsubscribe from real-time updates
-          await get().unsubscribeFromExecution(executionResponse.executionId);
+          // Keep subscription active for a while to show execution events
+          // Unsubscribe after 30 seconds to let users see the execution logs
+          setTimeout(async () => {
+            try {
+              await get().unsubscribeFromExecution(executionResponse.executionId);
+            } catch (error) {
+              console.warn("Failed to unsubscribe from execution:", error);
+            }
+          }, 30000); // 30 seconds delay
 
           // Clear execution state after a delay for successful executions
           if (finalProgress.status === "success") {
@@ -1242,10 +1257,17 @@ export const useWorkflowStore = create<WorkflowStore>()(
             lastExecutionResult: executionResult,
           });
 
-          // Unsubscribe from real-time updates if execution ID exists
+          // Keep subscription active even on error for a while to show execution events
+          // Unsubscribe after 30 seconds to let users see what went wrong
           const currentExecutionId = get().executionState.executionId;
           if (currentExecutionId) {
-            await get().unsubscribeFromExecution(currentExecutionId);
+            setTimeout(async () => {
+              try {
+                await get().unsubscribeFromExecution(currentExecutionId);
+              } catch (error) {
+                console.warn("Failed to unsubscribe from execution:", error);
+              }
+            }, 30000); // 30 seconds delay
           }
         }
       },
@@ -1420,8 +1442,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
             nodeResults = executionDetails.nodeExecutions.map((nodeExec) => {
               // Map backend node status to frontend node status
               let nodeStatus: NodeExecutionResult["status"] = "skipped";
-              if (nodeExec.status === "success") nodeStatus = "success";
-              else if (nodeExec.status === "error") nodeStatus = "error";
+              
+              // Handle various success status values from backend
+              const successStatuses = ["success", "completed", "SUCCESS", "COMPLETED"];
+              const errorStatuses = ["error", "failed", "ERROR", "FAILED"];
+              
+              if (successStatuses.includes(nodeExec.status)) {
+                nodeStatus = "success";
+              } else if (errorStatuses.includes(nodeExec.status)) {
+                nodeStatus = "error";
+              }
 
               const nodeResult: NodeExecutionResult = {
                 nodeId: nodeExec.nodeId,
@@ -1506,8 +1536,17 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // Save cancellation to history
           get().saveToHistory("Cancel workflow execution");
 
-          // Unsubscribe from real-time updates
-          await get().unsubscribeFromExecution(executionState.executionId);
+          // Keep subscription active for a while after cancellation to show final status
+          // Unsubscribe after 10 seconds for cancelled executions
+          setTimeout(async () => {
+            try {
+              if (executionState.executionId) {
+                await get().unsubscribeFromExecution(executionState.executionId);
+              }
+            } catch (error) {
+              console.warn("Failed to unsubscribe from execution:", error);
+            }
+          }, 10000); // 10 seconds delay for cancellation
 
           // Clear execution state after a delay
           setTimeout(() => {
@@ -1811,7 +1850,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         const updatedResult: NodeExecutionResult = {
           nodeId,
           nodeName: result.nodeName || existingResult?.nodeName || "Unknown",
-          status: result.status || existingResult?.status || "error",
+          status: result.status || existingResult?.status || "skipped", // Use "skipped" instead of "error" as default
           startTime:
             result.startTime || existingResult?.startTime || Date.now(),
           endTime: result.endTime || existingResult?.endTime || Date.now(),
@@ -1923,9 +1962,64 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       handleExecutionEvent: (data: ExecutionEventData) => {
+        console.log("=== FRONTEND PROCESSING EVENT ===", {
+          type: data.type,
+          nodeId: data.nodeId,
+          executionId: data.executionId,
+          currentExecutionId: get().executionState.executionId
+        });
+        
         const { executionState, progressTracker } = get();
 
         switch (data.type) {
+          case "node-started":
+            console.log("=== PROCESSING NODE-STARTED EVENT ===", {
+              nodeId: data.nodeId,
+              executionId: data.executionId
+            });
+            if (data.nodeId) {
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: "info",
+                nodeId: data.nodeId,
+                message: `Starting execution of node: ${data.data?.node?.name || data.nodeId}`,
+                data: data.data,
+              });
+            }
+            break;
+
+          case "node-completed":
+            console.log("=== PROCESSING NODE-COMPLETED EVENT ===", {
+              nodeId: data.nodeId,
+              executionId: data.executionId
+            });
+            if (data.nodeId) {
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: "info",
+                nodeId: data.nodeId,
+                message: `Node execution completed successfully: ${data.data?.node?.name || data.nodeId}`,
+                data: data.data,
+              });
+            }
+            break;
+
+          case "node-failed":
+            console.log("=== PROCESSING NODE-FAILED EVENT ===", {
+              nodeId: data.nodeId,
+              executionId: data.executionId
+            });
+            if (data.nodeId) {
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: "error",
+                nodeId: data.nodeId,
+                message: `Node execution failed: ${data.data?.node?.name || data.nodeId} - ${data.error?.message || "Unknown error"}`,
+                data: data.data,
+              });
+            }
+            break;
+
           case "node-status-update":
             if (data.nodeId && data.status) {
               get().updateNodeExecutionState(data.nodeId, data.status, {
@@ -2087,10 +2181,11 @@ export const useWorkflowStore = create<WorkflowStore>()(
                     const nodeName =
                       get().workflow?.nodes.find((n) => n.id === event.nodeId)
                         ?.name || "Unknown";
+                    // Don't update status until completion - avoid setting to "error" prematurely
                     get().updateNodeExecutionResult(event.nodeId, {
                       nodeId: event.nodeId,
                       nodeName,
-                      status: "error", // Will be updated when node completes
+                      // status: undefined, // Let existing status remain or wait for completion
                       startTime: new Date(event.timestamp).getTime(),
                     });
                   }
@@ -2204,7 +2299,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                   get().updateNodeExecutionResult(nodeEvent.nodeId, {
                     nodeId: nodeEvent.nodeId,
                     nodeName,
-                    status: "error", // Will be updated when node completes
+                    // Don't set status to "error" - wait for completion event
                     startTime: new Date(nodeEvent.timestamp).getTime(),
                   });
 

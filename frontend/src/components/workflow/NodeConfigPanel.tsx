@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Settings, Play, Trash2, Book, AlertCircle, CheckCircle } from 'lucide-react'
+import { X, Settings, Play, Trash2, Book, AlertCircle, CheckCircle, Database } from 'lucide-react'
 import { WorkflowNode, NodeType, NodeProperty } from '@/types'
 import { useWorkflowStore, useCredentialStore } from '@/stores'
 import { CredentialSelector } from '@/components/credential/CredentialSelector'
@@ -14,7 +14,7 @@ interface NodeConfigPanelProps {
 }
 
 export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProps) {
-  const { updateNode, removeNode } = useWorkflowStore()
+  const { updateNode, removeNode, getNodeExecutionResult } = useWorkflowStore()
   const { fetchCredentials, fetchCredentialTypes } = useCredentialStore()
   const [parameters, setParameters] = useState(node.parameters)
   const [nodeName, setNodeName] = useState(node.name)
@@ -22,9 +22,12 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
   const [credentials, setCredentials] = useState<Record<string, string>>(
     (node.credentials || []).reduce((acc, cred) => ({ ...acc, [cred]: cred }), {})
   )
-  const [activeTab, setActiveTab] = useState<'config' | 'test' | 'docs'>('config')
+  const [activeTab, setActiveTab] = useState<'config' | 'test' | 'docs' | 'response'>('config')
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+  // Get the execution result for this node
+  const nodeExecutionResult = getNodeExecutionResult(node.id)
 
   useEffect(() => {
     setParameters(node.parameters)
@@ -358,6 +361,90 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
       case 'docs':
         return <NodeDocumentation nodeType={nodeType} />
 
+      case 'response':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Database className="w-5 h-5 text-gray-500" />
+              <h3 className="text-lg font-medium text-gray-900">Execution Response</h3>
+            </div>
+            
+            {nodeExecutionResult ? (
+              <div className="space-y-4">
+                {/* Status section */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Execution Status</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Status:</span>
+                      <div className={`inline-block ml-2 px-2 py-1 rounded text-xs font-medium ${
+                        nodeExecutionResult.status === 'success' ? 'bg-green-100 text-green-800' :
+                        nodeExecutionResult.status === 'error' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {nodeExecutionResult.status.toUpperCase()}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Duration:</span>
+                      <span className="ml-2 font-medium">{nodeExecutionResult.duration}ms</span>
+                    </div>
+                  </div>
+                  
+                  {nodeExecutionResult.startTime && (
+                    <div className="mt-2 text-sm">
+                      <span className="text-gray-500">Started:</span>
+                      <span className="ml-2">{new Date(nodeExecutionResult.startTime).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Error section */}
+                {nodeExecutionResult.error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-red-800 mb-2">Error Details</h4>
+                    <pre className="text-sm text-red-700 whitespace-pre-wrap font-mono bg-red-100 p-2 rounded">
+                      {nodeExecutionResult.error}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Response data section */}
+                {nodeExecutionResult.data && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">Response Data</h4>
+                    <pre className="text-xs bg-blue-100 p-3 rounded overflow-auto max-h-96 font-mono whitespace-pre-wrap">
+                      {JSON.stringify(nodeExecutionResult.data, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Copy response button */}
+                {nodeExecutionResult.data && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(nodeExecutionResult.data, null, 2))
+                      // You could add a toast notification here
+                    }}
+                    className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    <span>📋</span>
+                    <span>Copy Response</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Database className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-lg font-medium text-gray-700 mb-2">No execution data</div>
+                <div className="text-sm">
+                  Execute the workflow to see the response data for this node
+                </div>
+              </div>
+            )}
+          </div>
+        )
+
       default:
         return null
     }
@@ -417,6 +504,17 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
           >
             <Play className="w-4 h-4 inline mr-1" />
             Test
+          </button>
+          <button
+            onClick={() => setActiveTab('response')}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'response'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Database className="w-4 h-4 inline mr-1" />
+            Response
           </button>
           <button
             onClick={() => setActiveTab('docs')}

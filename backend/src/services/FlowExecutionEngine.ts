@@ -1,16 +1,12 @@
-import { PrismaClient } from '@prisma/client';
-import { EventEmitter } from 'events';
-import { logger } from '../utils/logger';
-import { NodeService } from './NodeService';
-import { DependencyResolver } from './DependencyResolver';
-import ExecutionHistoryService from './ExecutionHistoryService';
-import {
-  Connection,
-  NodeExecutionStatus,
-  Workflow
-} from '../types/database';
-import { NodeInputData, NodeOutputData } from '../types/node.types';
-import { v4 as uuidv4 } from 'uuid';
+import { PrismaClient } from "@prisma/client";
+import { EventEmitter } from "events";
+import { v4 as uuidv4 } from "uuid";
+import { Workflow } from "../types/database";
+import { NodeInputData, NodeOutputData } from "../types/node.types";
+import { logger } from "../utils/logger";
+import { DependencyResolver } from "./DependencyResolver";
+import ExecutionHistoryService from "./ExecutionHistoryService";
+import { NodeService } from "./NodeService";
 
 export interface FlowExecutionContext {
   executionId: string;
@@ -38,13 +34,13 @@ export interface FlowExecutionOptions {
 
 // Status mapping between design document and Prisma enum
 export enum FlowNodeStatus {
-  IDLE = 'idle',
-  QUEUED = 'queued', 
-  RUNNING = 'running',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
-  SKIPPED = 'skipped'
+  IDLE = "idle",
+  QUEUED = "queued",
+  RUNNING = "running",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
+  SKIPPED = "skipped",
 }
 
 export interface NodeExecutionState {
@@ -63,7 +59,7 @@ export interface NodeExecutionState {
 
 export interface FlowExecutionResult {
   executionId: string;
-  status: 'completed' | 'failed' | 'cancelled' | 'partial';
+  status: "completed" | "failed" | "cancelled" | "partial";
   executedNodes: string[];
   failedNodes: string[];
   executionPath: string[];
@@ -81,7 +77,7 @@ export interface NodeExecutionResult {
 
 export interface ExecutionFlowStatus {
   executionId: string;
-  overallStatus: 'running' | 'completed' | 'failed' | 'cancelled' | 'paused';
+  overallStatus: "running" | "completed" | "failed" | "cancelled" | "paused";
   progress: number;
   nodeStates: Map<string, NodeExecutionState>;
   currentlyExecuting: string[];
@@ -104,7 +100,11 @@ export class FlowExecutionEngine extends EventEmitter {
   private activeExecutions: Map<string, FlowExecutionContext> = new Map();
   private nodeQueue: Map<string, string[]> = new Map();
 
-  constructor(prisma: PrismaClient, nodeService: NodeService, executionHistoryService: ExecutionHistoryService) {
+  constructor(
+    prisma: PrismaClient,
+    nodeService: NodeService,
+    executionHistoryService: ExecutionHistoryService
+  ) {
     super();
     this.prisma = prisma;
     this.nodeService = nodeService;
@@ -123,7 +123,7 @@ export class FlowExecutionEngine extends EventEmitter {
     options: FlowExecutionOptions = {}
   ): Promise<FlowExecutionResult> {
     const executionId = uuidv4();
-    
+
     try {
       const context = await this.createExecutionContext(
         executionId,
@@ -144,7 +144,7 @@ export class FlowExecutionEngine extends EventEmitter {
 
       return result;
     } catch (error) {
-      logger.error('Flow execution failed', { executionId, nodeId, error });
+      logger.error("Flow execution failed", { executionId, nodeId, error });
       throw error;
     } finally {
       this.activeExecutions.delete(executionId);
@@ -163,7 +163,7 @@ export class FlowExecutionEngine extends EventEmitter {
     options: FlowExecutionOptions = {}
   ): Promise<FlowExecutionResult> {
     const executionId = uuidv4();
-    
+
     try {
       const context = await this.createExecutionContext(
         executionId,
@@ -179,7 +179,7 @@ export class FlowExecutionEngine extends EventEmitter {
         throw new Error(`Workflow ${workflowId} not found`);
       }
 
-      const triggerNode = workflow.nodes.find(node => node.id === triggerId);
+      const triggerNode = workflow.nodes.find((node) => node.id === triggerId);
       if (!triggerNode) {
         throw new Error(`Trigger node ${triggerId} not found in workflow`);
       }
@@ -189,7 +189,11 @@ export class FlowExecutionEngine extends EventEmitter {
 
       return result;
     } catch (error) {
-      logger.error('Trigger execution failed', { executionId, triggerId, error });
+      logger.error("Trigger execution failed", {
+        executionId,
+        triggerId,
+        error,
+      });
       throw error;
     } finally {
       this.activeExecutions.delete(executionId);
@@ -210,28 +214,38 @@ export class FlowExecutionEngine extends EventEmitter {
     const completedNodes = Array.from(nodeStates.entries())
       .filter(([_, state]) => state.status === FlowNodeStatus.COMPLETED)
       .map(([nodeId, _]) => nodeId);
-    
+
     const failedNodes = Array.from(nodeStates.entries())
       .filter(([_, state]) => state.status === FlowNodeStatus.FAILED)
       .map(([nodeId, _]) => nodeId);
-    
+
     const currentlyExecuting = Array.from(nodeStates.entries())
       .filter(([_, state]) => state.status === FlowNodeStatus.RUNNING)
       .map(([nodeId, _]) => nodeId);
-    
+
     const queuedNodes = this.nodeQueue.get(executionId) || [];
     const totalNodes = nodeStates.size;
-    const progress = totalNodes > 0 ? (completedNodes.length / totalNodes) * 100 : 0;
+    const progress =
+      totalNodes > 0 ? (completedNodes.length / totalNodes) * 100 : 0;
 
-    let overallStatus: 'running' | 'completed' | 'failed' | 'cancelled' | 'paused' = 'running';
+    let overallStatus:
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "paused" = "running";
     if (context.cancelled) {
-      overallStatus = 'cancelled';
+      overallStatus = "cancelled";
     } else if (context.paused) {
-      overallStatus = 'paused';
-    } else if (failedNodes.length > 0 && currentlyExecuting.length === 0 && queuedNodes.length === 0) {
-      overallStatus = 'failed';
+      overallStatus = "paused";
+    } else if (
+      failedNodes.length > 0 &&
+      currentlyExecuting.length === 0 &&
+      queuedNodes.length === 0
+    ) {
+      overallStatus = "failed";
     } else if (completedNodes.length === totalNodes) {
-      overallStatus = 'completed';
+      overallStatus = "completed";
     }
 
     return {
@@ -243,7 +257,7 @@ export class FlowExecutionEngine extends EventEmitter {
       completedNodes,
       failedNodes,
       queuedNodes,
-      executionPath: context.executionPath
+      executionPath: context.executionPath,
     };
   }
 
@@ -258,9 +272,9 @@ export class FlowExecutionEngine extends EventEmitter {
 
     context.cancelled = true;
     this.nodeQueue.set(executionId, []);
-    
-    logger.info('Execution cancelled', { executionId });
-    this.emit('executionCancelled', { executionId });
+
+    logger.info("Execution cancelled", { executionId });
+    this.emit("executionCancelled", { executionId });
   }
 
   /**
@@ -273,9 +287,9 @@ export class FlowExecutionEngine extends EventEmitter {
     }
 
     context.paused = true;
-    
-    logger.info('Execution paused', { executionId });
-    this.emit('executionPaused', { executionId });
+
+    logger.info("Execution paused", { executionId });
+    this.emit("executionPaused", { executionId });
   }
 
   /**
@@ -288,9 +302,9 @@ export class FlowExecutionEngine extends EventEmitter {
     }
 
     context.paused = false;
-    
-    logger.info('Execution resumed', { executionId });
-    this.emit('executionResumed', { executionId });
+
+    logger.info("Execution resumed", { executionId });
+    this.emit("executionResumed", { executionId });
   }
 
   /**
@@ -322,13 +336,13 @@ export class FlowExecutionEngine extends EventEmitter {
         saveData: true,
         manual: true,
         isolatedExecution: false,
-        ...options
+        ...options,
       },
       nodeStates: new Map(),
       executionPath: [],
       startTime: Date.now(),
       cancelled: false,
-      paused: false
+      paused: false,
     };
 
     this.activeExecutions.set(executionId, context);
@@ -340,7 +354,7 @@ export class FlowExecutionEngine extends EventEmitter {
   private async loadWorkflow(workflowId: string): Promise<Workflow | null> {
     try {
       const workflow = await this.prisma.workflow.findUnique({
-        where: { id: workflowId }
+        where: { id: workflowId },
       });
 
       if (!workflow) {
@@ -351,15 +365,24 @@ export class FlowExecutionEngine extends EventEmitter {
       const parsedWorkflow: Workflow = {
         ...workflow,
         description: workflow.description || undefined,
-        nodes: Array.isArray(workflow.nodes) ? workflow.nodes : JSON.parse(workflow.nodes as string),
-        connections: Array.isArray(workflow.connections) ? workflow.connections : JSON.parse(workflow.connections as string),
-        triggers: Array.isArray(workflow.triggers) ? workflow.triggers : JSON.parse(workflow.triggers as string),
-        settings: typeof workflow.settings === 'object' ? workflow.settings : JSON.parse(workflow.settings as string)
+        nodes: Array.isArray(workflow.nodes)
+          ? workflow.nodes
+          : JSON.parse(workflow.nodes as string),
+        connections: Array.isArray(workflow.connections)
+          ? workflow.connections
+          : JSON.parse(workflow.connections as string),
+        triggers: Array.isArray(workflow.triggers)
+          ? workflow.triggers
+          : JSON.parse(workflow.triggers as string),
+        settings:
+          typeof workflow.settings === "object"
+            ? workflow.settings
+            : JSON.parse(workflow.settings as string),
       };
 
       return parsedWorkflow;
     } catch (error) {
-      logger.error('Failed to load workflow', { workflowId, error });
+      logger.error("Failed to load workflow", { workflowId, error });
       return null;
     }
   }
@@ -370,49 +393,64 @@ export class FlowExecutionEngine extends EventEmitter {
     startNodeId: string
   ): Promise<void> {
     // Validate workflow structure before execution with enhanced safety checks
-    const nodeIds = workflow.nodes.map(node => node.id);
-    
-    logger.debug('Workflow structure analysis', {
+    const nodeIds = workflow.nodes.map((node) => node.id);
+
+    logger.debug("Workflow structure analysis", {
       executionId: context.executionId,
       nodeCount: workflow.nodes.length,
       connectionCount: workflow.connections.length,
       nodeIds: nodeIds,
-      connections: workflow.connections.map(conn => ({
+      connections: workflow.connections.map((conn) => ({
         source: conn.sourceNodeId,
         target: conn.targetNodeId,
         sourceOutput: conn.sourceOutput,
-        targetInput: conn.targetInput
-      }))
+        targetInput: conn.targetInput,
+      })),
     });
-    
+
     try {
       // Use enhanced validation that throws specific error types
-      this.dependencyResolver.validateExecutionSafety(nodeIds, workflow.connections, context.executionPath);
+      this.dependencyResolver.validateExecutionSafety(
+        nodeIds,
+        workflow.connections,
+        context.executionPath
+      );
     } catch (error: any) {
-      logger.error('Workflow execution safety validation failed', {
+      logger.error("Workflow execution safety validation failed", {
         executionId: context.executionId,
         error: error.message,
-        errorType: error.flowErrorType || 'UNKNOWN'
+        errorType: error.flowErrorType || "UNKNOWN",
       });
       throw error;
     }
 
     // Also run the general validation for warnings
-    const validationResult = this.dependencyResolver.validateExecutionPath(nodeIds, workflow.connections);
+    const validationResult = this.dependencyResolver.validateExecutionPath(
+      nodeIds,
+      workflow.connections
+    );
     if (validationResult.warnings.length > 0) {
-      logger.warn('Workflow validation warnings', { warnings: validationResult.warnings });
+      logger.warn("Workflow validation warnings", {
+        warnings: validationResult.warnings,
+      });
     }
 
     for (const node of workflow.nodes) {
-      const dependencies = this.dependencyResolver.getDependencies(node.id, workflow.connections);
-      const dependents = this.dependencyResolver.getDownstreamNodes(node.id, workflow.connections);
+      const dependencies = this.dependencyResolver.getDependencies(
+        node.id,
+        workflow.connections
+      );
+      const dependents = this.dependencyResolver.getDownstreamNodes(
+        node.id,
+        workflow.connections
+      );
 
-      logger.debug('Initializing node state', {
+      logger.debug("Initializing node state", {
         nodeId: node.id,
         nodeType: node.type,
         dependencies,
         dependents,
-        executionId: context.executionId
+        executionId: context.executionId,
       });
 
       const nodeState: NodeExecutionState = {
@@ -420,7 +458,7 @@ export class FlowExecutionEngine extends EventEmitter {
         status: FlowNodeStatus.IDLE,
         dependencies,
         dependents,
-        progress: 0
+        progress: 0,
       };
 
       context.nodeStates.set(node.id, nodeState);
@@ -446,12 +484,12 @@ export class FlowExecutionEngine extends EventEmitter {
 
     while (!context.cancelled && !context.paused) {
       const queue = this.nodeQueue.get(context.executionId) || [];
-      
+
       if (queue.length === 0) {
-        logger.debug('No more nodes in queue, execution complete', {
+        logger.debug("No more nodes in queue, execution complete", {
           executionId: context.executionId,
           executedNodes: executedNodes.length,
-          failedNodes: failedNodes.length
+          failedNodes: failedNodes.length,
         });
         break;
       }
@@ -461,33 +499,40 @@ export class FlowExecutionEngine extends EventEmitter {
 
       const nodeState = context.nodeStates.get(nodeId);
       if (!nodeState) {
-        logger.warn('Node state not found, skipping', { nodeId, executionId: context.executionId });
+        logger.warn("Node state not found, skipping", {
+          nodeId,
+          executionId: context.executionId,
+        });
         continue;
       }
 
-      const dependenciesSatisfied = this.areNodeDependenciesSatisfied(nodeId, context);
+      const dependenciesSatisfied = this.areNodeDependenciesSatisfied(
+        nodeId,
+        context
+      );
       if (!dependenciesSatisfied) {
-        logger.debug('Node dependencies not satisfied, re-queuing', { 
-          nodeId, 
+        logger.debug("Node dependencies not satisfied, re-queuing", {
+          nodeId,
           dependencies: nodeState.dependencies,
-          executionId: context.executionId 
+          executionId: context.executionId,
         });
         queue.push(nodeId);
         this.nodeQueue.set(context.executionId, queue);
         continue;
       }
 
-      logger.info('Executing node', { 
-        nodeId, 
-        nodeType: workflow.nodes.find(n => n.id === nodeId)?.type,
-        executionId: context.executionId 
+      logger.info("Executing node", {
+        nodeId,
+        nodeType: workflow.nodes.find((n) => n.id === nodeId)?.type,
+        executionId: context.executionId,
       });
 
       // Log execution start
-      const nodeName = workflow.nodes.find(n => n.id === nodeId)?.name || 'Unknown Node';
+      const nodeName =
+        workflow.nodes.find((n) => n.id === nodeId)?.name || "Unknown Node";
       this.executionHistoryService.addExecutionLog(
         context.executionId,
-        'info',
+        "info",
         `Starting execution of node: ${nodeName}`,
         nodeId
       );
@@ -500,65 +545,74 @@ export class FlowExecutionEngine extends EventEmitter {
 
         nodeState.status = result.status;
         nodeState.endTime = Date.now();
-        nodeState.duration = nodeState.endTime - (nodeState.startTime || nodeState.endTime);
+        nodeState.duration =
+          nodeState.endTime - (nodeState.startTime || nodeState.endTime);
         nodeState.outputData = result.data;
         nodeState.error = result.error;
 
         if (result.status === FlowNodeStatus.COMPLETED) {
-          logger.info('Node execution completed successfully', { 
+          logger.info("Node execution completed successfully", {
             nodeId,
-            nodeType: workflow.nodes.find(n => n.id === nodeId)?.type,
+            nodeType: workflow.nodes.find((n) => n.id === nodeId)?.type,
             dependents: nodeState.dependents,
-            executionId: context.executionId 
+            executionId: context.executionId,
           });
 
           // Log execution completion
-          const nodeName = workflow.nodes.find(n => n.id === nodeId)?.name || 'Unknown Node';
+          const nodeName =
+            workflow.nodes.find((n) => n.id === nodeId)?.name || "Unknown Node";
           this.executionHistoryService.addExecutionLog(
             context.executionId,
-            'info',
+            "info",
             `Node execution completed successfully: ${nodeName}`,
             nodeId
           );
 
           await this.queueDependentNodes(nodeId, context, workflow);
-          
+
           // Log the updated queue state
           const updatedQueue = this.nodeQueue.get(context.executionId) || [];
-          logger.info('Updated execution queue after queuing dependents', {
+          logger.info("Updated execution queue after queuing dependents", {
             nodeId,
             queueLength: updatedQueue.length,
             queuedNodes: updatedQueue,
-            executionId: context.executionId
+            executionId: context.executionId,
           });
         } else if (result.status === FlowNodeStatus.FAILED) {
           failedNodes.push(nodeId);
-          logger.error('Node execution failed', { 
+          logger.error("Node execution failed", {
             nodeId,
             error: result.error,
-            executionId: context.executionId 
+            executionId: context.executionId,
           });
 
           // Log execution failure
-          const nodeName = workflow.nodes.find(n => n.id === nodeId)?.name || 'Unknown Node';
-          const errorMessage = result.error instanceof Error ? result.error.message : String(result.error || 'Unknown error');
+          const nodeName =
+            workflow.nodes.find((n) => n.id === nodeId)?.name || "Unknown Node";
+          const errorMessage =
+            result.error instanceof Error
+              ? result.error.message
+              : String(result.error || "Unknown error");
           this.executionHistoryService.addExecutionLog(
             context.executionId,
-            'error',
+            "error",
             `Node execution failed: ${nodeName} - ${errorMessage}`,
             nodeId
           );
         }
 
-        this.emit('nodeExecuted', {
+        this.emit("nodeExecuted", {
           executionId: context.executionId,
           nodeId,
           status: result.status,
-          result
+          result,
         });
-
       } catch (error) {
-        logger.error('Node execution failed with exception', { nodeId, error, executionId: context.executionId });
+        logger.error("Node execution failed with exception", {
+          nodeId,
+          error,
+          executionId: context.executionId,
+        });
         nodeState.status = FlowNodeStatus.FAILED;
         nodeState.error = error;
         failedNodes.push(nodeId);
@@ -567,17 +621,27 @@ export class FlowExecutionEngine extends EventEmitter {
           nodeId,
           status: FlowNodeStatus.FAILED,
           error,
-          duration: 0
+          duration: 0,
         };
         nodeResults.set(nodeId, result);
+
+        // Emit nodeExecuted event for failed nodes too
+        this.emit("nodeExecuted", {
+          executionId: context.executionId,
+          nodeId,
+          status: FlowNodeStatus.FAILED,
+          result,
+        });
       }
     }
 
-    let finalStatus: 'completed' | 'failed' | 'cancelled' | 'partial' = 'completed';
+    let finalStatus: "completed" | "failed" | "cancelled" | "partial" =
+      "completed";
     if (context.cancelled) {
-      finalStatus = 'cancelled';
+      finalStatus = "cancelled";
     } else if (failedNodes.length > 0) {
-      finalStatus = executedNodes.length > failedNodes.length ? 'partial' : 'failed';
+      finalStatus =
+        executedNodes.length > failedNodes.length ? "partial" : "failed";
     }
 
     const totalDuration = Date.now() - context.startTime;
@@ -589,10 +653,10 @@ export class FlowExecutionEngine extends EventEmitter {
       failedNodes,
       executionPath: context.executionPath,
       totalDuration,
-      nodeResults
+      nodeResults,
     };
 
-    this.emit('flowExecutionCompleted', result);
+    this.emit("flowExecutionCompleted", result);
     return result;
   }
 
@@ -606,7 +670,7 @@ export class FlowExecutionEngine extends EventEmitter {
       throw new Error(`Node state not found for ${nodeId}`);
     }
 
-    const node = workflow.nodes.find(n => n.id === nodeId);
+    const node = workflow.nodes.find((n) => n.id === nodeId);
     if (!node) {
       throw new Error(`Node ${nodeId} not found in workflow`);
     }
@@ -615,14 +679,18 @@ export class FlowExecutionEngine extends EventEmitter {
     nodeState.startTime = Date.now();
     nodeState.progress = 0;
 
-    this.emit('nodeStarted', {
+    this.emit("nodeStarted", {
       executionId: context.executionId,
       nodeId,
-      node
+      node,
     });
 
     try {
-      const inputData = await this.collectNodeInputData(nodeId, context, workflow);
+      const inputData = await this.collectNodeInputData(
+        nodeId,
+        context,
+        workflow
+      );
       nodeState.inputData = inputData;
 
       const nodeResult = await this.nodeService.executeNode(
@@ -634,7 +702,7 @@ export class FlowExecutionEngine extends EventEmitter {
       );
 
       if (!nodeResult.success) {
-        throw new Error(nodeResult.error?.message || 'Node execution failed');
+        throw new Error(nodeResult.error?.message || "Node execution failed");
       }
 
       const outputData = nodeResult.data || [];
@@ -643,50 +711,58 @@ export class FlowExecutionEngine extends EventEmitter {
         nodeId,
         status: FlowNodeStatus.COMPLETED,
         data: outputData,
-        duration: Date.now() - nodeState.startTime!
+        duration: Date.now() - nodeState.startTime!,
       };
 
       return result;
-
     } catch (error) {
       const result: NodeExecutionResult = {
         nodeId,
         status: FlowNodeStatus.FAILED,
         error,
-        duration: Date.now() - nodeState.startTime!
+        duration: Date.now() - nodeState.startTime!,
       };
 
       return result;
     }
   }
 
-  private areNodeDependenciesSatisfied(nodeId: string, context: FlowExecutionContext): boolean {
+  private areNodeDependenciesSatisfied(
+    nodeId: string,
+    context: FlowExecutionContext
+  ): boolean {
     const nodeState = context.nodeStates.get(nodeId);
     if (!nodeState) {
-      logger.warn('Node state not found when checking dependencies', { nodeId, executionId: context.executionId });
+      logger.warn("Node state not found when checking dependencies", {
+        nodeId,
+        executionId: context.executionId,
+      });
       return false;
     }
 
-    logger.debug('Checking node dependencies', {
+    logger.debug("Checking node dependencies", {
       nodeId,
       dependencies: nodeState.dependencies,
-      executionId: context.executionId
+      executionId: context.executionId,
     });
 
     for (const depNodeId of nodeState.dependencies) {
       const depState = context.nodeStates.get(depNodeId);
       if (!depState || depState.status !== FlowNodeStatus.COMPLETED) {
-        logger.debug('Dependency not satisfied', {
+        logger.debug("Dependency not satisfied", {
           nodeId,
           dependencyNodeId: depNodeId,
-          dependencyStatus: depState?.status || 'NO_STATE',
-          executionId: context.executionId
+          dependencyStatus: depState?.status || "NO_STATE",
+          executionId: context.executionId,
         });
         return false;
       }
     }
 
-    logger.debug('All dependencies satisfied', { nodeId, executionId: context.executionId });
+    logger.debug("All dependencies satisfied", {
+      nodeId,
+      executionId: context.executionId,
+    });
     return true;
   }
 
@@ -697,56 +773,66 @@ export class FlowExecutionEngine extends EventEmitter {
   ): Promise<void> {
     const nodeState = context.nodeStates.get(nodeId);
     if (!nodeState) {
-      logger.warn('Node state not found when queuing dependents', { nodeId, executionId: context.executionId });
+      logger.warn("Node state not found when queuing dependents", {
+        nodeId,
+        executionId: context.executionId,
+      });
       return;
     }
 
     const queue = this.nodeQueue.get(context.executionId) || [];
     let queuedCount = 0;
 
-    logger.debug('Queuing dependent nodes', {
+    logger.debug("Queuing dependent nodes", {
       nodeId,
       dependents: nodeState.dependents,
       currentQueueLength: queue.length,
-      executionId: context.executionId
+      executionId: context.executionId,
     });
 
     for (const dependentNodeId of nodeState.dependents) {
       const dependentState = context.nodeStates.get(dependentNodeId);
-      if (dependentState && 
-          dependentState.status === FlowNodeStatus.IDLE && 
-          !queue.includes(dependentNodeId)) {
-        
+      if (
+        dependentState &&
+        dependentState.status === FlowNodeStatus.IDLE &&
+        !queue.includes(dependentNodeId)
+      ) {
         queue.push(dependentNodeId);
         dependentState.status = FlowNodeStatus.QUEUED;
         queuedCount++;
 
-        logger.info('Queued dependent node', {
+        logger.info("Queued dependent node", {
           sourceNodeId: nodeId,
           dependentNodeId,
-          dependentNodeType: workflow.nodes.find(n => n.id === dependentNodeId)?.type,
-          executionId: context.executionId
+          dependentNodeType: workflow.nodes.find(
+            (n) => n.id === dependentNodeId
+          )?.type,
+          executionId: context.executionId,
         });
       } else {
-        logger.debug('Skipping dependent node', {
+        logger.debug("Skipping dependent node", {
           dependentNodeId,
-          reason: !dependentState ? 'no state' : 
-                  dependentState.status !== FlowNodeStatus.IDLE ? `status: ${dependentState.status}` :
-                  queue.includes(dependentNodeId) ? 'already queued' : 'unknown',
+          reason: !dependentState
+            ? "no state"
+            : dependentState.status !== FlowNodeStatus.IDLE
+            ? `status: ${dependentState.status}`
+            : queue.includes(dependentNodeId)
+            ? "already queued"
+            : "unknown",
           currentStatus: dependentState?.status,
-          executionId: context.executionId
+          executionId: context.executionId,
         });
       }
     }
 
     this.nodeQueue.set(context.executionId, queue);
 
-    logger.info('Completed queuing dependent nodes', {
+    logger.info("Completed queuing dependent nodes", {
       nodeId,
       queuedCount,
       newQueueLength: queue.length,
       totalDependents: nodeState.dependents.length,
-      executionId: context.executionId
+      executionId: context.executionId,
     });
   }
 
@@ -758,7 +844,7 @@ export class FlowExecutionEngine extends EventEmitter {
     const inputData: NodeInputData = { main: [[]] };
 
     const incomingConnections = workflow.connections.filter(
-      conn => conn.targetNodeId === nodeId
+      (conn) => conn.targetNodeId === nodeId
     );
 
     if (incomingConnections.length === 0) {
@@ -773,7 +859,7 @@ export class FlowExecutionEngine extends EventEmitter {
       const sourceNodeState = context.nodeStates.get(connection.sourceNodeId);
       if (sourceNodeState && sourceNodeState.outputData) {
         const outputData = sourceNodeState.outputData.find(
-          output => output[connection.sourceOutput]
+          (output) => output[connection.sourceOutput]
         );
         if (outputData && outputData[connection.sourceOutput]) {
           const sourceOutput = outputData[connection.sourceOutput];
@@ -792,6 +878,4 @@ export class FlowExecutionEngine extends EventEmitter {
 
     return inputData;
   }
-
-
 }

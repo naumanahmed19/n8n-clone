@@ -37,7 +37,7 @@ const mockWorkflow = {
 
 // Generate test JWT token
 const generateToken = (userId: string) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || 'test-secret', { expiresIn: '1h' });
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET || 'test-secret', { expiresIn: '1h' });
 };
 
 describe('Trigger API Routes', () => {

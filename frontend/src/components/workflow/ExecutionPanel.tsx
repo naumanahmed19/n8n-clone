@@ -543,8 +543,19 @@ export function ExecutionPanel({
 
         {activeTab === 'logs' && (
           <div className="p-4 space-y-2">
+            {/* Real-time subscription indicator */}
+            <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-blue-800">📡 Real-time events active</span>
+                <span className="text-blue-600 text-xs">Events will display for 30 seconds after execution</span>
+              </div>
+            </div>
+            
             {executionLogs.length === 0 ? (
-              <div className="text-gray-500 text-center py-8">No logs available</div>
+              <div className="text-gray-500 text-center py-8">
+                <div>No logs available</div>
+                <div className="text-xs mt-2">Execution events will appear here in real-time</div>
+              </div>
             ) : (
               <>
                 {executionLogs.map((log, index) => (
