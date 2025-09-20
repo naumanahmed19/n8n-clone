@@ -15,23 +15,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx src/scripts/seed.ts",
+    "db:studio": "prisma studio",
     "node-cli": "tsx src/cli/node-cli.ts",
-    "docker:db": "docker run --name n8n-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=n8n_clone_dev -p 5432:5432 -d postgres:15",
-    "docker:redis": "docker run --name n8n-redis -p 6379:6379 -d redis:7-alpine",
-    "docker:db:stop": "docker stop n8n-postgres && docker rm n8n-postgres",
-    "docker:redis:stop": "docker stop n8n-redis && docker rm n8n-redis",
-    "docker:services": "npm run docker:db && npm run docker:redis",
-    "docker:services:stop": "npm run docker:db:stop && npm run docker:redis:stop",
-    "docker:setup": "npm run docker:services && sleep 5 && npm run db:migrate && npm run db:seed",
-    "docker:dev": "npm run docker:setup && npm run dev",
     "compose:up": "docker-compose up -d",
     "compose:down": "docker-compose down",
-    "compose:logs": "docker-compose logs -f",
-    "compose:setup": "docker-compose up -d && npm run compose:wait && npm run db:migrate && npm run db:seed",
-    "compose:wait": "npm run compose:wait:postgres && npm run compose:wait:redis",
-    "compose:wait:postgres": "docker-compose exec postgres sh -c 'until pg_isready -U postgres; do sleep 1; done'",
-    "compose:wait:redis": "docker-compose exec redis sh -c 'until redis-cli ping; do sleep 1; done'",
-    "compose:dev": "npm run compose:setup && npm run dev"
+    "compose:logs": "docker-compose logs -f"
   },
   "dependencies": {
     "@prisma/client": "^5.6.0",
@@ -55,6 +43,7 @@
     "redis": "^4.6.10",
     "socket.io": "^4.7.4",
     "typescript": "^5.2.2",
+    "uuid": "^8.3.2",
     "vm2": "^3.9.19",
     "winston": "^3.11.0",
     "zod": "^3.22.4"

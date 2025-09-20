@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { TriggerService } from '../services/TriggerService';
 import { WorkflowService } from '../services/WorkflowService';
 import { ExecutionService } from '../services/ExecutionService';
+import ExecutionHistoryService from '../services/ExecutionHistoryService';
 import { SocketService } from '../services/SocketService';
 import { NodeService } from '../services/NodeService';
 import { AppError } from '../middleware/errorHandler';
@@ -17,10 +18,11 @@ const prisma = new PrismaClient();
 // Initialize services
 const workflowService = new WorkflowService(prisma);
 const nodeService = new NodeService(prisma);
-const executionService = new ExecutionService(prisma, nodeService);
+const executionHistoryService = new ExecutionHistoryService(prisma);
+const executionService = new ExecutionService(prisma, nodeService, executionHistoryService);
 const httpServer = createServer();
 const socketService = new SocketService(httpServer);
-const triggerService = new TriggerService(prisma, workflowService, executionService, socketService);
+const triggerService = new TriggerService(prisma, workflowService, executionService, socketService, nodeService, executionHistoryService);
 
 // Initialize trigger service
 triggerService.initialize().catch(console.error);

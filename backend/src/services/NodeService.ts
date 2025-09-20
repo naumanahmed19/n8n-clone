@@ -250,7 +250,16 @@ export class NodeService {
         data: outputValidation.sanitizedData as NodeOutputData[]
       };
     } catch (error) {
-      logger.error('Secure node execution failed', { error, nodeType, executionId: execId });
+      logger.error('Secure node execution failed', { 
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : typeof error,
+          stack: error instanceof Error ? error.stack : undefined
+        }, 
+        nodeType, 
+        parameters,
+        executionId: execId 
+      });
       
       // Cleanup execution resources on error
       await this.secureExecutionService.cleanupExecution(execId);

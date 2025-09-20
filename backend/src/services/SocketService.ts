@@ -1,8 +1,12 @@
-import { Server as SocketIOServer, Socket } from 'socket.io';
-import { Server as HTTPServer } from 'http';
-import jwt from 'jsonwebtoken';
-import { logger } from '../utils/logger';
-import { ExecutionEventData, ExecutionProgress } from '../types/execution.types';
+import { Server as HTTPServer } from "http";
+import jwt from "jsonwebtoken";
+import { Socket, Server as SocketIOServer } from "socket.io";
+import { NodeExecutionStatus } from "../types/database";
+import {
+  ExecutionEventData,
+  ExecutionProgress,
+} from "../types/execution.types";
+import { logger } from "../utils/logger";
 
 export interface AuthenticatedSocket extends Socket {
   userId: string;
@@ -18,7 +22,7 @@ export interface SocketAuthPayload {
 }
 
 export interface ExecutionLogEntry {
-  level: 'info' | 'warn' | 'error' | 'debug';
+  level: "info" | "warn" | "error" | "debug";
   message: string;
   nodeId?: string;
   data?: any;
@@ -32,10 +36,10 @@ export class SocketService {
   constructor(httpServer: HTTPServer) {
     this.io = new SocketIOServer(httpServer, {
       cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-        credentials: true
+        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        credentials: true,
       },
-      transports: ['websocket', 'polling']
+      transports: ["websocket", "polling"],
     });
 
     this.setupAuthentication();
@@ -48,26 +52,31 @@ export class SocketService {
   private setupAuthentication(): void {
     this.io.use(async (socket: any, next) => {
       try {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-        
+        const token =
+          socket.handshake.auth.token ||
+          socket.handshake.headers.authorization?.replace("Bearer ", "");
+
         if (!token) {
-          logger.warn('Socket connection attempted without token');
-          return next(new Error('Authentication token required'));
+          logger.warn("Socket connection attempted without token");
+          return next(new Error("Authentication token required"));
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as SocketAuthPayload;
-        
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET!
+        ) as SocketAuthPayload;
+
         socket.userId = decoded.userId;
         socket.user = {
           id: decoded.userId,
-          email: decoded.email
+          email: decoded.email,
         };
 
         logger.info(`Socket authenticated for user ${decoded.userId}`);
         next();
       } catch (error) {
-        logger.error('Socket authentication failed:', error);
-        next(new Error('Invalid authentication token'));
+        logger.error("Socket authentication failed:", error);
+        next(new Error("Invalid authentication token"));
       }
     });
   }
@@ -76,10 +85,10 @@ export class SocketService {
    * Setup connection event handlers
    */
   private setupConnectionHandlers(): void {
-    this.io.on('connection', (socket: Socket) => {
+    this.io.on("connection", (socket: Socket) => {
       const authSocket = socket as AuthenticatedSocket;
       logger.info(`User ${authSocket.userId} connected via Socket.io`);
-      
+
       // Store authenticated socket
       this.authenticatedSockets.set(authSocket.userId, authSocket);
 
@@ -87,36 +96,36 @@ export class SocketService {
       socket.join(`user:${authSocket.userId}`);
 
       // Handle execution subscription
-      socket.on('subscribe-execution', (executionId: string) => {
+      socket.on("subscribe-execution", (executionId: string) => {
         this.handleExecutionSubscription(authSocket, executionId);
       });
 
       // Handle execution unsubscription
-      socket.on('unsubscribe-execution', (executionId: string) => {
+      socket.on("unsubscribe-execution", (executionId: string) => {
         this.handleExecutionUnsubscription(authSocket, executionId);
       });
 
       // Handle workflow subscription (for all executions of a workflow)
-      socket.on('subscribe-workflow', (workflowId: string) => {
+      socket.on("subscribe-workflow", (workflowId: string) => {
         this.handleWorkflowSubscription(authSocket, workflowId);
       });
 
       // Handle workflow unsubscription
-      socket.on('unsubscribe-workflow', (workflowId: string) => {
+      socket.on("unsubscribe-workflow", (workflowId: string) => {
         this.handleWorkflowUnsubscription(authSocket, workflowId);
       });
 
       // Handle disconnect
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         logger.info(`User ${authSocket.userId} disconnected from Socket.io`);
         this.authenticatedSockets.delete(authSocket.userId);
       });
 
       // Send connection confirmation
-      socket.emit('connected', {
-        message: 'Successfully connected to real-time updates',
+      socket.emit("connected", {
+        message: "Successfully connected to real-time updates",
         userId: authSocket.userId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
   }
@@ -124,105 +133,135 @@ export class SocketService {
   /**
    * Handle execution subscription
    */
-  private handleExecutionSubscription(socket: AuthenticatedSocket, executionId: string): void {
-    logger.debug(`User ${socket.userId} subscribing to execution ${executionId}`);
-    
+  private handleExecutionSubscription(
+    socket: AuthenticatedSocket,
+    executionId: string
+  ): void {
+    logger.debug(
+      `User ${socket.userId} subscribing to execution ${executionId}`
+    );
+
     // Join execution-specific room
     socket.join(`execution:${executionId}`);
-    
+
     // Confirm subscription
-    socket.emit('execution-subscribed', {
+    socket.emit("execution-subscribed", {
       executionId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   /**
    * Handle execution unsubscription
    */
-  private handleExecutionUnsubscription(socket: AuthenticatedSocket, executionId: string): void {
-    logger.debug(`User ${socket.userId} unsubscribing from execution ${executionId}`);
-    
+  private handleExecutionUnsubscription(
+    socket: AuthenticatedSocket,
+    executionId: string
+  ): void {
+    logger.debug(
+      `User ${socket.userId} unsubscribing from execution ${executionId}`
+    );
+
     // Leave execution-specific room
     socket.leave(`execution:${executionId}`);
-    
+
     // Confirm unsubscription
-    socket.emit('execution-unsubscribed', {
+    socket.emit("execution-unsubscribed", {
       executionId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   /**
    * Handle workflow subscription
    */
-  private handleWorkflowSubscription(socket: AuthenticatedSocket, workflowId: string): void {
+  private handleWorkflowSubscription(
+    socket: AuthenticatedSocket,
+    workflowId: string
+  ): void {
     logger.debug(`User ${socket.userId} subscribing to workflow ${workflowId}`);
-    
+
     // Join workflow-specific room
     socket.join(`workflow:${workflowId}`);
-    
+
     // Confirm subscription
-    socket.emit('workflow-subscribed', {
+    socket.emit("workflow-subscribed", {
       workflowId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   /**
    * Handle workflow unsubscription
    */
-  private handleWorkflowUnsubscription(socket: AuthenticatedSocket, workflowId: string): void {
-    logger.debug(`User ${socket.userId} unsubscribing from workflow ${workflowId}`);
-    
+  private handleWorkflowUnsubscription(
+    socket: AuthenticatedSocket,
+    workflowId: string
+  ): void {
+    logger.debug(
+      `User ${socket.userId} unsubscribing from workflow ${workflowId}`
+    );
+
     // Leave workflow-specific room
     socket.leave(`workflow:${workflowId}`);
-    
+
     // Confirm unsubscription
-    socket.emit('workflow-unsubscribed', {
+    socket.emit("workflow-unsubscribed", {
       workflowId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
   /**
    * Broadcast execution event to subscribers
    */
-  public broadcastExecutionEvent(executionId: string, eventData: ExecutionEventData): void {
-    logger.debug(`Broadcasting execution event for ${executionId}:`, eventData.type);
-    
+  public broadcastExecutionEvent(
+    executionId: string,
+    eventData: ExecutionEventData
+  ): void {
+    logger.debug(
+      `Broadcasting execution event for ${executionId}:`,
+      eventData.type
+    );
+
     // Emit to execution-specific room
-    this.io.to(`execution:${executionId}`).emit('execution-event', {
+    this.io.to(`execution:${executionId}`).emit("execution-event", {
       ...eventData,
-      executionId
+      executionId,
     });
   }
 
   /**
    * Broadcast execution progress update
    */
-  public broadcastExecutionProgress(executionId: string, progress: ExecutionProgress): void {
+  public broadcastExecutionProgress(
+    executionId: string,
+    progress: ExecutionProgress
+  ): void {
     logger.debug(`Broadcasting execution progress for ${executionId}:`, {
       completedNodes: progress.completedNodes,
       totalNodes: progress.totalNodes,
-      status: progress.status
+      status: progress.status,
     });
-    
-    this.io.to(`execution:${executionId}`).emit('execution-progress', {
+
+    this.io.to(`execution:${executionId}`).emit("execution-progress", {
       ...progress,
-      executionId
+      executionId,
     });
   }
 
   /**
    * Broadcast execution log entry
    */
-  public broadcastExecutionLog(executionId: string, logEntry: ExecutionLogEntry): void {
+  public broadcastExecutionLog(
+    executionId: string,
+    logEntry: ExecutionLogEntry
+  ): void {
     logger.debug(`Broadcasting execution log for ${executionId}`);
-    
-    this.io.to(`execution:${executionId}`).emit('execution-log', {
+
+    this.io.to(`execution:${executionId}`).emit("execution-log", {
       executionId,
-      ...logEntry
+      ...logEntry,
     });
   }
 
@@ -232,28 +271,111 @@ export class SocketService {
   public broadcastNodeExecutionEvent(
     executionId: string,
     nodeId: string,
-    eventType: 'started' | 'completed' | 'failed',
+    eventType: "started" | "completed" | "failed",
     data?: any
   ): void {
-    logger.debug(`Broadcasting node execution event for ${executionId}:${nodeId}:`, eventType);
-    
-    this.io.to(`execution:${executionId}`).emit('node-execution-event', {
+    logger.debug(
+      `Broadcasting node execution event for ${executionId}:${nodeId}:`,
+      eventType
+    );
+
+    this.io.to(`execution:${executionId}`).emit("node-execution-event", {
       executionId,
       nodeId,
       type: eventType,
       data,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Broadcast node execution state update
+   */
+  public broadcastNodeStateUpdate(
+    executionId: string,
+    nodeId: string,
+    status: NodeExecutionStatus,
+    data?: {
+      progress?: number;
+      error?: any;
+      inputData?: any;
+      outputData?: any;
+      startTime?: number;
+      endTime?: number;
+      duration?: number;
+    }
+  ): void {
+    logger.debug(
+      `Broadcasting node state update for ${executionId}:${nodeId}:`,
+      status
+    );
+
+    const eventData: ExecutionEventData = {
+      executionId,
+      type: "node-status-update",
+      nodeId,
+      status,
+      progress: data?.progress,
+      data: data
+        ? {
+            inputData: data.inputData,
+            outputData: data.outputData,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            duration: data.duration,
+          }
+        : undefined,
+      error: data?.error,
+      timestamp: new Date(),
+    };
+
+    this.io.to(`execution:${executionId}`).emit("execution-event", eventData);
+  }
+
+  /**
+   * Broadcast execution flow status update
+   */
+  public broadcastExecutionFlowStatus(
+    executionId: string,
+    flowStatus: {
+      overallStatus: "running" | "completed" | "failed" | "cancelled";
+      progress: number;
+      currentlyExecuting: string[];
+      completedNodes: string[];
+      failedNodes: string[];
+      queuedNodes: string[];
+      executionPath: string[];
+      estimatedTimeRemaining?: number;
+    }
+  ): void {
+    logger.debug(
+      `Broadcasting execution flow status for ${executionId}:`,
+      flowStatus.overallStatus
+    );
+
+    const eventData: ExecutionEventData = {
+      executionId,
+      type: "execution-progress",
+      progress: flowStatus.progress,
+      data: flowStatus,
+      timestamp: new Date(),
+    };
+
+    this.io.to(`execution:${executionId}`).emit("execution-event", eventData);
   }
 
   /**
    * Send execution status to specific user
    */
-  public sendExecutionStatusToUser(userId: string, executionId: string, status: any): void {
-    this.io.to(`user:${userId}`).emit('execution-status', {
+  public sendExecutionStatusToUser(
+    userId: string,
+    executionId: string,
+    status: any
+  ): void {
+    this.io.to(`user:${userId}`).emit("execution-status", {
       executionId,
       status,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -263,7 +385,7 @@ export class SocketService {
   public emitToUser(userId: string, event: string, data: any): void {
     this.io.to(`user:${userId}`).emit(event, {
       ...data,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -300,14 +422,14 @@ export class SocketService {
    * Shutdown the socket service
    */
   public async shutdown(): Promise<void> {
-    logger.info('Shutting down Socket.io service...');
-    
+    logger.info("Shutting down Socket.io service...");
+
     // Disconnect all clients
     this.io.disconnectSockets();
-    
+
     // Close the server
     this.io.close();
-    
-    logger.info('Socket.io service shutdown complete');
+
+    logger.info("Socket.io service shutdown complete");
   }
 }

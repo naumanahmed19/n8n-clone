@@ -4,6 +4,7 @@ import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { validateQuery, validateParams, validateBody } from '../middleware/validation';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { ExecutionService, NodeService } from '../services';
+import ExecutionHistoryService from '../services/ExecutionHistoryService';
 import {
   ExecutionQuerySchema,
   IdParamSchema,
@@ -13,7 +14,8 @@ import {
 const router = Router();
 const prisma = new PrismaClient();
 const nodeService = new NodeService(prisma);
-const executionService = new ExecutionService(prisma, nodeService);
+const executionHistoryService = new ExecutionHistoryService(prisma);
+const executionService = new ExecutionService(prisma, nodeService, executionHistoryService);
 
 // POST /api/executions - Execute a workflow
 router.post(
@@ -284,7 +286,8 @@ router.post(
     );
 
     if (!result.success) {
-      throw new AppError(result.error!.message, 400, 'NODE_EXECUTION_FAILED');
+      const errorMessage = result.error?.message || 'Node execution failed';
+      throw new AppError(errorMessage, 400, 'NODE_EXECUTION_FAILED');
     }
 
     const response: ApiResponse = {

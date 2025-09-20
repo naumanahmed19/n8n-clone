@@ -1,18 +1,20 @@
 
-import { Handle, Position, NodeProps, NodeToolbar } from 'reactflow'
-import { clsx } from 'clsx'
-import { Pause, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
-import { ExecuteToolbarButton } from './ExecuteToolbarButton'
-import { DisableToggleToolbarButton } from './DisableToggleToolbarButton'
-import { 
-  shouldShowExecuteButton, 
-  shouldShowDisableButton,
-  canNodeExecuteIndividually 
-} from '@/utils/nodeTypeClassification'
 import { useWorkflowStore } from '@/stores/workflow'
+import { NodeExecutionStatus } from '@/types/execution'
 import { createNodeExecutionError, logExecutionError } from '@/utils/errorHandling'
-import type { NodeExecutionError } from './types'
+import {
+  canNodeExecuteIndividually,
+  shouldShowDisableButton,
+  shouldShowExecuteButton
+} from '@/utils/nodeTypeClassification'
+import { clsx } from 'clsx'
+import { AlertCircle, CheckCircle, Loader2, Pause } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Handle, NodeProps, NodeToolbar, Position } from 'reactflow'
+import { DisableToggleToolbarButton } from './DisableToggleToolbarButton'
+import { ExecuteToolbarButton } from './ExecuteToolbarButton'
+import './node-animations.css'
+import type { NodeExecutionError } from './types'
 
 interface CustomNodeData {
   label: string
@@ -36,6 +38,8 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   const updateNode = useWorkflowStore(state => state.updateNode)
   const executionState = useWorkflowStore(state => state.executionState)
   const getNodeExecutionResult = useWorkflowStore(state => state.getNodeExecutionResult)
+  const getNodeVisualState = useWorkflowStore(state => state.getNodeVisualState)
+  // const flowExecutionState = useWorkflowStore(state => state.flowExecutionState)
   
   // Local state for node execution feedback
   const [nodeExecutionState, setNodeExecutionState] = useState<{
@@ -50,39 +54,83 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     hasSuccess: false
   })
 
-  // Get real-time execution result for this node
+  // Get real-time execution result for this node - extract specific values to prevent infinite re-renders
   const nodeExecutionResult = getNodeExecutionResult(id)
+  const nodeVisualState = getNodeVisualState(id)
+  
+  // Extract specific values that we actually care about for the useEffect
+  const nodeStatus = nodeVisualState?.status
+  const nodeErrorMessage = nodeVisualState?.errorMessage  
+  const nodeExecutionTime = nodeVisualState?.executionTime
+  const executionResultStatus = nodeExecutionResult?.status
+  const executionResultError = nodeExecutionResult?.error
+  const executionResultEndTime = nodeExecutionResult?.endTime
 
-  // Update local state based on execution results
+  // Update local state based on flow execution results
   useEffect(() => {
-    if (nodeExecutionResult) {
-      // Check if node is currently executing (same start and end time, or no end time yet)
-      const isExecuting = nodeExecutionResult.status === 'success' && 
-                         (nodeExecutionResult.endTime === nodeExecutionResult.startTime || 
-                          !nodeExecutionResult.endTime)
-      const hasError = nodeExecutionResult.status === 'error'
-      const hasSuccess = nodeExecutionResult.status === 'success' && 
-                        nodeExecutionResult.endTime && 
-                        nodeExecutionResult.endTime > nodeExecutionResult.startTime
+    // Prioritize flow execution state over legacy execution results
+    if (nodeVisualState && nodeStatus !== NodeExecutionStatus.IDLE) {
+      const isExecuting = nodeStatus === NodeExecutionStatus.RUNNING || 
+                         nodeStatus === NodeExecutionStatus.QUEUED
+      const hasError = nodeStatus === NodeExecutionStatus.FAILED
+      const hasSuccess = nodeStatus === NodeExecutionStatus.COMPLETED
 
       // Create user-friendly error object if there's an error
       let executionError: NodeExecutionError | undefined
-      if (hasError && nodeExecutionResult.error) {
+      if (hasError && nodeErrorMessage) {
         executionError = createNodeExecutionError(
-          nodeExecutionResult.error,
+          nodeErrorMessage,
           id,
           data.nodeType
         )
         
         // Log the error for debugging
-        logExecutionError(id, data.nodeType, executionError, nodeExecutionResult.error)
+        logExecutionError(id, data.nodeType, executionError, nodeErrorMessage)
       }
 
       setNodeExecutionState({
         isExecuting,
         hasError,
-        hasSuccess,
-        lastExecutionTime: nodeExecutionResult.endTime,
+        hasSuccess: !!hasSuccess,
+        lastExecutionTime: nodeExecutionTime,
+        executionError
+      })
+
+      // Clear success state after 3 seconds
+      if (hasSuccess) {
+        const timer = setTimeout(() => {
+          setNodeExecutionState(prev => ({ ...prev, hasSuccess: false }))
+        }, 3000)
+        return () => clearTimeout(timer)
+      }
+    } else if (nodeExecutionResult) {
+      // Fallback to legacy execution results
+      const isExecuting = executionResultStatus === 'success' && 
+                         (nodeExecutionResult.endTime === nodeExecutionResult.startTime || 
+                          !nodeExecutionResult.endTime)
+      const hasError = executionResultStatus === 'error'
+      const hasSuccess = executionResultStatus === 'success' && 
+                        nodeExecutionResult.endTime && 
+                        nodeExecutionResult.endTime > nodeExecutionResult.startTime
+
+      // Create user-friendly error object if there's an error
+      let executionError: NodeExecutionError | undefined
+      if (hasError && executionResultError) {
+        executionError = createNodeExecutionError(
+          executionResultError,
+          id,
+          data.nodeType
+        )
+        
+        // Log the error for debugging
+        logExecutionError(id, data.nodeType, executionError, executionResultError)
+      }
+
+      setNodeExecutionState({
+        isExecuting,
+        hasError,
+        hasSuccess: !!hasSuccess,
+        lastExecutionTime: executionResultEndTime,
         executionError
       })
 
@@ -101,7 +149,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         hasSuccess: false
       })
     }
-  }, [nodeExecutionResult, id, data.nodeType])
+  }, [nodeStatus, nodeErrorMessage, nodeExecutionTime, executionResultStatus, executionResultError, executionResultEndTime, id, data.nodeType])
 
   // Handler for execute button - now connects to real execution
   const handleExecuteNode = async (nodeId: string) => {
@@ -152,7 +200,27 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   }
 
   const getStatusIcon = () => {
-    // Prioritize real-time execution state over data.status
+    // Prioritize flow execution visual state
+    if (nodeVisualState && nodeVisualState.status !== NodeExecutionStatus.IDLE) {
+      switch (nodeVisualState.status) {
+        case NodeExecutionStatus.QUEUED:
+          return <div className="w-3 h-3 rounded-full bg-yellow-400 animate-pulse" />
+        case NodeExecutionStatus.RUNNING:
+          return <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+        case NodeExecutionStatus.COMPLETED:
+          return <CheckCircle className="w-3 h-3 text-green-500" />
+        case NodeExecutionStatus.FAILED:
+          return <AlertCircle className="w-3 h-3 text-red-500" />
+        case NodeExecutionStatus.CANCELLED:
+          return <div className="w-3 h-3 rounded-full bg-gray-400" />
+        case NodeExecutionStatus.SKIPPED:
+          return <div className="w-3 h-3 rounded-full bg-gray-300" />
+        default:
+          return null
+      }
+    }
+
+    // Fallback to real-time execution state over data.status
     if (nodeExecutionState.isExecuting) {
       return <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
     }
@@ -180,9 +248,29 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     if (data.disabled) return 'bg-gray-100 border-gray-300 text-gray-500'
     if (selected) return 'bg-blue-50 border-blue-500'
     
-    // Prioritize real-time execution state over data.status
+    // Prioritize flow execution visual state
+    if (nodeVisualState && nodeVisualState.status !== NodeExecutionStatus.IDLE) {
+      switch (nodeVisualState.status) {
+        case NodeExecutionStatus.QUEUED:
+          return 'bg-yellow-50 border-yellow-300 animate-pulse'
+        case NodeExecutionStatus.RUNNING:
+          return 'bg-blue-50 border-blue-300 animate-pulse'
+        case NodeExecutionStatus.COMPLETED:
+          return 'bg-green-50 border-green-300'
+        case NodeExecutionStatus.FAILED:
+          return 'bg-red-50 border-red-300'
+        case NodeExecutionStatus.CANCELLED:
+          return 'bg-gray-50 border-gray-300'
+        case NodeExecutionStatus.SKIPPED:
+          return 'bg-gray-50 border-gray-200'
+        default:
+          return 'bg-white border-gray-300 hover:border-gray-400'
+      }
+    }
+    
+    // Fallback to real-time execution state over data.status
     if (nodeExecutionState.isExecuting) {
-      return 'bg-blue-50 border-blue-300'
+      return 'bg-blue-50 border-blue-300 animate-pulse'
     }
     if (nodeExecutionState.hasSuccess) {
       return 'bg-green-50 border-green-300'
@@ -204,11 +292,30 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     }
   }
 
+  const getAnimationClasses = () => {
+    if (nodeVisualState) {
+      switch (nodeVisualState.status) {
+        case NodeExecutionStatus.QUEUED:
+          return 'node-queued node-glow-queued'
+        case NodeExecutionStatus.RUNNING:
+          return 'node-running node-glow-running'
+        case NodeExecutionStatus.COMPLETED:
+          return 'node-success node-glow-success'
+        case NodeExecutionStatus.FAILED:
+          return 'node-error node-glow-error'
+        default:
+          return ''
+      }
+    }
+    return ''
+  }
+
   return (
     <div
       className={clsx(
         'px-4 py-2 shadow-md rounded-md border-2 min-w-[150px] transition-all duration-200',
         getNodeColor(),
+        getAnimationClasses(),
         data.disabled && 'opacity-50 cursor-not-allowed'
       )}
     >
@@ -245,6 +352,37 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         {/* Status icon */}
         {getStatusIcon()}
       </div>
+
+      {/* Progress bar for running nodes */}
+      {nodeVisualState && 
+       nodeVisualState.status === NodeExecutionStatus.RUNNING && 
+       nodeVisualState.progress > 0 && (
+        <div className="mt-2">
+          <div className="w-full bg-gray-200 rounded-full h-1">
+            <div 
+              className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${nodeVisualState.progress}%` }}
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-1 text-center">
+            {nodeVisualState.progress}%
+            {nodeVisualState.executionTime && (
+              <span className="ml-2">
+                {Math.round(nodeVisualState.executionTime / 1000)}s
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Execution time display for completed nodes */}
+      {nodeVisualState && 
+       nodeVisualState.status === NodeExecutionStatus.COMPLETED && 
+       nodeVisualState.executionTime && (
+        <div className="mt-1 text-xs text-gray-500 text-center">
+          {Math.round(nodeVisualState.executionTime / 1000)}s
+        </div>
+      )}
 
       {/* Disabled overlay */}
       {data.disabled && (

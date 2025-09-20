@@ -1,25 +1,25 @@
 
-import React from 'react'
-import { 
-  Save, 
-  Undo, 
-  Redo, 
-  Play, 
-  Square, 
-  CheckCircle, 
-  Settings,
-  Download,
-  Upload,
-  AlertCircle,
-  Loader2,
-  Terminal
-} from 'lucide-react'
-import { clsx } from 'clsx'
-import { TitleManager } from './TitleManager'
-import { ExecutionState } from '@/types/workflow'
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { validateImportFile } from '@/utils/errorHandling'
-import { getUserFriendlyErrorMessage } from '@/utils/errorHandling'
+import { ExecutionState } from '@/types/workflow'
+import { getUserFriendlyErrorMessage, validateImportFile } from '@/utils/errorHandling'
+import { clsx } from 'clsx'
+import {
+    AlertCircle,
+    CheckCircle,
+    Download,
+    Loader2,
+    Pause,
+    Play,
+    Redo,
+    Save,
+    Settings,
+    Square,
+    Terminal,
+    Undo,
+    Upload
+} from 'lucide-react'
+import React from 'react'
+import { TitleManager } from './TitleManager'
 
 interface WorkflowToolbarProps {
   // Existing props
@@ -31,6 +31,8 @@ interface WorkflowToolbarProps {
   onValidate: () => void
   onExecute?: () => void
   onStop?: () => void
+  onPause?: () => void
+  onResume?: () => void
   onExport?: () => void
   onImport?: (file: File) => void
   isExecuting?: boolean
@@ -81,6 +83,8 @@ export function WorkflowToolbar({
   onValidate,
   onExecute,
   onStop,
+  onPause,
+  onResume,
   onExport,
   onImport,
   isExecuting = false,
@@ -336,8 +340,29 @@ export function WorkflowToolbar({
           </div>
         )}
         {/* Execution button with status */}
-        {(currentExecutionStatus === 'running' || isExecuting) ? (
+        {(currentExecutionStatus === 'running' || currentExecutionStatus === 'paused' || isExecuting) ? (
           <div className="flex items-center space-x-2">
+            {/* Pause/Resume button */}
+            {currentExecutionStatus === 'paused' ? (
+              <button
+                onClick={onResume}
+                className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                title="Resume execution"
+              >
+                <Play className="w-4 h-4" />
+                <span>Resume</span>
+              </button>
+            ) : (
+              <button
+                onClick={onPause}
+                className="flex items-center space-x-2 px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+                title="Pause execution"
+              >
+                <Pause className="w-4 h-4" />
+                <span>Pause</span>
+              </button>
+            )}
+            
             <button
               onClick={handleStopClick}
               className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"

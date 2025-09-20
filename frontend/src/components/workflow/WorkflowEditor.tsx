@@ -1,32 +1,31 @@
-import { useCallback, useRef, useState, useEffect, Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
     addEdge,
-    useNodesState,
-    useEdgesState,
-    Controls,
-    MiniMap,
     Background,
     Connection,
+    Controls,
+    MiniMap,
     NodeTypes,
-    ReactFlowProvider,
-    ReactFlowInstance,
     OnConnect,
-    OnNodesChange,
     OnEdgesChange,
-    OnSelectionChangeParams
+    OnNodesChange,
+    OnSelectionChangeParams,
+    ReactFlowInstance,
+    ReactFlowProvider,
+    useEdgesState,
+    useNodesState
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
+import { workflowService } from '@/services'
+import { useAuthStore, useWorkflowStore } from '@/stores'
+import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { CustomNode } from './CustomNode'
-import { NodePalette } from './NodePalette'
+import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { NodeContextMenu } from './NodeContextMenu'
+import { NodePalette } from './NodePalette'
 import { WorkflowToolbar } from './WorkflowToolbar'
-import { ExecutionPanel } from './ExecutionPanel'
-import { useWorkflowStore } from '@/stores'
-import { useAuthStore } from '@/stores'
-import { workflowService } from '@/services'
-import { WorkflowNode, WorkflowConnection, NodeType } from '@/types'
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
@@ -140,6 +139,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         // Execution
         executeWorkflow,
         stopExecution,
+        pauseExecution,
+        resumeExecution,
         executionState,
         lastExecutionResult,
         realTimeResults,
@@ -147,14 +148,18 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         getNodeExecutionResult,
         initializeRealTimeUpdates,
         toggleWorkflowActive,
+        // Flow execution state
+        // flowExecutionState,
+        getExecutionFlowStatus,
+        progressTracker,
         // Node interaction
         showPropertyPanel,
         propertyPanelNodeId,
         contextMenuVisible,
         contextMenuPosition,
         contextMenuNodeId,
-        setShowPropertyPanel,
-        setPropertyPanelNode,
+        // setShowPropertyPanel,
+        // setPropertyPanelNode,
         showContextMenu,
         hideContextMenu,
         openNodeProperties,
@@ -501,6 +506,26 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         }
     }, [stopExecution, handleShowError, handleShowSuccess])
 
+    const handlePauseExecution = useCallback(async () => {
+        try {
+            await pauseExecution()
+            handleShowSuccess('Execution paused')
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to pause execution'
+            handleShowError(errorMessage)
+        }
+    }, [pauseExecution, handleShowError, handleShowSuccess])
+
+    const handleResumeExecution = useCallback(async () => {
+        try {
+            await resumeExecution()
+            handleShowSuccess('Execution resumed')
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to resume execution'
+            handleShowError(errorMessage)
+        }
+    }, [resumeExecution, handleShowError, handleShowSuccess])
+
     // Save workflow function
     const handleSave = useCallback(async () => {
         if (!workflow || !user) return
@@ -638,6 +663,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                         // Execution props
                         onExecute={handleExecute}
                         onStopExecution={handleStopExecution}
+                        onPause={handlePauseExecution}
+                        onResume={handleResumeExecution}
                         isExecuting={executionState.status === 'running'}
                         executionState={executionState}
                         // Error handling props
@@ -707,6 +734,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     lastExecutionResult={lastExecutionResult}
                     executionLogs={executionLogs}
                     realTimeResults={realTimeResults}
+                    flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
+                    executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
                     onClose={() => setShowExecutionPanel(false)}
                 />
             )}

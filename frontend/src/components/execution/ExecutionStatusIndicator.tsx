@@ -1,5 +1,5 @@
+import { AlertCircle, CheckCircle, Clock, Loader, Pause, Square } from 'lucide-react';
 import React from 'react';
-import { CheckCircle, AlertCircle, Square, Clock, Loader } from 'lucide-react';
 import { useExecutionMonitor } from '../../hooks/useExecutionMonitoring';
 
 interface ExecutionStatusIndicatorProps {
@@ -67,7 +67,7 @@ export const ExecutionStatusIndicator: React.FC<ExecutionStatusIndicatorProps> =
       };
     }
 
-    switch (executionProgress.status) {
+    switch (executionProgress.status as any) {
       case 'running':
         return {
           status: 'running',
@@ -75,6 +75,14 @@ export const ExecutionStatusIndicator: React.FC<ExecutionStatusIndicatorProps> =
           color: 'text-blue-500',
           bgColor: 'bg-blue-50',
           label: 'Running'
+        };
+      case 'paused':
+        return {
+          status: 'paused',
+          icon: <Pause className="w-4 h-4" />,
+          color: 'text-yellow-500',
+          bgColor: 'bg-yellow-50',
+          label: 'Paused'
         };
       case 'success':
         return {

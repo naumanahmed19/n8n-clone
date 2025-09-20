@@ -1,28 +1,32 @@
 // Main entry point for the n8n clone backend
-import express from 'express';
-import { createServer } from 'http';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import dotenv from 'dotenv';
+import compression from "compression";
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import helmet from "helmet";
+import { createServer } from "http";
 
 // Import routes
-import { workflowRoutes } from './routes/workflows';
-import { executionRoutes } from './routes/executions';
-import { nodeRoutes } from './routes/nodes';
-import { authRoutes } from './routes/auth';
-import credentialRoutes from './routes/credentials';
-import triggerRoutes from './routes/triggers';
-import { customNodeRoutes } from './routes/custom-nodes';
+import { authRoutes } from "./routes/auth";
+import credentialRoutes from "./routes/credentials";
+import { customNodeRoutes } from "./routes/custom-nodes";
+import executionControlRoutes from "./routes/execution-control";
+import executionHistoryRoutes from "./routes/execution-history";
+import executionRecoveryRoutes from "./routes/execution-recovery";
+import { executionRoutes } from "./routes/executions";
+import flowExecutionRoutes from "./routes/flow-execution";
+import { nodeRoutes } from "./routes/nodes";
+import triggerRoutes from "./routes/triggers";
+import { workflowRoutes } from "./routes/workflows";
 
 // Import middleware
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 // Import services
-import { SocketService } from './services/SocketService';
-import { NodeService } from './services/NodeService';
-import { NodeLoader } from './services/NodeLoader';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
+import { NodeLoader } from "./services/NodeLoader";
+import { NodeService } from "./services/NodeService";
+import { SocketService } from "./services/SocketService";
 
 // Load environment variables
 dotenv.config();
@@ -53,20 +57,22 @@ global.prisma = prisma;
 async function initializeCustomNodes() {
   try {
     await nodeLoader.initialize();
-    console.log('✅ Custom node system initialized');
+    console.log("✅ Custom node system initialized");
   } catch (error) {
-    console.error('❌ Failed to initialize custom node system:', error);
+    console.error("❌ Failed to initialize custom node system:", error);
   }
 }
 
 // Basic middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
@@ -76,45 +82,53 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
     timestamp: new Date().toISOString(),
-    service: 'n8n-clone-backend',
-    version: '1.0.0',
+    service: "n8n-clone-backend",
+    version: "1.0.0",
     websocket: {
-      connected_users: socketService.getConnectedUsersCount()
-    }
+      connected_users: socketService.getConnectedUsersCount(),
+    },
   });
 });
 
 // Basic route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'n8n Clone Backend API',
-    version: '1.0.0',
+app.get("/", (req, res) => {
+  res.json({
+    message: "n8n Clone Backend API",
+    version: "1.0.0",
     endpoints: {
-      auth: '/api/auth',
-      workflows: '/api/workflows',
-      executions: '/api/executions',
-      nodes: '/api/nodes',
-      credentials: '/api/credentials',
-      triggers: '/api/triggers',
-      webhooks: '/api/triggers/webhooks',
-      customNodes: '/api/custom-nodes',
-      health: '/health'
-    }
+      auth: "/api/auth",
+      workflows: "/api/workflows",
+      executions: "/api/executions",
+      nodes: "/api/nodes",
+      credentials: "/api/credentials",
+      triggers: "/api/triggers",
+      webhooks: "/api/triggers/webhooks",
+      customNodes: "/api/custom-nodes",
+      flowExecution: "/api/flow-execution",
+      executionControl: "/api/execution-control",
+      executionHistory: "/api/execution-history",
+      executionRecovery: "/api/execution-recovery",
+      health: "/health",
+    },
   });
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/workflows', workflowRoutes);
-app.use('/api/executions', executionRoutes);
-app.use('/api/nodes', nodeRoutes);
-app.use('/api/credentials', credentialRoutes);
-app.use('/api/triggers', triggerRoutes);
-app.use('/api/custom-nodes', customNodeRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/workflows", workflowRoutes);
+app.use("/api/executions", executionRoutes);
+app.use("/api/nodes", nodeRoutes);
+app.use("/api/credentials", credentialRoutes);
+app.use("/api/triggers", triggerRoutes);
+app.use("/api/custom-nodes", customNodeRoutes);
+app.use("/api/flow-execution", flowExecutionRoutes);
+app.use("/api/execution-control", executionControlRoutes);
+app.use("/api/execution-history", executionHistoryRoutes);
+app.use("/api/execution-recovery", executionRecoveryRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -136,30 +150,30 @@ httpServer.listen(PORT, async () => {
   console.log(`   - Triggers: http://localhost:${PORT}/api/triggers`);
   console.log(`   - Webhooks: http://localhost:${PORT}/api/triggers/webhooks`);
   console.log(`   - Custom Nodes: http://localhost:${PORT}/api/custom-nodes`);
-  
+
   // Initialize custom node system after server starts
   await initializeCustomNodes();
 });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully...');
+process.on("SIGTERM", async () => {
+  console.log("SIGTERM received, shutting down gracefully...");
   await nodeLoader.cleanup();
   await socketService.shutdown();
   await prisma.$disconnect();
   httpServer.close(() => {
-    console.log('Server closed');
+    console.log("Server closed");
     process.exit(0);
   });
 });
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully...');
+process.on("SIGINT", async () => {
+  console.log("SIGINT received, shutting down gracefully...");
   await nodeLoader.cleanup();
   await socketService.shutdown();
   await prisma.$disconnect();
   httpServer.close(() => {
-    console.log('Server closed');
+    console.log("Server closed");
     process.exit(0);
   });
 });

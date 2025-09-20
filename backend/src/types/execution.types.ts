@@ -1,7 +1,12 @@
 // Execution engine type definitions
 
-import { Node, Connection, Workflow, Execution, NodeExecution } from './database';
-import { NodeInputData, NodeOutputData } from './node.types';
+import {
+  Connection,
+  Node,
+  NodeExecution,
+  NodeExecutionStatus,
+} from "./database";
+import { NodeInputData, NodeOutputData } from "./node.types";
 
 export interface ExecutionContext {
   executionId: string;
@@ -15,7 +20,7 @@ export interface ExecutionContext {
 }
 
 export interface ExecutionJob {
-  type: 'execute-workflow' | 'execute-node' | 'cancel-execution';
+  type: "execute-workflow" | "execute-node" | "cancel-execution";
   data: ExecutionJobData;
 }
 
@@ -59,7 +64,7 @@ export interface ExecutionProgress {
   completedNodes: number;
   failedNodes: number;
   currentNode?: string;
-  status: 'running' | 'success' | 'error' | 'cancelled';
+  status: "running" | "success" | "error" | "cancelled";
   startedAt: Date;
   finishedAt?: Date;
   error?: ExecutionEngineError;
@@ -99,10 +104,51 @@ export interface NodeMetrics {
   retryCount: number;
 }
 
+// Enhanced NodeExecutionState interface for flow execution
+export interface NodeExecutionState {
+  nodeId: string;
+  status: NodeExecutionStatus;
+  startTime?: number;
+  endTime?: number;
+  duration?: number;
+  progress?: number;
+  error?: any; // Changed from ExecutionEngineError to any for JSON compatibility
+  inputData?: any;
+  outputData?: any;
+  dependencies?: string[]; // Made optional
+  dependents?: string[]; // Made optional
+  executionOrder?: number; // Added this field
+}
+
+// Enhanced ExecutionFlowStatus interface
+export interface ExecutionFlowStatus {
+  executionId: string;
+  overallStatus: "running" | "completed" | "failed" | "cancelled";
+  progress: number;
+  nodeStates: Map<string, NodeExecutionState>;
+  currentlyExecuting: string[];
+  completedNodes: string[];
+  failedNodes: string[];
+  queuedNodes: string[];
+  executionPath: string[];
+  estimatedTimeRemaining?: number;
+}
+
 export interface ExecutionEventData {
   executionId: string;
-  type: 'started' | 'node-started' | 'node-completed' | 'node-failed' | 'completed' | 'failed' | 'cancelled';
+  type:
+    | "started"
+    | "node-started"
+    | "node-completed"
+    | "node-failed"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "node-status-update"
+    | "execution-progress";
   nodeId?: string;
+  status?: NodeExecutionStatus;
+  progress?: number;
   data?: any;
   error?: ExecutionEngineError;
   timestamp: Date;
@@ -123,7 +169,7 @@ export interface QueueConfig {
     removeOnFail: number;
     attempts: number;
     backoff: {
-      type: 'exponential';
+      type: "exponential";
       delay: number;
     };
   };
@@ -137,4 +183,37 @@ export interface ExecutionStats {
   cancelledExecutions: number;
   averageExecutionTime: number;
   queueSize: number;
+}
+
+// Additional types for flow execution persistence
+export interface ExecutionMetricsData {
+  totalNodes: number;
+  completedNodes: number;
+  failedNodes: number;
+  averageNodeDuration: number;
+  longestRunningNode: string;
+  bottleneckNodes: string[];
+  parallelismUtilization: number;
+}
+
+export interface ExecutionHistoryEntry {
+  executionId: string;
+  workflowId: string;
+  triggerType: string;
+  startTime: number;
+  endTime?: number;
+  status: string;
+  executedNodes: string[];
+  executionPath: string[];
+  metrics: ExecutionMetricsData;
+}
+
+export interface NodeVisualState {
+  nodeId: string;
+  status: NodeExecutionStatus;
+  progress: number;
+  animationState: "idle" | "pulsing" | "spinning" | "success" | "error";
+  lastUpdated: number;
+  errorMessage?: string;
+  executionTime?: number;
 }
