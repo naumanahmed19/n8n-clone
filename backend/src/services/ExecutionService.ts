@@ -170,15 +170,40 @@ export class ExecutionService {
         triggerData
       );
 
+      // Collect error information from failed nodes
+      let executionError: any = undefined;
+      if (flowResult.failedNodes.length > 0) {
+        const failedNodeErrors: string[] = [];
+        
+        for (const [nodeId, nodeResult] of flowResult.nodeResults) {
+          if (nodeResult.status === "failed" && nodeResult.error) {
+            const errorMessage = nodeResult.error instanceof Error 
+              ? nodeResult.error.message 
+              : String(nodeResult.error);
+            failedNodeErrors.push(`Node ${nodeId}: ${errorMessage}`);
+          }
+        }
+
+        executionError = {
+          message: failedNodeErrors.length > 0 
+            ? failedNodeErrors.join("; ") 
+            : `${flowResult.failedNodes.length} node(s) failed`,
+          timestamp: new Date(),
+          failedNodes: flowResult.failedNodes,
+        };
+      }
+
       return {
-        success: flowResult.status === "completed",
+        success: true, // Execution started and ran, even if some nodes failed
         data: {
           executionId: flowResult.executionId,
           status: flowResult.status,
           executedNodes: flowResult.executedNodes,
           failedNodes: flowResult.failedNodes,
           duration: flowResult.totalDuration,
+          hasFailures: flowResult.failedNodes.length > 0,
         },
+        error: executionError,
       };
     } catch (error) {
       logger.error(`Failed to execute workflow ${workflowId}:`, error);
@@ -249,15 +274,40 @@ export class ExecutionService {
         inputData
       );
 
+      // Collect error information from failed nodes
+      let executionError: any = undefined;
+      if (flowResult.failedNodes.length > 0) {
+        const failedNodeErrors: string[] = [];
+        
+        for (const [nodeId, nodeResult] of flowResult.nodeResults) {
+          if (nodeResult.status === "failed" && nodeResult.error) {
+            const errorMessage = nodeResult.error instanceof Error 
+              ? nodeResult.error.message 
+              : String(nodeResult.error);
+            failedNodeErrors.push(`Node ${nodeId}: ${errorMessage}`);
+          }
+        }
+
+        executionError = {
+          message: failedNodeErrors.length > 0 
+            ? failedNodeErrors.join("; ") 
+            : `${flowResult.failedNodes.length} node(s) failed`,
+          timestamp: new Date(),
+          failedNodes: flowResult.failedNodes,
+        };
+      }
+
       return {
-        success: flowResult.status === "completed",
+        success: true, // Execution started and ran, even if some nodes failed
         data: {
           executionId: flowResult.executionId,
           status: flowResult.status,
           executedNodes: flowResult.executedNodes,
           failedNodes: flowResult.failedNodes,
           duration: flowResult.totalDuration,
+          hasFailures: flowResult.failedNodes.length > 0,
         },
+        error: executionError,
       };
     } catch (error) {
       logger.error(`Failed to execute from node ${nodeId}:`, error);
@@ -979,8 +1029,31 @@ export class ExecutionService {
           executionId: flowResult.executionId,
         });
 
+        // Collect error information from failed nodes
+        let executionError: any = undefined;
+        if (flowResult.failedNodes.length > 0) {
+          const failedNodeErrors: string[] = [];
+          
+          for (const [failedNodeId, nodeResult] of flowResult.nodeResults) {
+            if (nodeResult.status === "failed" && nodeResult.error) {
+              const errorMessage = nodeResult.error instanceof Error 
+                ? nodeResult.error.message 
+                : String(nodeResult.error);
+              failedNodeErrors.push(`Node ${failedNodeId}: ${errorMessage}`);
+            }
+          }
+
+          executionError = {
+            message: failedNodeErrors.length > 0 
+              ? failedNodeErrors.join("; ") 
+              : `${flowResult.failedNodes.length} node(s) failed`,
+            timestamp: new Date(),
+            failedNodes: flowResult.failedNodes,
+          };
+        }
+
         return {
-          success: flowResult.status === "completed",
+          success: true, // Execution started and ran, even if some nodes failed
           data: {
             executionId: flowResult.executionId,
             nodeId,
@@ -995,14 +1068,9 @@ export class ExecutionService {
             duration: flowResult.totalDuration,
             executedNodes: flowResult.executedNodes,
             failedNodes: flowResult.failedNodes,
+            hasFailures: flowResult.failedNodes.length > 0,
           },
-          error:
-            flowResult.status !== "completed"
-              ? {
-                  message: `Flow execution ${flowResult.status}`,
-                  timestamp: new Date(),
-                }
-              : undefined,
+          error: executionError,
         };
       } catch (flowError) {
         logger.error(`FlowExecutionEngine failed for node ${nodeId}:`, {

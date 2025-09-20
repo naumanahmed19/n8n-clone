@@ -36,12 +36,21 @@ router.post(
     );
 
     if (!result.success) {
-      throw new AppError(result.error!.message, 400, "EXECUTION_FAILED");
+      const errorMessage = result.error?.message || "Workflow execution failed";
+      throw new AppError(errorMessage, 400, "EXECUTION_FAILED");
     }
 
     const response: ApiResponse = {
       success: true,
       data: result.data,
+      // Include error details if some nodes failed, but don't treat it as API failure
+      ...(result.error && { 
+        warnings: [{
+          type: "NODE_FAILURES",
+          message: result.error.message,
+          details: result.error
+        }]
+      })
     };
 
     res.status(201).json(response);
@@ -150,11 +159,10 @@ router.delete(
     );
 
     if (!result.success) {
-      const statusCode = result.error!.message.includes("not found")
-        ? 404
-        : 400;
+      const errorMessage = result.error?.message || "Failed to delete execution";
+      const statusCode = errorMessage.includes("not found") ? 404 : 400;
       throw new AppError(
-        result.error!.message,
+        errorMessage,
         statusCode,
         "EXECUTION_DELETE_FAILED"
       );
@@ -181,11 +189,10 @@ router.post(
     );
 
     if (!result.success) {
-      const statusCode = result.error!.message.includes("not found")
-        ? 404
-        : 400;
+      const errorMessage = result.error?.message || "Failed to cancel execution";
+      const statusCode = errorMessage.includes("not found") ? 404 : 400;
       throw new AppError(
-        result.error!.message,
+        errorMessage,
         statusCode,
         "EXECUTION_CANCEL_FAILED"
       );
@@ -212,11 +219,10 @@ router.post(
     );
 
     if (!result.success) {
-      const statusCode = result.error!.message.includes("not found")
-        ? 404
-        : 400;
+      const errorMessage = result.error?.message || "Failed to retry execution";
+      const statusCode = errorMessage.includes("not found") ? 404 : 400;
       throw new AppError(
-        result.error!.message,
+        errorMessage,
         statusCode,
         "EXECUTION_RETRY_FAILED"
       );
@@ -336,6 +342,14 @@ router.post(
     const response: ApiResponse = {
       success: true,
       data: result.data,
+      // Include error details if some nodes failed, but don't treat it as API failure
+      ...(result.error && { 
+        warnings: [{
+          type: "NODE_FAILURES",
+          message: result.error.message,
+          details: result.error
+        }]
+      })
     };
 
     res.status(201).json(response);

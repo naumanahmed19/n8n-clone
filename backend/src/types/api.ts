@@ -131,6 +131,11 @@ export type ApiResponse<T = any> = {
     message: string;
     details?: any;
   };
+  warnings?: Array<{
+    type: string;
+    message: string;
+    details?: any;
+  }>;
   pagination?: {
     page: number;
     limit: number;
