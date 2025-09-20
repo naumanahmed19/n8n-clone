@@ -93,8 +93,14 @@ export class ExecutionEngine extends EventEmitter {
                 throw new Error(`Workflow ${workflowId} not found`);
             }
 
-            if (!workflow.active) {
+            // Check if workflow is active (unless this is a manual execution)
+            if (!workflow.active && !options.manual) {
                 throw new Error(`Workflow ${workflowId} is not active`);
+            }
+
+            // Log manual execution of inactive workflow
+            if (!workflow.active && options.manual) {
+                logger.info(`Manual execution of inactive workflow ${workflowId} by user ${userId}`);
             }
 
             // Create execution record
@@ -337,10 +343,18 @@ export class ExecutionEngine extends EventEmitter {
             const workflowConnections = workflow.connections as unknown as Connection[];
             const graph = this.buildExecutionGraph(workflowNodes, workflowConnections);
 
+            // Emit execution started event with trigger information
             this.emitExecutionEvent({
                 executionId,
                 type: 'started',
-                timestamp: new Date()
+                timestamp: new Date(),
+                data: {
+                    workflowId,
+                    userId,
+                    triggerType: this.determineTriggerType(workflowNodes),
+                    triggerData: context.triggerData,
+                    nodeCount: workflowNodes.length
+                }
             });
 
             // Execute nodes in topological order
@@ -408,33 +422,53 @@ export class ExecutionEngine extends EventEmitter {
             // Emit progress update
             await this.emitExecutionProgress(executionId);
 
-            // Execute the node securely
+            // Execute the node securely with enhanced options for manual triggers
+            const executionOptions = {
+                timeout: 30000, // 30 seconds
+                memoryLimit: 128 * 1024 * 1024, // 128MB
+                maxOutputSize: 10 * 1024 * 1024, // 10MB
+                maxRequestTimeout: 30000,
+                maxConcurrentRequests: 5
+            };
+
+            // For manual triggers, add additional context
+            if (node.type === 'manual-trigger') {
+                logger.info(`Executing manual trigger node ${nodeId}`, {
+                    executionId,
+                    triggerDataSize: JSON.stringify(context.triggerData || {}).length,
+                    nodeParameters: Object.keys(node.parameters || {})
+                });
+            }
+
             const result = await this.nodeService.executeNode(
                 node.type,
                 node.parameters,
                 inputData,
                 undefined, // credentials - TODO: implement credential retrieval
                 executionId,
-                {
-                    timeout: 30000, // 30 seconds
-                    memoryLimit: 128 * 1024 * 1024, // 128MB
-                    maxOutputSize: 10 * 1024 * 1024, // 10MB
-                    maxRequestTimeout: 30000,
-                    maxConcurrentRequests: 5
-                }
+                executionOptions
             );
 
             if (!result.success) {
                 throw new Error(result.error?.message || 'Node execution failed');
             }
 
-            // Update node execution record
+            // Update node execution record with real execution data
             await this.prisma.nodeExecution.update({
                 where: { id: nodeExecution.id },
                 data: {
                     status: NodeExecutionStatus.SUCCESS,
                     outputData: result.data,
-                    finishedAt: new Date()
+                    finishedAt: new Date(),
+                    // Store additional execution metadata for manual triggers
+                    ...(node.type === 'manual-trigger' && {
+                        real_output_data: result.data,
+                        network_metrics: {
+                            executionTime: new Date().getTime() - new Date(nodeExecution.startedAt).getTime(),
+                            triggerType: 'manual',
+                            triggerDataSize: JSON.stringify(context.triggerData || {}).length
+                        }
+                    })
                 }
             });
 
@@ -458,6 +492,16 @@ export class ExecutionEngine extends EventEmitter {
             return result.data || [];
 
         } catch (error) {
+            // Enhanced error handling for manual triggers
+            if (node && node.type === 'manual-trigger') {
+                logger.error(`Manual trigger node ${nodeId} execution failed`, {
+                    executionId,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
+                    nodeParameters: Object.keys(node.parameters || {})
+                });
+            }
+            
             await this.handleNodeExecutionError(executionId, nodeId, error as Error, retryCount);
             throw error;
         }
@@ -479,6 +523,10 @@ export class ExecutionEngine extends EventEmitter {
         }
 
         // Build adjacency list and calculate in-degrees
+        logger.info(`Building execution graph with ${connections.length} connections`, {
+            connections: connections.map(c => ({ source: c.sourceNodeId, target: c.targetNodeId }))
+        });
+
         for (const connection of connections) {
             const sourceId = connection.sourceNodeId;
             const targetId = connection.targetNodeId;
@@ -486,6 +534,9 @@ export class ExecutionEngine extends EventEmitter {
             if (adjacencyList.has(sourceId) && inDegree.has(targetId)) {
                 adjacencyList.get(sourceId)!.push(targetId);
                 inDegree.set(targetId, inDegree.get(targetId)! + 1);
+                logger.debug(`Added connection: ${sourceId} -> ${targetId}`);
+            } else {
+                logger.warn(`Invalid connection: ${sourceId} -> ${targetId} (nodes not found)`);
             }
         }
 
@@ -550,6 +601,12 @@ export class ExecutionEngine extends EventEmitter {
         context: ExecutionContext,
         graph: ExecutionGraph
     ): Promise<void> {
+        logger.info(`Executing nodes in order for execution ${context.executionId}`, {
+            executionOrder: graph.executionOrder,
+            totalNodes: graph.executionOrder.length,
+            connections: graph.connections.length
+        });
+
         for (const nodeId of graph.executionOrder) {
             if (context.cancelled) {
                 throw new Error('Execution was cancelled');
@@ -592,8 +649,25 @@ export class ExecutionEngine extends EventEmitter {
         );
 
         if (incomingConnections.length === 0) {
-            // This is a trigger node, use trigger data
-            inputData.main = [[context.triggerData || {}]];
+            // This is a trigger node, prepare trigger data properly
+            const node = graph.nodes.get(nodeId);
+            
+            if (node && node.type === 'manual-trigger') {
+                // For manual triggers, pass the trigger data as the first item
+                // The manual trigger node will handle validation and processing
+                const triggerInput = context.triggerData || {};
+                
+                // Log trigger data for debugging
+                logger.debug(`Preparing manual trigger input data for node ${nodeId}`, {
+                    triggerDataKeys: Object.keys(triggerInput),
+                    triggerDataSize: JSON.stringify(triggerInput).length
+                });
+                
+                inputData.main = [[{ json: triggerInput }]];
+            } else {
+                // For other trigger types, use empty trigger data
+                inputData.main = [[context.triggerData || {}]];
+            }
         } else {
             // Collect data from source nodes
             const sourceData: any[] = [];
@@ -601,8 +675,15 @@ export class ExecutionEngine extends EventEmitter {
             for (const connection of incomingConnections) {
                 const sourceOutput = context.nodeOutputs.get(connection.sourceNodeId);
                 if (sourceOutput && sourceOutput.length > 0) {
-                    sourceData.push(...sourceOutput[0].main || []);
+                    // Flatten the output data from source nodes
+                    const outputItems = sourceOutput[0].main || [];
+                    sourceData.push(...outputItems);
                 }
+            }
+
+            // If no source data, provide empty object
+            if (sourceData.length === 0) {
+                sourceData.push({ json: {} });
             }
 
             inputData.main = [sourceData];
@@ -823,6 +904,33 @@ export class ExecutionEngine extends EventEmitter {
             timestamp: new Date()
         });
         logger.debug(`Node execution event: ${type} for ${nodeId}`, { executionId, nodeId, type });
+    }
+
+    /**
+     * Determine the trigger type for a workflow
+     */
+    private determineTriggerType(nodes: Node[]): string {
+        // Find trigger nodes (nodes with no inputs)
+        const triggerNodes = nodes.filter(node => 
+            node.type.includes('trigger') || 
+            ['manual-trigger', 'webhook-trigger', 'schedule-trigger'].includes(node.type)
+        );
+
+        if (triggerNodes.length === 0) {
+            return 'unknown';
+        }
+
+        // Return the first trigger type found
+        const firstTrigger = triggerNodes[0];
+        if (firstTrigger.type === 'manual-trigger') {
+            return 'manual';
+        } else if (firstTrigger.type === 'webhook-trigger') {
+            return 'webhook';
+        } else if (firstTrigger.type === 'schedule-trigger') {
+            return 'schedule';
+        }
+
+        return firstTrigger.type;
     }
 
     /**

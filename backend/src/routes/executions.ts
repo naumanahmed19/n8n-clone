@@ -259,4 +259,41 @@ router.get(
   })
 );
 
+// POST /api/executions/nodes/:nodeId - Execute a single node
+router.post(
+  '/nodes/:nodeId',
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { nodeId } = req.params;
+    const { workflowId, inputData, parameters } = req.body;
+
+    if (!workflowId) {
+      throw new AppError('Workflow ID is required', 400, 'MISSING_WORKFLOW_ID');
+    }
+
+    if (!nodeId) {
+      throw new AppError('Node ID is required', 400, 'MISSING_NODE_ID');
+    }
+
+    const result = await executionService.executeSingleNode(
+      workflowId,
+      nodeId,
+      req.user!.id,
+      inputData,
+      parameters
+    );
+
+    if (!result.success) {
+      throw new AppError(result.error!.message, 400, 'NODE_EXECUTION_FAILED');
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: result.data
+    };
+
+    res.status(201).json(response);
+  })
+);
+
 export { router as executionRoutes };

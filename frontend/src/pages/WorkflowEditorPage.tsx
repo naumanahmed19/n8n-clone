@@ -52,7 +52,7 @@ export function WorkflowEditorPage() {
             saveManualExecutions: true,
             callerPolicy: 'workflowsFromSameOwner'
           },
-          active: false,
+          active: true, // New workflows should be active by default
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -76,7 +76,7 @@ export function WorkflowEditorPage() {
             saveManualExecutions: true,
             callerPolicy: 'workflowsFromSameOwner'
           },
-          active: false,
+          active: true, // New workflows should be active by default
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }

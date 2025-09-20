@@ -15,6 +15,10 @@ import {
 } from '../types/node.types';
 import { logger } from '../utils/logger';
 import { SecureExecutionService, CredentialData, SecureExecutionOptions } from './SecureExecutionService';
+import { UrlSecurityValidator, SecurityErrorType } from '../utils/security/UrlSecurityValidator';
+import { ResourceLimitsEnforcer } from '../utils/security/ResourceLimitsEnforcer';
+import { HttpExecutionErrorFactory, HttpErrorType } from '../utils/errors/HttpExecutionError';
+import { RetryHandler } from '../utils/retry/RetryStrategy';
 
 export class NodeService {
   private prisma: PrismaClient;
@@ -149,8 +153,8 @@ export class NodeService {
         ...node,
         icon: node.icon || undefined,
         color: node.color || undefined,
-        properties: Array.isArray(node.properties) ? node.properties : [],
-        defaults: typeof node.defaults === 'object' ? node.defaults : {},
+        properties: Array.isArray(node.properties) ? node.properties as unknown as NodeProperty[] : [],
+        defaults: (typeof node.defaults === 'object' && node.defaults !== null) ? node.defaults as Record<string, any> : {},
         inputs: Array.isArray(node.inputs) ? node.inputs : ['main'],
         outputs: Array.isArray(node.outputs) ? node.outputs : ['main']
       }));
@@ -468,7 +472,10 @@ export class NodeService {
         method: 'GET',
         url: '',
         headers: {},
-        body: ''
+        body: '',
+        timeout: 30000,
+        followRedirects: true,
+        maxRedirects: 5
       },
       inputs: ['main'],
       outputs: ['main'],
@@ -515,6 +522,35 @@ export class NodeService {
               method: ['POST', 'PUT', 'PATCH']
             }
           }
+        },
+        {
+          displayName: 'Timeout (ms)',
+          name: 'timeout',
+          type: 'number',
+          required: false,
+          default: 30000,
+          description: 'Request timeout in milliseconds'
+        },
+        {
+          displayName: 'Follow Redirects',
+          name: 'followRedirects',
+          type: 'boolean',
+          required: false,
+          default: true,
+          description: 'Whether to follow HTTP redirects'
+        },
+        {
+          displayName: 'Max Redirects',
+          name: 'maxRedirects',
+          type: 'number',
+          required: false,
+          default: 5,
+          description: 'Maximum number of redirects to follow',
+          displayOptions: {
+            show: {
+              followRedirects: [true]
+            }
+          }
         }
       ],
       execute: async function(inputData: NodeInputData): Promise<NodeOutputData[]> {
@@ -522,26 +558,224 @@ export class NodeService {
         const url = this.getNodeParameter('url') as string;
         const headers = this.getNodeParameter('headers') as Record<string, string> || {};
         const body = this.getNodeParameter('body');
+        const timeout = this.getNodeParameter('timeout') as number || 30000;
+        const followRedirects = this.getNodeParameter('followRedirects') as boolean;
+        const maxRedirects = this.getNodeParameter('maxRedirects') as number || 5;
 
         if (!url) {
           throw new Error('URL is required');
         }
 
-        try {
-          const response = await this.helpers.request({
-            method: method as any,
+        // Parse headers if they're a string
+        let parsedHeaders: Record<string, string> = {};
+        if (typeof headers === 'string') {
+          try {
+            parsedHeaders = JSON.parse(headers);
+          } catch (error) {
+            throw new Error('Invalid headers JSON format');
+          }
+        } else {
+          parsedHeaders = headers;
+        }
+
+        // Security validation
+        const urlValidation = UrlSecurityValidator.validateUrl(url);
+        if (!urlValidation.isValid) {
+          const errorMessages = urlValidation.errors.map(e => e.message).join('; ');
+          this.logger.warn('HTTP Request blocked by security validation', {
             url,
-            headers: {
-              'Content-Type': 'application/json',
-              ...headers
+            errors: urlValidation.errors,
+            riskLevel: urlValidation.riskLevel
+          });
+          throw new Error(`Security validation failed: ${errorMessages}`);
+        }
+
+        // Validate request parameters
+        const paramValidation = UrlSecurityValidator.validateRequestParameters({
+          headers: parsedHeaders,
+          body: body
+        });
+        if (!paramValidation.isValid) {
+          const errorMessages = paramValidation.errors.map(e => e.message).join('; ');
+          this.logger.warn('HTTP Request parameters blocked by security validation', {
+            errors: paramValidation.errors,
+            riskLevel: paramValidation.riskLevel
+          });
+          throw new Error(`Parameter validation failed: ${errorMessages}`);
+        }
+
+        // Check memory limits before execution
+        const memoryCheck = ResourceLimitsEnforcer.checkMemoryLimits();
+        if (!memoryCheck.isValid) {
+          this.logger.warn('HTTP Request blocked due to memory limits', { error: memoryCheck.error });
+          throw new Error(`Resource limit exceeded: ${memoryCheck.error}`);
+        }
+
+        // Use sanitized URL
+        const sanitizedUrl = urlValidation.sanitizedUrl || url;
+
+        // Prepare request body
+        let requestBody: string | undefined;
+        if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+          if (typeof body === 'string') {
+            requestBody = body;
+          } else {
+            requestBody = JSON.stringify(body);
+            // Set content-type if not already set
+            if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
+              parsedHeaders['Content-Type'] = 'application/json';
+            }
+          }
+
+          // Validate request body size
+          const bodySize = Buffer.byteLength(requestBody, 'utf8');
+          const bodySizeCheck = ResourceLimitsEnforcer.validateRequestSize(bodySize);
+          if (!bodySizeCheck.isValid) {
+            this.logger.warn('HTTP Request body size exceeds limits', { 
+              bodySize, 
+              error: bodySizeCheck.error 
+            });
+            throw new Error(`Request body too large: ${bodySizeCheck.error}`);
+          }
+        }
+
+        // Execute HTTP request with retry logic
+        try {
+          const result = await RetryHandler.executeWithRetry(
+            async () => {
+              // Import node-fetch dynamically
+              const fetch = (await import('node-fetch')).default;
+              const { AbortController } = await import('abort-controller');
+
+              // Create abort controller for timeout handling
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+              try {
+                // Make the actual HTTP request
+                const startTime = Date.now();
+                const response = await fetch(sanitizedUrl, {
+                  method: method as any,
+                  headers: parsedHeaders,
+                  body: requestBody,
+                  signal: controller.signal as any,
+                  redirect: followRedirects ? 'follow' : 'manual',
+                  follow: followRedirects ? maxRedirects : 0,
+                  timeout: timeout
+                });
+
+                // Clear timeout
+                clearTimeout(timeoutId);
+
+                const responseTime = Date.now() - startTime;
+
+                // Check if response indicates an error that should be retried
+                if (!response.ok) {
+                  const httpError = HttpExecutionErrorFactory.createFromError(
+                    new Error(`HTTP ${response.status} ${response.statusText}`),
+                    sanitizedUrl,
+                    method,
+                    response
+                  );
+                  throw httpError;
+                }
+
+                // Validate response size
+                const contentLength = response.headers.get('content-length');
+                if (contentLength) {
+                  const responseSize = parseInt(contentLength, 10);
+                  const responseSizeCheck = ResourceLimitsEnforcer.validateResponseSize(responseSize);
+                  if (!responseSizeCheck.isValid) {
+                    this.logger.warn('HTTP Response size exceeds limits', { 
+                      responseSize, 
+                      error: responseSizeCheck.error 
+                    });
+                    throw new Error(`Response too large: ${responseSizeCheck.error}`);
+                  }
+                }
+
+                // Parse response based on content type
+                const contentType = response.headers.get('content-type') || '';
+                let responseData: any;
+
+                try {
+                  if (contentType.includes('application/json')) {
+                    responseData = await response.json();
+                  } else {
+                    responseData = await response.text();
+                  }
+                } catch (parseError) {
+                  const httpError = HttpExecutionErrorFactory.createFromError(
+                    parseError,
+                    sanitizedUrl,
+                    method,
+                    response
+                  );
+                  throw httpError;
+                }
+
+                // Create response headers object
+                const responseHeaders: Record<string, string> = {};
+                response.headers.forEach((value, key) => {
+                  responseHeaders[key] = value;
+                });
+
+                // Return structured response data
+                return {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: responseHeaders,
+                  data: responseData,
+                  responseTime,
+                  url: response.url, // Final URL after redirects
+                  ok: response.ok
+                };
+
+              } catch (fetchError) {
+                clearTimeout(timeoutId);
+                
+                // Create structured error
+                const httpError = HttpExecutionErrorFactory.createFromError(
+                  fetchError,
+                  sanitizedUrl,
+                  method
+                );
+                throw httpError;
+              }
             },
-            body: body && ['POST', 'PUT', 'PATCH'].includes(method) ? body : undefined,
-            json: true
+            {
+              maxRetries: 3,
+              retryDelay: 1000,
+              backoffMultiplier: 2,
+              maxRetryDelay: 10000
+            },
+            { url: sanitizedUrl, method }
+          );
+
+          this.logger.info('HTTP Request completed', {
+            method,
+            url: sanitizedUrl,
+            status: result.status,
+            responseTime: result.responseTime
           });
 
-          return [{ main: [{ json: response }] }];
+          return [{ main: [{ json: result }] }];
+
         } catch (error) {
-          throw new Error(`HTTP request failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          // Handle final error after all retries
+          const httpError = error as any;
+          
+          this.logger.error('HTTP Request failed after retries', {
+            method,
+            url: sanitizedUrl,
+            errorType: httpError.httpErrorType,
+            statusCode: httpError.statusCode,
+            error: httpError.message
+          });
+
+          // Throw user-friendly error message
+          const userMessage = HttpExecutionErrorFactory.getUserFriendlyMessage(httpError);
+          throw new Error(userMessage);
         }
       }
     };

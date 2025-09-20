@@ -1,4 +1,7 @@
 export { CustomNode } from './CustomNode'
+export { ExecuteToolbarButton } from './ExecuteToolbarButton'
+export { DisableToggleToolbarButton } from './DisableToggleToolbarButton'
+export { ToolbarButtonsDemo } from './ToolbarButtonsDemo'
 export { NodePalette } from './NodePalette'
 export { NodeConfigPanel } from './NodeConfigPanel'
 export { TitleManager } from './TitleManager'

@@ -50,6 +50,7 @@ export interface ExecutionOptions {
   retryDelay?: number;
   saveProgress?: boolean;
   saveData?: boolean;
+  manual?: boolean; // Allow execution even if workflow is inactive (for testing/manual runs)
 }
 
 export interface ExecutionProgress {

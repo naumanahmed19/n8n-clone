@@ -22,6 +22,7 @@ import { NodePalette } from './NodePalette'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { NodeContextMenu } from './NodeContextMenu'
 import { WorkflowToolbar } from './WorkflowToolbar'
+import { ExecutionPanel } from './ExecutionPanel'
 import { useWorkflowStore } from '@/stores'
 import { useAuthStore } from '@/stores'
 import { workflowService } from '@/services'
@@ -140,6 +141,12 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         executeWorkflow,
         stopExecution,
         executionState,
+        lastExecutionResult,
+        realTimeResults,
+        executionLogs,
+        getNodeExecutionResult,
+        initializeRealTimeUpdates,
+        toggleWorkflowActive,
         // Node interaction
         showPropertyPanel,
         propertyPanelNodeId,
@@ -164,24 +171,64 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const [isSaving, setIsSaving] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
+    const [showExecutionPanel, setShowExecutionPanel] = useState(false)
 
-    // Convert workflow data to React Flow format
+    // Initialize real-time updates on component mount
+    useEffect(() => {
+        initializeRealTimeUpdates()
+    }, [initializeRealTimeUpdates])
+
+    // Convert workflow data to React Flow format with real execution status
     useEffect(() => {
         if (!workflow) return
 
-        const reactFlowNodes = workflow.nodes.map(node => ({
-            id: node.id,
-            type: 'custom',
-            position: node.position,
-            data: {
-                label: node.name,
-                nodeType: node.type,
-                parameters: node.parameters,
-                disabled: node.disabled,
-                // Add status from execution state
-                status: executionState.status === 'running' ? 'running' : 'idle' as const
+        const reactFlowNodes = workflow.nodes.map(node => {
+            // Get real-time execution result for this node
+            const nodeResult = getNodeExecutionResult(node.id)
+            
+            // Determine node status based on execution state and real-time results
+            let nodeStatus: 'idle' | 'running' | 'success' | 'error' | 'skipped' = 'idle'
+            
+            if (executionState.status === 'running') {
+                if (nodeResult) {
+                    // Use real-time result status
+                    if (nodeResult.status === 'success') nodeStatus = 'success'
+                    else if (nodeResult.status === 'error') nodeStatus = 'error'
+                    else if (nodeResult.status === 'skipped') nodeStatus = 'skipped'
+                    else nodeStatus = 'running'
+                } else {
+                    // Node hasn't started yet or no real-time data
+                    nodeStatus = 'idle'
+                }
+            } else if (executionState.status === 'success' || executionState.status === 'error' || executionState.status === 'cancelled') {
+                // Execution completed, use final results
+                if (nodeResult) {
+                    nodeStatus = nodeResult.status
+                } else if (lastExecutionResult) {
+                    // Fallback to last execution result
+                    const lastNodeResult = lastExecutionResult.nodeResults.find(nr => nr.nodeId === node.id)
+                    if (lastNodeResult) {
+                        nodeStatus = lastNodeResult.status
+                    }
+                }
             }
-        }))
+
+            return {
+                id: node.id,
+                type: 'custom',
+                position: node.position,
+                data: {
+                    label: node.name,
+                    nodeType: node.type,
+                    parameters: node.parameters,
+                    disabled: node.disabled,
+                    status: nodeStatus,
+                    // Add execution result data for display
+                    executionResult: nodeResult,
+                    lastExecutionData: lastExecutionResult?.nodeResults.find(nr => nr.nodeId === node.id)
+                }
+            }
+        })
 
         const reactFlowEdges = workflow.connections.map(conn => ({
             id: conn.id,
@@ -193,7 +240,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
         setNodes(reactFlowNodes)
         setEdges(reactFlowEdges)
-    }, [workflow, executionState.status, setNodes, setEdges])
+    }, [workflow, executionState, realTimeResults, lastExecutionResult, getNodeExecutionResult, setNodes, setEdges])
 
     // Handle node selection (but don't automatically open property panel)
     const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
@@ -436,6 +483,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     // Execution handlers
     const handleExecute = useCallback(async () => {
         try {
+            setShowExecutionPanel(true) // Show execution panel when starting execution
             await executeWorkflow()
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Execution failed'
@@ -595,6 +643,13 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                         // Error handling props
                         onShowError={handleShowError}
                         onShowSuccess={handleShowSuccess}
+                        // Execution panel props
+                        showExecutionPanel={showExecutionPanel}
+                        onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
+                        executionLogs={executionLogs}
+                        // Workflow activation props
+                        isWorkflowActive={workflow?.active || false}
+                        onToggleWorkflowActive={toggleWorkflowActive}
                     />
 
                     {/* React Flow Canvas */}
@@ -642,6 +697,17 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     onOpenProperties={handleContextMenuOpenProperties}
                     onDuplicate={handleContextMenuDuplicate}
                     onDelete={handleContextMenuDelete}
+                />
+            )}
+
+            {/* Execution Panel */}
+            {showExecutionPanel && (
+                <ExecutionPanel
+                    executionState={executionState}
+                    lastExecutionResult={lastExecutionResult}
+                    executionLogs={executionLogs}
+                    realTimeResults={realTimeResults}
+                    onClose={() => setShowExecutionPanel(false)}
                 />
             )}
         </div>

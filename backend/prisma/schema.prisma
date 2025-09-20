@@ -122,6 +122,25 @@ model NodeType {
   @@map("node_types")
 }
 
+model SingleNodeExecution {
+  id          String              @id
+  workflowId  String
+  nodeId      String
+  nodeType    String
+  status      NodeExecutionStatus @default(RUNNING)
+  startedAt   DateTime            @default(now())
+  finishedAt  DateTime?
+  inputData   Json?
+  outputData  Json?
+  parameters  Json                @default("{}")
+  error       String?
+  userId      String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@map("single_node_executions")
+}
+
 enum UserRole {
   USER
   ADMIN

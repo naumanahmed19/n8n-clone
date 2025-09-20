@@ -11,7 +11,8 @@ import {
   Download,
   Upload,
   AlertCircle,
-  Loader2
+  Loader2,
+  Terminal
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { TitleManager } from './TitleManager'
@@ -59,6 +60,15 @@ interface WorkflowToolbarProps {
   // Error handling props
   onShowError?: (error: string) => void
   onShowSuccess?: (message: string) => void
+  
+  // Execution panel props
+  showExecutionPanel?: boolean
+  onToggleExecutionPanel?: () => void
+  executionLogs?: any[]
+  
+  // Workflow activation props
+  isWorkflowActive?: boolean
+  onToggleWorkflowActive?: () => void
 }
 
 export function WorkflowToolbar({
@@ -99,7 +109,16 @@ export function WorkflowToolbar({
   
   // Error handling props
   onShowError,
-  onShowSuccess
+  onShowSuccess,
+  
+  // Execution panel props
+  showExecutionPanel,
+  onToggleExecutionPanel,
+  executionLogs,
+  
+  // Workflow activation props
+  isWorkflowActive,
+  onToggleWorkflowActive
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
   // Helper functions
@@ -309,6 +328,13 @@ export function WorkflowToolbar({
 
       {/* Center section - Execution controls */}
       <div className="flex items-center space-x-2">
+        {/* Workflow Status Indicator */}
+        {!isWorkflowActive && (
+          <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+            <span className="text-xs font-medium">Test Mode Only</span>
+          </div>
+        )}
         {/* Execution button with status */}
         {(currentExecutionStatus === 'running' || isExecuting) ? (
           <div className="flex items-center space-x-2">
@@ -340,14 +366,18 @@ export function WorkflowToolbar({
             disabled={isExecuting}
             className={clsx(
               "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
-              currentExecutionStatus === 'success'
+              !isWorkflowActive
+                ? "bg-orange-600 text-white hover:bg-orange-700"
+                : currentExecutionStatus === 'success'
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : currentExecutionStatus === 'error'
                 ? "bg-red-600 text-white hover:bg-red-700"
                 : "bg-green-600 text-white hover:bg-green-700"
             )}
             title={
-              currentExecutionStatus === 'success' 
+              !isWorkflowActive
+                ? "Test Execute (Manual): Run workflow in test mode even though it's inactive"
+                : currentExecutionStatus === 'success' 
                 ? "Execute workflow (last execution successful)"
                 : currentExecutionStatus === 'error'
                 ? "Execute workflow (last execution failed)"
@@ -361,7 +391,49 @@ export function WorkflowToolbar({
             ) : (
               <Play className="w-4 h-4" />
             )}
-            <span>Execute</span>
+            <span>{!isWorkflowActive ? 'Test Execute' : 'Execute'}</span>
+          </button>
+        )}
+
+        {/* Workflow Activation Toggle */}
+        {onToggleWorkflowActive && (
+          <button
+            onClick={onToggleWorkflowActive}
+            className={clsx(
+              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
+              isWorkflowActive
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-gray-600 text-white hover:bg-gray-700"
+            )}
+            title={isWorkflowActive ? "Deactivate workflow (disable execution)" : "Activate workflow (enable execution)"}
+          >
+            <div className={clsx(
+              "w-2 h-2 rounded-full",
+              isWorkflowActive ? "bg-green-300" : "bg-gray-300"
+            )} />
+            <span>{isWorkflowActive ? 'Active' : 'Inactive'}</span>
+          </button>
+        )}
+
+        {/* Execution Panel Toggle */}
+        {onToggleExecutionPanel && (
+          <button
+            onClick={onToggleExecutionPanel}
+            className={clsx(
+              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
+              showExecutionPanel
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+            )}
+            title={showExecutionPanel ? "Hide execution panel" : "Show execution panel"}
+          >
+            <Terminal className="w-4 h-4" />
+            <span>Logs</span>
+            {executionLogs && executionLogs.length > 0 && (
+              <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                {executionLogs.length > 99 ? '99+' : executionLogs.length}
+              </span>
+            )}
           </button>
         )}
 

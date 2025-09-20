@@ -1,34 +1,38 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import { 
-  Workflow, 
-  WorkflowNode, 
-  WorkflowConnection, 
-  WorkflowEditorState, 
+import {
+  Workflow,
+  WorkflowNode,
+  WorkflowConnection,
+  WorkflowEditorState,
   WorkflowHistoryEntry,
   ExecutionState,
-  WorkflowExecutionResult
+  WorkflowExecutionResult,
+  NodeExecutionResult
 } from '@/types'
+
+// Import socket service types
+interface ExecutionLogEntry {
+  timestamp: string
+  level: 'info' | 'warn' | 'error' | 'debug'
+  nodeId?: string
+  message: string
+  data?: any
+}
 import { workflowFileService, ValidationResult } from '@/services/workflowFile'
-import { 
-  validateWorkflow, 
+import {
+  validateWorkflow,
   validateWorkflowForExecution,
-  handleWorkflowError,
-  createWorkflowError,
-  WorkflowErrorCodes
+  handleWorkflowError
 } from '@/utils/workflowErrorHandling'
-import { 
+import {
   validateTitle as validateTitleUtil,
-  validateImportFile as validateImportFileUtil,
-  createAsyncErrorHandler,
-  retryOperation
+  validateImportFile as validateImportFileUtil
 } from '@/utils/errorHandling'
 import {
   ensureWorkflowMetadata,
   updateWorkflowTitle,
-  updateMetadata,
-  validateMetadata,
-  migrateMetadata
+  validateMetadata
 } from '@/utils/workflowMetadata'
 
 interface WorkflowStore extends WorkflowEditorState {
@@ -36,7 +40,7 @@ interface WorkflowStore extends WorkflowEditorState {
   workflowTitle: string
   isTitleDirty: boolean
   titleValidationError: string | null
-  
+
   // Import/Export state
   isExporting: boolean
   isImporting: boolean
@@ -44,18 +48,20 @@ interface WorkflowStore extends WorkflowEditorState {
   exportProgress: number
   importError: string | null
   exportError: string | null
-  
+
   // Execution state
   executionState: ExecutionState
   lastExecutionResult: WorkflowExecutionResult | null
-  
+  realTimeResults: Map<string, NodeExecutionResult>
+  executionLogs: ExecutionLogEntry[]
+
   // Node interaction state
   showPropertyPanel: boolean
   propertyPanelNodeId: string | null
   contextMenuVisible: boolean
   contextMenuPosition: { x: number; y: number } | null
   contextMenuNodeId: string | null
-  
+
   // Actions
   setWorkflow: (workflow: Workflow | null) => void
   updateWorkflow: (updates: Partial<Workflow>) => void
@@ -67,21 +73,21 @@ interface WorkflowStore extends WorkflowEditorState {
   setSelectedNode: (nodeId: string | null) => void
   setLoading: (loading: boolean) => void
   setDirty: (dirty: boolean) => void
-  
+
   // Title management actions
   updateTitle: (title: string) => void
   saveTitle: () => void
   setTitleDirty: (dirty: boolean) => void
   validateTitle: (title: string) => { isValid: boolean; error: string | null }
   sanitizeTitle: (title: string) => string
-  
+
   // History management
   saveToHistory: (action: string) => void
   undo: () => void
   redo: () => void
   canUndo: () => boolean
   canRedo: () => boolean
-  
+
   // Import/Export actions
   exportWorkflow: () => Promise<void>
   importWorkflow: (file: File) => Promise<void>
@@ -89,19 +95,35 @@ interface WorkflowStore extends WorkflowEditorState {
   setImportProgress: (progress: number) => void
   setExportProgress: (progress: number) => void
   clearImportExportErrors: () => void
-  
+
   // Execution actions
   executeWorkflow: () => Promise<void>
+  executeNode: (nodeId: string, inputData?: any) => Promise<void>
   stopExecution: () => Promise<void>
   setExecutionState: (state: Partial<ExecutionState>) => void
   clearExecutionState: () => void
   setExecutionProgress: (progress: number) => void
   setExecutionError: (error: string) => void
-  
+  updateNodeExecutionResult: (nodeId: string, result: Partial<NodeExecutionResult>) => void
+  addExecutionLog: (log: ExecutionLogEntry) => void
+  clearExecutionLogs: () => void
+  getNodeExecutionResult: (nodeId: string) => NodeExecutionResult | undefined
+
+  // Real-time execution updates
+  subscribeToExecution: (executionId: string) => Promise<void>
+  unsubscribeFromExecution: (executionId: string) => Promise<void>
+  setupSocketListeners: () => void
+  cleanupSocketListeners: () => void
+  initializeRealTimeUpdates: () => void
+
+  // Workflow activation
+  toggleWorkflowActive: () => void
+  setWorkflowActive: (active: boolean) => void
+
   // Validation
   validateWorkflow: () => { isValid: boolean; errors: string[] }
   validateConnection: (sourceId: string, targetId: string) => boolean
-  
+
   // Node interaction actions
   setShowPropertyPanel: (show: boolean) => void
   setPropertyPanelNode: (nodeId: string | null) => void
@@ -109,7 +131,7 @@ interface WorkflowStore extends WorkflowEditorState {
   hideContextMenu: () => void
   openNodeProperties: (nodeId: string) => void
   closeNodeProperties: () => void
-  
+
   // Error handling
   handleError: (error: unknown, operation: string, showToast?: (type: 'error' | 'warning', title: string, options?: any) => void) => void
   getWorkflowHealth: () => { score: number; issues: string[]; suggestions: string[] }
@@ -127,12 +149,12 @@ export const useWorkflowStore = create<WorkflowStore>()(
       isDirty: false,
       history: [],
       historyIndex: -1,
-      
+
       // Title management state
       workflowTitle: '',
       isTitleDirty: false,
       titleValidationError: null,
-      
+
       // Import/Export state
       isExporting: false,
       isImporting: false,
@@ -140,7 +162,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       exportProgress: 0,
       importError: null,
       exportError: null,
-      
+
       // Execution state
       executionState: {
         status: 'idle',
@@ -151,7 +173,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
         executionId: undefined
       },
       lastExecutionResult: null,
-      
+      realTimeResults: new Map(),
+      executionLogs: [],
+
       // Node interaction state
       showPropertyPanel: false,
       propertyPanelNodeId: null,
@@ -162,16 +186,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
       // Actions
       setWorkflow: (workflow) => {
         let processedWorkflow = workflow
-        
+
         // Ensure workflow has proper metadata
         if (workflow) {
           processedWorkflow = ensureWorkflowMetadata(workflow)
         }
-        
+
         const title = processedWorkflow?.metadata?.title || processedWorkflow?.name || ''
-        set({ 
-          workflow: processedWorkflow, 
-          isDirty: false, 
+        set({
+          workflow: processedWorkflow,
+          isDirty: false,
           workflowTitle: title,
           isTitleDirty: false,
           titleValidationError: null,
@@ -233,21 +257,21 @@ export const useWorkflowStore = create<WorkflowStore>()(
             conn => conn.sourceNodeId !== nodeId && conn.targetNodeId !== nodeId
           )
         }
-        
+
         // Clean up node interaction state if the removed node was selected
         const stateUpdates: any = { workflow: updated, isDirty: true, selectedNodeId: null }
-        
+
         if (get().propertyPanelNodeId === nodeId) {
           stateUpdates.showPropertyPanel = false
           stateUpdates.propertyPanelNodeId = null
         }
-        
+
         if (get().contextMenuNodeId === nodeId) {
           stateUpdates.contextMenuVisible = false
           stateUpdates.contextMenuNodeId = null
           stateUpdates.contextMenuPosition = null
         }
-        
+
         set(stateUpdates)
         get().saveToHistory(`Remove node: ${nodeId}`)
       },
@@ -297,8 +321,8 @@ export const useWorkflowStore = create<WorkflowStore>()(
       updateTitle: (title) => {
         const sanitized = get().sanitizeTitle(title)
         const validation = get().validateTitle(sanitized)
-        
-        set({ 
+
+        set({
           workflowTitle: sanitized,
           isTitleDirty: true,
           titleValidationError: validation.error
@@ -307,17 +331,17 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
       saveTitle: () => {
         const { workflowTitle, workflow, titleValidationError } = get()
-        
+
         if (!workflow || titleValidationError) {
           return
         }
 
         // Update workflow title through metadata management
         const updated = updateWorkflowTitle(workflow, workflowTitle)
-        set({ 
-          workflow: updated, 
+        set({
+          workflow: updated,
           isDirty: true,
-          isTitleDirty: false 
+          isTitleDirty: false
         })
         get().saveToHistory(`Update title: ${workflowTitle}`)
       },
@@ -328,29 +352,29 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
       validateTitle: (title) => {
         const validationErrors = validateTitleUtil(title)
-        
+
         if (validationErrors.length > 0) {
           return { isValid: false, error: validationErrors[0].message }
         }
-        
+
         return { isValid: true, error: null }
       },
 
       sanitizeTitle: (title) => {
         // Remove leading/trailing whitespace
         let sanitized = title.trim()
-        
+
         // Replace multiple consecutive spaces with single space
         sanitized = sanitized.replace(/\s+/g, ' ')
-        
+
         // Remove or replace invalid characters
         sanitized = sanitized.replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
-        
+
         // Truncate if too long
         if (sanitized.length > 100) {
           sanitized = sanitized.substring(0, 100).trim()
         }
-        
+
         return sanitized
       },
 
@@ -422,16 +446,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
           return
         }
 
-        set({ 
-          isExporting: true, 
-          exportProgress: 0, 
-          exportError: null 
+        set({
+          isExporting: true,
+          exportProgress: 0,
+          exportError: null
         })
 
         try {
           // Simulate progress for user feedback
           set({ exportProgress: 25 })
-          
+
           // Validate workflow before export
           const validation = get().validateWorkflow()
           if (!validation.isValid) {
@@ -442,9 +466,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
           // Export using the file service
           await workflowFileService.exportWorkflow(workflow)
-          
+
           set({ exportProgress: 100 })
-          
+
           // Clear progress after a short delay
           setTimeout(() => {
             set({ exportProgress: 0, isExporting: false })
@@ -452,7 +476,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown export error'
-          set({ 
+          set({
             exportError: errorMessage,
             isExporting: false,
             exportProgress: 0
@@ -461,17 +485,17 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       importWorkflow: async (file: File) => {
-        set({ 
-          isImporting: true, 
-          importProgress: 0, 
-          importError: null 
+        set({
+          isImporting: true,
+          importProgress: 0,
+          importError: null
         })
 
         try {
           // Validate file first
           set({ importProgress: 20 })
           const validation = await workflowFileService.validateWorkflowFile(file)
-          
+
           if (!validation.isValid) {
             throw new Error(`Invalid workflow file: ${validation.errors.join(', ')}`)
           }
@@ -485,7 +509,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
           // Import the workflow
           const importedWorkflow = await workflowFileService.importWorkflow(file)
-          
+
           set({ importProgress: 80 })
 
           // Check if current workflow has unsaved changes
@@ -498,9 +522,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
           // Set the imported workflow
           get().setWorkflow(importedWorkflow)
-          
+
           set({ importProgress: 100 })
-          
+
           // Clear progress after a short delay
           setTimeout(() => {
             set({ importProgress: 0, isImporting: false })
@@ -508,7 +532,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown import error'
-          set({ 
+          set({
             importError: errorMessage,
             isImporting: false,
             importProgress: 0
@@ -548,16 +572,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       clearImportExportErrors: () => {
-        set({ 
-          importError: null, 
-          exportError: null 
+        set({
+          importError: null,
+          exportError: null
         })
       },
 
       // Execution actions
       executeWorkflow: async () => {
         const { workflow, executionState } = get()
-        
+
         if (!workflow) {
           get().setExecutionError('No workflow to execute')
           return
@@ -567,6 +591,15 @@ export const useWorkflowStore = create<WorkflowStore>()(
         if (executionState.status === 'running') {
           console.warn('Workflow is already executing')
           return
+        }
+
+        // Log workflow activation status
+        if (!workflow.active) {
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'warn',
+            message: 'Executing inactive workflow in manual/test mode'
+          })
         }
 
         // Validate workflow before execution using enhanced validation
@@ -580,88 +613,233 @@ export const useWorkflowStore = create<WorkflowStore>()(
         // Log warnings if any
         if (validation.warnings.length > 0) {
           console.warn('Execution warnings:', validation.warnings.map(w => w.message))
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'warn',
+            message: `Execution warnings: ${validation.warnings.map(w => w.message).join(', ')}`
+          })
         }
 
-        const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         const startTime = Date.now()
 
-        // Set initial execution state
-        get().setExecutionState({
-          status: 'running',
-          progress: 0,
-          startTime,
-          endTime: undefined,
-          error: undefined,
-          executionId
-        })
+        // Clear previous execution data
+        get().clearExecutionLogs()
+        set({ realTimeResults: new Map() })
 
         try {
-          // Simulate workflow execution with progress updates
-          // In a real implementation, this would call the backend API
-          
-          // Phase 1: Initialize execution
-          get().setExecutionProgress(10)
-          await new Promise(resolve => setTimeout(resolve, 500))
+          // Import execution service
+          const { executionService } = await import('@/services/execution')
 
-          // Phase 2: Execute nodes sequentially
-          const totalNodes = workflow.nodes.length
-          for (let i = 0; i < totalNodes; i++) {
-            const node = workflow.nodes[i]
-            
-            // Check if execution was cancelled
-            const currentState = get().executionState
-            if (currentState.status === 'cancelled') {
-              throw new Error('Execution was cancelled by user')
-            }
+          // Find manual trigger nodes to prepare trigger data
+          const manualTriggerNodes = workflow.nodes.filter(node => node.type === 'manual-trigger')
+          let triggerData: any = {}
 
-            // Simulate node execution
-            const nodeProgress = 20 + (i / totalNodes) * 60 // 20% to 80%
-            get().setExecutionProgress(nodeProgress)
-            
-            // Simulate processing time
-            await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 700))
+          if (manualTriggerNodes.length > 0) {
+            // For manual triggers, prepare trigger data
+            triggerData = executionService.prepareTriggerData({
+              triggeredBy: 'user',
+              workflowName: workflow.name,
+              nodeCount: workflow.nodes.length,
+              timestamp: new Date().toISOString()
+            })
 
-            // Simulate occasional node failures for testing
-            if (Math.random() < 0.05) { // 5% chance of failure
-              throw new Error(`Node "${node.name}" failed during execution`)
-            }
+            get().addExecutionLog({
+              timestamp: new Date().toISOString(),
+              level: 'info',
+              message: `Prepared trigger data for ${manualTriggerNodes.length} manual trigger node(s)`,
+              data: { triggerNodeCount: manualTriggerNodes.length }
+            })
           }
 
-          // Phase 3: Finalize execution
-          get().setExecutionProgress(90)
-          await new Promise(resolve => setTimeout(resolve, 300))
+          // Set initial execution state
+          get().setExecutionState({
+            status: 'running',
+            progress: 0,
+            startTime,
+            endTime: undefined,
+            error: undefined,
+            executionId: undefined // Will be set when we get response
+          })
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: `Starting execution of workflow: ${workflow.name}`,
+            data: { workflowId: workflow.id, nodeCount: workflow.nodes.length }
+          })
+
+          // Start execution via API
+          const executionResponse = await executionService.executeWorkflow({
+            workflowId: workflow.id,
+            triggerData,
+            options: {
+              timeout: 300000, // 5 minutes
+              priority: 'normal',
+              manual: true // Allow execution even if workflow is inactive (manual test execution)
+            }
+          })
+
+          // Update execution state with real execution ID
+          get().setExecutionState({
+            executionId: executionResponse.executionId
+          })
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: `Execution started with ID: ${executionResponse.executionId}`,
+            data: { executionId: executionResponse.executionId }
+          })
+
+          // Subscribe to real-time updates
+          await get().subscribeToExecution(executionResponse.executionId)
+
+          console.log(`Started real execution ${executionResponse.executionId} for workflow ${workflow.id}`)
+
+          // Poll for execution progress with enhanced progress tracking
+          const finalProgress = await executionService.pollExecutionProgress(
+            executionResponse.executionId,
+            (progress) => {
+              // Update progress in real-time
+              const progressPercentage = progress.totalNodes > 0
+                ? Math.round((progress.completedNodes / progress.totalNodes) * 100)
+                : 0
+
+              // Map backend status to frontend status
+              let frontendStatus: ExecutionState['status'] = 'running'
+              if (progress.status === 'success') frontendStatus = 'success'
+              else if (progress.status === 'error') frontendStatus = 'error'
+              else if (progress.status === 'cancelled') frontendStatus = 'cancelled'
+
+              get().setExecutionState({
+                progress: progressPercentage,
+                status: frontendStatus
+              })
+
+              // Log progress updates
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: 'info',
+                message: `Progress: ${progress.completedNodes}/${progress.totalNodes} nodes completed (${progressPercentage}%)`,
+                data: {
+                  completedNodes: progress.completedNodes,
+                  totalNodes: progress.totalNodes,
+                  failedNodes: progress.failedNodes,
+                  currentNode: progress.currentNode
+                }
+              })
+
+              // Log current node if available
+              if (progress.currentNode) {
+                const currentNodeName = workflow.nodes.find(n => n.id === progress.currentNode)?.name || progress.currentNode
+                get().addExecutionLog({
+                  timestamp: new Date().toISOString(),
+                  level: 'info',
+                  nodeId: progress.currentNode,
+                  message: `Executing node: ${currentNodeName}`,
+                  data: { nodeId: progress.currentNode, nodeName: currentNodeName }
+                })
+              }
+
+              console.log(`Execution progress: ${progress.completedNodes}/${progress.totalNodes} nodes completed`)
+            },
+            1000 // Poll every second
+          )
 
           const endTime = Date.now()
           const duration = endTime - startTime
 
-          // Create execution result
+          // Get detailed execution results
+          const executionDetails = await executionService.getExecutionDetails(executionResponse.executionId)
+
+          // Map backend status to frontend status for final result
+          let finalStatus: WorkflowExecutionResult['status'] = 'error'
+          if (finalProgress.status === 'success') finalStatus = 'success'
+          else if (finalProgress.status === 'cancelled') finalStatus = 'cancelled'
+
+          // Create execution result from real data with enhanced error handling
+          const nodeResults: NodeExecutionResult[] = executionDetails.nodeExecutions.map(nodeExec => {
+            // Map backend node status to frontend node status
+            let nodeStatus: NodeExecutionResult['status'] = 'error'
+            if (nodeExec.status === 'success') nodeStatus = 'success'
+            else if (nodeExec.status === 'error') nodeStatus = 'error'
+            // If node didn't run, mark as skipped
+            else if (!nodeExec.startedAt) nodeStatus = 'skipped'
+
+            const nodeResult: NodeExecutionResult = {
+              nodeId: nodeExec.nodeId,
+              nodeName: workflow.nodes.find(n => n.id === nodeExec.nodeId)?.name || 'Unknown',
+              status: nodeStatus,
+              startTime: nodeExec.startedAt ? new Date(nodeExec.startedAt).getTime() : startTime,
+              endTime: nodeExec.finishedAt ? new Date(nodeExec.finishedAt).getTime() : endTime,
+              duration: nodeExec.finishedAt && nodeExec.startedAt
+                ? new Date(nodeExec.finishedAt).getTime() - new Date(nodeExec.startedAt).getTime()
+                : 0,
+              data: nodeExec.outputData,
+              error: nodeExec.error
+            }
+
+            // Update real-time results
+            get().updateNodeExecutionResult(nodeExec.nodeId, nodeResult)
+
+            // Log node completion
+            get().addExecutionLog({
+              timestamp: new Date().toISOString(),
+              level: nodeStatus === 'error' ? 'error' : 'info',
+              nodeId: nodeExec.nodeId,
+              message: `Node ${nodeResult.nodeName} ${nodeStatus === 'success' ? 'completed successfully' : nodeStatus === 'error' ? 'failed' : 'was skipped'}`,
+              data: {
+                nodeId: nodeExec.nodeId,
+                status: nodeStatus,
+                duration: nodeResult.duration,
+                error: nodeExec.error
+              }
+            })
+
+            return nodeResult
+          })
+
           const executionResult: WorkflowExecutionResult = {
-            executionId,
+            executionId: executionResponse.executionId,
             workflowId: workflow.id,
-            status: 'success',
+            status: finalStatus,
             startTime,
             endTime,
             duration,
-            nodeResults: workflow.nodes.map(node => ({
-              nodeId: node.id,
-              nodeName: node.name,
-              status: 'success' as const,
-              startTime: startTime + Math.random() * 1000,
-              endTime: endTime - Math.random() * 500,
-              duration: Math.random() * 1000 + 200,
-              data: { result: `Output from ${node.name}` }
-            }))
+            nodeResults,
+            error: finalProgress.error?.message
           }
 
-          // Set final success state
+          // Map final progress status to execution state status
+          let executionStatus: ExecutionState['status'] = 'error'
+          if (finalProgress.status === 'success') executionStatus = 'success'
+          else if (finalProgress.status === 'cancelled') executionStatus = 'cancelled'
+
+          // Log final execution result
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: executionStatus === 'success' ? 'info' : 'error',
+            message: `Execution ${executionStatus === 'success' ? 'completed successfully' : executionStatus === 'cancelled' ? 'was cancelled' : 'failed'}`,
+            data: {
+              executionId: executionResponse.executionId,
+              status: executionStatus,
+              duration,
+              totalNodes: nodeResults.length,
+              successfulNodes: nodeResults.filter(n => n.status === 'success').length,
+              failedNodes: nodeResults.filter(n => n.status === 'error').length,
+              error: finalProgress.error?.message
+            }
+          })
+
+          // Set final execution state
           set({
             executionState: {
-              status: 'success',
+              status: executionStatus,
               progress: 100,
               startTime,
               endTime,
-              error: undefined,
-              executionId
+              error: finalProgress.error?.message,
+              executionId: executionResponse.executionId
             },
             lastExecutionResult: executionResult
           })
@@ -669,24 +847,39 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // Save execution to history
           get().saveToHistory(`Execute workflow: ${workflow.name}`)
 
-          // Clear execution state after a delay
-          setTimeout(() => {
-            get().clearExecutionState()
-          }, 3000)
+          // Unsubscribe from real-time updates
+          await get().unsubscribeFromExecution(executionResponse.executionId)
+
+          // Clear execution state after a delay for successful executions
+          if (finalProgress.status === 'success') {
+            setTimeout(() => {
+              get().clearExecutionState()
+            }, 3000)
+          }
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown execution error'
           const endTime = Date.now()
-          
+
+          console.error('Workflow execution failed:', error)
+
+          // Log execution failure
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'error',
+            message: `Execution failed: ${errorMessage}`,
+            data: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined }
+          })
+
           // Create failed execution result
           const executionResult: WorkflowExecutionResult = {
-            executionId,
+            executionId: get().executionState.executionId || `failed_${Date.now()}`,
             workflowId: workflow.id,
             status: 'error',
             startTime,
             endTime,
             duration: endTime - startTime,
-            nodeResults: [],
+            nodeResults: Array.from(get().realTimeResults.values()),
             error: errorMessage
           }
 
@@ -697,44 +890,240 @@ export const useWorkflowStore = create<WorkflowStore>()(
               startTime,
               endTime,
               error: errorMessage,
-              executionId
+              executionId: get().executionState.executionId
             },
             lastExecutionResult: executionResult
+          })
+
+          // Unsubscribe from real-time updates if execution ID exists
+          const currentExecutionId = get().executionState.executionId
+          if (currentExecutionId) {
+            await get().unsubscribeFromExecution(currentExecutionId)
+          }
+        }
+      },
+
+      executeNode: async (nodeId: string, inputData?: any) => {
+        const { workflow, executionState } = get()
+
+        if (!workflow) {
+          get().setExecutionError('No workflow to execute node from')
+          return
+        }
+
+        // Prevent execution during workflow execution
+        if (executionState.status === 'running') {
+          console.warn('Cannot execute individual node while workflow is running')
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'warn',
+            message: 'Cannot execute individual node while workflow is running'
+          })
+          return
+        }
+
+        // Find the node
+        const node = workflow.nodes.find(n => n.id === nodeId)
+        if (!node) {
+          get().setExecutionError(`Node not found: ${nodeId}`)
+          return
+        }
+
+        const startTime = Date.now()
+
+        try {
+          // Import execution service
+          const { executionService } = await import('@/services/execution')
+
+          // Set node execution state
+          get().updateNodeExecutionResult(nodeId, {
+            nodeId,
+            nodeName: node.name,
+            status: 'success', // Will be updated based on result
+            startTime,
+            endTime: startTime,
+            duration: 0,
+            data: undefined,
+            error: undefined
+          })
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            nodeId,
+            message: `Starting execution of node: ${node.name}`,
+            data: { nodeId, nodeType: node.type }
+          })
+
+          // Execute the single node
+          const result = await executionService.executeSingleNode({
+            workflowId: workflow.id,
+            nodeId,
+            inputData: inputData || { main: [[]] },
+            parameters: node.parameters
+          })
+
+          const endTime = Date.now()
+          const duration = endTime - startTime
+
+          // Update node execution result
+          get().updateNodeExecutionResult(nodeId, {
+            nodeId,
+            nodeName: node.name,
+            status: result.status === 'success' ? 'success' : 'error',
+            startTime: result.startTime,
+            endTime: result.endTime,
+            duration: result.duration,
+            data: result.data,
+            error: result.error
+          })
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: result.status === 'success' ? 'info' : 'error',
+            nodeId,
+            message: `Node execution ${result.status === 'success' ? 'completed successfully' : 'failed'}: ${node.name}`,
+            data: {
+              nodeId,
+              status: result.status,
+              duration: result.duration,
+              error: result.error
+            }
+          })
+
+          console.log(`Single node execution ${result.status}: ${nodeId}`)
+
+        } catch (error) {
+          const endTime = Date.now()
+          const duration = endTime - startTime
+          const errorMessage = error instanceof Error ? error.message : 'Unknown execution error'
+
+          console.error('Single node execution failed:', error)
+
+          // Update node execution result with error
+          get().updateNodeExecutionResult(nodeId, {
+            nodeId,
+            nodeName: node.name,
+            status: 'error',
+            startTime,
+            endTime,
+            duration,
+            data: undefined,
+            error: errorMessage
+          })
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'error',
+            nodeId,
+            message: `Node execution failed: ${node.name} - ${errorMessage}`,
+            data: { nodeId, error: errorMessage, duration }
           })
         }
       },
 
       stopExecution: async () => {
         const { executionState } = get()
-        
-        if (executionState.status !== 'running') {
+
+        if (executionState.status !== 'running' || !executionState.executionId) {
           console.warn('No execution to stop')
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'warn',
+            message: 'No active execution to stop'
+          })
           return
         }
 
+        get().addExecutionLog({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          message: `Attempting to cancel execution: ${executionState.executionId}`
+        })
+
         try {
-          // In a real implementation, this would call the backend to cancel execution
-          // For now, we'll just update the state
-          
+          // Import execution service
+          const { executionService } = await import('@/services/execution')
+
+          // Cancel execution via API
+          await executionService.cancelExecution(executionState.executionId)
+
           const endTime = Date.now()
           const startTime = executionState.startTime || endTime
-          
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: 'Execution cancellation request sent successfully'
+          })
+
+          // Get execution details to capture any partial results
+          let nodeResults: NodeExecutionResult[] = []
+          try {
+            const executionDetails = await executionService.getExecutionDetails(executionState.executionId)
+            nodeResults = executionDetails.nodeExecutions.map(nodeExec => {
+              // Map backend node status to frontend node status
+              let nodeStatus: NodeExecutionResult['status'] = 'skipped'
+              if (nodeExec.status === 'success') nodeStatus = 'success'
+              else if (nodeExec.status === 'error') nodeStatus = 'error'
+
+              const nodeResult: NodeExecutionResult = {
+                nodeId: nodeExec.nodeId,
+                nodeName: get().workflow?.nodes.find(n => n.id === nodeExec.nodeId)?.name || 'Unknown',
+                status: nodeStatus,
+                startTime: nodeExec.startedAt ? new Date(nodeExec.startedAt).getTime() : startTime,
+                endTime: nodeExec.finishedAt ? new Date(nodeExec.finishedAt).getTime() : endTime,
+                duration: nodeExec.finishedAt && nodeExec.startedAt
+                  ? new Date(nodeExec.finishedAt).getTime() - new Date(nodeExec.startedAt).getTime()
+                  : 0,
+                data: nodeExec.outputData,
+                error: nodeExec.error
+              }
+
+              // Update real-time results
+              get().updateNodeExecutionResult(nodeExec.nodeId, nodeResult)
+
+              return nodeResult
+            })
+          } catch (detailsError) {
+            console.warn('Could not fetch execution details for cancelled execution:', detailsError)
+            get().addExecutionLog({
+              timestamp: new Date().toISOString(),
+              level: 'warn',
+              message: 'Could not fetch final execution details after cancellation'
+            })
+            // Use real-time results as fallback
+            nodeResults = Array.from(get().realTimeResults.values())
+          }
+
           // Create cancelled execution result
           const executionResult: WorkflowExecutionResult = {
-            executionId: executionState.executionId || `cancelled_${Date.now()}`,
+            executionId: executionState.executionId,
             workflowId: get().workflow?.id || '',
             status: 'cancelled',
             startTime,
             endTime,
             duration: endTime - startTime,
-            nodeResults: [],
+            nodeResults,
             error: 'Execution cancelled by user'
           }
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: `Execution cancelled successfully. Duration: ${endTime - startTime}ms`,
+            data: {
+              executionId: executionState.executionId,
+              duration: endTime - startTime,
+              completedNodes: nodeResults.filter(n => n.status === 'success').length,
+              totalNodes: nodeResults.length
+            }
+          })
 
           set({
             executionState: {
               status: 'cancelled',
-              progress: 0,
+              progress: executionState.progress || 0,
               startTime,
               endTime,
               error: 'Execution cancelled by user',
@@ -746,13 +1135,27 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // Save cancellation to history
           get().saveToHistory('Cancel workflow execution')
 
+          // Unsubscribe from real-time updates
+          await get().unsubscribeFromExecution(executionState.executionId)
+
           // Clear execution state after a delay
           setTimeout(() => {
             get().clearExecutionState()
           }, 2000)
 
+          console.log(`Cancelled execution ${executionState.executionId}`)
+
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to stop execution'
+          console.error('Failed to cancel execution:', error)
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'error',
+            message: `Failed to cancel execution: ${errorMessage}`,
+            data: { error: errorMessage }
+          })
+
           get().setExecutionError(errorMessage)
         }
       },
@@ -773,7 +1176,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
             endTime: undefined,
             error: undefined,
             executionId: undefined
-          }
+          },
+          realTimeResults: new Map(),
+          executionLogs: []
         })
       },
 
@@ -785,7 +1190,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
       setExecutionError: (error: string) => {
         const endTime = Date.now()
         const startTime = get().executionState.startTime || endTime
-        
+
+        // Add error to execution logs
+        get().addExecutionLog({
+          timestamp: new Date().toISOString(),
+          level: 'error',
+          message: error
+        })
+
         set({
           executionState: {
             status: 'error',
@@ -798,14 +1210,385 @@ export const useWorkflowStore = create<WorkflowStore>()(
         })
       },
 
+      updateNodeExecutionResult: (nodeId: string, result: Partial<NodeExecutionResult>) => {
+        const currentResults = get().realTimeResults
+        const existingResult = currentResults.get(nodeId)
+
+        const updatedResult: NodeExecutionResult = {
+          nodeId,
+          nodeName: result.nodeName || existingResult?.nodeName || 'Unknown',
+          status: result.status || existingResult?.status || 'error',
+          startTime: result.startTime || existingResult?.startTime || Date.now(),
+          endTime: result.endTime || existingResult?.endTime || Date.now(),
+          duration: result.duration || existingResult?.duration || 0,
+          data: result.data !== undefined ? result.data : existingResult?.data,
+          error: result.error !== undefined ? result.error : existingResult?.error
+        }
+
+        const newResults = new Map(currentResults)
+        newResults.set(nodeId, updatedResult)
+
+        set({ realTimeResults: newResults })
+      },
+
+      addExecutionLog: (log: ExecutionLogEntry) => {
+        const currentLogs = get().executionLogs
+        const newLogs = [...currentLogs, log]
+
+        // Limit log size to prevent memory issues (keep last 1000 entries)
+        if (newLogs.length > 1000) {
+          newLogs.splice(0, newLogs.length - 1000)
+        }
+
+        set({ executionLogs: newLogs })
+      },
+
+      clearExecutionLogs: () => {
+        set({ executionLogs: [] })
+      },
+
+      getNodeExecutionResult: (nodeId: string) => {
+        return get().realTimeResults.get(nodeId)
+      },
+
+      // Real-time execution updates
+      subscribeToExecution: async (executionId: string) => {
+        try {
+          const { socketService } = await import('@/services/socket')
+          await socketService.subscribeToExecution(executionId)
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: `Subscribed to real-time updates for execution: ${executionId}`
+          })
+        } catch (error) {
+          console.error('Failed to subscribe to execution updates:', error)
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'warn',
+            message: 'Failed to subscribe to real-time execution updates'
+          })
+        }
+      },
+
+      unsubscribeFromExecution: async (executionId: string) => {
+        try {
+          const { socketService } = await import('@/services/socket')
+          await socketService.unsubscribeFromExecution(executionId)
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: `Unsubscribed from real-time updates for execution: ${executionId}`
+          })
+        } catch (error) {
+          console.error('Failed to unsubscribe from execution updates:', error)
+        }
+      },
+
+      setupSocketListeners: () => {
+        const setupListeners = async () => {
+          try {
+            const { socketService } = await import('@/services/socket')
+
+            // Handle execution events
+            socketService.on('execution-event', (event: any) => {
+              const { executionState } = get()
+
+              // Only process events for the current execution
+              if (event.executionId !== executionState.executionId) {
+                return
+              }
+
+              get().addExecutionLog({
+                timestamp: new Date(event.timestamp).toISOString(),
+                level: 'info',
+                nodeId: event.nodeId,
+                message: `Execution event: ${event.type}`,
+                data: { type: event.type, nodeId: event.nodeId, data: event.data }
+              })
+
+              // Update execution state based on event type
+              switch (event.type) {
+                case 'started':
+                  get().setExecutionState({ status: 'running' })
+                  break
+                case 'completed':
+                  get().setExecutionState({ status: 'success', progress: 100 })
+                  break
+                case 'failed':
+                  get().setExecutionState({
+                    status: 'error',
+                    error: event.error?.message || 'Execution failed'
+                  })
+                  break
+                case 'cancelled':
+                  get().setExecutionState({
+                    status: 'cancelled',
+                    error: 'Execution cancelled'
+                  })
+                  break
+                case 'node-started':
+                  if (event.nodeId) {
+                    const nodeName = get().workflow?.nodes.find(n => n.id === event.nodeId)?.name || 'Unknown'
+                    get().updateNodeExecutionResult(event.nodeId, {
+                      nodeId: event.nodeId,
+                      nodeName,
+                      status: 'error', // Will be updated when node completes
+                      startTime: new Date(event.timestamp).getTime()
+                    })
+                  }
+                  break
+                case 'node-completed':
+                  if (event.nodeId) {
+                    const nodeName = get().workflow?.nodes.find(n => n.id === event.nodeId)?.name || 'Unknown'
+                    get().updateNodeExecutionResult(event.nodeId, {
+                      nodeId: event.nodeId,
+                      nodeName,
+                      status: 'success',
+                      endTime: new Date(event.timestamp).getTime(),
+                      data: event.data
+                    })
+                  }
+                  break
+                case 'node-failed':
+                  if (event.nodeId) {
+                    const nodeName = get().workflow?.nodes.find(n => n.id === event.nodeId)?.name || 'Unknown'
+                    get().updateNodeExecutionResult(event.nodeId, {
+                      nodeId: event.nodeId,
+                      nodeName,
+                      status: 'error',
+                      endTime: new Date(event.timestamp).getTime(),
+                      error: event.error?.message || 'Node execution failed'
+                    })
+                  }
+                  break
+              }
+            })
+
+            // Handle execution progress updates
+            socketService.on('execution-progress', (progress: any) => {
+              const { executionState } = get()
+
+              // Only process progress for the current execution
+              if (progress.executionId !== executionState.executionId) {
+                return
+              }
+
+              const progressPercentage = progress.totalNodes > 0
+                ? Math.round((progress.completedNodes / progress.totalNodes) * 100)
+                : 0
+
+              // Map backend status to frontend status
+              let frontendStatus: ExecutionState['status'] = 'running'
+              if (progress.status === 'success') frontendStatus = 'success'
+              else if (progress.status === 'error') frontendStatus = 'error'
+              else if (progress.status === 'cancelled') frontendStatus = 'cancelled'
+
+              get().setExecutionState({
+                progress: progressPercentage,
+                status: frontendStatus
+              })
+
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: 'info',
+                message: `Real-time progress update: ${progress.completedNodes}/${progress.totalNodes} nodes completed`,
+                data: {
+                  completedNodes: progress.completedNodes,
+                  totalNodes: progress.totalNodes,
+                  failedNodes: progress.failedNodes,
+                  currentNode: progress.currentNode
+                }
+              })
+            })
+
+            // Handle execution logs
+            socketService.on('execution-log', (logEntry: any) => {
+              const { executionState } = get()
+
+              // Only process logs for the current execution
+              if (logEntry.executionId !== executionState.executionId) {
+                return
+              }
+
+              get().addExecutionLog({
+                timestamp: new Date(logEntry.timestamp).toISOString(),
+                level: logEntry.level,
+                nodeId: logEntry.nodeId,
+                message: logEntry.message,
+                data: logEntry.data
+              })
+            })
+
+            // Handle node execution events
+            socketService.on('node-execution-event', (nodeEvent: any) => {
+              const { executionState } = get()
+
+              // Only process events for the current execution
+              if (nodeEvent.executionId !== executionState.executionId) {
+                return
+              }
+
+              const nodeName = get().workflow?.nodes.find(n => n.id === nodeEvent.nodeId)?.name || 'Unknown'
+
+              switch (nodeEvent.type) {
+                case 'started':
+                  get().updateNodeExecutionResult(nodeEvent.nodeId, {
+                    nodeId: nodeEvent.nodeId,
+                    nodeName,
+                    status: 'error', // Will be updated when node completes
+                    startTime: new Date(nodeEvent.timestamp).getTime()
+                  })
+
+                  get().addExecutionLog({
+                    timestamp: new Date(nodeEvent.timestamp).toISOString(),
+                    level: 'info',
+                    nodeId: nodeEvent.nodeId,
+                    message: `Node started: ${nodeName}`,
+                    data: { nodeId: nodeEvent.nodeId, nodeName }
+                  })
+                  break
+
+                case 'completed':
+                  get().updateNodeExecutionResult(nodeEvent.nodeId, {
+                    nodeId: nodeEvent.nodeId,
+                    nodeName,
+                    status: 'success',
+                    endTime: new Date(nodeEvent.timestamp).getTime(),
+                    data: nodeEvent.data
+                  })
+
+                  get().addExecutionLog({
+                    timestamp: new Date(nodeEvent.timestamp).toISOString(),
+                    level: 'info',
+                    nodeId: nodeEvent.nodeId,
+                    message: `Node completed: ${nodeName}`,
+                    data: { nodeId: nodeEvent.nodeId, nodeName, outputData: nodeEvent.data }
+                  })
+                  break
+
+                case 'failed':
+                  get().updateNodeExecutionResult(nodeEvent.nodeId, {
+                    nodeId: nodeEvent.nodeId,
+                    nodeName,
+                    status: 'error',
+                    endTime: new Date(nodeEvent.timestamp).getTime(),
+                    error: nodeEvent.error?.message || 'Node execution failed'
+                  })
+
+                  get().addExecutionLog({
+                    timestamp: new Date(nodeEvent.timestamp).toISOString(),
+                    level: 'error',
+                    nodeId: nodeEvent.nodeId,
+                    message: `Node failed: ${nodeName} - ${nodeEvent.error?.message || 'Unknown error'}`,
+                    data: { nodeId: nodeEvent.nodeId, nodeName, error: nodeEvent.error }
+                  })
+                  break
+              }
+            })
+
+            // Handle socket connection events
+            socketService.on('socket-connected', () => {
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: 'info',
+                message: 'Real-time connection established'
+              })
+            })
+
+            socketService.on('socket-disconnected', (data: any) => {
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: 'warn',
+                message: `Real-time connection lost: ${data.reason}`
+              })
+            })
+
+            socketService.on('socket-error', (data: any) => {
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: 'error',
+                message: `Real-time connection error: ${data.error}`
+              })
+            })
+
+          } catch (error) {
+            console.error('Failed to setup socket listeners:', error)
+          }
+        }
+
+        setupListeners()
+      },
+
+      cleanupSocketListeners: () => {
+        const cleanup = async () => {
+          try {
+            const { socketService } = await import('@/services/socket')
+
+            // Remove all event listeners
+            socketService.off('execution-event', () => { })
+            socketService.off('execution-progress', () => { })
+            socketService.off('execution-log', () => { })
+            socketService.off('node-execution-event', () => { })
+            socketService.off('socket-connected', () => { })
+            socketService.off('socket-disconnected', () => { })
+            socketService.off('socket-error', () => { })
+
+          } catch (error) {
+            console.error('Failed to cleanup socket listeners:', error)
+          }
+        }
+
+        cleanup()
+      },
+
+      initializeRealTimeUpdates: () => {
+        // Setup socket listeners for real-time updates
+        get().setupSocketListeners()
+      },
+
+      // Workflow activation methods
+      toggleWorkflowActive: () => {
+        const { workflow } = get()
+        if (!workflow) return
+
+        const newActiveState = !workflow.active
+        get().updateWorkflow({ active: newActiveState })
+        get().saveToHistory(`${newActiveState ? 'Activate' : 'Deactivate'} workflow`)
+
+        get().addExecutionLog({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          message: `Workflow ${newActiveState ? 'activated' : 'deactivated'}`
+        })
+      },
+
+      setWorkflowActive: (active: boolean) => {
+        const { workflow } = get()
+        if (!workflow) return
+
+        if (workflow.active !== active) {
+          get().updateWorkflow({ active })
+          get().saveToHistory(`${active ? 'Activate' : 'Deactivate'} workflow`)
+
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: `Workflow ${active ? 'activated' : 'deactivated'}`
+          })
+        }
+      },
+
       // Validation
       validateWorkflow: () => {
         const { workflow } = get()
         const workflowErrors = validateWorkflow(workflow)
         const metadataErrors = workflow ? validateMetadata(workflow.metadata) : []
-        
+
         const allErrors = [...workflowErrors, ...metadataErrors]
-        
+
         return {
           isValid: allErrors.length === 0,
           errors: allErrors.map(error => error.message)
@@ -847,7 +1630,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       setPropertyPanelNode: (nodeId: string | null) => {
-        set({ 
+        set({
           propertyPanelNodeId: nodeId,
           showPropertyPanel: nodeId !== null
         })

@@ -312,7 +312,7 @@ describe('Sandbox Security Tests', () => {
         );
 
         expect(result.success).toBe(false);
-        expect(result.error?.message).toContain('URL is not allowed');
+        expect(result.error?.message).toContain('Security validation failed');
       }
     });
 
@@ -391,7 +391,7 @@ describe('Sandbox Security Tests', () => {
       );
 
       expect(result.success).toBe(false);
-      expect(result.error?.message).toContain('URL is not allowed');
+      expect(result.error?.message).toContain('Security validation failed');
     });
 
     it('should sanitize HTTP headers', async () => {

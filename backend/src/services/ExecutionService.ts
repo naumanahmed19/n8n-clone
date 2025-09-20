@@ -500,6 +500,171 @@ export class ExecutionService {
   }
 
   /**
+   * Execute a single node
+   */
+  async executeSingleNode(
+    workflowId: string,
+    nodeId: string,
+    userId: string,
+    inputData?: any,
+    parameters?: Record<string, any>
+  ): Promise<ExecutionResult> {
+    try {
+      logger.info(`Starting single node execution: ${nodeId} in workflow ${workflowId} for user ${userId}`);
+
+      // Verify workflow belongs to user
+      const workflow = await this.prisma.workflow.findFirst({
+        where: {
+          id: workflowId,
+          userId
+        }
+      });
+
+      if (!workflow) {
+        return {
+          success: false,
+          error: {
+            message: 'Workflow not found',
+            timestamp: new Date()
+          }
+        };
+      }
+
+      // Parse nodes from JSON
+      const workflowNodes = Array.isArray(workflow.nodes) ? workflow.nodes : JSON.parse(workflow.nodes as string);
+      
+      // Find the specific node
+      const node = workflowNodes.find((n: any) => n.id === nodeId);
+      if (!node) {
+        return {
+          success: false,
+          error: {
+            message: 'Node not found in workflow',
+            timestamp: new Date()
+          }
+        };
+      }
+
+      // Check if node can be executed individually (trigger nodes)
+      const nodeTypeInfo = await this.nodeService.getNodeSchema(node.type);
+      if (!nodeTypeInfo) {
+        return {
+          success: false,
+          error: {
+            message: `Unknown node type: ${node.type}`,
+            timestamp: new Date()
+          }
+        };
+      }
+
+      // For now, only allow trigger nodes to be executed individually
+      const triggerNodeTypes = ['manual-trigger', 'webhook-trigger'];
+      if (!triggerNodeTypes.includes(node.type)) {
+        return {
+          success: false,
+          error: {
+            message: 'Only trigger nodes can be executed individually',
+            timestamp: new Date()
+          }
+        };
+      }
+
+      // Prepare node parameters (merge defaults with provided parameters)
+      const nodeParameters = {
+        ...nodeTypeInfo.defaults,
+        ...node.parameters,
+        ...(parameters || {})
+      };
+
+      // Prepare input data for the node
+      const nodeInputData = inputData || { main: [[]] };
+
+      // Execute the node using NodeService
+      const executionResult = await this.nodeService.executeNode(
+        node.type,
+        nodeParameters,
+        nodeInputData,
+        undefined, // credentials - TODO: implement credential handling
+        `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      );
+
+      if (!executionResult.success) {
+        return {
+          success: false,
+          error: {
+            message: executionResult.error?.message || 'Node execution failed',
+            timestamp: new Date()
+          }
+        };
+      }
+
+      // Create a single node execution record for tracking
+      const singleNodeExecution = await this.prisma.singleNodeExecution.create({
+        data: {
+          id: `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          workflowId,
+          nodeId,
+          nodeType: node.type,
+          status: 'SUCCESS',
+          startedAt: new Date(),
+          finishedAt: new Date(),
+          inputData: nodeInputData,
+          outputData: executionResult.data,
+          parameters: nodeParameters,
+          userId
+        }
+      });
+
+      logger.info(`Single node execution completed: ${nodeId}`);
+
+      return {
+        success: true,
+        data: {
+          executionId: singleNodeExecution.id,
+          nodeId,
+          status: 'success',
+          data: executionResult.data,
+          startTime: singleNodeExecution.startedAt.getTime(),
+          endTime: singleNodeExecution.finishedAt?.getTime() || Date.now(),
+          duration: (singleNodeExecution.finishedAt?.getTime() || Date.now()) - singleNodeExecution.startedAt.getTime()
+        }
+      };
+    } catch (error) {
+      logger.error(`Failed to execute single node ${nodeId}:`, error);
+      
+      // Try to create a failed execution record
+      try {
+        await this.prisma.singleNodeExecution.create({
+          data: {
+            id: `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            workflowId,
+            nodeId,
+            nodeType: 'unknown',
+            status: 'ERROR',
+            startedAt: new Date(),
+            finishedAt: new Date(),
+            inputData: inputData || {},
+            outputData: {},
+            parameters: parameters || {},
+            error: error instanceof Error ? error.message : 'Unknown error',
+            userId
+          }
+        });
+      } catch (recordError) {
+        logger.error('Failed to create failed execution record:', recordError);
+      }
+
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date()
+        }
+      };
+    }
+  }
+
+  /**
    * Get execution engine instance (for advanced usage)
    */
   getExecutionEngine(): ExecutionEngine {
