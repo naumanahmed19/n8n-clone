@@ -7,6 +7,7 @@ import {
     AlertCircle,
     CheckCircle,
     Download,
+    History,
     Loader2,
     Pause,
     Play,
@@ -68,6 +69,11 @@ interface WorkflowToolbarProps {
   onToggleExecutionPanel?: () => void
   executionLogs?: any[]
   
+  // Executions history props
+  showExecutionsPanel?: boolean
+  onToggleExecutionsPanel?: () => void
+  workflowExecutions?: any[]
+  
   // Workflow activation props
   isWorkflowActive?: boolean
   onToggleWorkflowActive?: () => void
@@ -119,6 +125,11 @@ export function WorkflowToolbar({
   showExecutionPanel,
   onToggleExecutionPanel,
   executionLogs,
+  
+  // Executions history props
+  showExecutionsPanel,
+  onToggleExecutionsPanel,
+  workflowExecutions,
   
   // Workflow activation props
   isWorkflowActive,
@@ -457,6 +468,28 @@ export function WorkflowToolbar({
             {executionLogs && executionLogs.length > 0 && (
               <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                 {executionLogs.length > 99 ? '99+' : executionLogs.length}
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* Executions History Toggle */}
+        {onToggleExecutionsPanel && (
+          <button
+            onClick={onToggleExecutionsPanel}
+            className={clsx(
+              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
+              showExecutionsPanel
+                ? "bg-purple-600 text-white hover:bg-purple-700"
+                : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+            )}
+            title={showExecutionsPanel ? "Hide executions history" : "Show executions history"}
+          >
+            <History className="w-4 h-4" />
+            <span>Executions</span>
+            {workflowExecutions && workflowExecutions.length > 0 && (
+              <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
               </span>
             )}
           </button>

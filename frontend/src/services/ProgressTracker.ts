@@ -1,16 +1,16 @@
 import {
+  ExecutionFlowStatus,
+  ExecutionHistoryEntry,
+  ExecutionMetrics,
   NodeExecutionState,
   NodeExecutionStatus,
-  ExecutionFlowStatus,
-  ExecutionMetrics,
-  ExecutionHistoryEntry,
-  NodeVisualState
-} from '@/types/execution'
+  NodeVisualState,
+} from "@/types/execution";
 
 export class ProgressTracker {
-  private nodeStates: Map<string, NodeExecutionState> = new Map()
+  private nodeStates: Map<string, NodeExecutionState> = new Map();
   // private executionStartTime: number = 0
-  private listeners: Set<(status: ExecutionFlowStatus) => void> = new Set()
+  private listeners: Set<(status: ExecutionFlowStatus) => void> = new Set();
 
   /**
    * Update the status of a specific node
@@ -20,86 +20,97 @@ export class ProgressTracker {
     nodeId: string,
     status: NodeExecutionStatus,
     data?: {
-      progress?: number
-      error?: any
-      inputData?: any
-      outputData?: any
-      startTime?: number
-      endTime?: number
+      progress?: number;
+      error?: any;
+      inputData?: any;
+      outputData?: any;
+      startTime?: number;
+      endTime?: number;
     }
   ): void {
     const currentState = this.nodeStates.get(nodeId) || {
       nodeId,
       status: NodeExecutionStatus.IDLE,
       dependencies: [],
-      dependents: []
-    }
+      dependents: [],
+    };
 
-    const now = Date.now()
+    const now = Date.now();
     const updatedState: NodeExecutionState = {
       ...currentState,
       status,
       progress: data?.progress ?? currentState.progress,
-      error: data?.error ? {
-        message: data.error.message || String(data.error),
-        timestamp: now,
-        details: data.error
-      } : currentState.error,
+      error: data?.error
+        ? {
+            message: data.error.message || String(data.error),
+            timestamp: now,
+            details: data.error,
+          }
+        : currentState.error,
       inputData: data?.inputData ?? currentState.inputData,
-      outputData: data?.outputData ?? currentState.outputData
-    }
+      outputData: data?.outputData ?? currentState.outputData,
+    };
 
     // Update timing information
     if (status === NodeExecutionStatus.RUNNING && !updatedState.startTime) {
-      updatedState.startTime = data?.startTime || now
+      updatedState.startTime = data?.startTime || now;
     }
 
-    if ([NodeExecutionStatus.COMPLETED, NodeExecutionStatus.FAILED, NodeExecutionStatus.CANCELLED].includes(status)) {
-      updatedState.endTime = data?.endTime || now
+    if (
+      [
+        NodeExecutionStatus.COMPLETED,
+        NodeExecutionStatus.FAILED,
+        NodeExecutionStatus.CANCELLED,
+      ].includes(status)
+    ) {
+      updatedState.endTime = data?.endTime || now;
       if (updatedState.startTime && updatedState.endTime) {
-        updatedState.duration = updatedState.endTime - updatedState.startTime
+        updatedState.duration = updatedState.endTime - updatedState.startTime;
       }
-      updatedState.progress = status === NodeExecutionStatus.COMPLETED ? 100 : updatedState.progress
+      updatedState.progress =
+        status === NodeExecutionStatus.COMPLETED ? 100 : updatedState.progress;
     }
 
-    this.nodeStates.set(nodeId, updatedState)
+    this.nodeStates.set(nodeId, updatedState);
 
     // Notify listeners of the update
-    this.notifyListeners(executionId)
+    this.notifyListeners(executionId);
   }
 
   /**
    * Calculate overall execution progress
    */
-  calculateOverallProgress(nodeStates: Map<string, NodeExecutionState>): number {
-    if (nodeStates.size === 0) return 0
+  calculateOverallProgress(
+    nodeStates: Map<string, NodeExecutionState>
+  ): number {
+    if (nodeStates.size === 0) return 0;
 
-    let totalProgress = 0
-    const totalNodes = nodeStates.size
+    let totalProgress = 0;
+    const totalNodes = nodeStates.size;
 
     for (const [, state] of nodeStates) {
       switch (state.status) {
         case NodeExecutionStatus.COMPLETED:
-          totalProgress += 100
-          break
+          totalProgress += 100;
+          break;
         case NodeExecutionStatus.FAILED:
         case NodeExecutionStatus.CANCELLED:
         case NodeExecutionStatus.SKIPPED:
-          totalProgress += 100 // These are "complete" even if not successful
-          break
+          totalProgress += 100; // These are "complete" even if not successful
+          break;
         case NodeExecutionStatus.RUNNING:
-          totalProgress += state.progress || 50 // Default to 50% if no specific progress
-          break
+          totalProgress += state.progress || 50; // Default to 50% if no specific progress
+          break;
         case NodeExecutionStatus.QUEUED:
-          totalProgress += 10 // Small progress for queued nodes
-          break
+          totalProgress += 10; // Small progress for queued nodes
+          break;
         case NodeExecutionStatus.IDLE:
-          totalProgress += 0 // No progress for idle nodes
-          break
+          totalProgress += 0; // No progress for idle nodes
+          break;
       }
     }
 
-    return Math.round(totalProgress / totalNodes)
+    return Math.round(totalProgress / totalNodes);
   }
 
   /**
@@ -110,153 +121,170 @@ export class ProgressTracker {
     executionHistory: ExecutionHistoryEntry[]
   ): number {
     const runningNodes = Array.from(nodeStates.values()).filter(
-      state => state.status === NodeExecutionStatus.RUNNING
-    )
+      (state) => state.status === NodeExecutionStatus.RUNNING
+    );
     const queuedNodes = Array.from(nodeStates.values()).filter(
-      state => state.status === NodeExecutionStatus.QUEUED
-    )
+      (state) => state.status === NodeExecutionStatus.QUEUED
+    );
 
     if (runningNodes.length === 0 && queuedNodes.length === 0) {
-      return 0
+      return 0;
     }
 
     // Calculate average node duration from history
-    let totalHistoricalDuration = 0
-    let historicalNodeCount = 0
+    let totalHistoricalDuration = 0;
+    let historicalNodeCount = 0;
 
-    executionHistory.forEach(entry => {
+    executionHistory.forEach((entry) => {
       if (entry.metrics) {
-        totalHistoricalDuration += entry.metrics.averageNodeDuration
-        historicalNodeCount++
+        totalHistoricalDuration += entry.metrics.averageNodeDuration;
+        historicalNodeCount++;
       }
-    })
+    });
 
-    const averageNodeDuration = historicalNodeCount > 0 
-      ? totalHistoricalDuration / historicalNodeCount 
-      : 30000 // Default 30 seconds
+    const averageNodeDuration =
+      historicalNodeCount > 0
+        ? totalHistoricalDuration / historicalNodeCount
+        : 30000; // Default 30 seconds
 
     // Estimate time for running nodes
-    let runningTimeEstimate = 0
-    runningNodes.forEach(node => {
+    let runningTimeEstimate = 0;
+    runningNodes.forEach((node) => {
       if (node.startTime) {
-        const elapsed = Date.now() - node.startTime
-        const progress = node.progress || 50
-        const estimatedTotal = elapsed / (progress / 100)
-        runningTimeEstimate += Math.max(0, estimatedTotal - elapsed)
+        const elapsed = Date.now() - node.startTime;
+        const progress = node.progress || 50;
+        const estimatedTotal = elapsed / (progress / 100);
+        runningTimeEstimate += Math.max(0, estimatedTotal - elapsed);
       } else {
-        runningTimeEstimate += averageNodeDuration
+        runningTimeEstimate += averageNodeDuration;
       }
-    })
+    });
 
     // Estimate time for queued nodes
-    const queuedTimeEstimate = queuedNodes.length * averageNodeDuration
+    const queuedTimeEstimate = queuedNodes.length * averageNodeDuration;
 
-    return Math.round(runningTimeEstimate + queuedTimeEstimate)
+    return Math.round(runningTimeEstimate + queuedTimeEstimate);
   }
 
   /**
    * Get execution metrics
    */
   getExecutionMetrics(_executionId: string): ExecutionMetrics {
-    const nodeStates = Array.from(this.nodeStates.values())
+    const nodeStates = Array.from(this.nodeStates.values());
     const completedNodes = nodeStates.filter(
-      state => state.status === NodeExecutionStatus.COMPLETED
-    )
+      (state) => state.status === NodeExecutionStatus.COMPLETED
+    );
     const failedNodes = nodeStates.filter(
-      state => state.status === NodeExecutionStatus.FAILED
-    )
+      (state) => state.status === NodeExecutionStatus.FAILED
+    );
 
     // Calculate average duration for all nodes with duration (completed and failed)
-    const allNodesWithDuration = nodeStates.filter(node => node.duration !== undefined)
+    const allNodesWithDuration = nodeStates.filter(
+      (node) => node.duration !== undefined
+    );
     const durations = allNodesWithDuration
-      .map(node => node.duration!)
-      .filter(duration => duration > 0)
-    
-    const averageNodeDuration = durations.length > 0
-      ? durations.reduce((sum, duration) => sum + duration, 0) / durations.length
-      : 0
+      .map((node) => node.duration!)
+      .filter((duration) => duration > 0);
+
+    const averageNodeDuration =
+      durations.length > 0
+        ? durations.reduce((sum, duration) => sum + duration, 0) /
+          durations.length
+        : 0;
 
     // Find longest running node
     const runningNodes = nodeStates.filter(
-      state => state.status === NodeExecutionStatus.RUNNING && state.startTime
-    )
+      (state) => state.status === NodeExecutionStatus.RUNNING && state.startTime
+    );
     const longestRunningNode = runningNodes.reduce((longest, current) => {
-      const currentRuntime = current.startTime ? Date.now() - current.startTime : 0
-      const longestRuntime = longest.startTime ? Date.now() - longest.startTime : 0
-      return currentRuntime > longestRuntime ? current : longest
-    }, runningNodes[0])
+      const currentRuntime = current.startTime
+        ? Date.now() - current.startTime
+        : 0;
+      const longestRuntime = longest.startTime
+        ? Date.now() - longest.startTime
+        : 0;
+      return currentRuntime > longestRuntime ? current : longest;
+    }, runningNodes[0]);
 
     // Identify bottleneck nodes (nodes that took significantly longer than average)
-    const bottleneckThreshold = averageNodeDuration * 2
+    const bottleneckThreshold = averageNodeDuration * 2;
     const bottleneckNodes = completedNodes
-      .filter(node => node.duration && node.duration > bottleneckThreshold)
-      .map(node => node.nodeId)
+      .filter((node) => node.duration && node.duration > bottleneckThreshold)
+      .map((node) => node.nodeId);
 
     // Calculate parallelism utilization (simplified)
     const currentlyRunning = nodeStates.filter(
-      state => state.status === NodeExecutionStatus.RUNNING
-    ).length
-    const maxPossibleParallel = Math.min(nodeStates.length, 5) // Assume max 5 parallel
-    const parallelismUtilization = maxPossibleParallel > 0 
-      ? (currentlyRunning / maxPossibleParallel) * 100 
-      : 0
+      (state) => state.status === NodeExecutionStatus.RUNNING
+    ).length;
+    const maxPossibleParallel = Math.min(nodeStates.length, 5); // Assume max 5 parallel
+    const parallelismUtilization =
+      maxPossibleParallel > 0
+        ? (currentlyRunning / maxPossibleParallel) * 100
+        : 0;
 
     return {
       totalNodes: nodeStates.length,
       completedNodes: completedNodes.length,
       failedNodes: failedNodes.length,
       averageNodeDuration,
-      longestRunningNode: longestRunningNode?.nodeId || '',
+      longestRunningNode: longestRunningNode?.nodeId || "",
       bottleneckNodes,
-      parallelismUtilization
-    }
+      parallelismUtilization,
+    };
   }
 
   /**
    * Get current execution flow status
    */
   getExecutionFlowStatus(executionId: string): ExecutionFlowStatus {
-    const nodeStates = new Map(this.nodeStates)
-    const nodeStatesArray = Array.from(nodeStates.values())
+    const nodeStates = new Map(this.nodeStates);
+    const nodeStatesArray = Array.from(nodeStates.values());
 
     const currentlyExecuting = nodeStatesArray
-      .filter(state => state.status === NodeExecutionStatus.RUNNING)
-      .map(state => state.nodeId)
+      .filter((state) => state.status === NodeExecutionStatus.RUNNING)
+      .map((state) => state.nodeId);
 
     const completedNodes = nodeStatesArray
-      .filter(state => state.status === NodeExecutionStatus.COMPLETED)
-      .map(state => state.nodeId)
+      .filter((state) => state.status === NodeExecutionStatus.COMPLETED)
+      .map((state) => state.nodeId);
 
     const failedNodes = nodeStatesArray
-      .filter(state => state.status === NodeExecutionStatus.FAILED)
-      .map(state => state.nodeId)
+      .filter((state) => state.status === NodeExecutionStatus.FAILED)
+      .map((state) => state.nodeId);
 
     const queuedNodes = nodeStatesArray
-      .filter(state => state.status === NodeExecutionStatus.QUEUED)
-      .map(state => state.nodeId)
+      .filter((state) => state.status === NodeExecutionStatus.QUEUED)
+      .map((state) => state.nodeId);
 
     // Determine overall status
-    let overallStatus: 'running' | 'completed' | 'failed' | 'cancelled' = 'running'
-    
-    if (failedNodes.length > 0 && currentlyExecuting.length === 0 && queuedNodes.length === 0) {
-      overallStatus = 'failed'
+    let overallStatus: "running" | "completed" | "failed" | "cancelled" =
+      "running";
+
+    if (
+      failedNodes.length > 0 &&
+      currentlyExecuting.length === 0 &&
+      queuedNodes.length === 0
+    ) {
+      overallStatus = "failed";
     } else if (currentlyExecuting.length === 0 && queuedNodes.length === 0) {
-      const hasActivenodes = nodeStatesArray.some(state => 
-        state.status !== NodeExecutionStatus.IDLE && state.status !== NodeExecutionStatus.SKIPPED
-      )
+      const hasActivenodes = nodeStatesArray.some(
+        (state) =>
+          state.status !== NodeExecutionStatus.IDLE &&
+          state.status !== NodeExecutionStatus.SKIPPED
+      );
       if (hasActivenodes) {
-        overallStatus = 'completed'
+        overallStatus = "completed";
       }
     }
 
     // Build execution path (simplified - in order of completion)
     const executionPath = nodeStatesArray
-      .filter(state => state.endTime)
+      .filter((state) => state.endTime)
       .sort((a, b) => (a.endTime || 0) - (b.endTime || 0))
-      .map(state => state.nodeId)
+      .map((state) => state.nodeId);
 
-    const progress = this.calculateOverallProgress(nodeStates)
-    const estimatedTimeRemaining = this.estimateTimeRemaining(nodeStates, [])
+    const progress = this.calculateOverallProgress(nodeStates);
+    const estimatedTimeRemaining = this.estimateTimeRemaining(nodeStates, []);
 
     return {
       executionId,
@@ -268,42 +296,42 @@ export class ProgressTracker {
       failedNodes,
       queuedNodes,
       executionPath,
-      estimatedTimeRemaining
-    }
+      estimatedTimeRemaining,
+    };
   }
 
   /**
    * Convert NodeExecutionState to NodeVisualState for UI
    */
   getNodeVisualState(nodeId: string): NodeVisualState {
-    const state = this.nodeStates.get(nodeId)
+    const state = this.nodeStates.get(nodeId);
     if (!state) {
       return {
         nodeId,
         status: NodeExecutionStatus.IDLE,
         progress: 0,
-        animationState: 'idle',
-        lastUpdated: Date.now()
-      }
+        animationState: "idle",
+        lastUpdated: Date.now(),
+      };
     }
 
     // Determine animation state based on status
-    let animationState: NodeVisualState['animationState'] = 'idle'
+    let animationState: NodeVisualState["animationState"] = "idle";
     switch (state.status) {
       case NodeExecutionStatus.RUNNING:
-        animationState = 'pulsing'
-        break
+        animationState = "pulsing";
+        break;
       case NodeExecutionStatus.QUEUED:
-        animationState = 'spinning'
-        break
+        animationState = "spinning";
+        break;
       case NodeExecutionStatus.COMPLETED:
-        animationState = 'success'
-        break
+        animationState = "success";
+        break;
       case NodeExecutionStatus.FAILED:
-        animationState = 'error'
-        break
+        animationState = "error";
+        break;
       default:
-        animationState = 'idle'
+        animationState = "idle";
     }
 
     return {
@@ -313,34 +341,37 @@ export class ProgressTracker {
       animationState,
       lastUpdated: Date.now(),
       executionTime: state.duration,
-      errorMessage: state.error?.message
-    }
+      errorMessage: state.error?.message,
+    };
   }
 
   /**
    * Initialize node states for a workflow
    */
-  initializeNodeStates(nodeIds: string[], dependencies: Map<string, string[]>): void {
-    this.nodeStates.clear()
+  initializeNodeStates(
+    nodeIds: string[],
+    dependencies: Map<string, string[]>
+  ): void {
+    this.nodeStates.clear();
     // this.executionStartTime = Date.now()
 
-    nodeIds.forEach(nodeId => {
+    nodeIds.forEach((nodeId) => {
       this.nodeStates.set(nodeId, {
         nodeId,
         status: NodeExecutionStatus.IDLE,
         dependencies: dependencies.get(nodeId) || [],
-        dependents: []
-      })
-    })
+        dependents: [],
+      });
+    });
 
     // Calculate dependents (reverse dependencies)
     for (const [nodeId, deps] of dependencies) {
-      deps.forEach(depId => {
-        const depState = this.nodeStates.get(depId)
+      deps.forEach((depId) => {
+        const depState = this.nodeStates.get(depId);
         if (depState) {
-          depState.dependents.push(nodeId)
+          depState.dependents.push(nodeId);
         }
-      })
+      });
     }
   }
 
@@ -348,45 +379,45 @@ export class ProgressTracker {
    * Reset all node states
    */
   reset(): void {
-    this.nodeStates.clear()
+    this.nodeStates.clear();
     // this.executionStartTime = 0
-    this.listeners.clear()
+    this.listeners.clear();
   }
 
   /**
    * Subscribe to execution status updates
    */
   subscribe(listener: (status: ExecutionFlowStatus) => void): () => void {
-    this.listeners.add(listener)
+    this.listeners.add(listener);
     return () => {
-      this.listeners.delete(listener)
-    }
+      this.listeners.delete(listener);
+    };
   }
 
   /**
    * Notify all listeners of status changes
    */
   private notifyListeners(executionId: string): void {
-    const status = this.getExecutionFlowStatus(executionId)
-    this.listeners.forEach(listener => {
+    const status = this.getExecutionFlowStatus(executionId);
+    this.listeners.forEach((listener) => {
       try {
-        listener(status)
+        listener(status);
       } catch (error) {
-        console.error('Error in progress tracker listener:', error)
+        console.error("Error in progress tracker listener:", error);
       }
-    })
+    });
   }
 
   /**
    * Get all node visual states for UI rendering
    */
   getAllNodeVisualStates(): Map<string, NodeVisualState> {
-    const visualStates = new Map<string, NodeVisualState>()
-    
+    const visualStates = new Map<string, NodeVisualState>();
+
     for (const nodeId of this.nodeStates.keys()) {
-      visualStates.set(nodeId, this.getNodeVisualState(nodeId))
+      visualStates.set(nodeId, this.getNodeVisualState(nodeId));
     }
-    
-    return visualStates
+
+    return visualStates;
   }
 }

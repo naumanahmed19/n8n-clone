@@ -118,7 +118,7 @@ interface WorkflowStore extends WorkflowEditorState {
   pauseExecution: (executionId?: string) => Promise<void>;
   resumeExecution: (executionId?: string) => Promise<void>;
   setExecutionState: (state: Partial<ExecutionState>) => void;
-  clearExecutionState: () => void;
+  clearExecutionState: (preserveLogs?: boolean) => void;
   setExecutionProgress: (progress: number) => void;
   setExecutionError: (error: string) => void;
   updateNodeExecutionResult: (
@@ -919,9 +919,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         const startTime = Date.now();
 
-        // Clear previous execution data
+        // Clear previous execution data only when starting a new execution
         get().clearExecutionLogs();
         set({ realTimeResults: new Map() });
+
+        // CRITICAL: Clear node visual states only when starting a new execution
+        // This ensures that success/failed icons from previous executions are cleared
+        // but preserved when just unsubscribing from real-time updates
+        const currentFlowState = get().flowExecutionState;
+        set({
+          flowExecutionState: {
+            ...currentFlowState,
+            nodeVisualStates: new Map(), // Clear node states for new execution
+          },
+        });
 
         try {
           // Import execution service
@@ -1043,6 +1054,18 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 const currentNodeName =
                   workflow.nodes.find((n) => n.id === progress.currentNode)
                     ?.name || progress.currentNode;
+
+                // CRITICAL: Update visual progress for the currently executing node
+                // This ensures real-time progress indicators are shown in the node UI
+                get().updateNodeExecutionState(
+                  progress.currentNode,
+                  NodeExecutionStatus.RUNNING,
+                  {
+                    progress: progress.nodeProgress || 50, // Use node-specific progress or default to 50%
+                    startTime: Date.now() - (progress.nodeElapsedTime || 1000), // Estimate start time
+                  }
+                );
+
                 get().addExecutionLog({
                   timestamp: new Date().toISOString(),
                   level: "info",
@@ -1051,6 +1074,8 @@ export const useWorkflowStore = create<WorkflowStore>()(
                   data: {
                     nodeId: progress.currentNode,
                     nodeName: currentNodeName,
+                    nodeProgress: progress.nodeProgress,
+                    nodeElapsedTime: progress.nodeElapsedTime,
                   },
                 });
               }
@@ -1122,6 +1147,27 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
               // Update real-time results
               get().updateNodeExecutionResult(nodeExec.nodeId, nodeResult);
+
+              // CRITICAL: Update node visual states for final execution results
+              // This ensures that success/failed icons persist after execution completion
+              const visualStatus =
+                nodeStatus === "success"
+                  ? NodeExecutionStatus.COMPLETED
+                  : nodeStatus === "error"
+                  ? NodeExecutionStatus.FAILED
+                  : NodeExecutionStatus.SKIPPED;
+
+              get().updateNodeExecutionState(nodeExec.nodeId, visualStatus, {
+                progress: nodeStatus === "success" ? 100 : undefined,
+                error: nodeExec.error,
+                outputData: nodeExec.outputData,
+                startTime: nodeExec.startedAt
+                  ? new Date(nodeExec.startedAt).getTime()
+                  : startTime,
+                endTime: nodeExec.finishedAt
+                  ? new Date(nodeExec.finishedAt).getTime()
+                  : endTime,
+              });
 
               // Log node completion
               get().addExecutionLog({
@@ -1218,7 +1264,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // Clear execution state after a delay for successful executions
           if (finalProgress.status === "success") {
             setTimeout(() => {
-              get().clearExecutionState();
+              get().clearExecutionState(); // Preserves logs by default
             }, 3000);
           }
         } catch (error) {
@@ -1353,6 +1399,21 @@ export const useWorkflowStore = create<WorkflowStore>()(
             error: result.error,
           });
 
+          // CRITICAL: Update node visual states for single node execution
+          // This ensures that success/failed icons persist after single node execution
+          const visualStatus =
+            result.status === "success"
+              ? NodeExecutionStatus.COMPLETED
+              : NodeExecutionStatus.FAILED;
+
+          get().updateNodeExecutionState(nodeId, visualStatus, {
+            progress: result.status === "success" ? 100 : undefined,
+            error: result.error,
+            outputData: result.data,
+            startTime: result.startTime,
+            endTime: result.endTime,
+          });
+
           get().addExecutionLog({
             timestamp: new Date().toISOString(),
             level: result.status === "success" ? "info" : "error",
@@ -1390,6 +1451,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
             duration,
             data: undefined,
             error: errorMessage,
+          });
+
+          // CRITICAL: Update node visual states for failed single node execution
+          // This ensures that failed icons persist after single node execution error
+          get().updateNodeExecutionState(nodeId, NodeExecutionStatus.FAILED, {
+            error: errorMessage,
+            startTime,
+            endTime,
           });
 
           get().addExecutionLog({
@@ -1489,6 +1558,27 @@ export const useWorkflowStore = create<WorkflowStore>()(
               // Update real-time results
               get().updateNodeExecutionResult(nodeExec.nodeId, nodeResult);
 
+              // CRITICAL: Update node visual states for cancelled execution results
+              // This ensures that success/failed icons persist even after cancellation
+              const visualStatus =
+                nodeStatus === "success"
+                  ? NodeExecutionStatus.COMPLETED
+                  : nodeStatus === "error"
+                  ? NodeExecutionStatus.FAILED
+                  : NodeExecutionStatus.CANCELLED;
+
+              get().updateNodeExecutionState(nodeExec.nodeId, visualStatus, {
+                progress: nodeStatus === "success" ? 100 : undefined,
+                error: nodeExec.error,
+                outputData: nodeExec.outputData,
+                startTime: nodeExec.startedAt
+                  ? new Date(nodeExec.startedAt).getTime()
+                  : startTime,
+                endTime: nodeExec.finishedAt
+                  ? new Date(nodeExec.finishedAt).getTime()
+                  : endTime,
+              });
+
               return nodeResult;
             });
           } catch (detailsError) {
@@ -1564,7 +1654,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
           // Clear execution state after a delay
           setTimeout(() => {
-            get().clearExecutionState();
+            get().clearExecutionState(); // Preserves logs by default
           }, 2000);
 
           console.log(`Cancelled execution ${executionState.executionId}`);
@@ -1811,7 +1901,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
         });
       },
 
-      clearExecutionState: () => {
+      clearExecutionState: (preserveLogs = true) => {
+        const currentLogs = preserveLogs ? get().executionLogs : [];
+
         set({
           executionState: {
             status: "idle",
@@ -1822,7 +1914,10 @@ export const useWorkflowStore = create<WorkflowStore>()(
             executionId: undefined,
           },
           realTimeResults: new Map(),
-          executionLogs: [],
+          executionLogs: currentLogs, // Preserve logs by default
+          // Note: Node visual states are not cleared here by design
+          // They are only cleared when starting a new execution in executeWorkflow()
+          // This ensures success/failed icons remain visible after unsubscribing
         });
       },
 
@@ -1893,6 +1988,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       clearExecutionLogs: () => {
+        // CRITICAL: This should ONLY be called when starting a new execution
+        // Logs are preserved when unsubscribing from executions and after execution completion
+        // This ensures the last execution's logs remain visible until a new execution starts
         set({ executionLogs: [] });
       },
 
@@ -1955,20 +2053,74 @@ export const useWorkflowStore = create<WorkflowStore>()(
           await executionWebSocket.unsubscribeFromExecution(executionId);
           executionWebSocket.removeExecutionListeners(executionId);
 
-          // Remove from active executions
+          // Preserve current execution logs before any operations
+          const currentLogs = get().executionLogs.slice(); // Create a copy
+
+          // Preserve execution data before removing from active executions
           const currentFlowState = get().flowExecutionState;
+          const executionData =
+            currentFlowState.activeExecutions.get(executionId);
+
+          // CRITICAL: Preserve node visual states by copying them before clearing the execution
+          // This ensures success/failed icons remain visible until the next execution
+          const preservedNodeStates = new Map(
+            currentFlowState.nodeVisualStates
+          );
+
+          if (executionData) {
+            // Move execution to history to preserve logs and state
+            const historyEntry = {
+              executionId,
+              workflowId: get().workflow?.id || "",
+              triggerType: "manual",
+              startTime: Date.now(),
+              endTime:
+                executionData.overallStatus === "running"
+                  ? undefined
+                  : Date.now(),
+              status: executionData.overallStatus,
+              executedNodes: Array.from(executionData.nodeStates.keys()),
+              executionPath: executionData.executionPath,
+              metrics: {
+                totalNodes: executionData.nodeStates.size,
+                completedNodes: Array.from(
+                  executionData.nodeStates.values()
+                ).filter((n) => n.status === NodeExecutionStatus.COMPLETED)
+                  .length,
+                failedNodes: Array.from(
+                  executionData.nodeStates.values()
+                ).filter((n) => n.status === NodeExecutionStatus.FAILED).length,
+                averageNodeDuration: 0,
+                longestRunningNode: "",
+                bottleneckNodes: [],
+                parallelismUtilization: 0,
+              },
+            };
+            currentFlowState.executionHistory.unshift(historyEntry);
+          }
+
+          // Remove from active executions but keep in history
           currentFlowState.activeExecutions.delete(executionId);
 
+          // Only clear selected execution if it matches the unsubscribed one
           if (currentFlowState.selectedExecution === executionId) {
             currentFlowState.selectedExecution = undefined;
           }
 
-          set({ flowExecutionState: { ...currentFlowState } });
+          set({
+            flowExecutionState: {
+              ...currentFlowState,
+              // CRITICAL: Keep the preserved node visual states to maintain success/failed icons
+              nodeVisualStates: preservedNodeStates,
+            },
+            // Ensure logs are preserved after unsubscribing
+            executionLogs: currentLogs,
+          });
 
           get().addExecutionLog({
             timestamp: new Date().toISOString(),
             level: "info",
-            message: `Unsubscribed from real-time updates for execution: ${executionId}`,
+            message: `Unsubscribed from real-time updates for execution: ${executionId}. Logs and node states preserved until next execution.`,
           });
         } catch (error) {
           console.error("Failed to unsubscribe from execution updates:", error);
@@ -1992,6 +2144,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
               executionId: data.executionId,
             });
             if (data.nodeId) {
+              // Set node visual state to running with loading indicator
+              get().updateNodeExecutionState(
+                data.nodeId,
+                NodeExecutionStatus.RUNNING,
+                {
+                  startTime: Date.now(),
+                  progress: 0,
+                }
+              );
+
               get().addExecutionLog({
                 timestamp: new Date().toISOString(),
                 level: "info",
@@ -2064,8 +2226,34 @@ export const useWorkflowStore = create<WorkflowStore>()(
             break;
 
           case "execution-progress":
+            console.log("📊 Execution progress:", data);
             if (data.progress !== undefined) {
               get().setExecutionProgress(data.progress);
+
+              // Update visual state for current running node and overall progress
+              if (data.progress && typeof data.progress === "object") {
+                const progress = data.progress as any; // Cast to access ExecutionProgress properties
+
+                // If there's a current node, update its visual state to show progress
+                if (progress.currentNode) {
+                  const progressPercentage = Math.round(
+                    (progress.completedNodes / progress.totalNodes) * 100
+                  );
+                  const elapsedTime = progress.startedAt
+                    ? Date.now() - new Date(progress.startedAt).getTime()
+                    : 0;
+
+                  get().updateNodeExecutionState(
+                    progress.currentNode,
+                    NodeExecutionStatus.RUNNING,
+                    {
+                      progress: progressPercentage,
+                      startTime: elapsedTime,
+                      duration: elapsedTime,
+                    }
+                  );
+                }
+              }
             }
             break;
 

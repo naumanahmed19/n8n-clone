@@ -22,6 +22,7 @@ import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
+import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { NodeContextMenu } from './NodeContextMenu'
 import { NodePalette } from './NodePalette'
@@ -177,6 +178,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [showExecutionPanel, setShowExecutionPanel] = useState(false)
+    const [showExecutionsPanel, setShowExecutionsPanel] = useState(false)
 
     // Initialize real-time updates on component mount
     useEffect(() => {
@@ -674,6 +676,10 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                         showExecutionPanel={showExecutionPanel}
                         onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
                         executionLogs={executionLogs}
+                        // Executions history props
+                        showExecutionsPanel={showExecutionsPanel}
+                        onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
+                        workflowExecutions={[]} // Will be populated from API
                         // Workflow activation props
                         isWorkflowActive={workflow?.active || false}
                         onToggleWorkflowActive={toggleWorkflowActive}
@@ -739,6 +745,18 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     onClose={() => setShowExecutionPanel(false)}
                 />
             )}
+
+            {/* Executions History Panel */}
+            <ExecutionsHistory
+                workflowId={workflow?.id || ''}
+                isVisible={showExecutionsPanel}
+                onClose={() => setShowExecutionsPanel(false)}
+                onSelectExecution={(executionId) => {
+                    console.log('Selected execution:', executionId)
+                    // TODO: Load and display execution details
+                    setShowExecutionsPanel(false)
+                }}
+            />
         </div>
     )
 }

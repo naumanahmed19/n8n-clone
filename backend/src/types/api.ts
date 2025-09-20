@@ -97,7 +97,7 @@ export const ExecuteWorkflowSchema = z.object({
 });
 
 export const ExecutionQuerySchema = PaginationQuerySchema.extend({
-  workflowId: z.string().uuid().optional(),
+  workflowId: z.string().cuid().optional(),
   status: z.enum(["RUNNING", "SUCCESS", "ERROR", "CANCELLED"]).optional(),
   startedAfter: z.string().datetime().optional(),
   startedBefore: z.string().datetime().optional(),
