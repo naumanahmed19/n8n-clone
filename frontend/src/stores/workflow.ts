@@ -1081,11 +1081,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
             executionDetails.nodeExecutions.map((nodeExec) => {
               // Map backend node status to frontend node status
               let nodeStatus: NodeExecutionResult["status"] = "skipped"; // Default to skipped instead of error
-              
+
               // Handle various success status values from backend
-              const successStatuses = ["success", "completed", "SUCCESS", "COMPLETED"];
+              const successStatuses = [
+                "success",
+                "completed",
+                "SUCCESS",
+                "COMPLETED",
+              ];
               const errorStatuses = ["error", "failed", "ERROR", "FAILED"];
-              
+
               if (successStatuses.includes(nodeExec.status)) {
                 nodeStatus = "success";
               } else if (errorStatuses.includes(nodeExec.status)) {
@@ -1202,7 +1207,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
           // Unsubscribe after 30 seconds to let users see the execution logs
           setTimeout(async () => {
             try {
-              await get().unsubscribeFromExecution(executionResponse.executionId);
+              await get().unsubscribeFromExecution(
+                executionResponse.executionId
+              );
             } catch (error) {
               console.warn("Failed to unsubscribe from execution:", error);
             }
@@ -1442,11 +1449,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
             nodeResults = executionDetails.nodeExecutions.map((nodeExec) => {
               // Map backend node status to frontend node status
               let nodeStatus: NodeExecutionResult["status"] = "skipped";
-              
+
               // Handle various success status values from backend
-              const successStatuses = ["success", "completed", "SUCCESS", "COMPLETED"];
+              const successStatuses = [
+                "success",
+                "completed",
+                "SUCCESS",
+                "COMPLETED",
+              ];
               const errorStatuses = ["error", "failed", "ERROR", "FAILED"];
-              
+
               if (successStatuses.includes(nodeExec.status)) {
                 nodeStatus = "success";
               } else if (errorStatuses.includes(nodeExec.status)) {
@@ -1541,7 +1553,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
           setTimeout(async () => {
             try {
               if (executionState.executionId) {
-                await get().unsubscribeFromExecution(executionState.executionId);
+                await get().unsubscribeFromExecution(
+                  executionState.executionId
+                );
               }
             } catch (error) {
               console.warn("Failed to unsubscribe from execution:", error);
@@ -1966,23 +1980,25 @@ export const useWorkflowStore = create<WorkflowStore>()(
           type: data.type,
           nodeId: data.nodeId,
           executionId: data.executionId,
-          currentExecutionId: get().executionState.executionId
+          currentExecutionId: get().executionState.executionId,
         });
-        
+
         const { executionState, progressTracker } = get();
 
         switch (data.type) {
           case "node-started":
             console.log("=== PROCESSING NODE-STARTED EVENT ===", {
               nodeId: data.nodeId,
-              executionId: data.executionId
+              executionId: data.executionId,
             });
             if (data.nodeId) {
               get().addExecutionLog({
                 timestamp: new Date().toISOString(),
                 level: "info",
                 nodeId: data.nodeId,
-                message: `Starting execution of node: ${data.data?.node?.name || data.nodeId}`,
+                message: `Starting execution of node: ${
+                  data.data?.node?.name || data.nodeId
+                }`,
                 data: data.data,
               });
             }
@@ -1991,14 +2007,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
           case "node-completed":
             console.log("=== PROCESSING NODE-COMPLETED EVENT ===", {
               nodeId: data.nodeId,
-              executionId: data.executionId
+              executionId: data.executionId,
             });
             if (data.nodeId) {
               get().addExecutionLog({
                 timestamp: new Date().toISOString(),
                 level: "info",
                 nodeId: data.nodeId,
-                message: `Node execution completed successfully: ${data.data?.node?.name || data.nodeId}`,
+                message: `Node execution completed successfully: ${
+                  data.data?.node?.name || data.nodeId
+                }`,
                 data: data.data,
               });
             }
@@ -2007,14 +2025,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
           case "node-failed":
             console.log("=== PROCESSING NODE-FAILED EVENT ===", {
               nodeId: data.nodeId,
-              executionId: data.executionId
+              executionId: data.executionId,
             });
             if (data.nodeId) {
               get().addExecutionLog({
                 timestamp: new Date().toISOString(),
                 level: "error",
                 nodeId: data.nodeId,
-                message: `Node execution failed: ${data.data?.node?.name || data.nodeId} - ${data.error?.message || "Unknown error"}`,
+                message: `Node execution failed: ${
+                  data.data?.node?.name || data.nodeId
+                } - ${data.error?.message || "Unknown error"}`,
                 data: data.data,
               });
             }

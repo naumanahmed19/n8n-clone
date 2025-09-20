@@ -49,22 +49,22 @@ export class ExecutionWebSocket {
       // Get authentication token
       if (!token) {
         try {
-          const { useAuthStore } = await import('../stores/auth');
+          const { useAuthStore } = await import("../stores/auth");
           const authStore = useAuthStore.getState();
           token = authStore.token || undefined;
         } catch (error) {
-          console.error('Failed to get auth token:', error);
+          console.error("Failed to get auth token:", error);
         }
       }
 
       if (!token) {
-        reject(new Error('Authentication token required'));
+        reject(new Error("Authentication token required"));
         return;
       }
 
       this.socket = io(this.baseUrl, {
         auth: {
-          token
+          token,
         },
         transports: ["websocket", "polling"],
         timeout: 10000,
@@ -84,7 +84,7 @@ export class ExecutionWebSocket {
         console.log("Error details:", {
           message: error.message,
           stack: error.stack,
-          name: error.name
+          name: error.name,
         });
         this.handleReconnect();
         reject(error);
@@ -105,7 +105,10 @@ export class ExecutionWebSocket {
       });
 
       this.socket.on("node-execution-event", (data: ExecutionEventData) => {
-        console.log("🟡 ExecutionWebSocket received node-execution-event:", data);
+        console.log(
+          "🟡 ExecutionWebSocket received node-execution-event:",
+          data
+        );
         this.handleExecutionEvent(data);
       });
 
@@ -133,11 +136,13 @@ export class ExecutionWebSocket {
   subscribeToExecution(executionId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
-        console.error("🔴 Cannot subscribe to execution - WebSocket not connected");
+        console.error(
+          "🔴 Cannot subscribe to execution - WebSocket not connected"
+        );
         console.log("Socket state:", {
           exists: !!this.socket,
           connected: this.socket?.connected,
-          id: this.socket?.id
+          id: this.socket?.id,
         });
         reject(new Error("WebSocket not connected"));
         return;
@@ -146,7 +151,7 @@ export class ExecutionWebSocket {
       console.log("🟠 Subscribing to execution:", executionId);
       console.log("Socket state before subscribe:", {
         connected: this.socket.connected,
-        id: this.socket.id
+        id: this.socket.id,
       });
 
       this.socket.emit("subscribe-execution", executionId, (response: any) => {

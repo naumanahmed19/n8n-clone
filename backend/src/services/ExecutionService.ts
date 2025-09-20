@@ -737,29 +737,33 @@ export class ExecutionService {
         executionId: nodeEventData.executionId,
         nodeId: nodeEventData.nodeId,
         status: nodeEventData.status,
-        error: nodeEventData.result?.error
+        error: nodeEventData.result?.error,
       });
 
       // Broadcast node execution updates for flow
       if (global.socketService) {
         // Determine if node succeeded or failed - fix the logic here
-        const eventType = nodeEventData.status === "FAILED" || nodeEventData.result?.status === "failed" ? "node-failed" : "node-completed";
-        
+        const eventType =
+          nodeEventData.status === "FAILED" ||
+          nodeEventData.result?.status === "failed"
+            ? "node-failed"
+            : "node-completed";
+
         logger.info("Broadcasting node execution event via socket", {
           executionId: nodeEventData.executionId,
           nodeId: nodeEventData.nodeId,
           eventType,
           status: nodeEventData.status,
         });
-        
+
         console.log("=== BROADCASTING WEBSOCKET EVENT ===", {
           executionId: nodeEventData.executionId,
           type: eventType,
           nodeId: nodeEventData.nodeId,
           status: nodeEventData.status,
-          error: nodeEventData.result?.error
+          error: nodeEventData.result?.error,
         });
-        
+
         global.socketService.broadcastExecutionEvent(
           nodeEventData.executionId,
           {
@@ -789,7 +793,7 @@ export class ExecutionService {
           nodeId: nodeEventData.nodeId,
           status: "started",
         });
-        
+
         global.socketService.broadcastExecutionEvent(
           nodeEventData.executionId,
           {

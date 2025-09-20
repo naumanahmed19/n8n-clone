@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { NodeConfigPanel } from '@/components/workflow/NodeConfigPanel'
-import { useWorkflowStore, useCredentialStore } from '@/stores'
+import { useCredentialStore, useWorkflowStore } from '@/stores'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the stores
 vi.mock('@/stores', () => ({

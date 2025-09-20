@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
-import { X, Settings, Play, Trash2, Book, AlertCircle, CheckCircle, Database } from 'lucide-react'
-import { WorkflowNode, NodeType, NodeProperty } from '@/types'
-import { useWorkflowStore, useCredentialStore } from '@/stores'
 import { CredentialSelector } from '@/components/credential/CredentialSelector'
-import { NodeTester } from '@/components/node/NodeTester'
 import { NodeDocumentation } from '@/components/node/NodeDocumentation'
+import { NodeTester } from '@/components/node/NodeTester'
+import { useCredentialStore, useWorkflowStore } from '@/stores'
+import { NodeProperty, NodeType, WorkflowNode } from '@/types'
 import { NodeValidator, ValidationError } from '@/utils/nodeValidation'
+import { AlertCircle, Book, CheckCircle, Database, Play, Settings, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface NodeConfigPanelProps {
   node: WorkflowNode

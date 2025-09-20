@@ -1,94 +1,125 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Common schemas
 export const IdParamSchema = z.object({
-  id: z.string().min(1, 'ID is required').regex(/^(c[a-z0-9]{24}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i, 'Invalid ID format')
+  id: z
+    .string()
+    .min(1, "ID is required")
+    .regex(
+      /^(c[a-z0-9]{24}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i,
+      "Invalid ID format"
+    ),
 });
 
 export const PaginationQuerySchema = z.object({
-  page: z.string().optional().transform(val => val ? parseInt(val, 10) : 1),
-  limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 10),
+  page: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : 1)),
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : 10)),
   sortBy: z.string().optional(),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 // Workflow schemas
 export const CreateWorkflowSchema = z.object({
-  name: z.string().min(1, 'Workflow name is required').max(255),
+  name: z.string().min(1, "Workflow name is required").max(255),
   description: z.string().optional(),
-  nodes: z.array(z.object({
-    id: z.string(),
-    type: z.string(),
-    name: z.string(),
-    parameters: z.record(z.any()),
-    position: z.object({
-      x: z.number(),
-      y: z.number()
-    }),
-    credentials: z.array(z.string()).optional(),
-    disabled: z.boolean().default(false)
-  })).default([]),
-  connections: z.array(z.object({
-    id: z.string(),
-    sourceNodeId: z.string(),
-    sourceOutput: z.string(),
-    targetNodeId: z.string(),
-    targetInput: z.string()
-  })).default([]),
-  triggers: z.array(z.object({
-    id: z.string(),
-    type: z.string(),
-    nodeId: z.string(),
-    settings: z.record(z.any())
-  })).default([]),
-  settings: z.object({
-    timezone: z.string().optional(),
-    saveExecutionProgress: z.boolean().default(true),
-    saveDataErrorExecution: z.enum(['all', 'none']).default('all'),
-    saveDataSuccessExecution: z.enum(['all', 'none']).default('all'),
-    callerPolicy: z.enum(['workflowsFromSameOwner', 'workflowsFromAList', 'any']).default('workflowsFromSameOwner')
-  }).default({}),
-  active: z.boolean().default(false)
+  nodes: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.string(),
+        name: z.string(),
+        parameters: z.record(z.any()),
+        position: z.object({
+          x: z.number(),
+          y: z.number(),
+        }),
+        credentials: z.array(z.string()).optional(),
+        disabled: z.boolean().default(false),
+      })
+    )
+    .default([]),
+  connections: z
+    .array(
+      z.object({
+        id: z.string(),
+        sourceNodeId: z.string(),
+        sourceOutput: z.string(),
+        targetNodeId: z.string(),
+        targetInput: z.string(),
+      })
+    )
+    .default([]),
+  triggers: z
+    .array(
+      z.object({
+        id: z.string(),
+        type: z.string(),
+        nodeId: z.string(),
+        settings: z.record(z.any()),
+      })
+    )
+    .default([]),
+  settings: z
+    .object({
+      timezone: z.string().optional(),
+      saveExecutionProgress: z.boolean().default(true),
+      saveDataErrorExecution: z.enum(["all", "none"]).default("all"),
+      saveDataSuccessExecution: z.enum(["all", "none"]).default("all"),
+      callerPolicy: z
+        .enum(["workflowsFromSameOwner", "workflowsFromAList", "any"])
+        .default("workflowsFromSameOwner"),
+    })
+    .default({}),
+  active: z.boolean().default(false),
 });
 
 export const UpdateWorkflowSchema = CreateWorkflowSchema.partial();
 
 export const WorkflowQuerySchema = PaginationQuerySchema.extend({
   search: z.string().optional(),
-  active: z.string().optional().transform(val => val === 'true'),
-  userId: z.string().uuid().optional()
+  active: z
+    .string()
+    .optional()
+    .transform((val) => val === "true"),
+  userId: z.string().uuid().optional(),
 });
 
 // Execution schemas
 export const ExecuteWorkflowSchema = z.object({
   triggerData: z.record(z.any()).optional(),
-  startNodes: z.array(z.string()).optional()
+  startNodes: z.array(z.string()).optional(),
 });
 
 export const ExecutionQuerySchema = PaginationQuerySchema.extend({
   workflowId: z.string().uuid().optional(),
-  status: z.enum(['RUNNING', 'SUCCESS', 'ERROR', 'CANCELLED']).optional(),
+  status: z.enum(["RUNNING", "SUCCESS", "ERROR", "CANCELLED"]).optional(),
   startedAfter: z.string().datetime().optional(),
-  startedBefore: z.string().datetime().optional()
+  startedBefore: z.string().datetime().optional(),
 });
 
 // Node schemas
 export const NodeQuerySchema = PaginationQuerySchema.extend({
   category: z.string().optional(),
-  search: z.string().optional()
+  search: z.string().optional(),
 });
 
 // Auth schemas
 export const LoginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters')
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export const RegisterSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required')
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
 });
 
 // Response types

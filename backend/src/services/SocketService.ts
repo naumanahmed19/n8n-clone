@@ -32,7 +32,7 @@ export interface ExecutionLogEntry {
 export class SocketService {
   private io: SocketIOServer;
   private authenticatedSockets: Map<string, AuthenticatedSocket> = new Map();
-  
+
   // Event buffering for late subscribers
   private executionEventBuffer: Map<string, ExecutionEventData[]> = new Map();
   private bufferRetentionMs = 10000; // Keep events for 10 seconds
@@ -49,7 +49,7 @@ export class SocketService {
 
     this.setupAuthentication();
     this.setupConnectionHandlers();
-    
+
     // Start cleanup interval for event buffer
     this.bufferCleanupInterval = setInterval(() => {
       this.cleanupEventBuffer();
@@ -106,14 +106,20 @@ export class SocketService {
       socket.join(`user:${authSocket.userId}`);
 
       // Handle execution subscription
-      socket.on("subscribe-execution", (executionId: string, callback?: Function) => {
-        this.handleExecutionSubscription(authSocket, executionId, callback);
-      });
+      socket.on(
+        "subscribe-execution",
+        (executionId: string, callback?: Function) => {
+          this.handleExecutionSubscription(authSocket, executionId, callback);
+        }
+      );
 
       // Handle execution unsubscription
-      socket.on("unsubscribe-execution", (executionId: string, callback?: Function) => {
-        this.handleExecutionUnsubscription(authSocket, executionId, callback);
-      });
+      socket.on(
+        "unsubscribe-execution",
+        (executionId: string, callback?: Function) => {
+          this.handleExecutionUnsubscription(authSocket, executionId, callback);
+        }
+      );
 
       // Handle workflow subscription (for all executions of a workflow)
       socket.on("subscribe-workflow", (workflowId: string) => {
@@ -159,8 +165,10 @@ export class SocketService {
       // Send any buffered events for this execution to the new subscriber
       const bufferedEvents = this.executionEventBuffer.get(executionId);
       if (bufferedEvents && bufferedEvents.length > 0) {
-        logger.info(`Sending ${bufferedEvents.length} buffered events for execution ${executionId} to late subscriber`);
-        bufferedEvents.forEach(eventData => {
+        logger.info(
+          `Sending ${bufferedEvents.length} buffered events for execution ${executionId} to late subscriber`
+        );
+        bufferedEvents.forEach((eventData) => {
           socket.emit("execution-event", eventData);
         });
       }
@@ -176,12 +184,17 @@ export class SocketService {
         timestamp: new Date().toISOString(),
       });
 
-      logger.info(`User ${socket.userId} successfully subscribed to execution ${executionId}`);
+      logger.info(
+        `User ${socket.userId} successfully subscribed to execution ${executionId}`
+      );
     } catch (error) {
-      logger.error(`Failed to subscribe user ${socket.userId} to execution ${executionId}:`, error);
-      
+      logger.error(
+        `Failed to subscribe user ${socket.userId} to execution ${executionId}:`,
+        error
+      );
+
       if (callback) {
-        callback({ success: false, error: 'Subscription failed' });
+        callback({ success: false, error: "Subscription failed" });
       }
     }
   }
@@ -213,12 +226,17 @@ export class SocketService {
         timestamp: new Date().toISOString(),
       });
 
-      logger.info(`User ${socket.userId} successfully unsubscribed from execution ${executionId}`);
+      logger.info(
+        `User ${socket.userId} successfully unsubscribed from execution ${executionId}`
+      );
     } catch (error) {
-      logger.error(`Failed to unsubscribe user ${socket.userId} from execution ${executionId}:`, error);
-      
+      logger.error(
+        `Failed to unsubscribe user ${socket.userId} from execution ${executionId}:`,
+        error
+      );
+
       if (callback) {
-        callback({ success: false, error: 'Unsubscription failed' });
+        callback({ success: false, error: "Unsubscription failed" });
       }
     }
   }
@@ -286,7 +304,9 @@ export class SocketService {
     this.bufferExecutionEvent(executionId, eventWithTimestamp);
 
     // Emit to execution-specific room
-    this.io.to(`execution:${executionId}`).emit("execution-event", eventWithTimestamp);
+    this.io
+      .to(`execution:${executionId}`)
+      .emit("execution-event", eventWithTimestamp);
   }
 
   /**
@@ -499,20 +519,25 @@ export class SocketService {
   /**
    * Buffer execution event for late subscribers
    */
-  private bufferExecutionEvent(executionId: string, eventData: ExecutionEventData): void {
+  private bufferExecutionEvent(
+    executionId: string,
+    eventData: ExecutionEventData
+  ): void {
     if (!this.executionEventBuffer.has(executionId)) {
       this.executionEventBuffer.set(executionId, []);
     }
-    
+
     const buffer = this.executionEventBuffer.get(executionId)!;
     buffer.push(eventData);
-    
+
     // Limit buffer size to prevent memory issues (keep last 50 events per execution)
     if (buffer.length > 50) {
       buffer.splice(0, buffer.length - 50);
     }
-    
-    logger.debug(`Buffered event for execution ${executionId}, buffer size: ${buffer.length}`);
+
+    logger.debug(
+      `Buffered event for execution ${executionId}, buffer size: ${buffer.length}`
+    );
   }
 
   /**
@@ -520,14 +545,17 @@ export class SocketService {
    */
   private cleanupEventBuffer(): void {
     const now = Date.now();
-    
+
     for (const [executionId, events] of this.executionEventBuffer.entries()) {
       // Remove events older than retention period
-      const filteredEvents = events.filter(event => {
-        const eventTime = event.timestamp instanceof Date ? event.timestamp.getTime() : new Date(event.timestamp).getTime();
-        return (now - eventTime) < this.bufferRetentionMs;
+      const filteredEvents = events.filter((event) => {
+        const eventTime =
+          event.timestamp instanceof Date
+            ? event.timestamp.getTime()
+            : new Date(event.timestamp).getTime();
+        return now - eventTime < this.bufferRetentionMs;
       });
-      
+
       if (filteredEvents.length === 0) {
         // Remove empty buffers
         this.executionEventBuffer.delete(executionId);
