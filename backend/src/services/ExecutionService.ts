@@ -122,10 +122,12 @@ export class ExecutionService {
       if (triggerNodes.length > 0 && triggerData) {
         // Execute from specific trigger or first trigger
         let targetTriggerNode;
-        
+
         if (triggerNodeId) {
           // Use specific trigger node if provided
-          targetTriggerNode = triggerNodes.find((node: any) => node.id === triggerNodeId);
+          targetTriggerNode = triggerNodes.find(
+            (node: any) => node.id === triggerNodeId
+          );
           if (!targetTriggerNode) {
             return {
               success: false,
