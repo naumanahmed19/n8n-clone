@@ -260,10 +260,18 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             // Don't automatically open config panel - only set selection
         } else {
             setSelectedNode(null)
-            // Close config panel if no node is selected
-            closeNodeProperties()
+            // Only close config panel if no node is selected AND the property panel is open
+            // but the propertyPanelNodeId doesn't match any existing workflow node
+            // This prevents the dialog from closing during execution state changes
+            // while still allowing it to close when a node is actually removed or user clicks away
+            if (showPropertyPanel && propertyPanelNodeId) {
+                const nodeExists = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
+                if (!nodeExists) {
+                    closeNodeProperties()
+                }
+            }
         }
-    }, [setSelectedNode])
+    }, [setSelectedNode, showPropertyPanel, propertyPanelNodeId, workflow, closeNodeProperties])
 
     // Handle node position changes
     const handleNodesChange: OnNodesChange = useCallback((changes) => {
