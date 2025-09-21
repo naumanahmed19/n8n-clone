@@ -111,7 +111,6 @@ interface WorkflowStore extends WorkflowEditorState {
   clearImportExportErrors: () => void;
 
   // Execution actions
-  executeWorkflow: () => Promise<void>;
   executeNode: (
     nodeId: string,
     inputData?: any,
@@ -873,13 +872,11 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       // Execution actions
-      executeWorkflow: async () => {
-        const { workflow, executionState } = get();
-
-        if (!workflow) {
-          get().setExecutionError("No workflow to execute");
-          return;
-        }
+      executeNode: async (
+        nodeId: string,
+        inputData?: any,
+        mode: "single" | "workflow" = "single"
+      ) => {
 
         // Prevent multiple simultaneous executions
         if (executionState.status === "running") {

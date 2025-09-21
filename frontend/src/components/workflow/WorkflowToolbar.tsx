@@ -9,12 +9,9 @@ import {
     Download,
     History,
     Loader2,
-    Pause,
-    Play,
     Redo,
     Save,
     Settings,
-    Square,
     Terminal,
     Undo,
     Upload
@@ -30,10 +27,6 @@ interface WorkflowToolbarProps {
   onRedo: () => void
   onSave: () => void
   onValidate: () => void
-  onExecute?: () => void
-  onStop?: () => void
-  onPause?: () => void
-  onResume?: () => void
   onExport?: () => void
   onImport?: (file: File) => void
   isExecuting?: boolean
@@ -56,9 +49,8 @@ interface WorkflowToolbarProps {
   importError?: string | null
   onClearImportExportErrors?: () => void
   
-  // New execution props
+  // New execution props (now only used for status display)
   executionState?: ExecutionState
-  onStopExecution?: () => void
   
   // Error handling props
   onShowError?: (error: string) => void
@@ -87,10 +79,6 @@ export function WorkflowToolbar({
   onRedo,
   onSave,
   onValidate,
-  onExecute,
-  onStop,
-  onPause,
-  onResume,
   onExport,
   onImport,
   isExecuting = false,
@@ -115,7 +103,6 @@ export function WorkflowToolbar({
   
   // New execution props
   executionState,
-  onStopExecution,
   
   // Error handling props
   onShowError,
@@ -197,41 +184,8 @@ export function WorkflowToolbar({
     onExport()
   }
 
-  const handleExecuteClick = () => {
-    if (isExecuting || !onExecute) return
-    
-    onExecute()
-  }
-
-  const handleStopClick = async () => {
-    if (currentExecutionStatus !== 'running' && !isExecuting) return
-    
-    // Show confirmation for stopping execution
-    const confirmed = await showConfirm({
-      title: 'Stop Execution',
-      message: 'Are you sure you want to stop the workflow execution?',
-      details: [
-        'The execution will be cancelled immediately',
-        'Any progress will be lost',
-        'This action cannot be undone'
-      ],
-      confirmText: 'Stop Execution',
-      cancelText: 'Continue Running',
-      severity: 'warning'
-    })
-
-    if (!confirmed) return
-
-    if (onStopExecution) {
-      onStopExecution()
-    } else if (onStop) {
-      onStop()
-    }
-  }
-
   // Determine execution status
   const currentExecutionStatus = executionState?.status || (isExecuting ? 'running' : 'idle')
-  const executionProgress = executionState?.progress || 0
   const executionError = executionState?.error
 
   // Show error notifications
@@ -350,87 +304,7 @@ export function WorkflowToolbar({
             <span className="text-xs font-medium">Test Mode Only</span>
           </div>
         )}
-        {/* Execution button with status */}
-        {(currentExecutionStatus === 'running' || currentExecutionStatus === 'paused' || isExecuting) ? (
-          <div className="flex items-center space-x-2">
-            {/* Pause/Resume button */}
-            {currentExecutionStatus === 'paused' ? (
-              <button
-                onClick={onResume}
-                className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                title="Resume execution"
-              >
-                <Play className="w-4 h-4" />
-                <span>Resume</span>
-              </button>
-            ) : (
-              <button
-                onClick={onPause}
-                className="flex items-center space-x-2 px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
-                title="Pause execution"
-              >
-                <Pause className="w-4 h-4" />
-                <span>Pause</span>
-              </button>
-            )}
-            
-            <button
-              onClick={handleStopClick}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              title="Stop execution"
-            >
-              <Square className="w-4 h-4" />
-              <span>Stop</span>
-            </button>
-            
-            {/* Progress indicator */}
-            {executionProgress > 0 && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-300 ease-out"
-                    style={{ width: `${executionProgress}%` }}
-                  />
-                </div>
-                <span>{Math.round(executionProgress)}%</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={handleExecuteClick}
-            disabled={isExecuting}
-            className={clsx(
-              "flex items-center space-x-2 px-4 py-2 rounded-md transition-colors",
-              !isWorkflowActive
-                ? "bg-orange-600 text-white hover:bg-orange-700"
-                : currentExecutionStatus === 'success'
-                ? "bg-green-600 text-white hover:bg-green-700"
-                : currentExecutionStatus === 'error'
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-green-600 text-white hover:bg-green-700"
-            )}
-            title={
-              !isWorkflowActive
-                ? "Test Execute (Manual): Run workflow in test mode even though it's inactive"
-                : currentExecutionStatus === 'success' 
-                ? "Execute workflow (last execution successful)"
-                : currentExecutionStatus === 'error'
-                ? "Execute workflow (last execution failed)"
-                : "Execute workflow"
-            }
-          >
-            {currentExecutionStatus === 'success' ? (
-              <CheckCircle className="w-4 h-4" />
-            ) : currentExecutionStatus === 'error' ? (
-              <AlertCircle className="w-4 h-4" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-            <span>{!isWorkflowActive ? 'Test Execute' : 'Execute'}</span>
-          </button>
-        )}
-
+        {/* Execution has been moved to individual node toolbar buttons */}
         {/* Workflow Activation Toggle */}
         {onToggleWorkflowActive && (
           <button

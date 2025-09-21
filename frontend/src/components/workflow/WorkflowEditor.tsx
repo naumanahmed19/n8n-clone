@@ -137,12 +137,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         exportError,
         importError,
         clearImportExportErrors,
-        // Execution
-        executeWorkflow,
+        // Execution (main workflow execution moved to individual node toolbars)
         executeNode,
-        stopExecution,
-        pauseExecution,
-        resumeExecution,
         executionState,
         lastExecutionResult,
         realTimeResults,
@@ -493,46 +489,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         }
     }, [importWorkflow, handleShowError])
 
-    // Execution handlers
-    const handleExecute = useCallback(async () => {
-        try {
-            setShowExecutionPanel(true) // Show execution panel when starting execution
-            await executeWorkflow()
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Execution failed'
-            handleShowError(errorMessage)
-        }
-    }, [executeWorkflow, handleShowError])
-
-    const handleStopExecution = useCallback(async () => {
-        try {
-            await stopExecution()
-            handleShowSuccess('Execution stopped')
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to stop execution'
-            handleShowError(errorMessage)
-        }
-    }, [stopExecution, handleShowError, handleShowSuccess])
-
-    const handlePauseExecution = useCallback(async () => {
-        try {
-            await pauseExecution()
-            handleShowSuccess('Execution paused')
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to pause execution'
-            handleShowError(errorMessage)
-        }
-    }, [pauseExecution, handleShowError, handleShowSuccess])
-
-    const handleResumeExecution = useCallback(async () => {
-        try {
-            await resumeExecution()
-            handleShowSuccess('Execution resumed')
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to resume execution'
-            handleShowError(errorMessage)
-        }
-    }, [resumeExecution, handleShowError, handleShowSuccess])
+    // Execution handlers moved to individual node toolbars
+    // Main workflow execution is now triggered from trigger node toolbar buttons
 
     // Save workflow function
     const handleSave = useCallback(async () => {
@@ -668,12 +626,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                         exportError={exportError}
                         importError={importError}
                         onClearImportExportErrors={clearImportExportErrors}
-                        // Execution props
-                        onExecute={handleExecute}
-                        onStopExecution={handleStopExecution}
-                        onPause={handlePauseExecution}
-                        onResume={handleResumeExecution}
-                        isExecuting={executionState.status === 'running'}
+                        // Execution state (for display only - execution moved to individual node toolbars)
                         executionState={executionState}
                         // Error handling props
                         onShowError={handleShowError}
