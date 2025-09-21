@@ -63,6 +63,7 @@ interface WorkflowStore extends WorkflowEditorState {
   executionState: ExecutionState;
   lastExecutionResult: WorkflowExecutionResult | null;
   realTimeResults: Map<string, NodeExecutionResult>;
+  persistentNodeResults: Map<string, NodeExecutionResult>; // Preserved results for node config dialog
   executionLogs: ExecutionLogEntry[];
 
   // Flow execution state
@@ -122,6 +123,7 @@ interface WorkflowStore extends WorkflowEditorState {
   resumeExecution: (executionId?: string) => Promise<void>;
   setExecutionState: (state: Partial<ExecutionState>) => void;
   clearExecutionState: (preserveLogs?: boolean) => void;
+  clearPersistentResults: () => void;
   setExecutionProgress: (progress: number) => void;
   setExecutionError: (error: string) => void;
   updateNodeExecutionResult: (
@@ -228,6 +230,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
       lastExecutionResult: null,
       realTimeResults: new Map(),
+      persistentNodeResults: new Map(),
       executionLogs: [],
 
       // Flow execution state
@@ -264,6 +267,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
           workflowTitle: title,
           isTitleDirty: false,
           titleValidationError: null,
+          // Reset execution state when loading new workflow
+          persistentNodeResults: new Map(),
+          realTimeResults: new Map(),
           // Reset node interaction state when loading new workflow
           selectedNodeId: null,
           showPropertyPanel: false,
@@ -2257,6 +2263,18 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
       clearExecutionState: (preserveLogs = true) => {
         const currentLogs = preserveLogs ? get().executionLogs : [];
+        
+        // Before clearing realTimeResults, save them to persistentNodeResults
+        // This preserves execution results for the node config dialog
+        const currentRealTimeResults = get().realTimeResults;
+        const currentPersistentResults = get().persistentNodeResults;
+        
+        // Merge current real-time results with existing persistent results
+        // Real-time results take precedence (newer execution data)
+        const updatedPersistentResults = new Map(currentPersistentResults);
+        currentRealTimeResults.forEach((result, nodeId) => {
+          updatedPersistentResults.set(nodeId, result);
+        });
 
         set({
           executionState: {
@@ -2268,11 +2286,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
             executionId: undefined,
           },
           realTimeResults: new Map(),
+          persistentNodeResults: updatedPersistentResults,
           executionLogs: currentLogs, // Preserve logs by default
           // Note: Node visual states are not cleared here by design
           // They are only cleared when starting a new execution in executeWorkflow()
           // This ensures success/failed icons remain visible after unsubscribing
         });
+      },
+
+      clearPersistentResults: () => {
+        set({ persistentNodeResults: new Map() });
       },
 
       setExecutionProgress: (progress: number) => {
@@ -2349,7 +2372,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       getNodeExecutionResult: (nodeId: string) => {
-        return get().realTimeResults.get(nodeId);
+        // First try to get from real-time results (active execution)
+        const realTimeResult = get().realTimeResults.get(nodeId);
+        if (realTimeResult) {
+          return realTimeResult;
+        }
+        
+        // Fall back to persistent results (previous executions)
+        return get().persistentNodeResults.get(nodeId);
       },
 
       // Real-time execution updates
