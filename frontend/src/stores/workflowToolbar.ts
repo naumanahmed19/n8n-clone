@@ -38,7 +38,6 @@ interface WorkflowToolbarStore {
   showExecutionsPanel: boolean;
   showNodePalette: boolean;
   isSaving: boolean;
-  isDirty: boolean;
 
   // Workflow activation state
   isWorkflowActive: boolean;
@@ -63,7 +62,6 @@ interface WorkflowToolbarStore {
   toggleExecutionsPanel: () => void;
   toggleNodePalette: () => void;
   setSaving: (saving: boolean) => void;
-  setDirty: (dirty: boolean) => void;
 
   // Actions - Workflow activation
   toggleWorkflowActive: () => void;
@@ -102,7 +100,6 @@ export const useWorkflowToolbarStore = create<WorkflowToolbarStore>()(
       showExecutionsPanel: false,
       showNodePalette: true,
       isSaving: false,
-      isDirty: false,
 
       // Workflow activation state
       isWorkflowActive: false,
@@ -236,10 +233,6 @@ export const useWorkflowToolbarStore = create<WorkflowToolbarStore>()(
 
       setSaving: (saving: boolean) => {
         set({ isSaving: saving });
-      },
-
-      setDirty: (dirty: boolean) => {
-        set({ isDirty: dirty });
       },
 
       // Workflow activation actions

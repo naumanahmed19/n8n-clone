@@ -39,7 +39,7 @@ export function WorkflowToolbar({
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
   
-  // Get main workflow store for title synchronization AND import/export
+  // Get main workflow store for title synchronization, import/export, AND isDirty state
   const { 
     workflowTitle: mainWorkflowTitle,
     updateTitle: updateWorkflowTitle,
@@ -47,10 +47,12 @@ export function WorkflowToolbar({
     isTitleDirty: mainTitleDirty,
     titleValidationError: mainTitleValidationError,
     exportWorkflow: mainExportWorkflow,
-    importWorkflow: mainImportWorkflow
+    importWorkflow: mainImportWorkflow,
+    isDirty, // Use isDirty from main workflow store
+    setDirty
   } = useWorkflowStore()
   
-  // Get all toolbar state from the dedicated store
+  // Get toolbar state from the dedicated store (excluding isDirty which comes from main store)
   const {    
     // Import/Export state
     isExporting,
@@ -67,11 +69,9 @@ export function WorkflowToolbar({
     showExecutionsPanel,
     showNodePalette,
     isSaving,
-    isDirty,
     toggleExecutionsPanel,
     toggleNodePalette,
     setSaving,
-    setDirty,
     
     // Workflow activation state
     isWorkflowActive,
