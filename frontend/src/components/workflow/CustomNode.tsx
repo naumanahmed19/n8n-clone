@@ -169,7 +169,13 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     }))
 
     try {
-      await executeNode(nodeId)
+      // Determine execution mode based on node type
+      // Trigger nodes execute the entire workflow from the toolbar
+      // Other nodes execute individually
+      const triggerNodeTypes = ['manual-trigger', 'webhook-trigger']
+      const mode = triggerNodeTypes.includes(data.nodeType) ? 'workflow' : 'single'
+      
+      await executeNode(nodeId, undefined, mode)
     } catch (error) {
       console.error('Failed to execute node:', error)
       

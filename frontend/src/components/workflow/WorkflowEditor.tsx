@@ -139,6 +139,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         clearImportExportErrors,
         // Execution
         executeWorkflow,
+        executeNode,
         stopExecution,
         pauseExecution,
         resumeExecution,
@@ -403,6 +404,11 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             removeNode(nodeId)
         }
     }, [removeNode])
+
+    const handleContextMenuExecuteNode = useCallback((nodeId: string) => {
+        // Execute the node in single mode (right-click = single node execution)
+        executeNode(nodeId, undefined, 'single')
+    }, [executeNode])
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -728,6 +734,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     isVisible={contextMenuVisible}
                     onClose={hideContextMenu}
                     onOpenProperties={handleContextMenuOpenProperties}
+                    onExecuteNode={handleContextMenuExecuteNode}
                     onDuplicate={handleContextMenuDuplicate}
                     onDelete={handleContextMenuDelete}
                 />

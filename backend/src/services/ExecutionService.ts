@@ -629,6 +629,88 @@ export class ExecutionService {
         return null;
       }
 
+      // Check if this is a flow execution (new FlowExecutionEngine)
+      if (execution.executionType === "flow" || execution.executionType === "workflow") {
+        // Try to get from active FlowExecutionEngine first
+        const flowStatus = this.flowExecutionEngine.getExecutionStatus(executionId);
+        
+        if (flowStatus) {
+          // Active execution - use real-time status from FlowExecutionEngine
+          return {
+            executionId: flowStatus.executionId,
+            totalNodes: flowStatus.nodeStates.size,
+            completedNodes: flowStatus.completedNodes.length,
+            failedNodes: flowStatus.failedNodes.length,
+            currentNode: flowStatus.currentlyExecuting[0],
+            status: flowStatus.overallStatus as any,
+            startedAt: execution.startedAt,
+            finishedAt: execution.finishedAt || undefined,
+            error: flowStatus.failedNodes.length > 0 ? {
+              message: "Some nodes failed during execution",
+              timestamp: new Date(),
+            } : undefined,
+          };
+        }
+
+        // Completed execution - get status from database
+        // Get node execution data from database for completed workflow
+        const nodeExecutions = await this.prisma.nodeExecution.findMany({
+          where: { executionId },
+        });
+
+        const totalNodes = nodeExecutions.length;
+        const completedNodes = nodeExecutions.filter(ne => 
+          ne.status === "SUCCESS"
+        ).length;
+        const failedNodes = nodeExecutions.filter(ne => 
+          ne.status === "ERROR"
+        ).length;
+        const runningNode = nodeExecutions.find(ne => 
+          ne.status === "RUNNING"
+        );
+
+        // Determine the correct status based on execution results
+        let progressStatus: "running" | "success" | "error" | "cancelled" | "paused" | "partial";
+        
+        if (execution.status === "RUNNING") {
+          progressStatus = "running";
+        } else if (execution.status === "CANCELLED") {
+          progressStatus = "cancelled";
+        } else if (execution.status === "PAUSED") {
+          progressStatus = "paused";
+        } else if (failedNodes > 0 && completedNodes > 0) {
+          // Some nodes succeeded and some failed = partial
+          progressStatus = "partial";
+        } else if (failedNodes > 0) {
+          // All executed nodes failed = error
+          progressStatus = "error";
+        } else if (completedNodes > 0) {
+          // All executed nodes succeeded = success
+          progressStatus = "success";
+        } else {
+          // No nodes executed or unknown state = error
+          progressStatus = "error";
+        }
+
+        return {
+          executionId,
+          totalNodes,
+          completedNodes,
+          failedNodes,
+          currentNode: runningNode?.nodeId,
+          status: progressStatus,
+          startedAt: execution.startedAt,
+          finishedAt: execution.finishedAt || undefined,
+          error: execution.error ? {
+            message: (execution.error as any).message || "Execution failed",
+            stack: (execution.error as any).stack,
+            nodeId: (execution.error as any).nodeId,
+            timestamp: new Date((execution.error as any).timestamp || execution.finishedAt),
+          } : undefined,
+        };
+      }
+
+      // Use ExecutionEngine for single node executions
       return await this.executionEngine.getExecutionProgress(executionId);
     } catch (error) {
       logger.error(
@@ -905,14 +987,16 @@ export class ExecutionService {
   }
 
   /**
-   * Execute a single node
+   * Execute a single node or workflow from a node
+   * @param mode 'single' = execute only this node in isolation, 'workflow' = execute workflow starting from this node
    */
   async executeSingleNode(
     workflowId: string,
     nodeId: string,
     userId: string,
     inputData?: any,
-    parameters?: Record<string, any>
+    parameters?: Record<string, any>,
+    mode: 'single' | 'workflow' = 'single'
   ): Promise<ExecutionResult> {
     try {
       logger.info(
@@ -966,13 +1050,15 @@ export class ExecutionService {
         };
       }
 
-      // For trigger nodes, use FlowExecutionEngine to execute the entire flow
+      // Handle execution based on mode
       const triggerNodeTypes = ["manual-trigger", "webhook-trigger"];
-      if (!triggerNodeTypes.includes(node.type)) {
+      const isTriggerNode = triggerNodeTypes.includes(node.type);
+      
+      if (mode === 'workflow' && !isTriggerNode) {
         return {
           success: false,
           error: {
-            message: "Only trigger nodes can be executed individually",
+            message: "Workflow execution mode requires a trigger node",
             timestamp: new Date(),
           },
         };
@@ -988,9 +1074,10 @@ export class ExecutionService {
       // Prepare input data for the node
       const nodeInputData = inputData || { main: [[]] };
 
-      logger.info(`Executing trigger node with flow execution`, {
+      logger.info(`Executing node`, {
         nodeId,
         nodeType: node.type,
+        mode,
         workflowId,
         userId,
         nodeParameters,
@@ -998,20 +1085,21 @@ export class ExecutionService {
       });
 
       try {
-        // Use FlowExecutionEngine to execute the entire workflow starting from this trigger node
-        const flowResult = await this.flowExecutionEngine.executeFromNode(
-          nodeId,
-          workflowId,
-          userId,
-          nodeInputData,
-          {
-            timeout: 300000, // 5 minutes
-            saveProgress: true,
-            saveData: true,
-            manual: true,
-            isolatedExecution: false,
-          }
-        );
+        if (mode === 'workflow') {
+          // Workflow execution mode: execute entire workflow from trigger node
+          const flowResult = await this.flowExecutionEngine.executeFromNode(
+            nodeId,
+            workflowId,
+            userId,
+            nodeInputData,
+            {
+              timeout: 300000, // 5 minutes
+              saveProgress: true,
+              saveData: true,
+              manual: true,
+              isolatedExecution: false,
+            }
+          );
 
         // Create execution record in database
         const executionRecord = await this.createFlowExecutionRecord(
@@ -1072,6 +1160,73 @@ export class ExecutionService {
           },
           error: executionError,
         };
+        } else {
+          // Single node execution mode: execute only this node in isolation
+          const startTime = Date.now();
+          
+          const nodeResult = await this.nodeService.executeNode(
+            node.type,
+            nodeParameters,
+            nodeInputData,
+            node.credentials ? {} : undefined, // TODO: Load actual credentials
+            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          );
+
+          const endTime = Date.now();
+          const duration = endTime - startTime;
+
+          // Create single node execution record
+          const executionRecord = await this.prisma.singleNodeExecution.create({
+            data: {
+              id: `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              workflowId,
+              nodeId,
+              nodeType: node.type,
+              status: nodeResult.success ? "SUCCESS" : "ERROR",
+              startedAt: new Date(startTime),
+              finishedAt: new Date(endTime),
+              inputData: nodeInputData,
+              outputData: nodeResult.data || {},
+              parameters: nodeParameters,
+              error: nodeResult.success ? null : (nodeResult.error ? String(nodeResult.error) : "Unknown error"),
+              userId,
+            },
+          });
+
+          logger.info(`Single node execution completed`, {
+            nodeId,
+            success: nodeResult.success,
+            duration,
+            executionId: executionRecord.id,
+          });
+
+          // Prepare error information if node failed
+          let executionError: any = undefined;
+          if (!nodeResult.success) {
+            executionError = {
+              message: nodeResult.error || "Node execution failed",
+              timestamp: new Date(),
+              nodeId: nodeId,
+            };
+          }
+
+          return {
+            success: true, // Execution started and ran, even if node failed
+            data: {
+              executionId: executionRecord.id,
+              nodeId,
+              status: nodeResult.success ? "success" : "failed",
+              data: nodeResult.data ? [{ main: nodeResult.data }] : [],
+              startTime,
+              endTime,
+              duration,
+              executedNodes: [nodeId],
+              failedNodes: nodeResult.success ? [] : [nodeId],
+              hasFailures: !nodeResult.success,
+            },
+            error: executionError,
+          };
+        }
       } catch (flowError) {
         logger.error(`FlowExecutionEngine failed for node ${nodeId}:`, {
           error: flowError,

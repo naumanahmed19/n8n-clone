@@ -64,7 +64,7 @@ export interface ExecutionProgress {
   completedNodes: number;
   failedNodes: number;
   currentNode?: string;
-  status: "running" | "success" | "error" | "cancelled";
+  status: "running" | "success" | "error" | "cancelled" | "paused" | "partial";
   startedAt: Date;
   finishedAt?: Date;
   error?: ExecutionEngineError;

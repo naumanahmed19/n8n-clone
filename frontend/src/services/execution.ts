@@ -20,7 +20,7 @@ export interface ExecutionProgress {
   completedNodes: number;
   failedNodes: number;
   currentNode?: string;
-  status: "running" | "success" | "error" | "cancelled" | "paused";
+  status: "running" | "success" | "error" | "cancelled" | "paused" | "partial";
   startedAt: string;
   finishedAt?: string;
   error?: {
@@ -34,7 +34,7 @@ export interface ExecutionProgress {
 export interface ExecutionDetails {
   id: string;
   workflowId: string;
-  status: "running" | "success" | "error" | "cancelled" | "paused";
+  status: "running" | "success" | "error" | "cancelled" | "paused" | "partial";
   startedAt: string;
   finishedAt?: string;
   triggerData: any;
@@ -56,6 +56,7 @@ export interface SingleNodeExecutionRequest {
   nodeId: string;
   inputData?: any;
   parameters?: Record<string, any>;
+  mode?: 'single' | 'workflow';
 }
 
 export interface SingleNodeExecutionResult {
@@ -174,7 +175,8 @@ export class ExecutionService {
           if (
             progress.status === "success" ||
             progress.status === "error" ||
-            progress.status === "cancelled"
+            progress.status === "cancelled" ||
+            progress.status === "partial"
           ) {
             resolve(progress);
             return;
@@ -207,6 +209,7 @@ export class ExecutionService {
         workflowId: request.workflowId,
         inputData: request.inputData,
         parameters: request.parameters,
+        mode: request.mode, // Include the mode parameter
       }
     );
 

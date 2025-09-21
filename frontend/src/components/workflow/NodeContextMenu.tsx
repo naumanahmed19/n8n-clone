@@ -7,6 +7,7 @@ interface NodeContextMenuProps {
   isVisible: boolean
   onClose: () => void
   onOpenProperties: (nodeId: string) => void
+  onExecuteNode?: (nodeId: string) => void
   onDuplicate?: (nodeId: string) => void
   onDelete?: (nodeId: string) => void
 }
@@ -17,6 +18,7 @@ export function NodeContextMenu({
   isVisible,
   onClose,
   onOpenProperties,
+  onExecuteNode,
   onDuplicate,
   onDelete
 }: NodeContextMenuProps) {
@@ -106,6 +108,18 @@ export function NodeContextMenu({
         <span className="mr-3">⚙️</span>
         Properties
       </button>
+
+      {/* Execute Node option (if provided) */}
+      {onExecuteNode && (
+        <button
+          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none flex items-center"
+          onClick={() => handleMenuAction(() => onExecuteNode(nodeId))}
+          role="menuitem"
+        >
+          <span className="mr-3">▶️</span>
+          Execute Node
+        </button>
+      )}
 
       {/* Separator */}
       <div className="border-t border-gray-100 my-1" />

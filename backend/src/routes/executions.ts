@@ -35,22 +35,20 @@ router.post(
       options
     );
 
-    if (!result.success) {
-      const errorMessage = result.error?.message || "Workflow execution failed";
-      throw new AppError(errorMessage, 400, "EXECUTION_FAILED");
-    }
-
+    // Always return success for started executions, but include failure details
     const response: ApiResponse = {
       success: true,
       data: result.data,
-      // Include error details if some nodes failed, but don't treat it as API failure
-      ...(result.error && { 
-        warnings: [{
-          type: "NODE_FAILURES",
-          message: result.error.message,
-          details: result.error
-        }]
-      })
+      // Include error/warning details if some nodes failed
+      ...(result.error && {
+        warnings: [
+          {
+            type: "NODE_FAILURES",
+            message: result.error.message,
+            details: result.error,
+          },
+        ],
+      }),
     };
 
     res.status(201).json(response);
@@ -159,13 +157,10 @@ router.delete(
     );
 
     if (!result.success) {
-      const errorMessage = result.error?.message || "Failed to delete execution";
+      const errorMessage =
+        result.error?.message || "Failed to delete execution";
       const statusCode = errorMessage.includes("not found") ? 404 : 400;
-      throw new AppError(
-        errorMessage,
-        statusCode,
-        "EXECUTION_DELETE_FAILED"
-      );
+      throw new AppError(errorMessage, statusCode, "EXECUTION_DELETE_FAILED");
     }
 
     const response: ApiResponse = {
@@ -189,13 +184,10 @@ router.post(
     );
 
     if (!result.success) {
-      const errorMessage = result.error?.message || "Failed to cancel execution";
+      const errorMessage =
+        result.error?.message || "Failed to cancel execution";
       const statusCode = errorMessage.includes("not found") ? 404 : 400;
-      throw new AppError(
-        errorMessage,
-        statusCode,
-        "EXECUTION_CANCEL_FAILED"
-      );
+      throw new AppError(errorMessage, statusCode, "EXECUTION_CANCEL_FAILED");
     }
 
     const response: ApiResponse = {
@@ -221,11 +213,7 @@ router.post(
     if (!result.success) {
       const errorMessage = result.error?.message || "Failed to retry execution";
       const statusCode = errorMessage.includes("not found") ? 404 : 400;
-      throw new AppError(
-        errorMessage,
-        statusCode,
-        "EXECUTION_RETRY_FAILED"
-      );
+      throw new AppError(errorMessage, statusCode, "EXECUTION_RETRY_FAILED");
     }
 
     const response: ApiResponse = {
@@ -316,7 +304,7 @@ router.post(
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { nodeId } = req.params;
-    const { workflowId, inputData, parameters } = req.body;
+    const { workflowId, inputData, parameters, mode = 'single' } = req.body;
 
     if (!workflowId) {
       throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
@@ -326,30 +314,33 @@ router.post(
       throw new AppError("Node ID is required", 400, "MISSING_NODE_ID");
     }
 
+    if (mode && !['single', 'workflow'].includes(mode)) {
+      throw new AppError("Mode must be 'single' or 'workflow'", 400, "INVALID_MODE");
+    }
+
     const result = await executionService.executeSingleNode(
       workflowId,
       nodeId,
       req.user!.id,
       inputData,
-      parameters
+      parameters,
+      mode
     );
 
-    if (!result.success) {
-      const errorMessage = result.error?.message || "Node execution failed";
-      throw new AppError(errorMessage, 400, "NODE_EXECUTION_FAILED");
-    }
-
+    // Always return success for started executions, but include failure details
     const response: ApiResponse = {
       success: true,
       data: result.data,
-      // Include error details if some nodes failed, but don't treat it as API failure
-      ...(result.error && { 
-        warnings: [{
-          type: "NODE_FAILURES",
-          message: result.error.message,
-          details: result.error
-        }]
-      })
+      // Include error/warning details if some nodes failed
+      ...(result.error && {
+        warnings: [
+          {
+            type: "NODE_FAILURES",
+            message: result.error.message,
+            details: result.error,
+          },
+        ],
+      }),
     };
 
     res.status(201).json(response);
