@@ -8,6 +8,11 @@ import {
     Dialog,
     DialogContent,
 } from '@/components/ui/dialog'
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import {
     ResizableHandle,
@@ -16,6 +21,7 @@ import {
 } from '@/components/ui/resizable'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCredentialStore, useWorkflowStore } from '@/stores'
 import { NodeProperty, NodeType, WorkflowNode } from '@/types'
@@ -27,11 +33,13 @@ import {
     CheckCircle,
     Database,
     FileText,
+    Info,
     Play,
     Settings,
     Trash2
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 interface NodeConfigDialogProps {
   node: WorkflowNode
@@ -57,6 +65,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   )
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
 
   // Get the execution result for this node
   const nodeExecutionResult = getNodeExecutionResult(node.id)
@@ -73,14 +82,17 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
     workflow?.nodes.find(n => n.id === conn.targetNodeId)
   ).filter(Boolean) as WorkflowNode[]
 
+  // Only initialize state when dialog opens, never reset during editing
   useEffect(() => {
-    setParameters(node.parameters)
-    setNodeName(node.name)
-    setIsDisabled(node.disabled)
-    setCredentials((node.credentials || []).reduce((acc, cred) => ({ ...acc, [cred]: cred }), {}))
-    setHasUnsavedChanges(false)
-    setValidationErrors([])
-  }, [node])
+    if (isOpen) {
+      setParameters(node.parameters)
+      setNodeName(node.name)
+      setIsDisabled(node.disabled)
+      setCredentials((node.credentials || []).reduce((acc, cred) => ({ ...acc, [cred]: cred }), {}))
+      setHasUnsavedChanges(false)
+      setValidationErrors([])
+    }
+  }, [isOpen, node.id]) // Reset when dialog opens or when we switch to a different node
 
   useEffect(() => {
     fetchCredentials()
@@ -93,25 +105,45 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
       nodeType.properties
     )
     setValidationErrors(validation.errors)
-  }, [node, nodeName, parameters, credentials, nodeType.properties])
+  }, [node.id, nodeName, parameters, credentials, nodeType.properties]) // Use node.id instead of node
 
+  // Handle parameter changes - only update local state immediately, store updates on blur/close
   const handleParameterChange = (propertyName: string, value: any) => {
     const newParameters = { ...parameters, [propertyName]: value }
     setParameters(newParameters)
     setHasUnsavedChanges(true)
-    updateNode(node.id, { parameters: newParameters })
+    // Don't update store immediately - let user finish typing
+  }
+
+  // Save changes to store (called on blur, dialog close, or explicit save)
+  const saveChangesToStore = () => {
+    if (hasUnsavedChanges) {
+      updateNode(node.id, { 
+        parameters, 
+        name: nodeName, 
+        disabled: isDisabled,
+        credentials: Object.values(credentials).filter(Boolean) as string[]
+      })
+      setHasUnsavedChanges(false)
+    }
+  }
+
+  // Handle dialog close - save changes before closing
+  const handleClose = () => {
+    saveChangesToStore()
+    onClose()
   }
 
   const handleNameChange = (name: string) => {
     setNodeName(name)
     setHasUnsavedChanges(true)
-    updateNode(node.id, { name })
+    // Don't update store immediately
   }
 
   const handleDisabledChange = (disabled: boolean) => {
     setIsDisabled(disabled)
     setHasUnsavedChanges(true)
-    updateNode(node.id, { disabled })
+    // Don't update store immediately - save on dialog close
   }
 
   const handleCredentialChange = (credentialType: string, credentialId: string | undefined) => {
@@ -122,10 +154,9 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
       delete newCredentials[credentialType]
     }
     
-    const credentialArray = Object.values(newCredentials).filter(Boolean) as string[]
     setCredentials(newCredentials)
     setHasUnsavedChanges(true)
-    updateNode(node.id, { credentials: credentialArray })
+    // Don't update store immediately - save on dialog close or blur
   }
 
   const handleDelete = () => {
@@ -190,7 +221,9 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
             <input
               type="checkbox"
               checked={value || false}
-              onChange={(e) => handleParameterChange(property.name, e.target.checked)}
+              onChange={(e) => {
+                handleParameterChange(property.name, e.target.checked)
+              }}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700">{property.description}</span>
@@ -201,7 +234,9 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
         return (
           <select
             value={value || ''}
-            onChange={(e) => handleParameterChange(property.name, e.target.value)}
+            onChange={(e) => {
+              handleParameterChange(property.name, e.target.value)
+            }}
             className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${inputClassName}`}
           >
             <option value="">Select an option...</option>
@@ -293,18 +328,41 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl w-[90vw] h-[85vh] p-0 gap-0">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[85vh] p-0 gap-0">
         <div className="flex-1 flex overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="flex-1">
             {/* Left Column - Inputs */}
-            <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+            <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
               <div className="h-full border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b">
-                  <div className="flex items-center space-x-2">
-                    <ArrowLeft className="w-4 h-4 text-gray-500" />
-                    <h3 className="font-medium">Inputs</h3>
-                    <Badge variant="outline">{inputNodes.length}</Badge>
+                <div className="p-4 border-b h-[72px] flex items-center">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-2">
+                      <ArrowLeft className="w-4 h-4 text-gray-500" />
+                      <h3 className="font-medium">Inputs</h3>
+                      <Badge variant="outline">{inputNodes.length}</Badge>
+                    </div>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                        </Button>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80" side="bottom" align="end">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold">Input Connections</h4>
+                          <p className="text-sm text-gray-600">
+                            This panel shows data coming into this node from previous nodes in the workflow. 
+                            Each connection displays the source node, output port, and the actual data being passed.
+                          </p>
+                          <div className="text-xs text-gray-500">
+                            • Connect nodes to see input data<br/>
+                            • Execute workflow to view live data<br/>
+                            • Click "View Data" to inspect details
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
                   </div>
                 </div>
                 
@@ -362,81 +420,146 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
             <ResizableHandle withHandle />
 
             {/* Middle Column - Node Configuration */}
-            <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
               <div className="h-full flex flex-col">
                 {/* Node Title Section */}
-                <div className="p-4 border-b bg-gray-50/50">
-                  <div className="flex items-start space-x-3 mb-3">
-                    <div 
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                      style={{ backgroundColor: nodeType.color || '#666' }}
-                    >
-                      {nodeType.icon || nodeType.displayName.charAt(0).toUpperCase()}
+                <div className="p-4 border-b bg-gray-50/50 h-[72px] flex items-center">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div 
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+                        style={{ backgroundColor: nodeType.color || '#666' }}
+                      >
+                        {nodeType.icon || nodeType.displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {isEditingName ? (
+                          <Input
+                            value={nodeName}
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            onBlur={() => {
+                              setIsEditingName(false)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setIsEditingName(false)
+                              }
+                            }}
+                            className={`text-sm font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 ${
+                              NodeValidator.getFieldError(validationErrors, 'name') ? 'text-red-600' : ''
+                            }`}
+                            placeholder="Node name..."
+                            autoFocus
+                          />
+                        ) : (
+                          <div
+                            onClick={() => setIsEditingName(true)}
+                            className="text-sm font-semibold cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors"
+                          >
+                            {nodeName || nodeType.displayName}
+                          </div>
+                        )}
+                        {NodeValidator.getFieldError(validationErrors, 'name') && (
+                          <div className="flex items-center space-x-1 mt-1 text-xs text-red-600">
+                            <AlertCircle className="w-3 h-3" />
+                            <span className="text-xs">{NodeValidator.getFieldError(validationErrors, 'name')}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-gray-500 mb-1">{nodeType.displayName}</div>
-                      <Input
-                        value={nodeName}
-                        onChange={(e) => handleNameChange(e.target.value)}
-                        className={`text-lg font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 ${
-                          NodeValidator.getFieldError(validationErrors, 'name') ? 'text-red-600' : ''
-                        }`}
-                        placeholder="Node name..."
-                      />
-                      {NodeValidator.getFieldError(validationErrors, 'name') && (
-                        <div className="flex items-center space-x-1 mt-1 text-sm text-red-600">
-                          <AlertCircle className="w-3 h-3" />
-                          <span className="text-xs">{NodeValidator.getFieldError(validationErrors, 'name')}</span>
-                        </div>
-                      )}
+                    <div className="flex items-center space-x-2">
+                      {/* Enable Node Toggle */}
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <div>
+                            <Switch
+                              checked={!isDisabled}
+                              onCheckedChange={(checked) => handleDisabledChange(!checked)}
+                              className="scale-75"
+                            />
+                          </div>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-48 p-2">
+                          <div className="text-xs">
+                            <p className="font-medium">{isDisabled ? 'Node Disabled' : 'Node Enabled'}</p>
+                            <p className="text-gray-500 mt-1">
+                              {isDisabled 
+                                ? 'This node will be skipped during execution'
+                                : 'This node will execute normally'
+                              }
+                            </p>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                      {nodeExecutionResult && getNodeStatusBadge(nodeExecutionResult.status)}
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Info className="w-4 h-4 text-blue-600 hover:text-blue-800" />
+                          </Button>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80" side="bottom" align="end">
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold flex items-center space-x-2">
+                              <Info className="w-4 h-4" />
+                              <span>{nodeType.displayName}</span>
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {nodeType.description}
+                            </p>
+                            <div className="text-xs text-gray-500">
+                              • Configure node parameters<br/>
+                              • Set up credentials if required<br/>
+                              • Test node execution<br/>
+                              • View response data and documentation
+                            </div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
                     </div>
-                    {nodeExecutionResult && getNodeStatusBadge(nodeExecutionResult.status)}
                   </div>
-                  <p className="text-sm text-gray-600">{nodeType.description}</p>
                 </div>
 
                 <Tabs defaultValue="config" className="flex-1 flex flex-col">
-                  <div className="px-4 pt-4 border-b">
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="config" className="flex items-center space-x-2">
-                        <Settings className="w-4 h-4" />
-                        <span>Config</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="test" className="flex items-center space-x-2">
-                        <Play className="w-4 h-4" />
-                        <span>Test</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="response" className="flex items-center space-x-2">
-                        <Database className="w-4 h-4" />
-                        <span>Response</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="docs" className="flex items-center space-x-2">
-                        <FileText className="w-4 h-4" />
-                        <span>Docs</span>
-                      </TabsTrigger>
-                    </TabsList>
+                  <div className="px-4 border-b border-gray-200">
+                    <div className="flex space-x-0 -mb-px">
+                      <TabsList className="h-auto p-0 bg-transparent grid w-full grid-cols-4 shadow-none">
+                        <TabsTrigger 
+                          value="config" 
+                          className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                          <span className="font-medium">Config</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="test" 
+                          className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                          <span className="font-medium">Test</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="response" 
+                          className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                        >
+                          <Database className="w-3.5 h-3.5" />
+                          <span className="font-medium">Response</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="docs" 
+                          className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span className="font-medium">Docs</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
                   </div>
 
                   <div className="flex-1 overflow-hidden">
                     <TabsContent value="config" className="h-full mt-0">
                       <ScrollArea className="h-full p-4">
                         <div className="space-y-6 max-w-lg">
-                          {/* Node Enabled/Disabled */}
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={!isDisabled}
-                                onChange={(e) => handleDisabledChange(!e.target.checked)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <label className="text-sm font-medium">Enable Node</label>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Disabled nodes will be skipped during execution
-                            </p>
-                          </div>
-
                           {/* Credentials */}
                           {nodeType.credentials && nodeType.credentials.length > 0 && (
                             <div className="space-y-4">
@@ -646,64 +769,116 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
             <ResizableHandle withHandle />
 
             {/* Right Column - Outputs */}
-            <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+            <ResizablePanel defaultSize={35} minSize={20} maxSize={50}>
               <div className="h-full border-l border-gray-200 flex flex-col">
-                <div className="p-4 border-b">
-                  <div className="flex items-center space-x-2">
-                    <ArrowRight className="w-4 h-4 text-gray-500" />
-                    <h3 className="font-medium">Outputs</h3>
-                    <Badge variant="outline">{outputNodes.length}</Badge>
+                <div className="p-4 border-b h-[72px] flex items-center">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-2">
+                      <ArrowRight className="w-4 h-4 text-gray-500" />
+                      <h3 className="font-medium">Output & Response</h3>
+                      <Badge variant="outline">{outputNodes.length}</Badge>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Database className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Data</span>
+                    </div>
                   </div>
                 </div>
                 
                 <ScrollArea className="flex-1 p-4">
-                  {outputNodes.length > 0 ? (
-                    <div className="space-y-3">
-                      {outputNodes.map((outputNode, index) => {
-                        const connection = outputConnections[index]
-                        const outputNodeExecutionResult = getNodeExecutionResult(outputNode.id)
-                        
-                        return (
-                          <Card key={outputNode.id} className="p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <div 
-                                  className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
-                                  style={{ backgroundColor: '#6b7280' }}
-                                >
-                                  {outputNode.name.charAt(0).toUpperCase()}
-                                </div>
-                                <span className="text-sm font-medium truncate">{outputNode.name}</span>
-                              </div>
-                              {outputNodeExecutionResult && getNodeStatusBadge(outputNodeExecutionResult.status)}
-                            </div>
-                            
-                            <div className="text-xs text-gray-500 mb-2">
-                              Output: <code className="bg-gray-100 px-1 rounded">{connection.sourceOutput}</code>
-                              {' → '}
-                              Input: <code className="bg-gray-100 px-1 rounded">{connection.targetInput}</code>
-                            </div>
-
-                            {/* Show current node's output data that would be sent to this output node */}
-                            {nodeExecutionResult?.data && (
-                              <details className="mt-2">
-                                <summary className="text-xs text-blue-600 cursor-pointer">View Output Data</summary>
-                                <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-auto max-h-24 whitespace-pre-wrap">
-                                  {JSON.stringify(nodeExecutionResult.data, null, 2)}
-                                </pre>
-                              </details>
-                            )}
-                          </Card>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-32 text-center">
-                      <ArrowRight className="w-8 h-8 text-gray-300 mb-2" />
-                      <p className="text-sm text-gray-500">No output connections</p>
-                      <p className="text-xs text-gray-400">Connect this node to see output destinations</p>
+                  {/* Current Node Response Data */}
+                  {nodeExecutionResult?.data && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
+                        <Database className="w-4 h-4 text-green-600" />
+                        <span>Node Response Data</span>
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                          {nodeExecutionResult.status}
+                        </Badge>
+                      </h4>
+                      <Card className="border-green-200 bg-green-50/30">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm">Output Data</CardTitle>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(JSON.stringify(nodeExecutionResult.data, null, 2))
+                                toast?.success('Copied to clipboard')
+                              }}
+                              className="h-6 px-2 text-xs"
+                            >
+                              📋 Copy
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <ScrollArea className="h-40">
+                            <pre className="text-xs bg-white p-3 rounded border overflow-auto font-mono whitespace-pre-wrap">
+                              {JSON.stringify(nodeExecutionResult.data, null, 2)}
+                            </pre>
+                          </ScrollArea>
+                        </CardContent>
+                      </Card>
                     </div>
                   )}
+
+                  {/* Connected Output Nodes */}
+                  {outputNodes.length > 0 ? (
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium flex items-center space-x-2">
+                        <ArrowRight className="w-4 h-4 text-blue-600" />
+                        <span>Connected Outputs</span>
+                      </h4>
+                      
+                      <div className="space-y-3">
+                        {outputNodes.map((outputNode, index) => {
+                          const connection = outputConnections[index]
+                          const outputNodeExecutionResult = getNodeExecutionResult(outputNode.id)
+                          
+                          return (
+                            <Card key={outputNode.id} className="p-3">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
+                                    style={{ backgroundColor: '#6b7280' }}
+                                  >
+                                    {outputNode.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <span className="text-sm font-medium truncate">{outputNode.name}</span>
+                                </div>
+                                {outputNodeExecutionResult && getNodeStatusBadge(outputNodeExecutionResult.status)}
+                              </div>
+                              
+                              <div className="text-xs text-gray-500 mb-2">
+                                Output: <code className="bg-gray-100 px-1 rounded">{connection.sourceOutput}</code>
+                                {' → '}
+                                Input: <code className="bg-gray-100 px-1 rounded">{connection.targetInput}</code>
+                              </div>
+
+                              {/* Show current node's output data that would be sent to this output node */}
+                              {nodeExecutionResult?.data && (
+                                <details className="mt-2">
+                                  <summary className="text-xs text-blue-600 cursor-pointer">View Sent Data</summary>
+                                  <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-auto max-h-24 whitespace-pre-wrap">
+                                    {JSON.stringify(nodeExecutionResult.data, null, 2)}
+                                  </pre>
+                                </details>
+                              )}
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : !nodeExecutionResult?.data ? (
+                    <div className="flex flex-col items-center justify-center h-32 text-center">
+                      <ArrowRight className="w-8 h-8 text-gray-300 mb-2" />
+                      <p className="text-sm text-gray-500">No output data</p>
+                      <p className="text-xs text-gray-400">Execute the node to see response data</p>
+                    </div>
+                  ) : null}
                 </ScrollArea>
               </div>
             </ResizablePanel>
