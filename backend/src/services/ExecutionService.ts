@@ -80,7 +80,8 @@ export class ExecutionService {
     workflowId: string,
     userId: string,
     triggerData?: any,
-    options: ExecutionOptions = {}
+    options: ExecutionOptions = {},
+    triggerNodeId?: string // Optional specific trigger node ID
   ): Promise<ExecutionResult> {
     try {
       logger.info(
@@ -119,10 +120,32 @@ export class ExecutionService {
       let flowResult: FlowExecutionResult;
 
       if (triggerNodes.length > 0 && triggerData) {
-        // Execute from trigger
-        const triggerNode = triggerNodes[0]; // Use first trigger for now
+        // Execute from specific trigger or first trigger
+        let targetTriggerNode;
+        
+        if (triggerNodeId) {
+          // Use specific trigger node if provided
+          targetTriggerNode = triggerNodes.find((node: any) => node.id === triggerNodeId);
+          if (!targetTriggerNode) {
+            return {
+              success: false,
+              error: {
+                message: `Specified trigger node ${triggerNodeId} not found in workflow`,
+                timestamp: new Date(),
+              },
+            };
+          }
+        } else {
+          // Use first trigger node as fallback
+          targetTriggerNode = triggerNodes[0];
+        }
+
+        logger.info(
+          `Executing workflow from trigger node ${targetTriggerNode.id} (${targetTriggerNode.type})`
+        );
+
         flowResult = await this.flowExecutionEngine.executeFromTrigger(
-          triggerNode.id,
+          targetTriggerNode.id,
           workflowId,
           userId,
           triggerData,
@@ -174,20 +197,22 @@ export class ExecutionService {
       let executionError: any = undefined;
       if (flowResult.failedNodes.length > 0) {
         const failedNodeErrors: string[] = [];
-        
+
         for (const [nodeId, nodeResult] of flowResult.nodeResults) {
           if (nodeResult.status === "failed" && nodeResult.error) {
-            const errorMessage = nodeResult.error instanceof Error 
-              ? nodeResult.error.message 
-              : String(nodeResult.error);
+            const errorMessage =
+              nodeResult.error instanceof Error
+                ? nodeResult.error.message
+                : String(nodeResult.error);
             failedNodeErrors.push(`Node ${nodeId}: ${errorMessage}`);
           }
         }
 
         executionError = {
-          message: failedNodeErrors.length > 0 
-            ? failedNodeErrors.join("; ") 
-            : `${flowResult.failedNodes.length} node(s) failed`,
+          message:
+            failedNodeErrors.length > 0
+              ? failedNodeErrors.join("; ")
+              : `${flowResult.failedNodes.length} node(s) failed`,
           timestamp: new Date(),
           failedNodes: flowResult.failedNodes,
         };
@@ -278,20 +303,22 @@ export class ExecutionService {
       let executionError: any = undefined;
       if (flowResult.failedNodes.length > 0) {
         const failedNodeErrors: string[] = [];
-        
+
         for (const [nodeId, nodeResult] of flowResult.nodeResults) {
           if (nodeResult.status === "failed" && nodeResult.error) {
-            const errorMessage = nodeResult.error instanceof Error 
-              ? nodeResult.error.message 
-              : String(nodeResult.error);
+            const errorMessage =
+              nodeResult.error instanceof Error
+                ? nodeResult.error.message
+                : String(nodeResult.error);
             failedNodeErrors.push(`Node ${nodeId}: ${errorMessage}`);
           }
         }
 
         executionError = {
-          message: failedNodeErrors.length > 0 
-            ? failedNodeErrors.join("; ") 
-            : `${flowResult.failedNodes.length} node(s) failed`,
+          message:
+            failedNodeErrors.length > 0
+              ? failedNodeErrors.join("; ")
+              : `${flowResult.failedNodes.length} node(s) failed`,
           timestamp: new Date(),
           failedNodes: flowResult.failedNodes,
         };
@@ -630,10 +657,14 @@ export class ExecutionService {
       }
 
       // Check if this is a flow execution (new FlowExecutionEngine)
-      if (execution.executionType === "flow" || execution.executionType === "workflow") {
+      if (
+        execution.executionType === "flow" ||
+        execution.executionType === "workflow"
+      ) {
         // Try to get from active FlowExecutionEngine first
-        const flowStatus = this.flowExecutionEngine.getExecutionStatus(executionId);
-        
+        const flowStatus =
+          this.flowExecutionEngine.getExecutionStatus(executionId);
+
         if (flowStatus) {
           // Active execution - use real-time status from FlowExecutionEngine
           return {
@@ -645,10 +676,13 @@ export class ExecutionService {
             status: flowStatus.overallStatus as any,
             startedAt: execution.startedAt,
             finishedAt: execution.finishedAt || undefined,
-            error: flowStatus.failedNodes.length > 0 ? {
-              message: "Some nodes failed during execution",
-              timestamp: new Date(),
-            } : undefined,
+            error:
+              flowStatus.failedNodes.length > 0
+                ? {
+                    message: "Some nodes failed during execution",
+                    timestamp: new Date(),
+                  }
+                : undefined,
           };
         }
 
@@ -659,19 +693,25 @@ export class ExecutionService {
         });
 
         const totalNodes = nodeExecutions.length;
-        const completedNodes = nodeExecutions.filter(ne => 
-          ne.status === "SUCCESS"
+        const completedNodes = nodeExecutions.filter(
+          (ne) => ne.status === "SUCCESS"
         ).length;
-        const failedNodes = nodeExecutions.filter(ne => 
-          ne.status === "ERROR"
+        const failedNodes = nodeExecutions.filter(
+          (ne) => ne.status === "ERROR"
         ).length;
-        const runningNode = nodeExecutions.find(ne => 
-          ne.status === "RUNNING"
+        const runningNode = nodeExecutions.find(
+          (ne) => ne.status === "RUNNING"
         );
 
         // Determine the correct status based on execution results
-        let progressStatus: "running" | "success" | "error" | "cancelled" | "paused" | "partial";
-        
+        let progressStatus:
+          | "running"
+          | "success"
+          | "error"
+          | "cancelled"
+          | "paused"
+          | "partial";
+
         if (execution.status === "RUNNING") {
           progressStatus = "running";
         } else if (execution.status === "CANCELLED") {
@@ -701,12 +741,16 @@ export class ExecutionService {
           status: progressStatus,
           startedAt: execution.startedAt,
           finishedAt: execution.finishedAt || undefined,
-          error: execution.error ? {
-            message: (execution.error as any).message || "Execution failed",
-            stack: (execution.error as any).stack,
-            nodeId: (execution.error as any).nodeId,
-            timestamp: new Date((execution.error as any).timestamp || execution.finishedAt),
-          } : undefined,
+          error: execution.error
+            ? {
+                message: (execution.error as any).message || "Execution failed",
+                stack: (execution.error as any).stack,
+                nodeId: (execution.error as any).nodeId,
+                timestamp: new Date(
+                  (execution.error as any).timestamp || execution.finishedAt
+                ),
+              }
+            : undefined,
         };
       }
 
@@ -996,7 +1040,7 @@ export class ExecutionService {
     userId: string,
     inputData?: any,
     parameters?: Record<string, any>,
-    mode: 'single' | 'workflow' = 'single'
+    mode: "single" | "workflow" = "single"
   ): Promise<ExecutionResult> {
     try {
       logger.info(
@@ -1053,8 +1097,8 @@ export class ExecutionService {
       // Handle execution based on mode
       const triggerNodeTypes = ["manual-trigger", "webhook-trigger"];
       const isTriggerNode = triggerNodeTypes.includes(node.type);
-      
-      if (mode === 'workflow' && !isTriggerNode) {
+
+      if (mode === "workflow" && !isTriggerNode) {
         return {
           success: false,
           error: {
@@ -1085,7 +1129,7 @@ export class ExecutionService {
       });
 
       try {
-        if (mode === 'workflow') {
+        if (mode === "workflow") {
           // Workflow execution mode: execute entire workflow from trigger node
           const flowResult = await this.flowExecutionEngine.executeFromNode(
             nodeId,
@@ -1101,69 +1145,71 @@ export class ExecutionService {
             }
           );
 
-        // Create execution record in database
-        const executionRecord = await this.createFlowExecutionRecord(
-          flowResult,
-          workflowId,
-          userId,
-          nodeInputData
-        );
+          // Create execution record in database
+          const executionRecord = await this.createFlowExecutionRecord(
+            flowResult,
+            workflowId,
+            userId,
+            nodeInputData
+          );
 
-        logger.info(`Flow execution completed from trigger node`, {
-          nodeId,
-          flowStatus: flowResult.status,
-          executedNodes: flowResult.executedNodes.length,
-          failedNodes: flowResult.failedNodes.length,
-          executionId: flowResult.executionId,
-        });
+          logger.info(`Flow execution completed from trigger node`, {
+            nodeId,
+            flowStatus: flowResult.status,
+            executedNodes: flowResult.executedNodes.length,
+            failedNodes: flowResult.failedNodes.length,
+            executionId: flowResult.executionId,
+          });
 
-        // Collect error information from failed nodes
-        let executionError: any = undefined;
-        if (flowResult.failedNodes.length > 0) {
-          const failedNodeErrors: string[] = [];
-          
-          for (const [failedNodeId, nodeResult] of flowResult.nodeResults) {
-            if (nodeResult.status === "failed" && nodeResult.error) {
-              const errorMessage = nodeResult.error instanceof Error 
-                ? nodeResult.error.message 
-                : String(nodeResult.error);
-              failedNodeErrors.push(`Node ${failedNodeId}: ${errorMessage}`);
+          // Collect error information from failed nodes
+          let executionError: any = undefined;
+          if (flowResult.failedNodes.length > 0) {
+            const failedNodeErrors: string[] = [];
+
+            for (const [failedNodeId, nodeResult] of flowResult.nodeResults) {
+              if (nodeResult.status === "failed" && nodeResult.error) {
+                const errorMessage =
+                  nodeResult.error instanceof Error
+                    ? nodeResult.error.message
+                    : String(nodeResult.error);
+                failedNodeErrors.push(`Node ${failedNodeId}: ${errorMessage}`);
+              }
             }
+
+            executionError = {
+              message:
+                failedNodeErrors.length > 0
+                  ? failedNodeErrors.join("; ")
+                  : `${flowResult.failedNodes.length} node(s) failed`,
+              timestamp: new Date(),
+              failedNodes: flowResult.failedNodes,
+            };
           }
 
-          executionError = {
-            message: failedNodeErrors.length > 0 
-              ? failedNodeErrors.join("; ") 
-              : `${flowResult.failedNodes.length} node(s) failed`,
-            timestamp: new Date(),
-            failedNodes: flowResult.failedNodes,
+          return {
+            success: true, // Execution started and ran, even if some nodes failed
+            data: {
+              executionId: flowResult.executionId,
+              nodeId,
+              status: flowResult.status === "completed" ? "success" : "failed",
+              data: flowResult.nodeResults
+                ? Array.from(flowResult.nodeResults.values()).map((result) => ({
+                    main: result.data || [],
+                  }))
+                : [],
+              startTime: Date.now() - flowResult.totalDuration,
+              endTime: Date.now(),
+              duration: flowResult.totalDuration,
+              executedNodes: flowResult.executedNodes,
+              failedNodes: flowResult.failedNodes,
+              hasFailures: flowResult.failedNodes.length > 0,
+            },
+            error: executionError,
           };
-        }
-
-        return {
-          success: true, // Execution started and ran, even if some nodes failed
-          data: {
-            executionId: flowResult.executionId,
-            nodeId,
-            status: flowResult.status === "completed" ? "success" : "failed",
-            data: flowResult.nodeResults
-              ? Array.from(flowResult.nodeResults.values()).map((result) => ({
-                  main: result.data || [],
-                }))
-              : [],
-            startTime: Date.now() - flowResult.totalDuration,
-            endTime: Date.now(),
-            duration: flowResult.totalDuration,
-            executedNodes: flowResult.executedNodes,
-            failedNodes: flowResult.failedNodes,
-            hasFailures: flowResult.failedNodes.length > 0,
-          },
-          error: executionError,
-        };
         } else {
           // Single node execution mode: execute only this node in isolation
           const startTime = Date.now();
-          
+
           const nodeResult = await this.nodeService.executeNode(
             node.type,
             nodeParameters,
@@ -1178,7 +1224,9 @@ export class ExecutionService {
           // Create single node execution record
           const executionRecord = await this.prisma.singleNodeExecution.create({
             data: {
-              id: `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              id: `single_${Date.now()}_${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
               workflowId,
               nodeId,
               nodeType: node.type,
@@ -1188,7 +1236,11 @@ export class ExecutionService {
               inputData: nodeInputData,
               outputData: nodeResult.data || {},
               parameters: nodeParameters,
-              error: nodeResult.success ? null : (nodeResult.error ? String(nodeResult.error) : "Unknown error"),
+              error: nodeResult.success
+                ? null
+                : nodeResult.error
+                ? String(nodeResult.error)
+                : "Unknown error",
               userId,
             },
           });

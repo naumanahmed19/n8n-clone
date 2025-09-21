@@ -22,7 +22,7 @@ router.post(
   "/",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { workflowId, triggerData, options } = req.body;
+    const { workflowId, triggerData, options, triggerNodeId } = req.body;
 
     if (!workflowId) {
       throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
@@ -32,7 +32,8 @@ router.post(
       workflowId,
       req.user!.id,
       triggerData,
-      options
+      options,
+      triggerNodeId // Pass the specific trigger node ID
     );
 
     // Always return success for started executions, but include failure details
@@ -304,7 +305,7 @@ router.post(
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { nodeId } = req.params;
-    const { workflowId, inputData, parameters, mode = 'single' } = req.body;
+    const { workflowId, inputData, parameters, mode = "single" } = req.body;
 
     if (!workflowId) {
       throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
@@ -314,8 +315,12 @@ router.post(
       throw new AppError("Node ID is required", 400, "MISSING_NODE_ID");
     }
 
-    if (mode && !['single', 'workflow'].includes(mode)) {
-      throw new AppError("Mode must be 'single' or 'workflow'", 400, "INVALID_MODE");
+    if (mode && !["single", "workflow"].includes(mode)) {
+      throw new AppError(
+        "Mode must be 'single' or 'workflow'",
+        400,
+        "INVALID_MODE"
+      );
     }
 
     const result = await executionService.executeSingleNode(

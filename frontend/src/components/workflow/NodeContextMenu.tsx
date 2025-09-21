@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react'
-import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 interface NodeContextMenuProps {
   nodeId: string

@@ -3,6 +3,7 @@ import { apiClient } from "./api";
 export interface ExecutionRequest {
   workflowId: string;
   triggerData?: any;
+  triggerNodeId?: string;
   options?: {
     timeout?: number;
     priority?: "low" | "normal" | "high";
@@ -56,7 +57,7 @@ export interface SingleNodeExecutionRequest {
   nodeId: string;
   inputData?: any;
   parameters?: Record<string, any>;
-  mode?: 'single' | 'workflow';
+  mode?: "single" | "workflow";
 }
 
 export interface SingleNodeExecutionResult {
