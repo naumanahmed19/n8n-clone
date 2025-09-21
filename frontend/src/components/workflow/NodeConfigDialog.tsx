@@ -5,19 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    Dialog,
-    DialogContent,
+  Dialog,
+  DialogContent,
 } from '@/components/ui/dialog'
 import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -27,16 +27,17 @@ import { useCredentialStore, useWorkflowStore } from '@/stores'
 import { NodeProperty, NodeType, WorkflowNode } from '@/types'
 import { NodeValidator, ValidationError } from '@/utils/nodeValidation'
 import {
-    AlertCircle,
-    ArrowLeft,
-    ArrowRight,
-    CheckCircle,
-    Database,
-    FileText,
-    Info,
-    Play,
-    Settings,
-    Trash2
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  Database,
+  FileText,
+  Info,
+  Loader2,
+  Play,
+  Settings,
+  Trash2
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -53,6 +54,8 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
     updateNode, 
     removeNode, 
     getNodeExecutionResult, 
+    executeNode,
+    executionState,
     workflow 
   } = useWorkflowStore()
   const { fetchCredentials, fetchCredentialTypes } = useCredentialStore()
@@ -66,6 +69,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isEditingName, setIsEditingName] = useState(false)
+  const [isExecuting, setIsExecuting] = useState(false)
 
   // Get the execution result for this node
   const nodeExecutionResult = getNodeExecutionResult(node.id)
@@ -117,6 +121,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
   // Save changes to store (called on blur, dialog close, or explicit save)
   const saveChangesToStore = () => {
+  
     if (hasUnsavedChanges) {
       updateNode(node.id, { 
         parameters, 
@@ -163,6 +168,28 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
     if (confirm('Are you sure you want to delete this node?')) {
       removeNode(node.id)
       onClose()
+    }
+  }
+
+  const handleExecuteFromHere = async () => {
+    // Prevent execution during workflow execution
+    if (executionState.status === 'running') {
+      console.warn('Cannot execute individual node while workflow is running')
+      return
+    }
+
+    // Save current changes before executing
+    saveChangesToStore()
+
+    setIsExecuting(true)
+    try {
+      // Use the same execution method as the context menu
+      await executeNode(node.id, undefined, 'single')
+    } catch (error) {
+      console.error('Failed to execute node:', error)
+      toast.error('Failed to execute node')
+    } finally {
+      setIsExecuting(false)
     }
   }
 
@@ -468,6 +495,23 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      {/* Execute Node Button */}
+                      <Button
+                        onClick={handleExecuteFromHere}
+                        disabled={isExecuting || executionState.status === 'running' || validationErrors.length > 0}
+                        size="sm"
+                        className="flex items-center space-x-1"
+                      >
+                        {isExecuting ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Play className="w-3 h-3" />
+                        )}
+                        <span className="text-xs">
+                         Run Node
+                        </span>
+                      </Button>
+                      
                       {/* Enable Node Toggle */}
                       <HoverCard>
                         <HoverCardTrigger asChild>
