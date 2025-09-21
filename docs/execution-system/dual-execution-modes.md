@@ -35,14 +35,17 @@ The n8n-clone system implements two distinct execution modes to accommodate diff
 ## Mode 1: Single Node Execution
 
 ### Purpose
+
 Execute individual nodes in isolation for testing, debugging, and development purposes.
 
 ### Trigger Method
+
 - **UI Action**: Right-click on any node → "Execute Node" context menu
 - **API Endpoint**: `POST /api/executions/nodes/:nodeId`
 - **Frontend Method**: `executeNode(nodeId, inputData, "single")`
 
 ### Execution Scope
+
 ```
 Before Execution:
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -61,21 +64,23 @@ After Single Node Execution:
 ### Business Logic
 
 #### 1. Input Data Handling
+
 ```typescript
 // Single node execution input data sources:
 const inputData = {
   // Option 1: Use previous node's output (if available)
   fromPreviousNode: getPreviousNodeOutput(nodeId),
-  
+
   // Option 2: Use manually provided test data
   testData: userProvidedData,
-  
+
   // Option 3: Use default/mock data for testing
-  mockData: generateMockData(nodeType)
-}
+  mockData: generateMockData(nodeType),
+};
 ```
 
 #### 2. Execution Process
+
 ```
 1. Validate Node Configuration
    ├── Check required parameters
@@ -99,6 +104,7 @@ const inputData = {
 ```
 
 #### 3. Error Handling
+
 - **Validation Errors**: Show configuration issues immediately
 - **Runtime Errors**: Display error details without affecting other nodes
 - **Network Errors**: Provide retry options and clear error messages
@@ -106,12 +112,16 @@ const inputData = {
 ### Implementation Details
 
 #### Frontend Flow
+
 ```typescript
 // WorkflowEditor.tsx
-const handleContextMenuExecuteNode = useCallback((nodeId: string) => {
-  // Execute in single mode - only this node
-  executeNode(nodeId, undefined, 'single')
-}, [executeNode])
+const handleContextMenuExecuteNode = useCallback(
+  (nodeId: string) => {
+    // Execute in single mode - only this node
+    executeNode(nodeId, undefined, "single");
+  },
+  [executeNode]
+);
 
 // workflow.ts store
 executeNode: async (nodeId, inputData, mode = "single") => {
@@ -121,16 +131,17 @@ executeNode: async (nodeId, inputData, mode = "single") => {
       workflowId: workflow.id,
       nodeId,
       inputData,
-      mode: "single"
+      mode: "single",
     });
-    
+
     // Update only this node's state
     updateNodeExecutionResult(nodeId, result);
   }
-}
+};
 ```
 
 #### Backend Flow
+
 ```typescript
 // ExecutionService.ts
 async executeSingleNode(
@@ -143,16 +154,16 @@ async executeSingleNode(
 ) {
   // Load node configuration
   const nodeConfig = await this.loadNodeConfig(workflowId, nodeId);
-  
+
   // Prepare execution context
   const context = this.createExecutionContext(nodeConfig, inputData);
-  
+
   // Execute node
   const result = await this.executeNodeImplementation(context);
-  
+
   // Save results
   await this.saveNodeExecutionResult(result);
-  
+
   return result;
 }
 ```
@@ -160,14 +171,17 @@ async executeSingleNode(
 ## Mode 2: Workflow Execution
 
 ### Purpose
+
 Execute complete workflows or workflow branches from trigger points for production use and end-to-end testing.
 
 ### Trigger Method
+
 - **UI Action**: Click toolbar button on trigger nodes
 - **API Endpoint**: `POST /api/executions`
 - **Frontend Method**: `executeNode(triggerNodeId, triggerData, "workflow")`
 
 ### Execution Scope
+
 ```
 Multi-Trigger Workflow:
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -185,6 +199,7 @@ Result: Executes A → Node 1 → Output (entire flow from Trigger A)
 ### Business Logic
 
 #### 1. Trigger Identification
+
 ```typescript
 // When user clicks trigger node toolbar
 const triggerNodeId = clickedNodeId; // Specific trigger clicked
@@ -193,11 +208,12 @@ const triggerData = prepareTriggerData({
   workflowName: workflow.name,
   triggerNodeId: triggerNodeId,
   triggerNodeType: node.type,
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
 });
 ```
 
 #### 2. Workflow Execution Process
+
 ```
 1. Workflow Validation
    ├── Check workflow structure
@@ -228,6 +244,7 @@ const triggerData = prepareTriggerData({
 ```
 
 #### 3. Multi-Trigger Handling
+
 ```typescript
 // Backend: ExecutionService.executeWorkflow()
 async executeWorkflow(
@@ -238,14 +255,14 @@ async executeWorkflow(
   triggerNodeId?: string // NEW: Specific trigger to start from
 ) {
   // Find starting trigger
-  const startingTrigger = triggerNodeId 
+  const startingTrigger = triggerNodeId
     ? workflow.nodes.find(n => n.id === triggerNodeId)
     : workflow.nodes.find(n => n.type.includes('trigger'));
-    
+
   // Execute workflow from specific trigger
   const executionPlan = this.createExecutionPlan(workflow, startingTrigger);
   const result = await this.executeWorkflowPlan(executionPlan);
-  
+
   return result;
 }
 ```
@@ -253,20 +270,21 @@ async executeWorkflow(
 ### Implementation Details
 
 #### Frontend Flow
+
 ```typescript
 // Custom Node Toolbar Button
 <ExecuteToolbarButton
   node={node}
   onExecute={() => {
-    if (node.type.includes('trigger')) {
+    if (node.type.includes("trigger")) {
       // Workflow mode for triggers
-      executeNode(node.id, undefined, 'workflow')
+      executeNode(node.id, undefined, "workflow");
     } else {
       // Single mode for regular nodes
-      executeNode(node.id, undefined, 'single')
+      executeNode(node.id, undefined, "single");
     }
   }}
-/>
+/>;
 
 // Store implementation for workflow mode
 if (mode === "workflow") {
@@ -280,44 +298,46 @@ if (mode === "workflow") {
       manual: true,
     },
   });
-  
+
   // Subscribe to real-time updates
   await subscribeToExecution(executionResponse.executionId);
 }
 ```
 
 #### Backend Flow
+
 ```typescript
 // FlowExecutionEngine integration
 const engine = new FlowExecutionEngine(workflow, {
   startingNodeId: triggerNodeId, // Start from specific trigger
-  executionMode: 'workflow',
-  realTimeUpdates: true
+  executionMode: "workflow",
+  realTimeUpdates: true,
 });
 
 const executionResult = await engine.execute({
   triggerData,
   userId,
-  executionId
+  executionId,
 });
 ```
 
 ## Mode Comparison
 
-| Aspect | Single Node | Workflow |
-|--------|-------------|----------|
-| **Scope** | Individual node | Complete workflow |
-| **Input Data** | Mock/test data | Real trigger data |
-| **Error Impact** | Isolated | Can affect downstream |
-| **Performance** | Fast | Variable |
-| **Use Case** | Development/Testing | Production |
-| **UI Feedback** | Single node update | Full workflow tracking |
-| **WebSocket** | Optional | Required |
-| **Database Impact** | Minimal | Full execution record |
+| Aspect              | Single Node         | Workflow               |
+| ------------------- | ------------------- | ---------------------- |
+| **Scope**           | Individual node     | Complete workflow      |
+| **Input Data**      | Mock/test data      | Real trigger data      |
+| **Error Impact**    | Isolated            | Can affect downstream  |
+| **Performance**     | Fast                | Variable               |
+| **Use Case**        | Development/Testing | Production             |
+| **UI Feedback**     | Single node update  | Full workflow tracking |
+| **WebSocket**       | Optional            | Required               |
+| **Database Impact** | Minimal             | Full execution record  |
 
 ## Decision Matrix
 
 ### When to Use Single Node Execution
+
 - ✅ Testing node configuration
 - ✅ Debugging specific node issues
 - ✅ Developing new node types
@@ -325,6 +345,7 @@ const executionResult = await engine.execute({
 - ✅ Quick functionality checks
 
 ### When to Use Workflow Execution
+
 - ✅ Production workflow runs
 - ✅ End-to-end testing
 - ✅ Integration testing
@@ -334,6 +355,7 @@ const executionResult = await engine.execute({
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Hybrid Mode**: Execute workflow segment from any node
 2. **Batch Testing**: Execute multiple single nodes in sequence
 3. **Mock Mode**: Workflow execution with simulated external calls

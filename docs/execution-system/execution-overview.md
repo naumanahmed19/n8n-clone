@@ -85,12 +85,14 @@ The n8n-clone execution system is designed with a dual-mode architecture that su
 The system supports two distinct execution modes:
 
 ### 1. Single Node Execution
+
 - **Purpose**: Test individual nodes in isolation
 - **Trigger**: Right-click context menu → "Execute Node"
 - **Scope**: Only the selected node
 - **Use Case**: Development, testing, debugging specific nodes
 
 ### 2. Workflow Execution
+
 - **Purpose**: Execute complete workflow from a trigger point
 - **Trigger**: Toolbar button on trigger nodes
 - **Scope**: Entire workflow or workflow branch from trigger
@@ -99,6 +101,7 @@ The system supports two distinct execution modes:
 ## Key Features
 
 ### Trigger-Specific Execution
+
 ```
 Multi-Trigger Workflow Example:
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -114,12 +117,14 @@ Multi-Trigger Workflow Example:
 ```
 
 ### Real-time Progress Tracking
+
 - WebSocket connections for live updates
 - Node-level progress indicators
 - Execution logs with timestamps
 - Error reporting with stack traces
 
 ### Error Handling Strategy
+
 - **Graceful Degradation**: Failed nodes don't crash entire workflow
 - **Partial Success**: Workflows can complete with some failed nodes
 - **Retry Mechanisms**: Automatic retry for transient failures
@@ -128,6 +133,7 @@ Multi-Trigger Workflow Example:
 ## Data Flow
 
 ### Execution Request Flow
+
 ```
 User Action → Frontend Store → API Request → ExecutionService → Database
      ↓             ↓              ↓              ↓              ↓
@@ -135,6 +141,7 @@ User Action → Frontend Store → API Request → ExecutionService → Database
 ```
 
 ### State Management
+
 ```
 Frontend State:
 ├── executionState (global workflow state)
@@ -152,12 +159,14 @@ Backend State:
 ## Performance Considerations
 
 ### Scalability Features
+
 - **Parallel Node Execution**: Independent nodes run concurrently
 - **Connection Pooling**: Efficient database connections
 - **WebSocket Management**: Optimized real-time connections
 - **Progress Batching**: Reduced update frequency for performance
 
 ### Resource Management
+
 - **Memory Efficiency**: Streaming large data sets
 - **Timeout Handling**: Configurable execution timeouts
 - **Connection Limits**: WebSocket connection management
@@ -166,12 +175,14 @@ Backend State:
 ## Integration Points
 
 ### External Systems
+
 - **Database**: Prisma ORM for data persistence
 - **WebSocket**: Real-time communication layer
 - **File System**: Node module loading and execution
 - **HTTP APIs**: External service integrations
 
 ### Internal Dependencies
+
 - **Node System**: Custom node types and execution
 - **Workflow Engine**: Flow orchestration and management
 - **Authentication**: User-based execution tracking
@@ -180,6 +191,7 @@ Backend State:
 ## Next Steps
 
 For detailed implementation documentation, see:
+
 - [Dual Execution Modes](./dual-execution-modes.md)
 - [Workflow Execution Flow](./workflow-execution-flow.md)
 - [Flow Diagrams](./flow-diagrams/)

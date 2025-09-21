@@ -32,22 +32,23 @@ The workflow execution flow represents the complete end-to-end process of runnin
 ### User Trigger Actions
 
 #### Manual Execution
+
 ```typescript
 // User clicks trigger node toolbar button
 const triggerExecution = async (triggerNodeId: string) => {
   // 1. Validate trigger node
-  const triggerNode = workflow.nodes.find(n => n.id === triggerNodeId);
-  if (!triggerNode || !triggerNode.type.includes('trigger')) {
-    throw new Error('Invalid trigger node');
+  const triggerNode = workflow.nodes.find((n) => n.id === triggerNodeId);
+  if (!triggerNode || !triggerNode.type.includes("trigger")) {
+    throw new Error("Invalid trigger node");
   }
 
   // 2. Prepare trigger data
   const triggerData = {
-    triggeredBy: 'user',
+    triggeredBy: "user",
     triggerNodeId,
     workflowId: workflow.id,
     timestamp: new Date().toISOString(),
-    manual: true
+    manual: true,
   };
 
   // 3. Initiate workflow execution
@@ -56,16 +57,17 @@ const triggerExecution = async (triggerNodeId: string) => {
 ```
 
 #### Automated Trigger
+
 ```typescript
 // Webhook, Schedule, or Event-based triggers
 const automatedTrigger = async (triggerConfig: TriggerConfig) => {
   const triggerData = {
-    triggeredBy: 'automation',
+    triggeredBy: "automation",
     triggerType: triggerConfig.type,
     triggerNodeId: triggerConfig.nodeId,
     payload: triggerConfig.data,
     timestamp: new Date().toISOString(),
-    manual: false
+    manual: false,
   };
 
   return await executeWorkflow(triggerData);
@@ -73,9 +75,10 @@ const automatedTrigger = async (triggerConfig: TriggerConfig) => {
 ```
 
 ### Trigger Data Structure
+
 ```typescript
 interface TriggerData {
-  triggeredBy: 'user' | 'automation' | 'webhook' | 'schedule';
+  triggeredBy: "user" | "automation" | "webhook" | "schedule";
   triggerNodeId: string;
   workflowId: string;
   timestamp: string;
@@ -93,6 +96,7 @@ interface TriggerData {
 ## Phase 2: Workflow Validation
 
 ### Pre-execution Checks
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    VALIDATION PROCESS                      │
@@ -122,6 +126,7 @@ interface TriggerData {
 ```
 
 ### Validation Implementation
+
 ```typescript
 // WorkflowValidator.ts
 export class WorkflowValidator {
@@ -134,7 +139,10 @@ export class WorkflowValidator {
     const warnings: ValidationWarning[] = [];
 
     // 1. Structure validation
-    const structureResult = await this.validateStructure(workflow, triggerNodeId);
+    const structureResult = await this.validateStructure(
+      workflow,
+      triggerNodeId
+    );
     errors.push(...structureResult.errors);
     warnings.push(...structureResult.warnings);
 
@@ -157,7 +165,7 @@ export class WorkflowValidator {
       isValid: errors.length === 0,
       errors,
       warnings,
-      canProceed: errors.filter(e => e.severity === 'blocking').length === 0
+      canProceed: errors.filter((e) => e.severity === "blocking").length === 0,
     };
   }
 }
@@ -166,6 +174,7 @@ export class WorkflowValidator {
 ## Phase 3: Execution Planning
 
 ### Dependency Analysis
+
 ```typescript
 // ExecutionPlanner.ts
 export class ExecutionPlanner {
@@ -175,28 +184,32 @@ export class ExecutionPlanner {
   ): ExecutionPlan {
     // 1. Build dependency graph
     const dependencyGraph = this.buildDependencyGraph(workflow);
-    
+
     // 2. Find execution path from trigger
-    const executionPath = this.findExecutionPath(dependencyGraph, triggerNodeId);
-    
+    const executionPath = this.findExecutionPath(
+      dependencyGraph,
+      triggerNodeId
+    );
+
     // 3. Identify parallel branches
     const parallelGroups = this.identifyParallelExecution(executionPath);
-    
+
     // 4. Create execution phases
     const executionPhases = this.createExecutionPhases(parallelGroups);
-    
+
     return {
       startNodeId: triggerNodeId,
       phases: executionPhases,
       totalNodes: executionPath.length,
       estimatedDuration: this.estimateExecutionTime(executionPath),
-      parallelism: this.calculateParallelism(parallelGroups)
+      parallelism: this.calculateParallelism(parallelGroups),
     };
   }
 }
 ```
 
 ### Execution Plan Structure
+
 ```
 Execution Plan Example:
 
@@ -220,6 +233,7 @@ Phase 4: Output
 ## Phase 4: Node Execution
 
 ### Sequential Execution Flow
+
 ```typescript
 // FlowExecutionEngine.ts
 export class FlowExecutionEngine {
@@ -229,7 +243,11 @@ export class FlowExecutionEngine {
     triggerData: TriggerData
   ): Promise<ExecutionResult> {
     const executionId = uuidv4();
-    const context = this.createExecutionContext(executionId, workflow, triggerData);
+    const context = this.createExecutionContext(
+      executionId,
+      workflow,
+      triggerData
+    );
 
     try {
       // Initialize execution tracking
@@ -238,10 +256,10 @@ export class FlowExecutionEngine {
       // Execute phases sequentially
       for (const phase of executionPlan.phases) {
         const phaseResult = await this.executePhase(phase, context);
-        
+
         // Update progress
         await this.updateExecutionProgress(executionId, phase.id, phaseResult);
-        
+
         // Check for early termination
         if (phaseResult.shouldStop) {
           break;
@@ -251,7 +269,6 @@ export class FlowExecutionEngine {
       // Finalize execution
       const finalResult = await this.finalizeExecution(executionId, context);
       return finalResult;
-
     } catch (error) {
       // Handle execution errors
       await this.handleExecutionError(executionId, error);
@@ -262,6 +279,7 @@ export class FlowExecutionEngine {
 ```
 
 ### Individual Node Execution
+
 ```typescript
 async executeNode(
   node: WorkflowNode,
@@ -269,11 +287,11 @@ async executeNode(
   context: ExecutionContext
 ): Promise<NodeExecutionResult> {
   const startTime = Date.now();
-  
+
   try {
     // 1. Load node implementation
     const nodeImplementation = await this.nodeLoader.loadNode(node.type);
-    
+
     // 2. Prepare node context
     const nodeContext = {
       ...context,
@@ -282,22 +300,22 @@ async executeNode(
       credentials: await this.loadCredentials(node.credentialsId),
       parameters: node.parameters
     };
-    
+
     // 3. Execute node logic
     const result = await nodeImplementation.execute(nodeContext);
-    
+
     // 4. Process and validate output
     const processedResult = await this.processNodeOutput(result, node);
-    
+
     // 5. Update execution state
     await this.updateNodeExecutionState(context.executionId, node.id, {
       status: 'completed',
       result: processedResult,
       duration: Date.now() - startTime
     });
-    
+
     return processedResult;
-    
+
   } catch (error) {
     // Handle node execution error
     await this.handleNodeError(context.executionId, node.id, error);
@@ -309,6 +327,7 @@ async executeNode(
 ## Phase 5: Real-time Progress Tracking
 
 ### WebSocket Updates
+
 ```typescript
 // ProgressTracker.ts
 export class ProgressTracker {
@@ -319,32 +338,33 @@ export class ProgressTracker {
   ): Promise<void> {
     // 1. Update database
     await this.executionService.updateNodeStatus(executionId, nodeId, status);
-    
+
     // 2. Calculate overall progress
     const overallProgress = await this.calculateOverallProgress(executionId);
-    
+
     // 3. Emit WebSocket updates
     this.websocketService.emitToExecution(executionId, {
-      type: 'node_status_update',
+      type: "node_status_update",
       nodeId,
       status,
       overallProgress,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // 4. Emit to workflow subscribers
     this.websocketService.emitToWorkflow(status.workflowId, {
-      type: 'execution_progress',
+      type: "execution_progress",
       executionId,
       nodeId,
       status: status.status,
-      progress: overallProgress
+      progress: overallProgress,
     });
   }
 }
 ```
 
 ### Progress Calculation
+
 ```typescript
 interface ProgressMetrics {
   totalNodes: number;
@@ -354,15 +374,21 @@ interface ProgressMetrics {
   percentageComplete: number;
   estimatedTimeRemaining: number;
   currentPhase: string;
-  overallStatus: 'running' | 'completed' | 'failed' | 'paused';
+  overallStatus: "running" | "completed" | "failed" | "paused";
 }
 
 const calculateProgress = (execution: ExecutionState): ProgressMetrics => {
   const totalNodes = execution.plan.totalNodes;
-  const completedNodes = execution.nodeStates.filter(n => n.status === 'completed').length;
-  const runningNodes = execution.nodeStates.filter(n => n.status === 'running').length;
-  const failedNodes = execution.nodeStates.filter(n => n.status === 'failed').length;
-  
+  const completedNodes = execution.nodeStates.filter(
+    (n) => n.status === "completed"
+  ).length;
+  const runningNodes = execution.nodeStates.filter(
+    (n) => n.status === "running"
+  ).length;
+  const failedNodes = execution.nodeStates.filter(
+    (n) => n.status === "failed"
+  ).length;
+
   return {
     totalNodes,
     completedNodes,
@@ -371,7 +397,7 @@ const calculateProgress = (execution: ExecutionState): ProgressMetrics => {
     percentageComplete: Math.round((completedNodes / totalNodes) * 100),
     estimatedTimeRemaining: estimateRemainingTime(execution),
     currentPhase: getCurrentPhase(execution),
-    overallStatus: determineOverallStatus(execution)
+    overallStatus: determineOverallStatus(execution),
   };
 };
 ```
@@ -379,6 +405,7 @@ const calculateProgress = (execution: ExecutionState): ProgressMetrics => {
 ## Phase 6: Error Handling and Recovery
 
 ### Error Types and Handling
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     ERROR HANDLING                         │
@@ -406,6 +433,7 @@ const calculateProgress = (execution: ExecutionState): ProgressMetrics => {
 ```
 
 ### Error Recovery Strategies
+
 ```typescript
 // ErrorHandler.ts
 export class ExecutionErrorHandler {
@@ -415,20 +443,20 @@ export class ExecutionErrorHandler {
     error: Error
   ): Promise<ErrorResolution> {
     const errorType = this.classifyError(error);
-    
+
     switch (errorType) {
-      case 'retryable':
+      case "retryable":
         return await this.scheduleRetry(executionId, nodeId, error);
-        
-      case 'skippable':
+
+      case "skippable":
         return await this.skipNodeWithDefault(executionId, nodeId, error);
-        
-      case 'terminal':
+
+      case "terminal":
         return await this.terminateExecution(executionId, error);
-        
-      case 'recoverable':
+
+      case "recoverable":
         return await this.attemptRecovery(executionId, nodeId, error);
-        
+
       default:
         return await this.escalateError(executionId, nodeId, error);
     }
@@ -439,6 +467,7 @@ export class ExecutionErrorHandler {
 ## Phase 7: Completion and Cleanup
 
 ### Execution Completion Flow
+
 ```typescript
 async finalizeExecution(
   executionId: string,
@@ -447,25 +476,25 @@ async finalizeExecution(
   try {
     // 1. Aggregate all node results
     const nodeResults = await this.aggregateNodeResults(executionId);
-    
+
     // 2. Calculate final metrics
     const metrics = this.calculateExecutionMetrics(context);
-    
+
     // 3. Generate execution summary
     const summary = this.generateExecutionSummary(nodeResults, metrics);
-    
+
     // 4. Clean up temporary resources
     await this.cleanupExecutionResources(executionId);
-    
+
     // 5. Update final status
     await this.updateFinalExecutionStatus(executionId, 'completed', summary);
-    
+
     // 6. Trigger post-execution hooks
     await this.triggerPostExecutionHooks(executionId, summary);
-    
+
     // 7. Send completion notifications
     await this.sendCompletionNotifications(executionId, summary);
-    
+
     return {
       executionId,
       status: 'completed',
@@ -474,7 +503,7 @@ async finalizeExecution(
       summary,
       results: nodeResults
     };
-    
+
   } catch (error) {
     await this.handleFinalizationError(executionId, error);
     throw error;
@@ -483,18 +512,19 @@ async finalizeExecution(
 ```
 
 ### Resource Cleanup
+
 ```typescript
 interface CleanupTasks {
   // Temporary data cleanup
   tempFiles: string[];
   cacheEntries: string[];
   memoryBuffers: Buffer[];
-  
+
   // Connection cleanup
   databaseConnections: Connection[];
   apiConnections: HttpClient[];
   websocketConnections: WebSocket[];
-  
+
   // Resource release
   fileHandles: FileHandle[];
   processHandles: ChildProcess[];
@@ -504,30 +534,31 @@ interface CleanupTasks {
 const performCleanup = async (executionId: string, tasks: CleanupTasks) => {
   // Close connections
   await Promise.all([
-    ...tasks.databaseConnections.map(conn => conn.close()),
-    ...tasks.apiConnections.map(client => client.destroy()),
-    ...tasks.websocketConnections.map(ws => ws.close())
+    ...tasks.databaseConnections.map((conn) => conn.close()),
+    ...tasks.apiConnections.map((client) => client.destroy()),
+    ...tasks.websocketConnections.map((ws) => ws.close()),
   ]);
-  
+
   // Clear temporary data
   await Promise.all([
-    ...tasks.tempFiles.map(file => fs.unlink(file)),
-    ...tasks.cacheEntries.map(key => cache.delete(key))
+    ...tasks.tempFiles.map((file) => fs.unlink(file)),
+    ...tasks.cacheEntries.map((key) => cache.delete(key)),
   ]);
-  
+
   // Release system resources
-  tasks.fileHandles.forEach(handle => handle.close());
-  tasks.processHandles.forEach(process => process.kill());
-  tasks.timerHandles.forEach(timer => clearTimeout(timer));
-  
+  tasks.fileHandles.forEach((handle) => handle.close());
+  tasks.processHandles.forEach((process) => process.kill());
+  tasks.timerHandles.forEach((timer) => clearTimeout(timer));
+
   // Free memory
-  tasks.memoryBuffers.forEach(buffer => buffer.fill(0));
+  tasks.memoryBuffers.forEach((buffer) => buffer.fill(0));
 };
 ```
 
 ## Performance Considerations
 
 ### Optimization Strategies
+
 1. **Parallel Execution**: Execute independent nodes simultaneously
 2. **Connection Pooling**: Reuse database and API connections
 3. **Caching**: Cache node results and configurations
@@ -535,23 +566,24 @@ const performCleanup = async (executionId: string, tasks: CleanupTasks) => {
 5. **Resource Limits**: Implement memory and time constraints
 
 ### Monitoring and Metrics
+
 ```typescript
 interface ExecutionMetrics {
   // Timing metrics
   totalDuration: number;
   averageNodeExecutionTime: number;
   longestNodeExecutionTime: number;
-  
+
   // Resource metrics
   peakMemoryUsage: number;
   totalCpuTime: number;
   networkCallCount: number;
-  
+
   // Success metrics
   successRate: number;
   retryCount: number;
   errorRate: number;
-  
+
   // Throughput metrics
   nodesPerSecond: number;
   dataProcessed: number;
@@ -562,6 +594,7 @@ interface ExecutionMetrics {
 ## Integration Points
 
 ### External System Integration
+
 - **Database**: Persistent execution state and history
 - **Message Queue**: Asynchronous execution queuing
 - **Monitoring**: Performance and health monitoring
@@ -570,6 +603,7 @@ interface ExecutionMetrics {
 - **Webhooks**: External system notifications
 
 ### API Integration
+
 - **REST API**: External execution triggers
 - **GraphQL**: Real-time execution queries
 - **WebSocket**: Live execution updates

@@ -34,13 +34,14 @@ Single node execution allows developers and users to execute individual nodes in
 ### 1. Right-Click Context Menu
 
 #### UI Implementation
+
 ```typescript
 // NodeContextMenu.tsx
 export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   node,
   onExecuteNode,
   position,
-  onClose
+  onClose,
 }) => {
   const handleExecuteNode = useCallback(() => {
     onExecuteNode(node.id);
@@ -66,6 +67,7 @@ export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
 ```
 
 #### Node Execution Eligibility
+
 ```typescript
 const canExecuteNode = (node: WorkflowNode): boolean => {
   // Check if node is properly configured
@@ -75,9 +77,9 @@ const canExecuteNode = (node: WorkflowNode): boolean => {
 
   // Check if required parameters are present
   const nodeSchema = getNodeSchema(node.type);
-  const requiredParams = nodeSchema.properties.filter(p => p.required);
-  const hasRequiredParams = requiredParams.every(param => 
-    node.parameters[param.name] !== undefined
+  const requiredParams = nodeSchema.properties.filter((p) => p.required);
+  const hasRequiredParams = requiredParams.every(
+    (param) => node.parameters[param.name] !== undefined
   );
 
   // Check credentials if required
@@ -89,19 +91,24 @@ const canExecuteNode = (node: WorkflowNode): boolean => {
 ```
 
 ### 2. Keyboard Shortcuts
+
 ```typescript
 // WorkflowEditor.tsx - Keyboard handler
-const handleKeyPress = useCallback((event: KeyboardEvent) => {
-  if (event.ctrlKey && event.key === 'Enter') {
-    const selectedNode = getSelectedNode();
-    if (selectedNode) {
-      executeNode(selectedNode.id, undefined, 'single');
+const handleKeyPress = useCallback(
+  (event: KeyboardEvent) => {
+    if (event.ctrlKey && event.key === "Enter") {
+      const selectedNode = getSelectedNode();
+      if (selectedNode) {
+        executeNode(selectedNode.id, undefined, "single");
+      }
     }
-  }
-}, [executeNode, getSelectedNode]);
+  },
+  [executeNode, getSelectedNode]
+);
 ```
 
 ### 3. Programmatic Execution
+
 ```typescript
 // API endpoint for single node execution
 POST /api/executions/nodes/:nodeId
@@ -115,6 +122,7 @@ POST /api/executions/nodes/:nodeId
 ## Input Data Management
 
 ### Data Source Priority
+
 ```
 1. User-Provided Test Data (Highest Priority)
    ├── Manual input via UI form
@@ -133,6 +141,7 @@ POST /api/executions/nodes/:nodeId
 ```
 
 ### Input Data Preparation
+
 ```typescript
 // InputDataManager.ts
 export class InputDataManager {
@@ -147,7 +156,10 @@ export class InputDataManager {
     }
 
     // 2. Try to get previous node output
-    const previousNodeOutput = await this.getPreviousNodeOutput(nodeId, workflow);
+    const previousNodeOutput = await this.getPreviousNodeOutput(
+      nodeId,
+      workflow
+    );
     if (previousNodeOutput) {
       return this.formatPreviousNodeData(previousNodeOutput);
     }
@@ -158,14 +170,14 @@ export class InputDataManager {
   }
 
   private async getPreviousNodeOutput(
-    nodeId: string, 
+    nodeId: string,
     workflow?: Workflow
   ): Promise<any> {
     if (!workflow) return null;
 
     // Find connections leading to this node
     const incomingConnections = workflow.connections.filter(
-      conn => conn.target.nodeId === nodeId
+      (conn) => conn.target.nodeId === nodeId
     );
 
     if (incomingConnections.length === 0) return null;
@@ -173,7 +185,7 @@ export class InputDataManager {
     // Get the most recent execution result from previous nodes
     const previousNode = incomingConnections[0].source;
     const executionResult = await this.getLastExecutionResult(
-      workflow.id, 
+      workflow.id,
       previousNode.nodeId
     );
 
@@ -190,6 +202,7 @@ export class InputDataManager {
 ```
 
 ### Mock Data Generation
+
 ```typescript
 // MockDataGenerator.ts
 export class MockDataGenerator {
@@ -205,19 +218,19 @@ export class MockDataGenerator {
 
   private generateFieldValue(field: SchemaField): any {
     switch (field.type) {
-      case 'string':
+      case "string":
         return field.example || `sample_${field.name}`;
-      
-      case 'number':
+
+      case "number":
         return field.example || Math.floor(Math.random() * 100);
-      
-      case 'boolean':
+
+      case "boolean":
         return field.example !== undefined ? field.example : true;
-      
-      case 'array':
+
+      case "array":
         return field.example || [this.generateFieldValue(field.items)];
-      
-      case 'object':
+
+      case "object":
         const obj: any = {};
         if (field.properties) {
           for (const prop of field.properties) {
@@ -225,7 +238,7 @@ export class MockDataGenerator {
           }
         }
         return obj;
-      
+
       default:
         return null;
     }
@@ -236,6 +249,7 @@ export class MockDataGenerator {
 ## Execution Process
 
 ### Core Execution Flow
+
 ```typescript
 // SingleNodeExecutor.ts
 export class SingleNodeExecutor {
@@ -284,13 +298,12 @@ export class SingleNodeExecutor {
       return {
         executionId,
         nodeId,
-        status: 'completed',
+        status: "completed",
         result: processedResult,
         duration: Date.now() - startTime,
         inputData: context.inputData,
-        outputData: processedResult.data
+        outputData: processedResult.data,
       };
-
     } catch (error) {
       // Handle execution error
       const errorResult = await this.handleExecutionError(
@@ -306,6 +319,7 @@ export class SingleNodeExecutor {
 ```
 
 ### Execution Context Preparation
+
 ```typescript
 interface SingleNodeExecutionContext {
   executionId: string;
@@ -314,7 +328,7 @@ interface SingleNodeExecutionContext {
   inputData: any;
   parameters: Record<string, any>;
   credentials?: NodeCredentials;
-  mode: 'single';
+  mode: "single";
   timestamp: string;
   userId?: string;
   workflowId?: string;
@@ -329,7 +343,7 @@ const prepareExecutionContext = async (
   // Merge parameters (user overrides + node defaults)
   const mergedParameters = {
     ...node.parameters,
-    ...parameters
+    ...parameters,
   };
 
   // Load credentials if required
@@ -352,10 +366,10 @@ const prepareExecutionContext = async (
     inputData: preparedInputData,
     parameters: mergedParameters,
     credentials,
-    mode: 'single',
+    mode: "single",
     timestamp: new Date().toISOString(),
     userId: getCurrentUserId(),
-    workflowId: node.workflowId
+    workflowId: node.workflowId,
   };
 };
 ```
@@ -363,6 +377,7 @@ const prepareExecutionContext = async (
 ## Node Implementation Execution
 
 ### Loading Node Implementation
+
 ```typescript
 // NodeLoader.ts
 export class NodeLoader {
@@ -388,17 +403,18 @@ export class NodeLoader {
       }
 
       throw new Error(`Node type ${nodeType} not found`);
-
     } catch (error) {
       throw new Error(`Failed to load node ${nodeType}: ${error.message}`);
     }
   }
 
-  private async loadBuiltInNode(nodeType: string): Promise<INodeExecutor | null> {
+  private async loadBuiltInNode(
+    nodeType: string
+  ): Promise<INodeExecutor | null> {
     const nodeMap = {
-      'http-request': () => import('../nodes/HttpRequestNode'),
-      'data-transform': () => import('../nodes/DataTransformNode'),
-      'webhook': () => import('../nodes/WebhookNode'),
+      "http-request": () => import("../nodes/HttpRequestNode"),
+      "data-transform": () => import("../nodes/DataTransformNode"),
+      webhook: () => import("../nodes/WebhookNode"),
       // ... other built-in nodes
     };
 
@@ -409,10 +425,12 @@ export class NodeLoader {
     return new nodeModule.default();
   }
 
-  private async loadCustomNode(nodeType: string): Promise<INodeExecutor | null> {
+  private async loadCustomNode(
+    nodeType: string
+  ): Promise<INodeExecutor | null> {
     // Load from custom nodes directory
     const customNodePath = path.join(CUSTOM_NODES_DIR, nodeType);
-    
+
     if (!fs.existsSync(customNodePath)) {
       return null;
     }
@@ -424,6 +442,7 @@ export class NodeLoader {
 ```
 
 ### Node Execution Interface
+
 ```typescript
 // INodeExecutor.ts
 export interface INodeExecutor {
@@ -448,35 +467,38 @@ export interface NodeExecutionResult {
 export class HttpRequestNode implements INodeExecutor {
   async execute(context: NodeExecutionContext): Promise<NodeExecutionResult> {
     const { parameters, inputData, credentials } = context;
-    
+
     try {
       // Prepare HTTP request
-      const requestConfig = this.buildRequestConfig(parameters, inputData, credentials);
-      
+      const requestConfig = this.buildRequestConfig(
+        parameters,
+        inputData,
+        credentials
+      );
+
       // Execute HTTP request
       const response = await this.httpClient.request(requestConfig);
-      
+
       // Process response
       const processedData = this.processResponse(response);
-      
+
       return {
         success: true,
         data: processedData,
         metadata: {
           statusCode: response.status,
           responseTime: response.duration,
-          contentType: response.headers['content-type']
-        }
+          contentType: response.headers["content-type"],
+        },
       };
-      
     } catch (error) {
       return {
         success: false,
         error: error.message,
         metadata: {
           errorType: error.name,
-          statusCode: error.response?.status
-        }
+          statusCode: error.response?.status,
+        },
       };
     }
   }
@@ -486,6 +508,7 @@ export class HttpRequestNode implements INodeExecutor {
 ## Result Processing and UI Updates
 
 ### Result Processing Pipeline
+
 ```typescript
 // ResultProcessor.ts
 export class ResultProcessor {
@@ -496,11 +519,16 @@ export class ResultProcessor {
     // 1. Validate result structure
     const validationResult = this.validateResult(result);
     if (!validationResult.isValid) {
-      throw new Error(`Invalid result structure: ${validationResult.errors.join(', ')}`);
+      throw new Error(
+        `Invalid result structure: ${validationResult.errors.join(", ")}`
+      );
     }
 
     // 2. Apply result transformations
-    const transformedResult = await this.applyResultTransformations(result, node);
+    const transformedResult = await this.applyResultTransformations(
+      result,
+      node
+    );
 
     // 3. Format for display
     const displayResult = this.formatForDisplay(transformedResult);
@@ -512,17 +540,17 @@ export class ResultProcessor {
       raw: result,
       transformed: transformedResult,
       display: displayResult,
-      summary
+      summary,
     };
   }
 
   private formatForDisplay(result: NodeExecutionResult): DisplayResult {
     return {
-      status: result.success ? 'success' : 'error',
+      status: result.success ? "success" : "error",
       data: this.formatDataForDisplay(result.data),
       error: result.error,
       metadata: result.metadata,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -547,6 +575,7 @@ export class ResultProcessor {
 ```
 
 ### UI State Updates
+
 ```typescript
 // workflow.ts store
 const updateNodeExecutionResult = (
@@ -555,13 +584,13 @@ const updateNodeExecutionResult = (
 ) => {
   set((state) => {
     // Update node visual state
-    const nodeIndex = state.nodes.findIndex(n => n.id === nodeId);
+    const nodeIndex = state.nodes.findIndex((n) => n.id === nodeId);
     if (nodeIndex !== -1) {
       state.nodes[nodeIndex] = {
         ...state.nodes[nodeIndex],
         executionStatus: result.summary.status,
         lastExecutionTime: result.summary.timestamp,
-        executionResult: result.display
+        executionResult: result.display,
       };
     }
 
@@ -570,11 +599,11 @@ const updateNodeExecutionResult = (
       id: uuidv4(),
       nodeId,
       workflowId: state.workflow.id,
-      executionType: 'single',
+      executionType: "single",
       status: result.summary.status,
       startTime: result.summary.timestamp,
       duration: result.summary.duration,
-      result: result.display
+      result: result.display,
     });
 
     // Trigger UI updates
@@ -584,6 +613,7 @@ const updateNodeExecutionResult = (
 ```
 
 ### Real-time UI Updates
+
 ```typescript
 // NodeExecutionIndicator.tsx
 export const NodeExecutionIndicator: React.FC<{
@@ -592,11 +622,11 @@ export const NodeExecutionIndicator: React.FC<{
 }> = ({ node, executionStatus }) => {
   const getStatusIcon = () => {
     switch (executionStatus?.status) {
-      case 'running':
+      case "running":
         return <Spinner className="w-4 h-4 animate-spin text-blue-500" />;
-      case 'completed':
+      case "completed":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'failed':
+      case "failed":
         return <XCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
@@ -605,14 +635,14 @@ export const NodeExecutionIndicator: React.FC<{
 
   const getStatusColor = () => {
     switch (executionStatus?.status) {
-      case 'running':
-        return 'border-blue-300 bg-blue-50';
-      case 'completed':
-        return 'border-green-300 bg-green-50';
-      case 'failed':
-        return 'border-red-300 bg-red-50';
+      case "running":
+        return "border-blue-300 bg-blue-50";
+      case "completed":
+        return "border-green-300 bg-green-50";
+      case "failed":
+        return "border-red-300 bg-red-50";
       default:
-        return 'border-gray-300 bg-white';
+        return "border-gray-300 bg-white";
     }
   };
 
@@ -632,15 +662,16 @@ export const NodeExecutionIndicator: React.FC<{
 ## Error Handling and Debugging
 
 ### Error Classification
+
 ```typescript
 enum SingleNodeErrorType {
-  CONFIGURATION_ERROR = 'configuration_error',
-  VALIDATION_ERROR = 'validation_error',
-  EXECUTION_ERROR = 'execution_error',
-  TIMEOUT_ERROR = 'timeout_error',
-  CREDENTIAL_ERROR = 'credential_error',
-  NETWORK_ERROR = 'network_error',
-  DATA_ERROR = 'data_error'
+  CONFIGURATION_ERROR = "configuration_error",
+  VALIDATION_ERROR = "validation_error",
+  EXECUTION_ERROR = "execution_error",
+  TIMEOUT_ERROR = "timeout_error",
+  CREDENTIAL_ERROR = "credential_error",
+  NETWORK_ERROR = "network_error",
+  DATA_ERROR = "data_error",
 }
 
 interface SingleNodeError {
@@ -654,6 +685,7 @@ interface SingleNodeError {
 ```
 
 ### Error Handling Strategy
+
 ```typescript
 // ErrorHandler.ts
 export class SingleNodeErrorHandler {
@@ -663,61 +695,73 @@ export class SingleNodeErrorHandler {
     context: SingleNodeExecutionContext
   ): Promise<SingleNodeError> {
     const classifiedError = this.classifyError(error);
-    
+
     // Log error for debugging
-    logger.error('Single node execution failed', {
+    logger.error("Single node execution failed", {
       nodeId,
       errorType: classifiedError.type,
       error: error.message,
       context: {
         nodeType: context.node.type,
-        executionId: context.executionId
-      }
+        executionId: context.executionId,
+      },
     });
 
     // Generate user-friendly error message
-    const userFriendlyError = this.generateUserFriendlyError(classifiedError, context);
+    const userFriendlyError = this.generateUserFriendlyError(
+      classifiedError,
+      context
+    );
 
     // Determine if error is recoverable
     const recoveryOptions = this.getRecoveryOptions(classifiedError, context);
 
     return {
       ...userFriendlyError,
-      recoveryOptions
+      recoveryOptions,
     };
   }
 
   private classifyError(error: Error): SingleNodeError {
     // Network errors
-    if (error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+    if (
+      error.message.includes("ECONNREFUSED") ||
+      error.message.includes("timeout")
+    ) {
       return {
         type: SingleNodeErrorType.NETWORK_ERROR,
         message: error.message,
         recoverable: true,
         retryable: true,
-        suggestion: 'Check network connectivity and try again'
+        suggestion: "Check network connectivity and try again",
       };
     }
 
     // Credential errors
-    if (error.message.includes('401') || error.message.includes('authentication')) {
+    if (
+      error.message.includes("401") ||
+      error.message.includes("authentication")
+    ) {
       return {
         type: SingleNodeErrorType.CREDENTIAL_ERROR,
-        message: 'Authentication failed',
+        message: "Authentication failed",
         recoverable: true,
         retryable: false,
-        suggestion: 'Check and update your credentials'
+        suggestion: "Check and update your credentials",
       };
     }
 
     // Configuration errors
-    if (error.message.includes('required parameter') || error.message.includes('validation')) {
+    if (
+      error.message.includes("required parameter") ||
+      error.message.includes("validation")
+    ) {
       return {
         type: SingleNodeErrorType.CONFIGURATION_ERROR,
         message: error.message,
         recoverable: true,
         retryable: false,
-        suggestion: 'Review and fix node configuration'
+        suggestion: "Review and fix node configuration",
       };
     }
 
@@ -727,13 +771,14 @@ export class SingleNodeErrorHandler {
       message: error.message,
       recoverable: false,
       retryable: false,
-      suggestion: 'Check node implementation and try again'
+      suggestion: "Check node implementation and try again",
     };
   }
 }
 ```
 
 ### Debug Information Collection
+
 ```typescript
 interface DebugInformation {
   nodeConfiguration: {
@@ -764,20 +809,20 @@ const collectDebugInformation = (
     nodeConfiguration: {
       type: node.type,
       parameters: sanitizeParameters(node.parameters),
-      credentialsConfigured: !!node.credentialsId
+      credentialsConfigured: !!node.credentialsId,
     },
     executionContext: {
       inputData: sanitizeInputData(context.inputData),
       executionId: context.executionId,
-      timestamp: context.timestamp
+      timestamp: context.timestamp,
     },
     environment: {
       nodeVersion: process.version,
       memoryUsage: process.memoryUsage(),
-      platform: process.platform
+      platform: process.platform,
     },
     logs: getRecentLogs(context.executionId),
-    stackTrace: error?.stack
+    stackTrace: error?.stack,
   };
 };
 ```
@@ -785,6 +830,7 @@ const collectDebugInformation = (
 ## Performance Optimization
 
 ### Caching Strategies
+
 ```typescript
 // ResultCache.ts
 export class SingleNodeResultCache {
@@ -796,7 +842,11 @@ export class SingleNodeResultCache {
     inputDataHash: string,
     parametersHash: string
   ): Promise<CachedResult | null> {
-    const cacheKey = this.generateCacheKey(nodeId, inputDataHash, parametersHash);
+    const cacheKey = this.generateCacheKey(
+      nodeId,
+      inputDataHash,
+      parametersHash
+    );
     const cached = this.cache.get(cacheKey);
 
     if (!cached) return null;
@@ -822,14 +872,18 @@ export class SingleNodeResultCache {
     parametersHash: string,
     result: NodeExecutionResult
   ): void {
-    const cacheKey = this.generateCacheKey(nodeId, inputDataHash, parametersHash);
-    
+    const cacheKey = this.generateCacheKey(
+      nodeId,
+      inputDataHash,
+      parametersHash
+    );
+
     this.cache.set(cacheKey, {
       result,
       timestamp: Date.now(),
       nodeId,
       inputDataHash,
-      parametersHash
+      parametersHash,
     });
 
     // Clean up old entries
@@ -839,19 +893,20 @@ export class SingleNodeResultCache {
 ```
 
 ### Resource Management
+
 ```typescript
 interface ResourceLimits {
   maxExecutionTime: number; // milliseconds
-  maxMemoryUsage: number;   // bytes
-  maxOutputSize: number;    // bytes
-  maxApiCalls: number;      // count
+  maxMemoryUsage: number; // bytes
+  maxOutputSize: number; // bytes
+  maxApiCalls: number; // count
 }
 
 const DEFAULT_LIMITS: ResourceLimits = {
-  maxExecutionTime: 30000,  // 30 seconds
+  maxExecutionTime: 30000, // 30 seconds
   maxMemoryUsage: 256 * 1024 * 1024, // 256 MB
-  maxOutputSize: 10 * 1024 * 1024,   // 10 MB
-  maxApiCalls: 100
+  maxOutputSize: 10 * 1024 * 1024, // 10 MB
+  maxApiCalls: 100,
 };
 
 const enforceResourceLimits = async (
@@ -860,7 +915,7 @@ const enforceResourceLimits = async (
 ): Promise<NodeExecutionResult> => {
   return Promise.race([
     execution,
-    createTimeoutPromise(limits.maxExecutionTime)
+    createTimeoutPromise(limits.maxExecutionTime),
   ]);
 };
 ```
@@ -868,6 +923,7 @@ const enforceResourceLimits = async (
 ## Integration with Development Tools
 
 ### Test Data Management
+
 ```typescript
 // TestDataManager.ts
 export class TestDataManager {
@@ -882,28 +938,29 @@ export class TestDataManager {
       name,
       data: testData,
       createdAt: new Date().toISOString(),
-      lastUsed: new Date().toISOString()
+      lastUsed: new Date().toISOString(),
     };
 
-    await this.storage.save('test-data', testDataEntry);
+    await this.storage.save("test-data", testDataEntry);
   }
 
   async loadTestData(nodeId: string): Promise<TestDataEntry[]> {
-    return await this.storage.find('test-data', { nodeId });
+    return await this.storage.find("test-data", { nodeId });
   }
 
   async getPopularTestData(nodeType: string): Promise<TestDataEntry[]> {
     // Return commonly used test data for this node type
-    return await this.storage.find('test-data', {
+    return await this.storage.find("test-data", {
       nodeType,
-      orderBy: 'usage_count',
-      limit: 10
+      orderBy: "usage_count",
+      limit: 10,
     });
   }
 }
 ```
 
 ### Development Workflow Integration
+
 ```typescript
 // DevelopmentTools.ts
 export class DevelopmentTools {
@@ -914,15 +971,22 @@ export class DevelopmentTools {
     // Generate Jest test cases based on execution results
     const testTemplate = `
 describe('${nodeId} Node Tests', () => {
-  ${executionResults.map((result, index) => `
+  ${executionResults
+    .map(
+      (result, index) => `
   test('Execution ${index + 1}', async () => {
-    const result = await executeNode('${nodeId}', ${JSON.stringify(result.inputData)});
+    const result = await executeNode('${nodeId}', ${JSON.stringify(
+        result.inputData
+      )});
     expect(result.success).toBe(${result.success});
-    ${result.success 
-      ? `expect(result.data).toEqual(${JSON.stringify(result.data)});`
-      : `expect(result.error).toBe('${result.error}');`
+    ${
+      result.success
+        ? `expect(result.data).toEqual(${JSON.stringify(result.data)});`
+        : `expect(result.error).toBe('${result.error}');`
     }
-  });`).join('\n')}
+  });`
+    )
+    .join("\n")}
 });`;
 
     return testTemplate;
@@ -939,7 +1003,7 @@ describe('${nodeId} Node Tests', () => {
       timeline: await this.getExecutionTimeline(executionId),
       memoryUsage: await this.getMemoryUsage(executionId),
       networkCalls: await this.getNetworkCalls(executionId),
-      logs: await this.getExecutionLogs(executionId)
+      logs: await this.getExecutionLogs(executionId),
     };
   }
 }
@@ -948,6 +1012,7 @@ describe('${nodeId} Node Tests', () => {
 ## Best Practices and Guidelines
 
 ### Testing Guidelines
+
 1. **Use Realistic Test Data**: Mirror production data structure and volume
 2. **Test Edge Cases**: Empty inputs, null values, malformed data
 3. **Validate Error Handling**: Ensure graceful error responses
@@ -955,6 +1020,7 @@ describe('${nodeId} Node Tests', () => {
 5. **Credential Testing**: Test with various credential scenarios
 
 ### Development Workflow
+
 1. **Iterative Development**: Use single node execution for rapid iteration
 2. **Configuration Validation**: Test parameter combinations thoroughly
 3. **Documentation**: Document expected inputs and outputs
@@ -962,6 +1028,7 @@ describe('${nodeId} Node Tests', () => {
 5. **Collaboration**: Share test cases with team members
 
 ### Performance Considerations
+
 1. **Resource Limits**: Always set appropriate execution limits
 2. **Caching**: Cache results for identical inputs
 3. **Cleanup**: Properly dispose of resources after execution

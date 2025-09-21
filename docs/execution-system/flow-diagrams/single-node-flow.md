@@ -89,6 +89,7 @@ This diagram illustrates the complete process of executing a single node in isol
 ### Phase 1: User Interaction (T+0s → T+50ms)
 
 #### 1.1 Right-Click Context Menu
+
 ```
 User Action:
    │
@@ -114,6 +115,7 @@ User Action:
 ```
 
 #### 1.2 Menu Item Selection
+
 ```
 Context Menu Click:
    │
@@ -138,6 +140,7 @@ Context Menu Click:
 ### Phase 2: Node Validation (T+50ms → T+100ms)
 
 #### 2.1 Eligibility Check
+
 ```
 Node Validation Process:
    │
@@ -174,6 +177,7 @@ Node Validation Process:
 ```
 
 #### 2.2 Validation Decision Point
+
 ```
                     ◆ Node Valid? ◆
                    ╱              ╲
@@ -201,6 +205,7 @@ Node Validation Process:
 ### Phase 3: Input Data Preparation (T+100ms → T+200ms)
 
 #### 3.1 Data Source Resolution
+
 ```
 Input Data Preparation:
    │
@@ -234,6 +239,7 @@ Input Data Preparation:
 ```
 
 #### 3.2 Data Flow Example
+
 ```
 Data Source Selection Flow:
 
@@ -265,6 +271,7 @@ Generate Mock Data ────────────────────�
 ### Phase 4: Execution Setup (T+200ms → T+500ms)
 
 #### 4.1 Context Creation
+
 ```
 Execution Context Creation:
    │
@@ -304,6 +311,7 @@ Execution Context Creation:
 ```
 
 #### 4.2 Node Loading Process
+
 ```
 Node Implementation Loading:
    │
@@ -343,6 +351,7 @@ Node Implementation Loading:
 ### Phase 5: Node Execution (T+500ms → T+2s)
 
 #### 5.1 Core Execution Process
+
 ```
 Node Execution Process:
    │
@@ -393,6 +402,7 @@ Node Execution Process:
 ```
 
 #### 5.2 Example HTTP Request Node Execution
+
 ```
 HTTP Request Node Example:
    │
@@ -431,6 +441,7 @@ HTTP Request Node Example:
 ### Phase 6: Result Processing (T+2s → T+2.1s)
 
 #### 6.1 Success Path
+
 ```
 Successful Execution Result:
    │
@@ -477,6 +488,7 @@ Successful Execution Result:
 ```
 
 #### 6.2 Error Path
+
 ```
 Error Execution Result:
    │
@@ -527,6 +539,7 @@ Error Execution Result:
 ### Phase 7: UI Updates (T+2.1s → T+2.2s)
 
 #### 7.1 Node Visual State Update
+
 ```
 UI State Update Process:
    │
@@ -571,6 +584,7 @@ UI State Update Process:
 ```
 
 #### 7.2 Real-time Progress Indicators
+
 ```
 Progressive UI Updates:
 
@@ -579,7 +593,7 @@ Progressive UI Updates:
               │
               ▼
 [T+50ms]   ┌─────────────────┐
-           │ Validating...   │ 
+           │ Validating...   │
            │ ⏳ Spinner      │
            └─────────────────┘
               │
@@ -592,7 +606,7 @@ Progressive UI Updates:
               ▼
 [T+500ms]  ┌─────────────────┐
            │ Executing...    │
-           │ ⚡ Processing   │ 
+           │ ⚡ Processing   │
            └─────────────────┘
               │
               ▼
@@ -609,6 +623,7 @@ Progressive UI Updates:
 ### Phase 8: History & Cleanup (T+2.2s)
 
 #### 8.1 Execution History Record
+
 ```
 History Record Creation:
    │
@@ -650,6 +665,7 @@ History Record Creation:
 ```
 
 #### 8.2 Resource Cleanup
+
 ```
 Cleanup Process:
    │
@@ -696,6 +712,7 @@ Cleanup Process:
 ## Error Handling Flows
 
 ### Validation Error Flow
+
 ```
 Validation Error:
    │
@@ -732,6 +749,7 @@ Validation Error:
 ```
 
 ### Runtime Error Flow
+
 ```
 Runtime Error:
    │
@@ -780,6 +798,7 @@ Runtime Error:
 ## Performance Considerations
 
 ### Optimization Points
+
 ```
 Performance Optimization:
 
@@ -810,12 +829,13 @@ Performance Optimization:
 ```
 
 ### Timing Benchmarks
+
 ```
 Typical Execution Times:
 
 Phase                Duration    Optimization Target
 ├── User Interaction    50ms     < 100ms
-├── Validation         50ms     < 200ms  
+├── Validation         50ms     < 200ms
 ├── Data Preparation   100ms    < 300ms
 ├── Node Loading       300ms    < 500ms
 ├── Execution          1500ms   Variable (depends on node)
