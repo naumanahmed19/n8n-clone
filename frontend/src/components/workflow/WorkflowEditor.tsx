@@ -24,11 +24,12 @@ import {
     ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { workflowService } from '@/services'
-import { useAuthStore, useWorkflowStore } from '@/stores'
+import { useAuthStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
+
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { NodePalette } from './NodePalette'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
@@ -129,20 +130,13 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         setDirty,
         // Title management
         workflowTitle,
-        updateTitle,
         saveTitle,
         isTitleDirty,
-        titleValidationError,
         // Import/Export
         exportWorkflow,
         importWorkflow,
         isExporting,
         isImporting,
-        exportProgress,
-        importProgress,
-        exportError,
-        importError,
-        clearImportExportErrors,
         // Execution state
         executionState,
         lastExecutionResult,
@@ -165,6 +159,14 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     } = useWorkflowStore()
     
     const { user } = useAuthStore()
+    
+    // Get UI state from toolbar store
+    const { 
+        showNodePalette, 
+        showExecutionsPanel,
+        toggleNodePalette,
+        toggleExecutionsPanel
+    } = useWorkflowToolbarStore()
 
     const reactFlowWrapper = useRef<HTMLDivElement>(null)
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
@@ -174,8 +176,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const [isSaving, setIsSaving] = useState(false)
     const [showExecutionPanel, setShowExecutionPanel] = useState(false)
     const [executionPanelSize, setExecutionPanelSize] = useState(4) // Start minimized
-    const [showExecutionsPanel, setShowExecutionsPanel] = useState(false)
-    const [showNodePalette, setShowNodePalette] = useState(true)
     
     // ReactFlow view state
     const [showMinimap, setShowMinimap] = useState(true)
@@ -412,22 +412,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         toast.success(message)
     }, [])
 
-    // Title management handlers
-    const handleTitleChange = useCallback((title: string) => {
-        updateTitle(title)
-    }, [updateTitle])
-
-    const handleTitleSave = useCallback((title: string) => {
-        try {
-            updateTitle(title)
-            saveTitle()
-            handleShowSuccess('Title saved successfully')
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to save title'
-            handleShowError(errorMessage)
-        }
-    }, [updateTitle, saveTitle, handleShowError, handleShowSuccess])
-
     // Import/Export handlers
     const handleExport = useCallback(async () => {
         try {
@@ -551,14 +535,12 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             {/* Full Width Toolbar */}
             <WorkflowErrorBoundary onError={handleShowError}>
                 <WorkflowToolbar
-                    // Existing props
+                    // Minimal props - workflow operations that need main workflow store
                     canUndo={canUndo()}
                     canRedo={canRedo()}
                     onUndo={undo}
                     onRedo={redo}
                     onSave={handleSave}
-                    isSaving={isSaving}
-                    isDirty={isDirty}
                     onValidate={() => {
                         const result = validateWorkflow()
                         if (result.isValid) {
@@ -567,37 +549,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                             handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
                         }
                     }}
-                    // Title management props
-                    workflowTitle={workflowTitle}
-                    onTitleChange={handleTitleChange}
-                    onTitleSave={handleTitleSave}
-                    isTitleDirty={isTitleDirty}
-                    titleValidationError={titleValidationError}
-                    // Import/Export props
-                    onExport={handleExport}
-                    onImport={handleImport}
-                    isExporting={isExporting}
-                    isImporting={isImporting}
-                    exportProgress={exportProgress}
-                    importProgress={importProgress}
-                    exportError={exportError}
-                    importError={importError}
-                    onClearImportExportErrors={clearImportExportErrors}
-                    // Execution state (for display only - execution moved to individual node toolbars)
-                    executionState={executionState}
-                    // Error handling props
-                    onShowError={handleShowError}
-                    onShowSuccess={handleShowSuccess}
-                    // Executions history props
-                    showExecutionsPanel={showExecutionsPanel}
-                    onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
-                    workflowExecutions={[]} // Will be populated from API
-                    // Workflow activation props
-                    isWorkflowActive={workflow?.active || false}
-                    onToggleWorkflowActive={toggleWorkflowActive}
-                    // Node palette toggle props
-                    showNodePalette={showNodePalette}
-                    onToggleNodePalette={() => setShowNodePalette(!showNodePalette)}
                 />
 
                 {/* Main Content Area with Resizable Panels */}
@@ -627,9 +578,9 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             showExecutionPanel={showExecutionPanel}
                                             onToggleExecutionPanel={handleToggleExecutionPanel}
                                             showExecutionsPanel={showExecutionsPanel}
-                                            onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
+                                            onToggleExecutionsPanel={toggleExecutionsPanel}
                                             showNodePalette={showNodePalette}
-                                            onToggleNodePalette={() => setShowNodePalette(!showNodePalette)}
+                                            onToggleNodePalette={toggleNodePalette}
                                             onExport={handleExport}
                                             onImport={handleImport}
                                             isExporting={isExporting}
@@ -738,11 +689,11 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             <ExecutionsHistory
                 workflowId={workflow?.id || ''}
                 isVisible={showExecutionsPanel}
-                onClose={() => setShowExecutionsPanel(false)}
+                onClose={toggleExecutionsPanel}
                 onSelectExecution={(executionId) => {
                     console.log('Selected execution:', executionId)
                     // TODO: Load and display execution details
-                    setShowExecutionsPanel(false)
+                    toggleExecutionsPanel()
                 }}
             />
         </div>

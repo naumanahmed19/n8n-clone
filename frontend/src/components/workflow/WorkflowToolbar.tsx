@@ -1,126 +1,89 @@
 
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { ExecutionState } from '@/types/workflow'
-import { getUserFriendlyErrorMessage, validateImportFile } from '@/utils/errorHandling'
+import { useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
+import { validateImportFile } from '@/utils/errorHandling'
 import { clsx } from 'clsx'
 import {
-    AlertCircle,
-    CheckCircle,
-    Download,
-    History,
-    Loader2,
-    PanelRight,
-    Redo,
-    Save,
-    Settings,
-    Undo,
-    Upload
+  AlertCircle,
+  CheckCircle,
+  Download,
+  History,
+  Loader2,
+  PanelRight,
+  Redo,
+  Save,
+  Settings,
+  Undo,
+  Upload
 } from 'lucide-react'
-import React from 'react'
 import { TitleManager } from './TitleManager'
 
 interface WorkflowToolbarProps {
-  // Existing props
+  // Minimal props - mainly for workflow operations that need main workflow store
   canUndo: boolean
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
   onSave: () => void
   onValidate: () => void
-  onExport?: () => void
-  onImport?: (file: File) => void
-  isExecuting?: boolean
-  isSaving?: boolean
-  isDirty?: boolean
-  
-  // New title management props
-  workflowTitle?: string
-  onTitleChange?: (title: string) => void
-  onTitleSave?: (title: string) => void
-  isTitleDirty?: boolean
-  titleValidationError?: string | null
-  
-  // New import/export props
-  isExporting?: boolean
-  isImporting?: boolean
-  exportProgress?: number
-  importProgress?: number
-  exportError?: string | null
-  importError?: string | null
-  onClearImportExportErrors?: () => void
-  
-  // New execution props (now only used for status display)
-  executionState?: ExecutionState
-  
-  // Error handling props
-  onShowError?: (error: string) => void
-  onShowSuccess?: (message: string) => void
-  
-  // Executions history props
-  showExecutionsPanel?: boolean
-  onToggleExecutionsPanel?: () => void
-  workflowExecutions?: any[]
-  
-  // Workflow activation props
-  isWorkflowActive?: boolean
-  onToggleWorkflowActive?: () => void
-  
-  // Node palette props
-  showNodePalette?: boolean
-  onToggleNodePalette?: () => void
 }
 
 export function WorkflowToolbar({
-  // Existing props
+  // Minimal props - mainly for workflow operations that need main workflow store
   canUndo,
   canRedo,
   onUndo,
   onRedo,
   onSave,
   onValidate,
-  onExport,
-  onImport,
-  isExecuting = false,
-  isSaving = false,
-  isDirty = false,
-  
-  // New title management props
-  workflowTitle = 'Untitled Workflow',
-  onTitleChange = () => {},
-  onTitleSave = () => {},
-  isTitleDirty = false,
-  titleValidationError = null,
-  
-  // New import/export props
-  isExporting = false,
-  isImporting = false,
-  exportProgress = 0,
-  importProgress = 0,
-  exportError = null,
-  importError = null,
-  onClearImportExportErrors,
-  
-  // New execution props
-  executionState,
-  
-  // Error handling props
-  onShowError,
-  onShowSuccess,
-  
-  // Executions history props
-  showExecutionsPanel,
-  onToggleExecutionsPanel,
-  workflowExecutions,
-  
-  // Workflow activation props
-  isWorkflowActive,
-  onToggleWorkflowActive,
-  
-  // Node palette props
-  showNodePalette,
-  onToggleNodePalette
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
+  
+  // Get main workflow store for title synchronization AND import/export
+  const { 
+    workflowTitle: mainWorkflowTitle,
+    updateTitle: updateWorkflowTitle,
+    saveTitle: saveWorkflowTitle,
+    isTitleDirty: mainTitleDirty,
+    titleValidationError: mainTitleValidationError,
+    exportWorkflow: mainExportWorkflow,
+    importWorkflow: mainImportWorkflow
+  } = useWorkflowStore()
+  
+  // Get all toolbar state from the dedicated store
+  const {    
+    // Import/Export state
+    isExporting,
+    isImporting,
+    exportProgress,
+    importProgress,
+    exportError,
+    importError,
+    exportWorkflow,
+    importWorkflow,
+    clearImportExportErrors,
+    
+    // UI state
+    showExecutionsPanel,
+    showNodePalette,
+    isSaving,
+    isDirty,
+    toggleExecutionsPanel,
+    toggleNodePalette,
+    setSaving,
+    setDirty,
+    
+    // Workflow activation state
+    isWorkflowActive,
+    toggleWorkflowActive,
+    
+    // Execution state (display only)
+    workflowExecutions,
+    
+    // Error handling
+    handleError
+  } = useWorkflowToolbarStore()
+
   // Helper functions
   const handleImportClick = async () => {
     if (isImporting) return
@@ -136,14 +99,12 @@ export function WorkflowToolbar({
         // Validate file before proceeding
         const validationErrors = validateImportFile(file)
         if (validationErrors.length > 0) {
-          if (onShowError) {
-            onShowError(`Invalid file: ${validationErrors[0].message}`)
-          }
+          handleError(new Error(`Invalid file: ${validationErrors[0].message}`), 'import')
           return
         }
 
         // Show confirmation if there are unsaved changes
-        if ((isDirty || isTitleDirty) && onImport) {
+        if ((isDirty || mainTitleDirty)) {
           const confirmed = await showConfirm({
             title: 'Import Workflow',
             message: 'You have unsaved changes. Importing a workflow will overwrite your current work.',
@@ -159,70 +120,50 @@ export function WorkflowToolbar({
           if (!confirmed) return
         }
 
-        if (onImport) {
-          onImport(file)
-        }
+        await importWorkflow(file, mainImportWorkflow)
       } catch (error) {
-        if (onShowError) {
-          onShowError(`Import failed: ${getUserFriendlyErrorMessage(error)}`)
-        }
+        handleError(error, 'import')
       }
     }
     input.click()
   }
 
-  const handleExportClick = () => {
-    if (isExporting || !onExport) return
+  const handleExportClick = async () => {
+    if (isExporting) return
     
     // Clear any previous errors
-    if (onClearImportExportErrors) {
-      onClearImportExportErrors()
-    }
+    clearImportExportErrors()
     
-    onExport()
+    try {
+      await exportWorkflow(mainExportWorkflow)
+    } catch (error) {
+      handleError(error, 'export')
+    }
   }
 
-  // Determine execution status
-  const currentExecutionStatus = executionState?.status || (isExecuting ? 'running' : 'idle')
-  const executionError = executionState?.error
+  const handleTitleChange = (title: string) => {
+    updateWorkflowTitle(title)
+    setDirty(true) // Mark workflow as dirty when title changes
+  }
 
-  // Show error notifications
-  React.useEffect(() => {
-    if (exportError && onShowError) {
-      onShowError(`Export failed: ${exportError}`)
+  const handleTitleSave = async (title: string) => {
+    try {
+      updateWorkflowTitle(title)
+      await saveWorkflowTitle()
+      // Show success toast would be handled by the store
+    } catch (error) {
+      handleError(error, 'title save')
     }
-  }, [exportError, onShowError])
+  }
 
-  React.useEffect(() => {
-    if (importError && onShowError) {
-      onShowError(`Import failed: ${importError}`)
+  const handleSave = () => {
+    setSaving(true)
+    try {
+      onSave()
+    } finally {
+      setSaving(false)
     }
-  }, [importError, onShowError])
-
-  React.useEffect(() => {
-    if (executionError && onShowError) {
-      onShowError(`Execution failed: ${executionError}`)
-    }
-  }, [executionError, onShowError])
-
-  // Show success notifications
-  React.useEffect(() => {
-    if (exportProgress === 100 && !exportError && onShowSuccess) {
-      onShowSuccess('Workflow exported successfully')
-    }
-  }, [exportProgress, exportError, onShowSuccess])
-
-  React.useEffect(() => {
-    if (importProgress === 100 && !importError && onShowSuccess) {
-      onShowSuccess('Workflow imported successfully')
-    }
-  }, [importProgress, importError, onShowSuccess])
-
-  React.useEffect(() => {
-    if (currentExecutionStatus === 'success' && onShowSuccess) {
-      onShowSuccess('Workflow executed successfully')
-    }
-  }, [currentExecutionStatus, onShowSuccess])
+  }
 
   return (
     <>
@@ -232,11 +173,11 @@ export function WorkflowToolbar({
       <div className="flex items-center space-x-4">
         {/* Title Manager */}
         <TitleManager
-          title={workflowTitle}
-          onChange={onTitleChange}
-          onSave={onTitleSave}
-          isDirty={isTitleDirty}
-          validationError={titleValidationError}
+          title={mainWorkflowTitle}
+          onChange={handleTitleChange}
+          onSave={handleTitleSave}
+          isDirty={mainTitleDirty}
+          validationError={mainTitleValidationError}
           placeholder="Untitled Workflow"
           className="min-w-0" // Allow shrinking
         />
@@ -274,19 +215,19 @@ export function WorkflowToolbar({
           </button>
 
           <button
-            onClick={onSave}
-            disabled={isSaving || (!isDirty && !isTitleDirty)}
+            onClick={handleSave}
+            disabled={isSaving || (!isDirty && !mainTitleDirty)}
             className={clsx(
               "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-              (isDirty || isTitleDirty) && !isSaving
+              (isDirty || mainTitleDirty) && !isSaving
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             )}
-            title={`Save (Ctrl+S)${(isDirty || isTitleDirty) ? ' - Unsaved changes' : ' - No changes'}`}
+            title={`Save (Ctrl+S)${(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}`}
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>{isSaving ? 'Saving...' : 'Save'}</span>
-            {(isDirty || isTitleDirty) && !isSaving && (
+            {(isDirty || mainTitleDirty) && !isSaving && (
               <span className="w-2 h-2 bg-orange-400 rounded-full ml-1" />
             )}
           </button>
@@ -304,46 +245,42 @@ export function WorkflowToolbar({
         )}
         {/* Execution has been moved to individual node toolbar buttons */}
         {/* Workflow Activation Toggle */}
-        {onToggleWorkflowActive && (
-          <button
-            onClick={onToggleWorkflowActive}
-            className={clsx(
-              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-              isWorkflowActive
-                ? "bg-green-600 text-white hover:bg-green-700"
-                : "bg-gray-600 text-white hover:bg-gray-700"
-            )}
-            title={isWorkflowActive ? "Deactivate workflow (disable execution)" : "Activate workflow (enable execution)"}
-          >
-            <div className={clsx(
-              "w-2 h-2 rounded-full",
-              isWorkflowActive ? "bg-green-300" : "bg-gray-300"
-            )} />
-            <span>{isWorkflowActive ? 'Active' : 'Inactive'}</span>
-          </button>
-        )}
+        <button
+          onClick={toggleWorkflowActive}
+          className={clsx(
+            "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
+            isWorkflowActive
+              ? "bg-green-600 text-white hover:bg-green-700"
+              : "bg-gray-600 text-white hover:bg-gray-700"
+          )}
+          title={isWorkflowActive ? "Deactivate workflow (disable execution)" : "Activate workflow (enable execution)"}
+        >
+          <div className={clsx(
+            "w-2 h-2 rounded-full",
+            isWorkflowActive ? "bg-green-300" : "bg-gray-300"
+          )} />
+          <span>{isWorkflowActive ? 'Active' : 'Inactive'}</span>
+        </button>
 
         {/* Executions History Toggle */}
-        {onToggleExecutionsPanel && (
-          <button
-            onClick={onToggleExecutionsPanel}
-            className={clsx(
-              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-              showExecutionsPanel
-                ? "bg-purple-600 text-white hover:bg-purple-700"
-                : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-            )}
-            title={showExecutionsPanel ? "Hide executions history" : "Show executions history"}
-          >
-            <History className="w-4 h-4" />
-            <span>Executions</span>
-            {workflowExecutions && workflowExecutions.length > 0 && (
-              <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
-              </span>
-            )}
-          </button>
-        )}
+        <button
+          onClick={toggleExecutionsPanel}
+          className={clsx(
+            "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
+            showExecutionsPanel
+              ? "bg-purple-600 text-white hover:bg-purple-700"
+              : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+          )}
+          title={showExecutionsPanel ? "Hide executions history" : "Show executions history"}
+        >
+          <History className="w-4 h-4" />
+          <span>Executions</span>
+          {workflowExecutions && workflowExecutions.length > 0 && (
+            <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+              {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
+            </span>
+          )}
+        </button>
 
         <button
           onClick={onValidate}
@@ -448,20 +385,18 @@ export function WorkflowToolbar({
         <div className="w-px h-6 bg-gray-300 mx-2" />
 
         {/* Node Palette Toggle */}
-        {onToggleNodePalette && (
-          <button
-            onClick={onToggleNodePalette}
-            className={clsx(
-              "flex items-center space-x-2 p-2 rounded-md transition-colors",
-              showNodePalette
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-            title={showNodePalette ? "Hide node palette" : "Show node palette"}
-          >
-            <PanelRight className="w-4 h-4" />
-          </button>
-        )}
+        <button
+          onClick={toggleNodePalette}
+          className={clsx(
+            "flex items-center space-x-2 p-2 rounded-md transition-colors",
+            showNodePalette
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "text-gray-700 hover:bg-gray-100"
+          )}
+          title={showNodePalette ? "Hide node palette" : "Show node palette"}
+        >
+          <PanelRight className="w-4 h-4" />
+        </button>
 
         <button
           className="p-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
