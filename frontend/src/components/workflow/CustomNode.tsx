@@ -1,14 +1,21 @@
 
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { useWorkflowStore } from '@/stores/workflow'
 import { NodeExecutionStatus } from '@/types/execution'
 import { createNodeExecutionError, logExecutionError } from '@/utils/errorHandling'
 import {
-  canNodeExecuteIndividually,
-  shouldShowDisableButton,
-  shouldShowExecuteButton
+    canNodeExecuteIndividually,
+    shouldShowDisableButton,
+    shouldShowExecuteButton
 } from '@/utils/nodeTypeClassification'
 import { clsx } from 'clsx'
-import { AlertCircle, CheckCircle, Loader2, Pause } from 'lucide-react'
+import { AlertCircle, CheckCircle, Copy, Loader2, Pause, Play, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Handle, NodeProps, NodeToolbar, Position } from 'reactflow'
 import { DisableToggleToolbarButton } from './DisableToggleToolbarButton'
@@ -36,6 +43,10 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   // Get workflow store state and methods
   const executeNode = useWorkflowStore(state => state.executeNode)
   const updateNode = useWorkflowStore(state => state.updateNode)
+  const addNode = useWorkflowStore(state => state.addNode)
+  const removeNode = useWorkflowStore(state => state.removeNode)
+  const openNodeProperties = useWorkflowStore(state => state.openNodeProperties)
+  const workflow = useWorkflowStore(state => state.workflow)
   const executionState = useWorkflowStore(state => state.executionState)
   const getNodeExecutionResult = useWorkflowStore(state => state.getNodeExecutionResult)
   const getNodeVisualState = useWorkflowStore(state => state.getNodeVisualState)
@@ -205,6 +216,37 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     updateNode(nodeId, { disabled })
   }
 
+  // Context menu handlers
+  const handleContextMenuOpenProperties = () => {
+    openNodeProperties(id)
+  }
+
+  const handleContextMenuExecuteNode = () => {
+    executeNode(id, undefined, 'single')
+  }
+
+  const handleContextMenuDuplicate = () => {
+    const nodeToClone = workflow?.nodes.find(n => n.id === id)
+    if (nodeToClone) {
+      const clonedNode = {
+        ...nodeToClone,
+        id: `node-${Date.now()}`,
+        name: `${nodeToClone.name} (Copy)`,
+        position: {
+          x: nodeToClone.position.x + 50,
+          y: nodeToClone.position.y + 50
+        }
+      }
+      addNode(clonedNode)
+    }
+  }
+
+  const handleContextMenuDelete = () => {
+    if (window.confirm('Are you sure you want to delete this node?')) {
+      removeNode(id)
+    }
+  }
+
   const getStatusIcon = () => {
     // Prioritize flow execution visual state
     if (nodeVisualState && nodeVisualState.status !== NodeExecutionStatus.IDLE) {
@@ -317,14 +359,16 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   }
 
   return (
-    <div
-      className={clsx(
-        'px-4 py-2 shadow-md rounded-md border-2 min-w-[150px] transition-all duration-200',
-        getNodeColor(),
-        getAnimationClasses(),
-        data.disabled && 'opacity-50 cursor-not-allowed'
-      )}
-    >
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={clsx(
+            'px-4 py-2 shadow-md rounded-md border-2 min-w-[150px] transition-all duration-200',
+            getNodeColor(),
+            getAnimationClasses(),
+            data.disabled && 'opacity-50 cursor-not-allowed'
+          )}
+        >
       {/* Input handle */}
       <Handle
         type="target"
@@ -450,6 +494,49 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
           )}
         </div>
       </NodeToolbar>
-    </div>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-48">
+        {/* Properties option */}
+        <ContextMenuItem
+          onClick={handleContextMenuOpenProperties}
+          className="cursor-pointer"
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          Properties
+        </ContextMenuItem>
+
+        {/* Execute Node option */}
+        <ContextMenuItem
+          onClick={handleContextMenuExecuteNode}
+          className="cursor-pointer"
+        >
+          <Play className="mr-2 h-4 w-4" />
+          Execute Node
+        </ContextMenuItem>
+
+        {/* Separator */}
+        <ContextMenuSeparator />
+
+        {/* Duplicate option */}
+        <ContextMenuItem
+          onClick={handleContextMenuDuplicate}
+          className="cursor-pointer"
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Duplicate
+        </ContextMenuItem>
+
+        {/* Delete option */}
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onClick={handleContextMenuDelete}
+          className="cursor-pointer text-red-600 focus:text-red-600"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }

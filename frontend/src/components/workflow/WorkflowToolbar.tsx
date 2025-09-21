@@ -4,17 +4,18 @@ import { ExecutionState } from '@/types/workflow'
 import { getUserFriendlyErrorMessage, validateImportFile } from '@/utils/errorHandling'
 import { clsx } from 'clsx'
 import {
-  AlertCircle,
-  CheckCircle,
-  Download,
-  History,
-  Loader2,
-  Redo,
-  Save,
-  Settings,
-  Terminal,
-  Undo,
-  Upload
+    AlertCircle,
+    CheckCircle,
+    Download,
+    History,
+    Loader2,
+    PanelRight,
+    Redo,
+    Save,
+    Settings,
+    Terminal,
+    Undo,
+    Upload
 } from 'lucide-react'
 import React from 'react'
 import { TitleManager } from './TitleManager'
@@ -69,6 +70,10 @@ interface WorkflowToolbarProps {
   // Workflow activation props
   isWorkflowActive?: boolean
   onToggleWorkflowActive?: () => void
+  
+  // Node palette props
+  showNodePalette?: boolean
+  onToggleNodePalette?: () => void
 }
 
 export function WorkflowToolbar({
@@ -120,7 +125,11 @@ export function WorkflowToolbar({
   
   // Workflow activation props
   isWorkflowActive,
-  onToggleWorkflowActive
+  onToggleWorkflowActive,
+  
+  // Node palette props
+  showNodePalette,
+  onToggleNodePalette
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
   // Helper functions
@@ -470,6 +479,22 @@ export function WorkflowToolbar({
         </div>
 
         <div className="w-px h-6 bg-gray-300 mx-2" />
+
+        {/* Node Palette Toggle */}
+        {onToggleNodePalette && (
+          <button
+            onClick={onToggleNodePalette}
+            className={clsx(
+              "flex items-center space-x-2 p-2 rounded-md transition-colors",
+              showNodePalette
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+            title={showNodePalette ? "Hide node palette" : "Show node palette"}
+          >
+            <PanelRight className="w-4 h-4" />
+          </button>
+        )}
 
         <button
           className="p-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"

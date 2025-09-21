@@ -30,8 +30,8 @@ import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigPanel } from './NodeConfigPanel'
-import { NodeContextMenu } from './NodeContextMenu'
 import { NodePalette } from './NodePalette'
+import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowToolbar } from './WorkflowToolbar'
 
 const nodeTypes: NodeTypes = {
@@ -143,8 +143,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         exportError,
         importError,
         clearImportExportErrors,
-        // Execution (main workflow execution moved to individual node toolbars)
-        executeNode,
+        // Execution state
         executionState,
         lastExecutionResult,
         realTimeResults,
@@ -159,13 +158,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         // Node interaction
         showPropertyPanel,
         propertyPanelNodeId,
-        contextMenuVisible,
-        contextMenuPosition,
-        contextMenuNodeId,
         // setShowPropertyPanel,
         // setPropertyPanelNode,
-        showContextMenu,
-        hideContextMenu,
         openNodeProperties,
         closeNodeProperties
     } = useWorkflowStore()
@@ -180,6 +174,13 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const [isSaving, setIsSaving] = useState(false)
     const [showExecutionPanel, setShowExecutionPanel] = useState(false)
     const [showExecutionsPanel, setShowExecutionsPanel] = useState(false)
+    const [showNodePalette, setShowNodePalette] = useState(true)
+    
+    // ReactFlow view state
+    const [showMinimap, setShowMinimap] = useState(true)
+    const [showBackground, setShowBackground] = useState(true)
+    const [showControls, setShowControls] = useState(true)
+    const [backgroundVariant, setBackgroundVariant] = useState<'dots' | 'lines' | 'cross'>('dots')
 
     // Initialize real-time updates on component mount
     useEffect(() => {
@@ -364,52 +365,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         openNodeProperties(nodeId)
     }, [openNodeProperties])
 
-    // Handle node right-click to show context menu
-    const handleNodeRightClick = useCallback((event: React.MouseEvent, nodeId: string) => {
-        event.preventDefault()
-        event.stopPropagation()
-        
-        const position = {
-            x: event.clientX,
-            y: event.clientY
-        }
-        
-        showContextMenu(nodeId, position)
-    }, [showContextMenu])
-
-    // Handle context menu actions
-    const handleContextMenuOpenProperties = useCallback((nodeId: string) => {
-        openNodeProperties(nodeId)
-    }, [openNodeProperties])
-
-    const handleContextMenuDuplicate = useCallback((nodeId: string) => {
-        const nodeToClone = workflow?.nodes.find(n => n.id === nodeId)
-        if (nodeToClone) {
-            const clonedNode: WorkflowNode = {
-                ...nodeToClone,
-                id: `node-${Date.now()}`,
-                name: `${nodeToClone.name} (Copy)`,
-                position: {
-                    x: nodeToClone.position.x + 50,
-                    y: nodeToClone.position.y + 50
-                }
-            }
-            addNode(clonedNode)
-        }
-    }, [workflow, addNode])
-
-    const handleContextMenuDelete = useCallback((nodeId: string) => {
-        // Show confirmation dialog in a real implementation
-        if (window.confirm('Are you sure you want to delete this node?')) {
-            removeNode(nodeId)
-        }
-    }, [removeNode])
-
-    const handleContextMenuExecuteNode = useCallback((nodeId: string) => {
-        // Execute the node in single mode (right-click = single node execution)
-        executeNode(nodeId, undefined, 'single')
-    }, [executeNode])
-
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -491,6 +446,31 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         }
     }, [importWorkflow, handleShowError])
 
+    // ReactFlow view handlers
+    const handleZoomIn = useCallback(() => {
+        if (reactFlowInstance) {
+            reactFlowInstance.zoomIn()
+        }
+    }, [reactFlowInstance])
+
+    const handleZoomOut = useCallback(() => {
+        if (reactFlowInstance) {
+            reactFlowInstance.zoomOut()
+        }
+    }, [reactFlowInstance])
+
+    const handleFitView = useCallback(() => {
+        if (reactFlowInstance) {
+            reactFlowInstance.fitView()
+        }
+    }, [reactFlowInstance])
+
+    const handleZoomToFit = useCallback(() => {
+        if (reactFlowInstance) {
+            reactFlowInstance.fitView({ padding: 0.1 })
+        }
+    }, [reactFlowInstance])
+
     // Execution handlers moved to individual node toolbars
     // Main workflow execution is now triggered from trigger node toolbar buttons
 
@@ -553,116 +533,178 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const selectedNodeType = selectedNode ? availableNodeTypes.find(nt => nt.type === selectedNode.type) : null
 
     return (
-        <div className="flex h-screen w-screen">
-            {/* Node Palette */}
-            <NodePalette
-                nodeTypes={availableNodeTypes}
-                onNodeDragStart={handleNodeDragStart}
-            />
+        <div className="flex flex-col h-screen w-screen">
+            {/* Full Width Toolbar */}
+            <WorkflowErrorBoundary onError={handleShowError}>
+                <WorkflowToolbar
+                    // Existing props
+                    canUndo={canUndo()}
+                    canRedo={canRedo()}
+                    onUndo={undo}
+                    onRedo={redo}
+                    onSave={handleSave}
+                    isSaving={isSaving}
+                    isDirty={isDirty}
+                    onValidate={() => {
+                        const result = validateWorkflow()
+                        if (result.isValid) {
+                            handleShowSuccess('Workflow is valid!')
+                        } else {
+                            handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
+                        }
+                    }}
+                    // Title management props
+                    workflowTitle={workflowTitle}
+                    onTitleChange={handleTitleChange}
+                    onTitleSave={handleTitleSave}
+                    isTitleDirty={isTitleDirty}
+                    titleValidationError={titleValidationError}
+                    // Import/Export props
+                    onExport={handleExport}
+                    onImport={handleImport}
+                    isExporting={isExporting}
+                    isImporting={isImporting}
+                    exportProgress={exportProgress}
+                    importProgress={importProgress}
+                    exportError={exportError}
+                    importError={importError}
+                    onClearImportExportErrors={clearImportExportErrors}
+                    // Execution state (for display only - execution moved to individual node toolbars)
+                    executionState={executionState}
+                    // Error handling props
+                    onShowError={handleShowError}
+                    onShowSuccess={handleShowSuccess}
+                    // Execution panel props
+                    showExecutionPanel={showExecutionPanel}
+                    onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
+                    executionLogs={executionLogs}
+                    // Executions history props
+                    showExecutionsPanel={showExecutionsPanel}
+                    onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
+                    workflowExecutions={[]} // Will be populated from API
+                    // Workflow activation props
+                    isWorkflowActive={workflow?.active || false}
+                    onToggleWorkflowActive={toggleWorkflowActive}
+                    // Node palette toggle props
+                    showNodePalette={showNodePalette}
+                    onToggleNodePalette={() => setShowNodePalette(!showNodePalette)}
+                />
 
-            {/* Main Editor */}
-            <div className="flex-1 flex flex-col min-w-0">
-                <WorkflowErrorBoundary onError={handleShowError}>
-                    {/* Toolbar */}
-                    <WorkflowToolbar
-                        // Existing props
-                        canUndo={canUndo()}
-                        canRedo={canRedo()}
-                        onUndo={undo}
-                        onRedo={redo}
-                        onSave={handleSave}
-                        isSaving={isSaving}
-                        isDirty={isDirty}
-                        onValidate={() => {
-                            const result = validateWorkflow()
-                            if (result.isValid) {
-                                handleShowSuccess('Workflow is valid!')
-                            } else {
-                                handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
-                            }
-                        }}
-                        // Title management props
-                        workflowTitle={workflowTitle}
-                        onTitleChange={handleTitleChange}
-                        onTitleSave={handleTitleSave}
-                        isTitleDirty={isTitleDirty}
-                        titleValidationError={titleValidationError}
-                        // Import/Export props
-                        onExport={handleExport}
-                        onImport={handleImport}
-                        isExporting={isExporting}
-                        isImporting={isImporting}
-                        exportProgress={exportProgress}
-                        importProgress={importProgress}
-                        exportError={exportError}
-                        importError={importError}
-                        onClearImportExportErrors={clearImportExportErrors}
-                        // Execution state (for display only - execution moved to individual node toolbars)
-                        executionState={executionState}
-                        // Error handling props
-                        onShowError={handleShowError}
-                        onShowSuccess={handleShowSuccess}
-                        // Execution panel props
-                        showExecutionPanel={showExecutionPanel}
-                        onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
-                        executionLogs={executionLogs}
-                        // Executions history props
-                        showExecutionsPanel={showExecutionsPanel}
-                        onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
-                        workflowExecutions={[]} // Will be populated from API
-                        // Workflow activation props
-                        isWorkflowActive={workflow?.active || false}
-                        onToggleWorkflowActive={toggleWorkflowActive}
-                    />
+                {/* Main Content Area with Resizable Panels */}
+                <div className="flex-1 flex">
+                    <ResizablePanelGroup direction="horizontal" className="flex-1">
+                        {/* Main Editor Area */}
+                        <ResizablePanel defaultSize={showNodePalette ? 80 : 100} minSize={50}>
+                            {/* Resizable Layout for Canvas and Execution Panel */}
+                            <ResizablePanelGroup direction="vertical" className="h-full">
+                                {/* React Flow Canvas */}
+                                <ResizablePanel defaultSize={showExecutionPanel ? 70 : 100} minSize={30}>
+                                    <div className="h-full " ref={reactFlowWrapper}>
+                                        <WorkflowCanvasContextMenu
+                                            canUndo={canUndo()}
+                                            canRedo={canRedo()}
+                                            onUndo={undo}
+                                            onRedo={redo}
+                                            onSave={handleSave}
+                                            isSaving={isSaving}
+                                            isDirty={isDirty}
+                                            isWorkflowActive={workflow?.active || false}
+                                            onToggleWorkflowActive={toggleWorkflowActive}
+                                            showExecutionPanel={showExecutionPanel}
+                                            onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
+                                            showExecutionsPanel={showExecutionsPanel}
+                                            onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
+                                            showNodePalette={showNodePalette}
+                                            onToggleNodePalette={() => setShowNodePalette(!showNodePalette)}
+                                            onExport={handleExport}
+                                            onImport={handleImport}
+                                            isExporting={isExporting}
+                                            isImporting={isImporting}
+                                            onValidate={() => {
+                                                const result = validateWorkflow()
+                                                if (result.isValid) {
+                                                    handleShowSuccess('Workflow is valid!')
+                                                } else {
+                                                    handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
+                                                }
+                                            }}
+                                            showMinimap={showMinimap}
+                                            onToggleMinimap={() => setShowMinimap(!showMinimap)}
+                                            showBackground={showBackground}
+                                            onToggleBackground={() => setShowBackground(!showBackground)}
+                                            showControls={showControls}
+                                            onToggleControls={() => setShowControls(!showControls)}
+                                            onFitView={handleFitView}
+                                            onZoomIn={handleZoomIn}
+                                            onZoomOut={handleZoomOut}
+                                            onZoomToFit={handleZoomToFit}
+                                            onChangeBackgroundVariant={(variant) => {
+                                                if (variant === 'none') {
+                                                    setShowBackground(false)
+                                                } else {
+                                                    setShowBackground(true)
+                                                    setBackgroundVariant(variant)
+                                                }
+                                            }}
+                                        >
+                                            <ReactFlow
+                                                nodes={nodes}
+                                                edges={edges}
+                                                onNodesChange={handleNodesChange}
+                                                onEdgesChange={handleEdgesChange}
+                                                onConnect={handleConnect}
+                                                onInit={setReactFlowInstance}
+                                                onDrop={handleDrop}
+                                                onDragOver={handleDragOver}
+                                                onSelectionChange={handleSelectionChange}
+                                                onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
+                                                nodeTypes={nodeTypes}
+                                                fitView
+                                                attributionPosition="bottom-left"
+                                            >
+                                                {showControls && <Controls />}
+                                                {showMinimap && <MiniMap />}
+                                                {showBackground && <Background variant={backgroundVariant as any} gap={12} size={1} />}
+                                            </ReactFlow>
+                                        </WorkflowCanvasContextMenu>
+                                    </div>
+                                </ResizablePanel>
 
-                    {/* Resizable Layout for Canvas and Execution Panel */}
-                    <ResizablePanelGroup direction="vertical" className="flex-1">
-                        {/* React Flow Canvas */}
-                        <ResizablePanel defaultSize={showExecutionPanel ? 70 : 100} minSize={30}>
-                            <div className="h-full" ref={reactFlowWrapper}>
-                                <ReactFlow
-                                    nodes={nodes}
-                                    edges={edges}
-                                    onNodesChange={handleNodesChange}
-                                    onEdgesChange={handleEdgesChange}
-                                    onConnect={handleConnect}
-                                    onInit={setReactFlowInstance}
-                                    onDrop={handleDrop}
-                                    onDragOver={handleDragOver}
-                                    onSelectionChange={handleSelectionChange}
-                                    onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
-                                    onNodeContextMenu={(event, node) => handleNodeRightClick(event, node.id)}
-                                    nodeTypes={nodeTypes}
-                                    fitView
-                                    attributionPosition="bottom-left"
-                                >
-                                    <Controls />
-                                    <MiniMap />
-                                    <Background variant={'dots' as any} gap={12} size={1} />
-                                </ReactFlow>
-                            </div>
+                                {/* Execution Panel */}
+                                {showExecutionPanel && (
+                                    <>
+                                        <ResizableHandle withHandle />
+                                        <ResizablePanel defaultSize={30} minSize={10} maxSize={70}>
+                                            <ExecutionPanel
+                                                executionState={executionState}
+                                                lastExecutionResult={lastExecutionResult}
+                                                executionLogs={executionLogs}
+                                                realTimeResults={realTimeResults}
+                                                flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
+                                                executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
+                                                onClose={() => setShowExecutionPanel(false)}
+                                            />
+                                        </ResizablePanel>
+                                    </>
+                                )}
+                            </ResizablePanelGroup>
                         </ResizablePanel>
 
-                        {/* Execution Panel */}
-                        {showExecutionPanel && (
+                        {/* Node Palette Panel */}
+                        {showNodePalette && (
                             <>
                                 <ResizableHandle withHandle />
-                                <ResizablePanel defaultSize={4} minSize={4} maxSize={70}>
-                                    <ExecutionPanel
-                                        executionState={executionState}
-                                        lastExecutionResult={lastExecutionResult}
-                                        executionLogs={executionLogs}
-                                        realTimeResults={realTimeResults}
-                                        flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
-                                        executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
-                                        onClose={() => setShowExecutionPanel(false)}
+                                <ResizablePanel defaultSize={15} minSize={0.2} maxSize={15}>
+                                    <NodePalette
+                                        nodeTypes={availableNodeTypes}
+                                        onNodeDragStart={handleNodeDragStart}
                                     />
                                 </ResizablePanel>
                             </>
                         )}
                     </ResizablePanelGroup>
-                </WorkflowErrorBoundary>
-            </div>
+                </div>
+            </WorkflowErrorBoundary>
 
             {/* Node Configuration Panel */}
             {showPropertyPanel && selectedNode && selectedNodeType && (
@@ -670,20 +712,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     node={selectedNode}
                     nodeType={selectedNodeType}
                     onClose={closeNodeProperties}
-                />
-            )}
-
-            {/* Node Context Menu */}
-            {contextMenuVisible && contextMenuNodeId && contextMenuPosition && (
-                <NodeContextMenu
-                    nodeId={contextMenuNodeId}
-                    position={contextMenuPosition}
-                    isVisible={contextMenuVisible}
-                    onClose={hideContextMenu}
-                    onOpenProperties={handleContextMenuOpenProperties}
-                    onExecuteNode={handleContextMenuExecuteNode}
-                    onDuplicate={handleContextMenuDuplicate}
-                    onDelete={handleContextMenuDelete}
                 />
             )}
 
