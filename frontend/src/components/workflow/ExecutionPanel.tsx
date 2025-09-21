@@ -80,8 +80,8 @@ export function ExecutionPanel({
   const displayResults = executionState.status === 'running' ? currentResults : finalResults
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
+    <div className="h-full bg-white border-t border-gray-200 shadow-lg flex flex-col">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center space-x-4">
           <h3 className="font-semibold text-gray-900">Execution Panel</h3>
           {executionState.executionId && (
@@ -162,7 +162,7 @@ export function ExecutionPanel({
         </button>
       </div>
 
-      <div className="h-64 overflow-auto">
+      <div className="flex-1 overflow-auto">
         {activeTab === 'progress' && (
           <div className="p-4">
             {executionState.status === 'running' && (

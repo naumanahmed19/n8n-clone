@@ -1,67 +1,71 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout, ProtectedRoute } from '@/components'
 import { LoginPage, RegisterPage, WorkspacePage, WorkflowEditorPage, ExecutionsPage, CredentialsPage, CustomNodesPage } from '@/pages'
+import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route
-          path="/login"
-          element={
-            <ProtectedRoute requireAuth={false}>
-              <LoginPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <ProtectedRoute requireAuth={false}>
-              <RegisterPage />
-            </ProtectedRoute>
-          }
-        />
+    <>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route
+            path="/login"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <LoginPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <RegisterPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Main application routes with layout */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/workflows" replace />} />
-          <Route path="workflows" element={<WorkspacePage />} />
-          <Route path="executions" element={<ExecutionsPage />} />
-          <Route path="credentials" element={<CredentialsPage />} />
-          <Route path="custom-nodes" element={<CustomNodesPage />} />
-        </Route>
+          {/* Main application routes with layout */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/workflows" replace />} />
+            <Route path="workflows" element={<WorkspacePage />} />
+            <Route path="executions" element={<ExecutionsPage />} />
+            <Route path="credentials" element={<CredentialsPage />} />
+            <Route path="custom-nodes" element={<CustomNodesPage />} />
+          </Route>
 
-        {/* Workflow editor routes without layout */}
-        <Route
-          path="/workflows/:id/edit"
-          element={
-            <ProtectedRoute>
-              <WorkflowEditorPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workflows/new"
-          element={
-            <ProtectedRoute>
-              <WorkflowEditorPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* Workflow editor routes without layout */}
+          <Route
+            path="/workflows/:id/edit"
+            element={
+              <ProtectedRoute>
+                <WorkflowEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workflows/new"
+            element={
+              <ProtectedRoute>
+                <WorkflowEditorPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Router>
+      <Toaster />
+    </>
   )
 }
 

@@ -16,7 +16,13 @@ import ReactFlow, {
     useNodesState
 } from 'reactflow'
 import 'reactflow/dist/style.css'
+import { toast } from 'sonner'
 
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from '@/components/ui/resizable'
 import { workflowService } from '@/services'
 import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
@@ -172,8 +178,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const [edges, setEdges, onEdgesChange] = useEdgesState([])
     // Remove local showConfigPanel state - now using store state
     const [isSaving, setIsSaving] = useState(false)
-    const [errorMessage, setErrorMessage] = useState<string | null>(null)
-    const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [showExecutionPanel, setShowExecutionPanel] = useState(false)
     const [showExecutionsPanel, setShowExecutionsPanel] = useState(false)
 
@@ -443,15 +447,13 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
     // Error and success notification handlers
     const handleShowError = useCallback((error: string) => {
-        setErrorMessage(error)
-        // Auto-clear error after 5 seconds
-        setTimeout(() => setErrorMessage(null), 5000)
+        toast.error(error, {
+            description: 'Please check your workflow configuration and try again.',
+        })
     }, [])
 
     const handleShowSuccess = useCallback((message: string) => {
-        setSuccessMessage(message)
-        // Auto-clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(null), 3000)
+        toast.success(message)
     }, [])
 
     // Title management handlers
@@ -552,37 +554,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
     return (
         <div className="flex h-screen w-screen">
-            {/* Error/Success Notifications */}
-            {errorMessage && (
-                <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg">
-                    <div className="flex items-center space-x-2">
-                        <span>⚠️</span>
-                        <span>{errorMessage}</span>
-                        <button 
-                            onClick={() => setErrorMessage(null)}
-                            className="ml-2 text-white hover:text-gray-200"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            )}
-            
-            {successMessage && (
-                <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg">
-                    <div className="flex items-center space-x-2">
-                        <span>✅</span>
-                        <span>{successMessage}</span>
-                        <button 
-                            onClick={() => setSuccessMessage(null)}
-                            className="ml-2 text-white hover:text-gray-200"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            )}
-
             {/* Node Palette */}
             <NodePalette
                 nodeTypes={availableNodeTypes}
@@ -644,29 +615,52 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                         onToggleWorkflowActive={toggleWorkflowActive}
                     />
 
-                    {/* React Flow Canvas */}
-                    <div className="flex-1 min-h-0" ref={reactFlowWrapper}>
-                        <ReactFlow
-                            nodes={nodes}
-                            edges={edges}
-                            onNodesChange={handleNodesChange}
-                            onEdgesChange={handleEdgesChange}
-                            onConnect={handleConnect}
-                            onInit={setReactFlowInstance}
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                            onSelectionChange={handleSelectionChange}
-                            onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
-                            onNodeContextMenu={(event, node) => handleNodeRightClick(event, node.id)}
-                            nodeTypes={nodeTypes}
-                            fitView
-                            attributionPosition="bottom-left"
-                        >
-                            <Controls />
-                            <MiniMap />
-                            <Background variant={'dots' as any} gap={12} size={1} />
-                        </ReactFlow>
-                    </div>
+                    {/* Resizable Layout for Canvas and Execution Panel */}
+                    <ResizablePanelGroup direction="vertical" className="flex-1">
+                        {/* React Flow Canvas */}
+                        <ResizablePanel defaultSize={showExecutionPanel ? 70 : 100} minSize={30}>
+                            <div className="h-full" ref={reactFlowWrapper}>
+                                <ReactFlow
+                                    nodes={nodes}
+                                    edges={edges}
+                                    onNodesChange={handleNodesChange}
+                                    onEdgesChange={handleEdgesChange}
+                                    onConnect={handleConnect}
+                                    onInit={setReactFlowInstance}
+                                    onDrop={handleDrop}
+                                    onDragOver={handleDragOver}
+                                    onSelectionChange={handleSelectionChange}
+                                    onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
+                                    onNodeContextMenu={(event, node) => handleNodeRightClick(event, node.id)}
+                                    nodeTypes={nodeTypes}
+                                    fitView
+                                    attributionPosition="bottom-left"
+                                >
+                                    <Controls />
+                                    <MiniMap />
+                                    <Background variant={'dots' as any} gap={12} size={1} />
+                                </ReactFlow>
+                            </div>
+                        </ResizablePanel>
+
+                        {/* Execution Panel */}
+                        {showExecutionPanel && (
+                            <>
+                                <ResizableHandle withHandle />
+                                <ResizablePanel defaultSize={4} minSize={4} maxSize={70}>
+                                    <ExecutionPanel
+                                        executionState={executionState}
+                                        lastExecutionResult={lastExecutionResult}
+                                        executionLogs={executionLogs}
+                                        realTimeResults={realTimeResults}
+                                        flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
+                                        executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
+                                        onClose={() => setShowExecutionPanel(false)}
+                                    />
+                                </ResizablePanel>
+                            </>
+                        )}
+                    </ResizablePanelGroup>
                 </WorkflowErrorBoundary>
             </div>
 
@@ -690,19 +684,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     onExecuteNode={handleContextMenuExecuteNode}
                     onDuplicate={handleContextMenuDuplicate}
                     onDelete={handleContextMenuDelete}
-                />
-            )}
-
-            {/* Execution Panel */}
-            {showExecutionPanel && (
-                <ExecutionPanel
-                    executionState={executionState}
-                    lastExecutionResult={lastExecutionResult}
-                    executionLogs={executionLogs}
-                    realTimeResults={realTimeResults}
-                    flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
-                    executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
-                    onClose={() => setShowExecutionPanel(false)}
                 />
             )}
 
