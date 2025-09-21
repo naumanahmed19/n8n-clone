@@ -877,7 +877,6 @@ export const useWorkflowStore = create<WorkflowStore>()(
         inputData?: any,
         mode: "single" | "workflow" = "single"
       ) => {
-
         // Prevent multiple simultaneous executions
         if (executionState.status === "running") {
           console.warn("Workflow is already executing");

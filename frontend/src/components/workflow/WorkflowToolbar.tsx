@@ -4,17 +4,17 @@ import { ExecutionState } from '@/types/workflow'
 import { getUserFriendlyErrorMessage, validateImportFile } from '@/utils/errorHandling'
 import { clsx } from 'clsx'
 import {
-    AlertCircle,
-    CheckCircle,
-    Download,
-    History,
-    Loader2,
-    Redo,
-    Save,
-    Settings,
-    Terminal,
-    Undo,
-    Upload
+  AlertCircle,
+  CheckCircle,
+  Download,
+  History,
+  Loader2,
+  Redo,
+  Save,
+  Settings,
+  Terminal,
+  Undo,
+  Upload
 } from 'lucide-react'
 import React from 'react'
 import { TitleManager } from './TitleManager'
