@@ -1,7 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout, ProtectedRoute } from '@/components'
-import { LoginPage, RegisterPage, WorkspacePage, WorkflowEditorPage, ExecutionsPage, CredentialsPage, CustomNodesPage } from '@/pages'
 import { Toaster } from '@/components/ui/sonner'
+import { CredentialsPage, CustomNodesPage, ExecutionsPage, LoginPage, RegisterPage, WorkflowEditorPage, WorkspacePage } from '@/pages'
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function App() {
   return (
