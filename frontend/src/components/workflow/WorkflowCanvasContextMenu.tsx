@@ -1,39 +1,39 @@
-import React from 'react';
-import { 
-  Save, 
-  Undo, 
-  Redo, 
-  Play, 
-  FileText, 
-  History, 
-  Settings, 
-  Power, 
-  PowerOff,
-  Download,
-  Upload,
-  CheckCircle,
-  Palette,
-  Map,
-  Grid3X3,
-  ZoomIn,
-  ZoomOut,
-  Maximize,
-  Eye,
-  EyeOff,
-  Grid,
-  Hash,
-  Plus
-} from 'lucide-react';
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
+    ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import {
+    CheckCircle,
+    Download,
+    Eye,
+    EyeOff,
+    FileText,
+    Grid,
+    Grid3X3,
+    Hash,
+    History,
+    Map,
+    Maximize,
+    Palette,
+    Play,
+    Plus,
+    Power,
+    PowerOff,
+    Redo,
+    Save,
+    Settings,
+    Undo,
+    Upload,
+    ZoomIn,
+    ZoomOut
+} from 'lucide-react';
+import React from 'react';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode

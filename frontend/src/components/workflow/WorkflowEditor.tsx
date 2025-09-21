@@ -173,6 +173,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     // Remove local showConfigPanel state - now using store state
     const [isSaving, setIsSaving] = useState(false)
     const [showExecutionPanel, setShowExecutionPanel] = useState(false)
+    const [executionPanelSize, setExecutionPanelSize] = useState(4) // Start minimized
     const [showExecutionsPanel, setShowExecutionsPanel] = useState(false)
     const [showNodePalette, setShowNodePalette] = useState(true)
     
@@ -474,6 +475,19 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     // Execution handlers moved to individual node toolbars
     // Main workflow execution is now triggered from trigger node toolbar buttons
 
+    // Execution panel toggle handler
+    const handleToggleExecutionPanel = useCallback(() => {
+        if (showExecutionPanel) {
+            // If panel is expanded, minimize it
+            setExecutionPanelSize(4) // Minimum size for just the header
+            setShowExecutionPanel(false)
+        } else {
+            // If panel is minimized, expand it to default size
+            setExecutionPanelSize(30)
+            setShowExecutionPanel(true)
+        }
+    }, [showExecutionPanel])
+
     // Save workflow function
     const handleSave = useCallback(async () => {
         if (!workflow || !user) return
@@ -574,10 +588,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     // Error handling props
                     onShowError={handleShowError}
                     onShowSuccess={handleShowSuccess}
-                    // Execution panel props
-                    showExecutionPanel={showExecutionPanel}
-                    onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
-                    executionLogs={executionLogs}
                     // Executions history props
                     showExecutionsPanel={showExecutionsPanel}
                     onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
@@ -598,7 +608,11 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                             {/* Resizable Layout for Canvas and Execution Panel */}
                             <ResizablePanelGroup direction="vertical" className="h-full">
                                 {/* React Flow Canvas */}
-                                <ResizablePanel defaultSize={showExecutionPanel ? 70 : 100} minSize={30}>
+                                <ResizablePanel 
+                                    key={`canvas-${executionPanelSize}`}
+                                    defaultSize={100 - executionPanelSize} 
+                                    minSize={30}
+                                >
                                     <div className="h-full " ref={reactFlowWrapper}>
                                         <WorkflowCanvasContextMenu
                                             canUndo={canUndo()}
@@ -611,7 +625,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             isWorkflowActive={workflow?.active || false}
                                             onToggleWorkflowActive={toggleWorkflowActive}
                                             showExecutionPanel={showExecutionPanel}
-                                            onToggleExecutionPanel={() => setShowExecutionPanel(!showExecutionPanel)}
+                                            onToggleExecutionPanel={handleToggleExecutionPanel}
                                             showExecutionsPanel={showExecutionsPanel}
                                             onToggleExecutionsPanel={() => setShowExecutionsPanel(!showExecutionsPanel)}
                                             showNodePalette={showNodePalette}
@@ -671,22 +685,26 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                 </ResizablePanel>
 
                                 {/* Execution Panel */}
-                                {showExecutionPanel && (
-                                    <>
-                                        <ResizableHandle withHandle />
-                                        <ResizablePanel defaultSize={30} minSize={10} maxSize={70}>
-                                            <ExecutionPanel
-                                                executionState={executionState}
-                                                lastExecutionResult={lastExecutionResult}
-                                                executionLogs={executionLogs}
-                                                realTimeResults={realTimeResults}
-                                                flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
-                                                executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
-                                                onClose={() => setShowExecutionPanel(false)}
-                                            />
-                                        </ResizablePanel>
-                                    </>
-                                )}
+                                <>
+                                    <ResizableHandle withHandle />
+                                    <ResizablePanel 
+                                        key={`execution-${executionPanelSize}`}
+                                        defaultSize={executionPanelSize} 
+                                        minSize={4} 
+                                        maxSize={70}
+                                    >
+                                        <ExecutionPanel
+                                            executionState={executionState}
+                                            lastExecutionResult={lastExecutionResult}
+                                            executionLogs={executionLogs}
+                                            realTimeResults={realTimeResults}
+                                            flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
+                                            executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
+                                            isExpanded={showExecutionPanel}
+                                            onToggle={handleToggleExecutionPanel}
+                                        />
+                                    </ResizablePanel>
+                                </>
                             </ResizablePanelGroup>
                         </ResizablePanel>
 

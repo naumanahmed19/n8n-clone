@@ -13,7 +13,6 @@ import {
     Redo,
     Save,
     Settings,
-    Terminal,
     Undo,
     Upload
 } from 'lucide-react'
@@ -56,11 +55,6 @@ interface WorkflowToolbarProps {
   // Error handling props
   onShowError?: (error: string) => void
   onShowSuccess?: (message: string) => void
-  
-  // Execution panel props
-  showExecutionPanel?: boolean
-  onToggleExecutionPanel?: () => void
-  executionLogs?: any[]
   
   // Executions history props
   showExecutionsPanel?: boolean
@@ -112,11 +106,6 @@ export function WorkflowToolbar({
   // Error handling props
   onShowError,
   onShowSuccess,
-  
-  // Execution panel props
-  showExecutionPanel,
-  onToggleExecutionPanel,
-  executionLogs,
   
   // Executions history props
   showExecutionsPanel,
@@ -331,28 +320,6 @@ export function WorkflowToolbar({
               isWorkflowActive ? "bg-green-300" : "bg-gray-300"
             )} />
             <span>{isWorkflowActive ? 'Active' : 'Inactive'}</span>
-          </button>
-        )}
-
-        {/* Execution Panel Toggle */}
-        {onToggleExecutionPanel && (
-          <button
-            onClick={onToggleExecutionPanel}
-            className={clsx(
-              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-              showExecutionPanel
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-            )}
-            title={showExecutionPanel ? "Hide execution panel" : "Show execution panel"}
-          >
-            <Terminal className="w-4 h-4" />
-            <span>Logs</span>
-            {executionLogs && executionLogs.length > 0 && (
-              <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                {executionLogs.length > 99 ? '99+' : executionLogs.length}
-              </span>
-            )}
           </button>
         )}
 
