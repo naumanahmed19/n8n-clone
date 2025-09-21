@@ -29,7 +29,7 @@ import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
-import { NodeConfigPanel } from './NodeConfigPanel'
+import { NodeConfigDialog } from './NodeConfigDialog'
 import { NodePalette } from './NodePalette'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowToolbar } from './WorkflowToolbar'
@@ -724,11 +724,12 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                 </div>
             </WorkflowErrorBoundary>
 
-            {/* Node Configuration Panel */}
-            {showPropertyPanel && selectedNode && selectedNodeType && (
-                <NodeConfigPanel
+            {/* Node Configuration Dialog */}
+            {selectedNode && selectedNodeType && (
+                <NodeConfigDialog
                     node={selectedNode}
                     nodeType={selectedNodeType}
+                    isOpen={showPropertyPanel}
                     onClose={closeNodeProperties}
                 />
             )}

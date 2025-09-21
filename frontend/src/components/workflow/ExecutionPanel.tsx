@@ -58,7 +58,6 @@ export function ExecutionPanel({
         onToggle={handleToggle}
       />
 
-      {isExpanded && (
         <div className="flex-1 flex flex-col">
           <ExecutionPanelTabs
             activeTab={activeTab}
@@ -77,7 +76,6 @@ export function ExecutionPanel({
             executionMetrics={executionMetrics}
           />
         </div>
-      )}
     </div>
   )
 }

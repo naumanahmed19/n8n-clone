@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { NodeType } from '@/types'
-import { ChevronDown, Search } from 'lucide-react'
+import { ChevronDown, GripVertical, Search } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
 
 interface NodePaletteProps {
@@ -66,7 +66,7 @@ export function NodePalette({ nodeTypes, onNodeDragStart }: NodePaletteProps) {
               placeholder="Search nodes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 rounded-sm"
+              className="pl-10 rounded-md"
             />
           </div>
         </div>
@@ -125,6 +125,7 @@ export function NodePalette({ nodeTypes, onNodeDragStart }: NodePaletteProps) {
                           {node.description}
                         </div>
                       </div>
+                      <GripVertical className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
                     </div>
                   </div>
                 ))}
