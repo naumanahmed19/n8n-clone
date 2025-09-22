@@ -69,7 +69,21 @@ export class NodeTypeService {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data || response;
+
+    // Transform the backend response to match frontend expectations
+    const backendResponse = response.data;
+
+    // Handle the actual backend response structure
+    const transformedResult = {
+      success: true, // If we get here, the upload was successful
+      message: `Successfully uploaded ${
+        backendResponse.nodes?.length || 0
+      } custom node(s)`,
+      nodes: backendResponse.nodes || [],
+      errors: undefined,
+    };
+
+    return transformedResult;
   }
 
   /**

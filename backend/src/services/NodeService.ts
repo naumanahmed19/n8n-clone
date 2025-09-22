@@ -958,7 +958,7 @@ export class NodeService {
       group: ["transform"],
       version: 1,
       description: "Set values on the data",
-      icon: "fa:pen",
+      icon: "S",
       color: "#4CAF50",
       defaults: {
         values: [],

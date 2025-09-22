@@ -41,10 +41,12 @@ interface PackageInfo {
 export class CustomNodeUploadHandler {
   private prisma: PrismaClient;
   private extractPath: string;
+  private customNodesPath: string;
 
   constructor() {
     this.prisma = new PrismaClient();
     this.extractPath = path.join(process.cwd(), "temp/extract");
+    this.customNodesPath = path.join(process.cwd(), "custom-nodes");
   }
 
   async processUpload(
@@ -54,6 +56,7 @@ export class CustomNodeUploadHandler {
     try {
       // Create extraction directory
       await this.ensureDirectory(this.extractPath);
+      await this.ensureDirectory(this.customNodesPath);
 
       const extractDir = path.join(this.extractPath, Date.now().toString());
       await this.ensureDirectory(extractDir);
@@ -63,7 +66,10 @@ export class CustomNodeUploadHandler {
       zip.extractAllTo(extractDir, true);
 
       // Validate and process the extracted content
-      const result = await this.processExtractedContent(extractDir);
+      const result = await this.processExtractedContent(
+        extractDir,
+        originalName
+      );
 
       // Clean up the uploaded file
       await fs.unlink(filePath).catch(() => {});
@@ -85,7 +91,8 @@ export class CustomNodeUploadHandler {
   }
 
   private async processExtractedContent(
-    extractDir: string
+    extractDir: string,
+    originalName: string
   ): Promise<UploadResult> {
     try {
       // Look for package.json
@@ -113,6 +120,14 @@ export class CustomNodeUploadHandler {
           errors: ["No .node.js or .node.ts files found in the package"],
         };
       }
+
+      // Create package directory in custom-nodes
+      const packageName =
+        packageInfo!.name || this.generatePackageNameFromZip(originalName);
+      const packageDir = path.join(this.customNodesPath, packageName);
+
+      // Copy the entire package to custom-nodes directory
+      await this.copyPackageToCustomNodes(extractDir, packageDir);
 
       // Process and validate each node
       const processedNodes: any[] = [];
@@ -145,6 +160,23 @@ export class CustomNodeUploadHandler {
           errors:
             errors.length > 0 ? errors : ["All node files failed validation"],
         };
+      }
+
+      // Try to load the package using NodeLoader
+      try {
+        const nodeLoader = global.nodeLoader;
+        if (nodeLoader) {
+          await nodeLoader.loadNodePackage(packageDir);
+          logger.info("Package loaded successfully by NodeLoader", {
+            packageDir,
+          });
+        }
+      } catch (error) {
+        logger.warn("Failed to load package with NodeLoader", {
+          error,
+          packageDir,
+        });
+        // Don't fail the upload if NodeLoader fails, just log the warning
       }
 
       return {
@@ -360,6 +392,56 @@ export class CustomNodeUploadHandler {
       await fs.access(dirPath);
     } catch (error) {
       await fs.mkdir(dirPath, { recursive: true });
+    }
+  }
+
+  private generatePackageNameFromZip(originalName: string): string {
+    // Remove .zip extension and sanitize name
+    const name = path.basename(originalName, ".zip");
+    return name.replace(/[^a-zA-Z0-9-_]/g, "-").toLowerCase();
+  }
+
+  private async copyPackageToCustomNodes(
+    sourceDir: string,
+    targetDir: string
+  ): Promise<void> {
+    try {
+      // Remove target directory if it exists
+      try {
+        await fs.rm(targetDir, { recursive: true, force: true });
+      } catch (error) {
+        // Ignore if directory doesn't exist
+      }
+
+      // Create target directory
+      await this.ensureDirectory(targetDir);
+
+      // Copy all files and directories
+      await this.copyRecursive(sourceDir, targetDir);
+    } catch (error) {
+      logger.error("Failed to copy package to custom nodes directory", {
+        error,
+        sourceDir,
+        targetDir,
+      });
+      throw error;
+    }
+  }
+
+  private async copyRecursive(source: string, target: string): Promise<void> {
+    const stat = await fs.stat(source);
+
+    if (stat.isDirectory()) {
+      await this.ensureDirectory(target);
+      const entries = await fs.readdir(source);
+
+      for (const entry of entries) {
+        const sourcePath = path.join(source, entry);
+        const targetPath = path.join(target, entry);
+        await this.copyRecursive(sourcePath, targetPath);
+      }
+    } else {
+      await fs.copyFile(source, target);
     }
   }
 }

@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle, FileArchive, RefreshCw, Upload, X } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
+import { globalToastManager } from '../../hooks/useToast';
 import { nodeTypeService } from '../../services/nodeType';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -80,17 +81,49 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
         ...prev,
         uploading: false,
         result,
-        error: result.success ? null : result.errors?.[0] || 'Upload failed',
+        error: result.success ? null : (result.errors?.[0] || result.message || 'Upload failed'),
       }));
 
-      if (result.success && onUploadSuccess) {
-        onUploadSuccess();
+      if (result.success) {
+        // Show success toast
+        globalToastManager.showSuccess(
+          'Custom Nodes Uploaded!',
+          {
+            message: `Successfully uploaded ${result.nodes?.length || 0} custom node(s)`,
+            duration: 5000
+          }
+        );
+        
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
+      } else {
+        // Show error toast for upload failures
+        globalToastManager.showError(
+          'Upload Failed',
+          {
+            message: result.errors?.[0] || result.message || 'Failed to upload custom nodes',
+            duration: 8000
+          }
+        );
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Handle API errors (e.g., network errors, server errors)
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to upload file. Please try again.';
+      
+      // Show error toast
+      globalToastManager.showError(
+        'Upload Failed',
+        {
+          message: errorMessage,
+          duration: 8000
+        }
+      );
+      
       setState(prev => ({
         ...prev,
         uploading: false,
-        error: 'Failed to upload file. Please try again.',
+        error: errorMessage,
         result: null,
       }));
       console.error('Upload failed:', error);
