@@ -1,4 +1,4 @@
-import { apiClient as api } from './api';
+import { apiClient as api } from "./api";
 
 export interface NodeType {
   id: string;
@@ -27,7 +27,7 @@ export interface UploadResult {
 }
 
 export class NodeTypeService {
-  private baseUrl = '/node-types';
+  private baseUrl = "/node-types";
 
   /**
    * Get all node types from the database
@@ -41,7 +41,9 @@ export class NodeTypeService {
    * Get node types by group
    */
   async getNodeTypesByGroup(group: string): Promise<NodeType[]> {
-    const response = await api.get(`${this.baseUrl}?group=${encodeURIComponent(group)}`);
+    const response = await api.get(
+      `${this.baseUrl}?group=${encodeURIComponent(group)}`
+    );
     return response.data.data;
   }
 
@@ -49,7 +51,9 @@ export class NodeTypeService {
    * Get a specific node type by type identifier
    */
   async getNodeType(type: string): Promise<NodeType> {
-    const response = await api.get(`${this.baseUrl}/${encodeURIComponent(type)}`);
+    const response = await api.get(
+      `${this.baseUrl}/${encodeURIComponent(type)}`
+    );
     return response.data.data;
   }
 
@@ -58,11 +62,11 @@ export class NodeTypeService {
    */
   async uploadCustomNodes(file: File): Promise<UploadResult> {
     const formData = new FormData();
-    formData.append('nodes', file);
+    formData.append("nodes", file);
 
     const response = await api.post(`${this.baseUrl}/upload`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data || response;
@@ -79,9 +83,12 @@ export class NodeTypeService {
    * Update a node type's active status
    */
   async updateNodeTypeStatus(type: string, active: boolean): Promise<NodeType> {
-    const response = await api.patch(`${this.baseUrl}/${encodeURIComponent(type)}`, {
-      active,
-    });
+    const response = await api.patch(
+      `${this.baseUrl}/${encodeURIComponent(type)}`,
+      {
+        active,
+      }
+    );
     return response.data.data;
   }
 }

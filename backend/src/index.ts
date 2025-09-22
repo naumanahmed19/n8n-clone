@@ -15,8 +15,8 @@ import executionHistoryRoutes from "./routes/execution-history";
 import executionRecoveryRoutes from "./routes/execution-recovery";
 import { executionRoutes } from "./routes/executions";
 import flowExecutionRoutes from "./routes/flow-execution";
-import { nodeRoutes } from "./routes/nodes";
 import { nodeTypeRoutes } from "./routes/node-types";
+import { nodeRoutes } from "./routes/nodes";
 import triggerRoutes from "./routes/triggers";
 import { workflowRoutes } from "./routes/workflows";
 
