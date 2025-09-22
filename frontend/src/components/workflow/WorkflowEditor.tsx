@@ -145,6 +145,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         getNodeExecutionResult,
         initializeRealTimeUpdates,
         toggleWorkflowActive,
+        clearExecutionLogs,
         // Flow execution state
         // flowExecutionState,
         getExecutionFlowStatus,
@@ -661,6 +662,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
                                             isExpanded={showExecutionPanel}
                                             onToggle={handleToggleExecutionPanel}
+                                            onClearLogs={clearExecutionLogs}
                                         />
                                     </ResizablePanel>
                                 </>

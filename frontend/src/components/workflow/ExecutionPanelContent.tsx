@@ -14,6 +14,7 @@ interface ExecutionPanelContentProps {
   realTimeResults: Map<string, NodeExecutionResult>
   flowExecutionStatus?: ExecutionFlowStatus | null
   executionMetrics?: ExecutionMetrics | null
+  onClearLogs?: () => void
 }
 
 export function ExecutionPanelContent({
@@ -23,7 +24,8 @@ export function ExecutionPanelContent({
   executionLogs,
   realTimeResults,
   flowExecutionStatus,
-  executionMetrics
+  executionMetrics,
+  onClearLogs
 }: ExecutionPanelContentProps) {
   // Get current and final results for display
   const currentResults = Array.from(realTimeResults.values())
@@ -31,7 +33,7 @@ export function ExecutionPanelContent({
   const displayResults = executionState.status === 'running' ? currentResults : finalResults
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 min-h-0">
       {activeTab === 'progress' && (
         <ProgressTabContent executionState={executionState} />
       )}
@@ -51,6 +53,7 @@ export function ExecutionPanelContent({
         <LogsTabContent 
           executionLogs={executionLogs}
           isActive={activeTab === 'logs'}
+          onClearLogs={onClearLogs}
         />
       )}
       

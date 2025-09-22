@@ -22,6 +22,7 @@ interface ExecutionPanelProps {
   isExpanded?: boolean
   onToggle?: () => void
   onClose?: () => void
+  onClearLogs?: () => void
 }
 
 export function ExecutionPanel({
@@ -33,7 +34,8 @@ export function ExecutionPanel({
   executionMetrics,
   isExpanded = true,
   onToggle,
-  onClose
+  onClose,
+  onClearLogs
 }: ExecutionPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('progress')
 
@@ -74,6 +76,7 @@ export function ExecutionPanel({
             realTimeResults={realTimeResults}
             flowExecutionStatus={flowExecutionStatus}
             executionMetrics={executionMetrics}
+            onClearLogs={onClearLogs}
           />
         </div>
     </div>
