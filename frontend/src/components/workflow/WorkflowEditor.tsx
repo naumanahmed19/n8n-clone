@@ -1,35 +1,30 @@
-import { Component, ErrorInfo, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { Component, ErrorInfo, ReactNode, useEffect } from 'react'
 import ReactFlow, {
-    addEdge,
     Background,
-    Connection,
     Controls,
     MiniMap,
     NodeTypes,
-    OnConnect,
-    OnEdgesChange,
-    OnNodesChange,
-    OnSelectionChangeParams,
-    ReactFlowInstance,
     ReactFlowProvider,
-    useEdgesState,
-    useNodesState
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { toast } from 'sonner'
 
 import {
     ResizableHandle,
     ResizablePanel,
     ResizablePanelGroup,
 } from '@/components/ui/resizable'
-import { workflowService } from '@/services'
-import { useAuthStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
-import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
+import {
+    useExecutionControls,
+    useKeyboardShortcuts,
+    useReactFlowInteractions,
+    useWorkflowEditorUI,
+    useWorkflowOperations,
+} from '@/hooks/workflow'
+import { useWorkflowStore } from '@/stores'
+import { NodeType } from '@/types'
 import { CustomNode } from './CustomNode'
-import { ExecutionsHistory } from './ExecutionsHistory'
-
 import { ExecutionPanel } from './ExecutionPanel'
+import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { NodePalette } from './NodePalette'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
@@ -47,10 +42,10 @@ interface ErrorBoundaryState {
 }
 
 class WorkflowErrorBoundary extends Component<
-    { children: ReactNode; onError?: (error: string) => void },
+    { children: ReactNode },
     ErrorBoundaryState
 > {
-    constructor(props: { children: ReactNode; onError?: (error: string) => void }) {
+    constructor(props: { children: ReactNode }) {
         super(props)
         this.state = { hasError: false }
     }
@@ -62,10 +57,6 @@ class WorkflowErrorBoundary extends Component<
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('WorkflowEditor Error Boundary caught an error:', error, errorInfo)
         this.setState({ error, errorInfo })
-        
-        if (this.props.onError) {
-            this.props.onError(`Workflow editor error: ${error.message}`)
-        }
     }
 
     render() {
@@ -113,81 +104,83 @@ interface WorkflowEditorProps {
 export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditorProps) {
     const {
         workflow,
-        selectedNodeId,
-        addNode,
-        updateNode,
-        removeNode,
-        addConnection,
-        removeConnection,
-        setSelectedNode,
+        showPropertyPanel,
+        propertyPanelNodeId,
         undo,
         redo,
         canUndo,
         canRedo,
-        validateWorkflow,
-        setWorkflow,
-        isDirty,
-        setDirty,
-        // Title management
-        workflowTitle,
-        saveTitle,
-        isTitleDirty,
-        // Import/Export
-        exportWorkflow,
-        importWorkflow,
+        toggleWorkflowActive,
+        closeNodeProperties,
+    } = useWorkflowStore()
+
+    // Use custom hooks for better organization
+    const {
+        saveWorkflow,
+        validateAndShowResult,
+        handleExport,
+        handleImport,
         isExporting,
         isImporting,
-        // Execution state
+        hasUnsavedChanges,
+    } = useWorkflowOperations()
+
+    const {
+        reactFlowWrapper,
+        setReactFlowInstance,
+        nodes,
+        edges,
+        setNodes,
+        setEdges,
+        handleSelectionChange,
+        handleNodesChange,
+        handleEdgesChange,
+        handleConnect,
+        handleDragOver,
+        handleDrop,
+        handleNodeDoubleClick,
+        handleZoomIn,
+        handleZoomOut,
+        handleFitView,
+        handleZoomToFit,
+    } = useReactFlowInteractions()
+
+    const {
         executionState,
         lastExecutionResult,
         realTimeResults,
         executionLogs,
-        getNodeExecutionResult,
-        initializeRealTimeUpdates,
-        toggleWorkflowActive,
-        clearExecutionLogs,
-        // Flow execution state
-        // flowExecutionState,
-        getExecutionFlowStatus,
-        progressTracker,
-        // Node interaction
-        showPropertyPanel,
-        propertyPanelNodeId,
-        // setShowPropertyPanel,
-        // setPropertyPanelNode,
-        openNodeProperties,
-        closeNodeProperties
-    } = useWorkflowStore()
-    
-    const { user } = useAuthStore()
-    
-    // Get UI state from toolbar store
-    const { 
-        showNodePalette, 
+        getNodeResult,
+        getFlowStatus,
+        getExecutionMetrics,
+        clearLogs,
+    } = useExecutionControls()
+
+    const {
+        showNodePalette,
         showExecutionsPanel,
+        showExecutionPanel,
         toggleNodePalette,
-        toggleExecutionsPanel
-    } = useWorkflowToolbarStore()
+        toggleExecutionsPanel,
+        handleToggleExecutionPanel,
+        executionPanelSize,
+        showMinimap,
+        showBackground,
+        showControls,
+        backgroundVariant,
+        handleToggleMinimap,
+        handleToggleBackground,
+        handleToggleControls,
+        handleChangeBackgroundVariant,
+    } = useWorkflowEditorUI()
 
-    const reactFlowWrapper = useRef<HTMLDivElement>(null)
-    const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null)
-    const [nodes, setNodes, onNodesChange] = useNodesState([])
-    const [edges, setEdges, onEdgesChange] = useEdgesState([])
-    // Remove local showConfigPanel state - now using store state
-    const [isSaving, setIsSaving] = useState(false)
-    const [showExecutionPanel, setShowExecutionPanel] = useState(false)
-    const [executionPanelSize, setExecutionPanelSize] = useState(4) // Start minimized
-    
-    // ReactFlow view state
-    const [showMinimap, setShowMinimap] = useState(true)
-    const [showBackground, setShowBackground] = useState(true)
-    const [showControls, setShowControls] = useState(true)
-    const [backgroundVariant, setBackgroundVariant] = useState<'dots' | 'lines' | 'cross'>('dots')
-
-    // Initialize real-time updates on component mount
-    useEffect(() => {
-        initializeRealTimeUpdates()
-    }, [initializeRealTimeUpdates])
+    // Keyboard shortcuts
+    useKeyboardShortcuts({
+        onSave: saveWorkflow,
+        onUndo: undo,
+        onRedo: redo,
+        onDelete: () => {}, // Will be set by the hook
+    })
 
     // Convert workflow data to React Flow format with real execution status
     useEffect(() => {
@@ -195,7 +188,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
         const reactFlowNodes = workflow.nodes.map(node => {
             // Get real-time execution result for this node
-            const nodeResult = getNodeExecutionResult(node.id)
+            const nodeResult = getNodeResult(node.id)
             
             // Determine node status based on execution state and real-time results
             let nodeStatus: 'idle' | 'running' | 'success' | 'error' | 'skipped' = 'idle'
@@ -251,289 +244,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
         setNodes(reactFlowNodes)
         setEdges(reactFlowEdges)
-    }, [workflow, executionState, realTimeResults, lastExecutionResult, getNodeExecutionResult, setNodes, setEdges])
-
-    // Handle node selection (but don't automatically open property panel)
-    const handleSelectionChange = useCallback((params: OnSelectionChangeParams) => {
-        const selectedNode = params.nodes[0]
-        if (selectedNode) {
-            setSelectedNode(selectedNode.id)
-            // Don't automatically open config panel - only set selection
-        } else {
-            setSelectedNode(null)
-            // Only close config panel if no node is selected AND the property panel is open
-            // but the propertyPanelNodeId doesn't match any existing workflow node
-            // This prevents the dialog from closing during execution state changes
-            // while still allowing it to close when a node is actually removed or user clicks away
-            if (showPropertyPanel && propertyPanelNodeId) {
-                const nodeExists = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
-                if (!nodeExists) {
-                    closeNodeProperties()
-                }
-            }
-        }
-    }, [setSelectedNode, showPropertyPanel, propertyPanelNodeId, workflow, closeNodeProperties])
-
-    // Handle node position changes
-    const handleNodesChange: OnNodesChange = useCallback((changes) => {
-        onNodesChange(changes)
-
-        // Update workflow store with position changes
-        changes.forEach(change => {
-            if (change.type === 'position' && change.position) {
-                updateNode(change.id, { position: change.position })
-            }
-        })
-    }, [onNodesChange, updateNode])
-
-    // Handle edge changes
-    const handleEdgesChange: OnEdgesChange = useCallback((changes) => {
-        onEdgesChange(changes)
-
-        // Handle edge removal
-        changes.forEach(change => {
-            if (change.type === 'remove') {
-                removeConnection(change.id)
-            }
-        })
-    }, [onEdgesChange, removeConnection])
-
-    // Handle new connections
-    const handleConnect: OnConnect = useCallback((connection: Connection) => {
-        if (!connection.source || !connection.target) return
-
-        const newConnection: WorkflowConnection = {
-            id: `${connection.source}-${connection.target}-${Date.now()}`,
-            sourceNodeId: connection.source,
-            sourceOutput: connection.sourceHandle || 'main',
-            targetNodeId: connection.target,
-            targetInput: connection.targetHandle || 'main'
-        }
-
-        addConnection(newConnection)
-
-        const newEdge = {
-            id: newConnection.id,
-            source: connection.source,
-            target: connection.target,
-            sourceHandle: connection.sourceHandle || undefined,
-            targetHandle: connection.targetHandle || undefined
-        }
-
-        setEdges(edges => addEdge(newEdge, edges))
-    }, [addConnection, setEdges])
-
-    // Handle drag over for node dropping
-    const handleDragOver = useCallback((event: React.DragEvent) => {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-    }, [])
-
-    // Handle node drop from palette
-    const handleDrop = useCallback((event: React.DragEvent) => {
-        event.preventDefault()
-
-        const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect()
-        if (!reactFlowBounds || !reactFlowInstance) return
-
-        const nodeTypeData = event.dataTransfer.getData('application/reactflow')
-        if (!nodeTypeData) return
-
-        try {
-            const nodeType: NodeType = JSON.parse(nodeTypeData)
-
-            const position = reactFlowInstance.project({
-                x: event.clientX - reactFlowBounds.left,
-                y: event.clientY - reactFlowBounds.top,
-            })
-
-            const newNode: WorkflowNode = {
-                id: `node-${Date.now()}`,
-                type: nodeType.type,
-                name: nodeType.displayName,
-                parameters: { ...nodeType.defaults },
-                position,
-                credentials: [],
-                disabled: false
-            }
-
-            addNode(newNode)
-        } catch (error) {
-            console.error('Failed to parse dropped node data:', error)
-        }
-    }, [reactFlowInstance, addNode])
-
-    // Handle node drag start from palette
-    const handleNodeDragStart = useCallback((_event: React.DragEvent, _nodeType: NodeType) => {
-        // This is handled in NodePalette component
-    }, [])
-
-    // Handle node double-click to open properties
-    const handleNodeDoubleClick = useCallback((event: React.MouseEvent, nodeId: string) => {
-        event.preventDefault()
-        event.stopPropagation()
-        openNodeProperties(nodeId)
-    }, [openNodeProperties])
-
-    // Keyboard shortcuts
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.ctrlKey || event.metaKey) {
-                switch (event.key) {
-                    case 'z':
-                        event.preventDefault()
-                        if (event.shiftKey) {
-                            redo()
-                        } else {
-                            undo()
-                        }
-                        break
-                    case 'y':
-                        event.preventDefault()
-                        redo()
-                        break
-                    case 's':
-                        event.preventDefault()
-                        // Save both workflow and title changes
-                        handleSave()
-                        break
-                }
-            }
-
-            if (event.key === 'Delete' && selectedNodeId) {
-                removeNode(selectedNodeId)
-                closeNodeProperties()
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [undo, redo, selectedNodeId, removeNode])
-
-    // Error and success notification handlers
-    const handleShowError = useCallback((error: string) => {
-        toast.error(error, {
-            description: 'Please check your workflow configuration and try again.',
-        })
-    }, [])
-
-    const handleShowSuccess = useCallback((message: string) => {
-        toast.success(message)
-    }, [])
-
-    // Import/Export handlers
-    const handleExport = useCallback(async () => {
-        try {
-            await exportWorkflow()
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Export failed'
-            handleShowError(errorMessage)
-        }
-    }, [exportWorkflow, handleShowError])
-
-    const handleImport = useCallback(async (file: File) => {
-        try {
-            await importWorkflow(file)
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Import failed'
-            handleShowError(errorMessage)
-        }
-    }, [importWorkflow, handleShowError])
-
-    // ReactFlow view handlers
-    const handleZoomIn = useCallback(() => {
-        if (reactFlowInstance) {
-            reactFlowInstance.zoomIn()
-        }
-    }, [reactFlowInstance])
-
-    const handleZoomOut = useCallback(() => {
-        if (reactFlowInstance) {
-            reactFlowInstance.zoomOut()
-        }
-    }, [reactFlowInstance])
-
-    const handleFitView = useCallback(() => {
-        if (reactFlowInstance) {
-            reactFlowInstance.fitView()
-        }
-    }, [reactFlowInstance])
-
-    const handleZoomToFit = useCallback(() => {
-        if (reactFlowInstance) {
-            reactFlowInstance.fitView({ padding: 0.1 })
-        }
-    }, [reactFlowInstance])
-
-    // Execution handlers moved to individual node toolbars
-    // Main workflow execution is now triggered from trigger node toolbar buttons
-
-    // Execution panel toggle handler
-    const handleToggleExecutionPanel = useCallback(() => {
-        if (showExecutionPanel) {
-            // If panel is expanded, minimize it
-            setExecutionPanelSize(4) // Minimum size for just the header
-            setShowExecutionPanel(false)
-        } else {
-            // If panel is minimized, expand it to default size
-            setExecutionPanelSize(30)
-            setShowExecutionPanel(true)
-        }
-    }, [showExecutionPanel])
-
-    // Save workflow function
-    const handleSave = useCallback(async () => {
-        if (!workflow || !user) return
-        
-        setIsSaving(true)
-        try {
-            // Save title changes first if needed
-            if (isTitleDirty) {
-                saveTitle()
-            }
-
-            if (workflow.id === 'new') {
-                // Create new workflow
-                const workflowData = {
-                    name: workflowTitle || workflow.name,
-                    description: workflow.description,
-                    nodes: workflow.nodes,
-                    connections: workflow.connections,
-                    settings: workflow.settings,
-                    active: workflow.active
-                }
-                
-                const savedWorkflow = await workflowService.createWorkflow(workflowData)
-                setWorkflow(savedWorkflow)
-                setDirty(false)
-                
-                // Update URL to reflect the new workflow ID
-                window.history.replaceState(null, '', `/workflows/${savedWorkflow.id}/edit`)
-                handleShowSuccess('Workflow created successfully')
-            } else {
-                // Update existing workflow
-                const workflowData = {
-                    name: workflowTitle || workflow.name,
-                    description: workflow.description,
-                    nodes: workflow.nodes,
-                    connections: workflow.connections,
-                    settings: workflow.settings,
-                    active: workflow.active
-                }
-                
-                const updatedWorkflow = await workflowService.updateWorkflow(workflow.id, workflowData)
-                setWorkflow(updatedWorkflow)
-                setDirty(false)
-                handleShowSuccess('Workflow saved successfully')
-            }
-        } catch (error) {
-            console.error('Failed to save workflow:', error)
-            const errorMessage = error instanceof Error ? error.message : 'Failed to save workflow. Please try again.'
-            handleShowError(errorMessage)
-        } finally {
-            setIsSaving(false)
-        }
-    }, [workflow, user, workflowTitle, isTitleDirty, saveTitle, setWorkflow, setDirty, handleShowError, handleShowSuccess])
+    }, [workflow, executionState, realTimeResults, lastExecutionResult, getNodeResult, setNodes, setEdges])
 
     // Get selected node data for config panel
     const selectedNode = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
@@ -542,22 +253,15 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     return (
         <div className="flex flex-col h-screen w-screen">
             {/* Full Width Toolbar */}
-            <WorkflowErrorBoundary onError={handleShowError}>
+            <WorkflowErrorBoundary>
                 <WorkflowToolbar
                     // Minimal props - workflow operations that need main workflow store
                     canUndo={canUndo()}
                     canRedo={canRedo()}
                     onUndo={undo}
                     onRedo={redo}
-                    onSave={handleSave}
-                    onValidate={() => {
-                        const result = validateWorkflow()
-                        if (result.isValid) {
-                            handleShowSuccess('Workflow is valid!')
-                        } else {
-                            handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
-                        }
-                    }}
+                    onSave={saveWorkflow}
+                    onValidate={validateAndShowResult}
                 />
 
                 {/* Main Content Area with Resizable Panels */}
@@ -579,9 +283,9 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             canRedo={canRedo()}
                                             onUndo={undo}
                                             onRedo={redo}
-                                            onSave={handleSave}
-                                            isSaving={isSaving}
-                                            isDirty={isDirty}
+                                            onSave={saveWorkflow}
+                                            isSaving={false}
+                                            isDirty={hasUnsavedChanges}
                                             isWorkflowActive={workflow?.active || false}
                                             onToggleWorkflowActive={toggleWorkflowActive}
                                             showExecutionPanel={showExecutionPanel}
@@ -594,32 +298,18 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             onImport={handleImport}
                                             isExporting={isExporting}
                                             isImporting={isImporting}
-                                            onValidate={() => {
-                                                const result = validateWorkflow()
-                                                if (result.isValid) {
-                                                    handleShowSuccess('Workflow is valid!')
-                                                } else {
-                                                    handleShowError(`Workflow has errors: ${result.errors.join(', ')}`)
-                                                }
-                                            }}
+                                            onValidate={validateAndShowResult}
                                             showMinimap={showMinimap}
-                                            onToggleMinimap={() => setShowMinimap(!showMinimap)}
+                                            onToggleMinimap={handleToggleMinimap}
                                             showBackground={showBackground}
-                                            onToggleBackground={() => setShowBackground(!showBackground)}
+                                            onToggleBackground={handleToggleBackground}
                                             showControls={showControls}
-                                            onToggleControls={() => setShowControls(!showControls)}
+                                            onToggleControls={handleToggleControls}
                                             onFitView={handleFitView}
                                             onZoomIn={handleZoomIn}
                                             onZoomOut={handleZoomOut}
                                             onZoomToFit={handleZoomToFit}
-                                            onChangeBackgroundVariant={(variant) => {
-                                                if (variant === 'none') {
-                                                    setShowBackground(false)
-                                                } else {
-                                                    setShowBackground(true)
-                                                    setBackgroundVariant(variant)
-                                                }
-                                            }}
+                                            onChangeBackgroundVariant={handleChangeBackgroundVariant}
                                         >
                                             <ReactFlow
                                                 nodes={nodes}
@@ -646,7 +336,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
                                 {/* Execution Panel */}
                                 <>
-                               
                                     <ResizableHandle withHandle />
                                     <ResizablePanel
                                         key={`execution-${executionPanelSize}`}
@@ -654,16 +343,16 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                         minSize={4}
                                         maxSize={70}
                                     >
-                                          <ExecutionPanel
+                                        <ExecutionPanel
                                             executionState={executionState}
                                             lastExecutionResult={lastExecutionResult}
                                             executionLogs={executionLogs}
                                             realTimeResults={realTimeResults}
-                                            flowExecutionStatus={executionState.executionId ? getExecutionFlowStatus(executionState.executionId) : null}
-                                            executionMetrics={executionState.executionId ? progressTracker.getExecutionMetrics(executionState.executionId) : null}
+                                            flowExecutionStatus={executionState.executionId ? getFlowStatus(executionState.executionId) : null}
+                                            executionMetrics={executionState.executionId ? getExecutionMetrics(executionState.executionId) : null}
                                             isExpanded={showExecutionPanel}
                                             onToggle={handleToggleExecutionPanel}
-                                            onClearLogs={clearExecutionLogs}
+                                            onClearLogs={clearLogs}
                                         />
                                     </ResizablePanel>
                                 </>
@@ -677,7 +366,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                 <ResizablePanel defaultSize={15} minSize={0.2} maxSize={15}>
                                     <NodePalette
                                         nodeTypes={availableNodeTypes}
-                                        onNodeDragStart={handleNodeDragStart}
+                                        onNodeDragStart={() => {}} // Handled in NodePalette component
                                     />
                                 </ResizablePanel>
                             </>
