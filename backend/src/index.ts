@@ -16,6 +16,7 @@ import executionRecoveryRoutes from "./routes/execution-recovery";
 import { executionRoutes } from "./routes/executions";
 import flowExecutionRoutes from "./routes/flow-execution";
 import { nodeRoutes } from "./routes/nodes";
+import { nodeTypeRoutes } from "./routes/node-types";
 import triggerRoutes from "./routes/triggers";
 import { workflowRoutes } from "./routes/workflows";
 
@@ -104,6 +105,7 @@ app.get("/", (req, res) => {
       workflows: "/api/workflows",
       executions: "/api/executions",
       nodes: "/api/nodes",
+      nodeTypes: "/api/node-types",
       credentials: "/api/credentials",
       triggers: "/api/triggers",
       webhooks: "/api/triggers/webhooks",
@@ -122,6 +124,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workflows", workflowRoutes);
 app.use("/api/executions", executionRoutes);
 app.use("/api/nodes", nodeRoutes);
+app.use("/api/node-types", nodeTypeRoutes);
 app.use("/api/credentials", credentialRoutes);
 app.use("/api/triggers", triggerRoutes);
 app.use("/api/custom-nodes", customNodeRoutes);
@@ -146,6 +149,7 @@ httpServer.listen(PORT, async () => {
   console.log(`   - Workflows: http://localhost:${PORT}/api/workflows`);
   console.log(`   - Executions: http://localhost:${PORT}/api/executions`);
   console.log(`   - Nodes: http://localhost:${PORT}/api/nodes`);
+  console.log(`   - Node Types: http://localhost:${PORT}/api/node-types`);
   console.log(`   - Credentials: http://localhost:${PORT}/api/credentials`);
   console.log(`   - Triggers: http://localhost:${PORT}/api/triggers`);
   console.log(`   - Webhooks: http://localhost:${PORT}/api/triggers/webhooks`);

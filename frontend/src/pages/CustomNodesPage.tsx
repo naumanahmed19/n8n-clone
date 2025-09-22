@@ -4,19 +4,24 @@ import { CustomNodeList } from '../components/customNode/CustomNodeList';
 import { NodeTemplateGenerator } from '../components/customNode/NodeTemplateGenerator';
 import { NodeMarketplace } from '../components/customNode/NodeMarketplace';
 import { PackageValidator } from '../components/customNode/PackageValidator';
+import { CustomNodeUpload } from '../components/customNode/CustomNodeUpload';
 
-type TabType = 'installed' | 'marketplace' | 'generator' | 'validator';
+type TabType = 'installed' | 'upload' | 'marketplace' | 'generator' | 'validator';
 
 export const CustomNodesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('installed');
   const { loadPackages, loading, error, clearError } = useCustomNodeStore();
 
+  // Only load packages when we switch to marketplace tab
   useEffect(() => {
-    loadPackages();
-  }, [loadPackages]);
+    if (activeTab === 'marketplace') {
+      loadPackages();
+    }
+  }, [activeTab, loadPackages]);
 
   const tabs = [
     { id: 'installed' as TabType, label: 'Installed Nodes', icon: '📦' },
+    { id: 'upload' as TabType, label: 'Upload Nodes', icon: '📤' },
     { id: 'marketplace' as TabType, label: 'Marketplace', icon: '🏪' },
     { id: 'generator' as TabType, label: 'Create Node', icon: '⚡' },
     { id: 'validator' as TabType, label: 'Validate Package', icon: '✅' }
@@ -26,6 +31,8 @@ export const CustomNodesPage: React.FC = () => {
     switch (activeTab) {
       case 'installed':
         return <CustomNodeList />;
+      case 'upload':
+        return <CustomNodeUpload onUploadSuccess={() => setActiveTab('installed')} />;
       case 'marketplace':
         return <NodeMarketplace />;
       case 'generator':
@@ -98,16 +105,16 @@ export const CustomNodesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading && activeTab === 'installed' && (
+        {/* Loading State - only show for tabs that actually use the store */}
+        {loading && (activeTab === 'marketplace') && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-3 text-gray-600">Loading packages...</span>
           </div>
         )}
 
-        {/* Tab Content */}
-        {!loading && renderTabContent()}
+        {/* Tab Content - always render, let individual components handle their own loading */}
+        {renderTabContent()}
       </div>
     </div>
   );

@@ -1,0 +1,23 @@
+{
+  "displayName": "Test Node",
+  "name": "TestNode",
+  "group": ["transform"],
+  "version": 1,
+  "description": "A test node for custom node upload functionality",
+  "defaults": {
+    "name": "Test Node"
+  },
+  "inputs": ["main"],
+  "outputs": ["main"],
+  "properties": [
+    {
+      "displayName": "Message",
+      "name": "message",
+      "type": "string",
+      "default": "Hello World",
+      "description": "The message to process"
+    }
+  ],
+  "icon": "🧪",
+  "color": "#FF6B6B"
+}

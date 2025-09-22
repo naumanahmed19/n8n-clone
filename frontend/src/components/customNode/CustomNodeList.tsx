@@ -1,10 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCustomNodeStore } from '../../stores/customNode';
-import { NodePackageInfo } from '../../types/customNode';
+import { nodeTypeService, NodeType } from '../../services/nodeType';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Download, Package, RefreshCw, Trash2, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const CustomNodeList: React.FC = () => {
   const { packages, unloadPackage, reloadPackage } = useCustomNodeStore();
+  const [nodeTypes, setNodeTypes] = useState<NodeType[]>([]);
   const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadNodeTypes();
+  }, []);
+
+  const loadNodeTypes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const types = await nodeTypeService.getAllNodeTypes();
+      setNodeTypes(types || []); // Ensure types is never undefined
+    } catch (err) {
+      console.error('CustomNodeList: Error loading node types:', err);
+      setError('Failed to load node types');
+      setNodeTypes([]); // Reset to empty array on error
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUnload = async (packageName: string) => {
     setLoadingActions(prev => ({ ...prev, [packageName]: true }));
@@ -28,112 +55,305 @@ export const CustomNodeList: React.FC = () => {
     }
   };
 
-  if (packages.length === 0) {
+  const handleDeleteNodeType = async (type: string) => {
+    if (!confirm(`Are you sure you want to delete the node type "${type}"?`)) {
+      return;
+    }
+
+    setLoadingActions(prev => ({ ...prev, [`delete-${type}`]: true }));
+    try {
+      await nodeTypeService.deleteNodeType(type);
+      await loadNodeTypes(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to delete node type:', error);
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [`delete-${type}`]: false }));
+    }
+  };
+
+  const handleToggleStatus = async (type: string, currentStatus: boolean) => {
+    setLoadingActions(prev => ({ ...prev, [`toggle-${type}`]: true }));
+    try {
+      await nodeTypeService.updateNodeTypeStatus(type, !currentStatus);
+      await loadNodeTypes(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to update node type status:', error);
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [`toggle-${type}`]: false }));
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="text-center py-12">
-        <div className="mx-auto h-12 w-12 text-gray-400">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        </div>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">No custom nodes installed</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Get started by creating a new node or installing one from the marketplace.
-        </p>
-      </div>
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+          Loading node types...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8 text-red-600">
+          <AlertCircle className="mr-2 h-4 w-4" />
+          {error}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="ml-4"
+            onClick={loadNodeTypes}
+          >
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-      <ul className="divide-y divide-gray-200">
-        {packages.map((pkg) => (
-          <li key={pkg.name}>
-            <div className="px-4 py-4 sm:px-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <span className="text-blue-600 font-semibold text-sm">
-                          {pkg.name.charAt(0).toUpperCase()}
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Installed Nodes</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{nodeTypes?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {nodeTypes?.filter(n => n.active).length || 0} active
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Loaded Packages</CardTitle>
+            <Download className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{packages.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Runtime packages
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Node Groups</CardTitle>
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {nodeTypes ? new Set(nodeTypes.flatMap(n => n.group)).size : 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Unique categories
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Node Types Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Custom Node Types</CardTitle>
+              <CardDescription>
+                All custom nodes registered in the database
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={loadNodeTypes}
+              disabled={loading}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!nodeTypes || nodeTypes.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No custom nodes found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Upload a zip file containing custom nodes to get started.
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Group</TableHead>
+                  <TableHead>Version</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {nodeTypes?.map((node) => (
+                  <TableRow key={node.id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {node.icon ? (
+                          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
+                            <span className="text-sm">{node.icon}</span>
+                          </div>
+                        ) : (
+                          <div 
+                            className="w-8 h-8 rounded flex items-center justify-center text-white text-sm font-medium"
+                            style={{ backgroundColor: node.color || '#3b82f6' }}
+                          >
+                            {node.displayName.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{node.displayName}</div>
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {node.description}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                        {node.type}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {node.group.map((g, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {g}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">v{node.version}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {node.active ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-gray-400" />
+                        )}
+                        <span className={`text-sm ${node.active ? 'text-green-600' : 'text-gray-500'}`}>
+                          {node.active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleStatus(node.type, node.active)}
+                          disabled={loadingActions[`toggle-${node.type}`]}
+                        >
+                          {loadingActions[`toggle-${node.type}`] ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : node.active ? (
+                            'Deactivate'
+                          ) : (
+                            'Activate'
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteNodeType(node.type)}
+                          disabled={loadingActions[`delete-${node.type}`]}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          {loadingActions[`delete-${node.type}`] ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Runtime Packages */}
+      {packages.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Runtime Packages</CardTitle>
+            <CardDescription>
+              Dynamically loaded node packages (for development)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {packages.map((pkg) => (
+                <div key={pkg.name} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-medium">{pkg.name}</h3>
+                      <Badge>v{pkg.version}</Badge>
                     </div>
-                    <div className="ml-4 flex-1 min-w-0">
-                      <div className="flex items-center">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {pkg.name}
-                        </p>
-                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          v{pkg.version}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 truncate">
-                        {pkg.description}
-                      </p>
-                      <div className="mt-2 flex items-center text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <svg className="flex-shrink-0 mr-1.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
-                          </svg>
-                          {pkg.nodes.length} node{pkg.nodes.length !== 1 ? 's' : ''}
-                        </span>
-                        {pkg.credentials && pkg.credentials.length > 0 && (
-                          <span className="ml-4 flex items-center">
-                            <svg className="flex-shrink-0 mr-1.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-.257-.257A6 6 0 1118 8zm-6-2a1 1 0 10-2 0 1 1 0 002 0zm-1 4a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                            </svg>
-                            {pkg.credentials.length} credential{pkg.credentials.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {pkg.author && (
-                          <span className="ml-4 flex items-center">
-                            <svg className="flex-shrink-0 mr-1.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            {pkg.author}
-                          </span>
-                        )}
-                      </div>
+                    <p className="text-sm text-gray-500 mt-1">{pkg.description}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      <span>{pkg.nodes.length} nodes</span>
+                      {pkg.credentials && <span>{pkg.credentials.length} credentials</span>}
+                      {pkg.author && <span>by {pkg.author}</span>}
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReload(pkg.name)}
+                      disabled={loadingActions[`${pkg.name}-reload`]}
+                    >
+                      {loadingActions[`${pkg.name}-reload`] ? (
+                        <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                      )}
+                      Reload
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUnload(pkg.name)}
+                      disabled={loadingActions[pkg.name]}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      {loadingActions[pkg.name] ? (
+                        <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                      ) : (
+                        <Trash2 className="h-3 w-3 mr-1" />
+                      )}
+                      Unload
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleReload(pkg.name)}
-                    disabled={loadingActions[`${pkg.name}-reload`]}
-                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                  >
-                    {loadingActions[`${pkg.name}-reload`] ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-1"></div>
-                    ) : (
-                      <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    )}
-                    Reload
-                  </button>
-                  <button
-                    onClick={() => handleUnload(pkg.name)}
-                    disabled={loadingActions[pkg.name]}
-                    className="inline-flex items-center px-3 py-1.5 border border-red-300 shadow-sm text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                  >
-                    {loadingActions[pkg.name] ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600 mr-1"></div>
-                    ) : (
-                      <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    )}
-                    Unload
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
-          </li>
-        ))}
-      </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
