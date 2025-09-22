@@ -91,7 +91,7 @@ export class ExecutionService {
       );
 
       let parsedWorkflow: Workflow;
-      
+
       // Use passed workflow data if available, otherwise load from database
       if (workflowData && workflowData.nodes) {
         // Use passed workflow data (for unsaved workflows)
@@ -108,8 +108,10 @@ export class ExecutionService {
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        
-        logger.info(`Using passed workflow data with ${workflowData.nodes.length} nodes`);
+
+        logger.info(
+          `Using passed workflow data with ${workflowData.nodes.length} nodes`
+        );
       } else {
         // Load workflow from database (existing behavior)
         const workflow = await this.prisma.workflow.findFirst({
@@ -128,7 +130,7 @@ export class ExecutionService {
             },
           };
         }
-        
+
         // Parse workflow data to match Workflow interface
         parsedWorkflow = {
           ...workflow,

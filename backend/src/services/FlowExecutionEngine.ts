@@ -136,7 +136,7 @@ export class FlowExecutionEngine extends EventEmitter {
       );
 
       // Use passed workflow data or load from database
-      const workflow = workflowData || await this.loadWorkflow(workflowId);
+      const workflow = workflowData || (await this.loadWorkflow(workflowId));
       if (!workflow) {
         throw new Error(`Workflow ${workflowId} not found`);
       }
@@ -178,7 +178,7 @@ export class FlowExecutionEngine extends EventEmitter {
       );
 
       // Use passed workflow data or load from database
-      const workflow = workflowData || await this.loadWorkflow(workflowId);
+      const workflow = workflowData || (await this.loadWorkflow(workflowId));
       if (!workflow) {
         throw new Error(`Workflow ${workflowId} not found`);
       }
