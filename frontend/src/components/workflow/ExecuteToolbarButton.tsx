@@ -1,8 +1,8 @@
-import { Play, Loader2, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react'
 import { clsx } from 'clsx'
-import { useState, useEffect, useRef } from 'react'
-import type { ExecuteToolbarButtonProps } from './types'
+import { AlertCircle, CheckCircle, Loader2, Play, RotateCcw } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import './toolbar-buttons.css'
+import type { ExecuteToolbarButtonProps } from './types'
 
 export function ExecuteToolbarButton({
   nodeId,

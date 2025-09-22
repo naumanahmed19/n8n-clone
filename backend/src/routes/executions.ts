@@ -22,7 +22,7 @@ router.post(
   "/",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { workflowId, triggerData, options, triggerNodeId } = req.body;
+    const { workflowId, triggerData, options, triggerNodeId, workflowData } = req.body;
 
     if (!workflowId) {
       throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
@@ -33,7 +33,8 @@ router.post(
       req.user!.id,
       triggerData,
       options,
-      triggerNodeId // Pass the specific trigger node ID
+      triggerNodeId, // Pass the specific trigger node ID
+      workflowData // Pass the optional workflow data
     );
 
     // Always return success for started executions, but include failure details

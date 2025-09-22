@@ -120,7 +120,8 @@ export class FlowExecutionEngine extends EventEmitter {
     workflowId: string,
     userId: string,
     inputData?: NodeInputData,
-    options: FlowExecutionOptions = {}
+    options: FlowExecutionOptions = {},
+    workflowData?: Workflow // Optional workflow data to avoid database load
   ): Promise<FlowExecutionResult> {
     const executionId = uuidv4();
 
@@ -134,7 +135,8 @@ export class FlowExecutionEngine extends EventEmitter {
         options
       );
 
-      const workflow = await this.loadWorkflow(workflowId);
+      // Use passed workflow data or load from database
+      const workflow = workflowData || await this.loadWorkflow(workflowId);
       if (!workflow) {
         throw new Error(`Workflow ${workflowId} not found`);
       }
@@ -160,7 +162,8 @@ export class FlowExecutionEngine extends EventEmitter {
     workflowId: string,
     userId: string,
     triggerData?: any,
-    options: FlowExecutionOptions = {}
+    options: FlowExecutionOptions = {},
+    workflowData?: Workflow // Optional workflow data to avoid database load
   ): Promise<FlowExecutionResult> {
     const executionId = uuidv4();
 
@@ -174,7 +177,8 @@ export class FlowExecutionEngine extends EventEmitter {
         { ...options, manual: false }
       );
 
-      const workflow = await this.loadWorkflow(workflowId);
+      // Use passed workflow data or load from database
+      const workflow = workflowData || await this.loadWorkflow(workflowId);
       if (!workflow) {
         throw new Error(`Workflow ${workflowId} not found`);
       }

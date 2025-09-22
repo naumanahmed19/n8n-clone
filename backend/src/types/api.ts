@@ -94,6 +94,12 @@ export const WorkflowQuerySchema = PaginationQuerySchema.extend({
 export const ExecuteWorkflowSchema = z.object({
   triggerData: z.record(z.any()).optional(),
   startNodes: z.array(z.string()).optional(),
+  // Optional workflow data to avoid requiring database save
+  workflowData: z.object({
+    nodes: z.array(z.any()).optional(),
+    connections: z.array(z.any()).optional(),
+    settings: z.any().optional(),
+  }).optional(),
 });
 
 export const ExecutionQuerySchema = PaginationQuerySchema.extend({

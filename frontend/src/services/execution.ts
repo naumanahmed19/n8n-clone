@@ -4,6 +4,12 @@ export interface ExecutionRequest {
   workflowId: string;
   triggerData?: any;
   triggerNodeId?: string;
+  // Optional workflow data to avoid requiring database save
+  workflowData?: {
+    nodes?: any[];
+    connections?: any[];
+    settings?: any;
+  };
   options?: {
     timeout?: number;
     priority?: "low" | "normal" | "high";

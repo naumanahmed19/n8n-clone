@@ -5,6 +5,7 @@ import {
   ExecutionResult,
   ExecutionStatus,
   NodeExecution,
+  Workflow,
 } from "../types/database";
 import {
   ExecutionOptions,
@@ -81,35 +82,75 @@ export class ExecutionService {
     userId: string,
     triggerData?: any,
     options: ExecutionOptions = {},
-    triggerNodeId?: string // Optional specific trigger node ID
+    triggerNodeId?: string, // Optional specific trigger node ID
+    workflowData?: { nodes?: any[]; connections?: any[]; settings?: any } // Optional workflow data
   ): Promise<ExecutionResult> {
     try {
       logger.info(
         `Starting flow execution of workflow ${workflowId} for user ${userId}`
       );
 
-      // Load workflow to determine execution approach
-      const workflow = await this.prisma.workflow.findFirst({
-        where: {
+      let parsedWorkflow: Workflow;
+      
+      // Use passed workflow data if available, otherwise load from database
+      if (workflowData && workflowData.nodes) {
+        // Use passed workflow data (for unsaved workflows)
+        parsedWorkflow = {
           id: workflowId,
           userId,
-        },
-      });
-
-      if (!workflow) {
-        return {
-          success: false,
-          error: {
-            message: "Workflow not found",
-            timestamp: new Date(),
+          name: "Unsaved Workflow", // Default name for unsaved workflows
+          description: undefined,
+          nodes: workflowData.nodes,
+          connections: workflowData.connections || [],
+          settings: workflowData.settings || {},
+          triggers: [], // Default value
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        
+        logger.info(`Using passed workflow data with ${workflowData.nodes.length} nodes`);
+      } else {
+        // Load workflow from database (existing behavior)
+        const workflow = await this.prisma.workflow.findFirst({
+          where: {
+            id: workflowId,
+            userId,
           },
+        });
+
+        if (!workflow) {
+          return {
+            success: false,
+            error: {
+              message: "Workflow not found",
+              timestamp: new Date(),
+            },
+          };
+        }
+        
+        // Parse workflow data to match Workflow interface
+        parsedWorkflow = {
+          ...workflow,
+          description: workflow.description || undefined,
+          nodes: Array.isArray(workflow.nodes)
+            ? workflow.nodes
+            : JSON.parse(workflow.nodes as string),
+          connections: Array.isArray(workflow.connections)
+            ? workflow.connections
+            : JSON.parse(workflow.connections as string),
+          triggers: Array.isArray(workflow.triggers)
+            ? workflow.triggers
+            : JSON.parse(workflow.triggers as string),
+          settings:
+            typeof workflow.settings === "object"
+              ? workflow.settings
+              : JSON.parse(workflow.settings as string),
         };
       }
 
-      // Parse workflow data
-      const workflowNodes = Array.isArray(workflow.nodes)
-        ? workflow.nodes
-        : JSON.parse(workflow.nodes as string);
+      // Use the parsed workflow data
+      const workflowNodes = parsedWorkflow.nodes;
 
       // Find trigger nodes or determine starting point
       const triggerNodes = workflowNodes.filter(
@@ -157,7 +198,8 @@ export class ExecutionService {
             saveData: true,
             manual: true,
             isolatedExecution: false,
-          }
+          },
+          parsedWorkflow // Pass the workflow data
         );
       } else {
         // Execute from first node or specified starting node
@@ -183,7 +225,8 @@ export class ExecutionService {
             saveData: true,
             manual: true,
             isolatedExecution: false,
-          }
+          },
+          parsedWorkflow // Pass the workflow data
         );
       }
 
@@ -277,6 +320,25 @@ export class ExecutionService {
         };
       }
 
+      // Parse workflow data to match Workflow interface
+      const parsedWorkflow: Workflow = {
+        ...workflow,
+        description: workflow.description || undefined,
+        nodes: Array.isArray(workflow.nodes)
+          ? workflow.nodes
+          : JSON.parse(workflow.nodes as string),
+        connections: Array.isArray(workflow.connections)
+          ? workflow.connections
+          : JSON.parse(workflow.connections as string),
+        triggers: Array.isArray(workflow.triggers)
+          ? workflow.triggers
+          : JSON.parse(workflow.triggers as string),
+        settings:
+          typeof workflow.settings === "object"
+            ? workflow.settings
+            : JSON.parse(workflow.settings as string),
+      };
+
       const flowOptions: FlowExecutionOptions = {
         timeout: options.timeout || 300000,
         saveProgress: true,
@@ -290,7 +352,8 @@ export class ExecutionService {
         workflowId,
         userId,
         inputData ? { main: [[inputData]] } : undefined,
-        flowOptions
+        flowOptions,
+        parsedWorkflow // Pass the parsed workflow data to avoid re-loading
       );
 
       // Create execution record in database
@@ -1132,6 +1195,25 @@ export class ExecutionService {
 
       try {
         if (mode === "workflow") {
+          // Parse workflow data to match Workflow interface
+          const parsedWorkflow: Workflow = {
+            ...workflow,
+            description: workflow.description || undefined,
+            nodes: Array.isArray(workflow.nodes)
+              ? workflow.nodes
+              : JSON.parse(workflow.nodes as string),
+            connections: Array.isArray(workflow.connections)
+              ? workflow.connections
+              : JSON.parse(workflow.connections as string),
+            triggers: Array.isArray(workflow.triggers)
+              ? workflow.triggers
+              : JSON.parse(workflow.triggers as string),
+            settings:
+              typeof workflow.settings === "object"
+                ? workflow.settings
+                : JSON.parse(workflow.settings as string),
+          };
+
           // Workflow execution mode: execute entire workflow from trigger node
           const flowResult = await this.flowExecutionEngine.executeFromNode(
             nodeId,
@@ -1144,7 +1226,8 @@ export class ExecutionService {
               saveData: true,
               manual: true,
               isolatedExecution: false,
-            }
+            },
+            parsedWorkflow // Pass the parsed workflow data
           );
 
           // Create execution record in database
