@@ -123,6 +123,7 @@ interface WorkflowStore extends WorkflowEditorState {
   setExecutionState: (state: Partial<ExecutionState>) => void;
   clearExecutionState: (preserveLogs?: boolean) => void;
   clearPersistentResults: () => void;
+  clearNodeVisualStates: () => void; // ADDED: Explicit method to clear visual states
   setExecutionProgress: (progress: number) => void;
   setExecutionError: (error: string) => void;
   updateNodeExecutionResult: (
@@ -158,6 +159,7 @@ interface WorkflowStore extends WorkflowEditorState {
   getActiveExecutions: () => Map<string, ExecutionFlowStatus>;
   removeCompletedExecution: (executionId: string) => void;
   cleanupOldExecutions: (maxAge?: number) => void;
+  setCurrentExecutionId: (executionId: string | undefined) => void; // ADDED: Track current execution ID
 
   // Workflow activation
   toggleWorkflowActive: () => void;
@@ -876,6 +878,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
         }
       },
 
+      setCurrentExecutionId: (executionId: string | undefined) => {
+        // ADDED: Set the current execution ID for tracking
+        // This helps prevent execution state conflicts when multiple executions run quickly
+        get().setExecutionState({ executionId });
+        
+        if (executionId) {
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: "info",
+            message: `Set current execution ID: ${executionId}`,
+          });
+        }
+      },
+
       // Execution actions
 
       executeNode: async (
@@ -945,14 +961,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
             get().clearExecutionLogs();
             set({ realTimeResults: new Map() });
 
-            // Clear node visual states for new execution
-            const currentFlowState = get().flowExecutionState;
-            set({
-              flowExecutionState: {
-                ...currentFlowState,
-                nodeVisualStates: new Map(),
-              },
-            });
+            // FIXED: Don't clear node visual states when starting a new execution
+            // This preserves status icons from previous completed execution chains
+            // get().clearNodeVisualStates(); // REMOVED - this was clearing all previous states
 
             // Set initial execution state - CRITICAL for UI feedback
             get().setExecutionState({
@@ -1010,10 +1021,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 },
               });
 
-              // Update execution state with real execution ID
+              // CRITICAL: Update execution state with real execution ID IMMEDIATELY
+              // This ensures UI tracking is tied to the correct execution
               get().setExecutionState({
                 executionId: executionResponse.executionId,
               });
+
+              // Set this as the current tracked execution to prevent conflicts
+              get().setCurrentExecutionId(executionResponse.executionId);
 
               // Subscribe to real-time updates IMMEDIATELY
               await get().subscribeToExecution(executionResponse.executionId);
@@ -1246,12 +1261,17 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 }
               }, 30000); // 30 seconds delay
 
+              // FIXED: Don't auto-clear execution state after successful executions
+              // Status icons should persist until the next execution starts
+              // This allows users to see execution results without timing constraints
+              
               // Clear execution state after a delay for successful executions
-              if (finalStatus === "success") {
-                setTimeout(() => {
-                  get().clearExecutionState(); // Preserves logs by default
-                }, 3000);
-              }
+              // DISABLED: This was causing status icons to disappear after 3 seconds
+              // if (finalStatus === "success") {
+              //   setTimeout(() => {
+              //     get().clearExecutionState(); // Preserves logs by default
+              //   }, 3000);
+              // }
             } catch (error) {
               const endTime = Date.now();
               const errorMessage =
@@ -1577,11 +1597,6 @@ export const useWorkflowStore = create<WorkflowStore>()(
             }
           }, 10000); // 10 seconds delay for cancellation
 
-          // Clear execution state after a delay
-          setTimeout(() => {
-            get().clearExecutionState(); // Preserves logs by default
-          }, 2000);
-
           console.log(`Cancelled execution ${executionState.executionId}`);
         } catch (error) {
           const errorMessage =
@@ -1863,6 +1878,40 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set({ persistentNodeResults: new Map() });
       },
 
+      clearNodeVisualStates: () => {
+        // IMPROVED: Only clear node visual states when explicitly requested
+        // This should only be called when starting a NEW execution ID
+        // to ensure previous execution results don't interfere with new ones
+        const currentExecutionId = get().executionState.executionId;
+        const currentFlowState = get().flowExecutionState;
+        
+        // Only clear if we have visual states and they're from a different execution
+        const hasVisualStates = currentFlowState.nodeVisualStates.size > 0;
+        const selectedExecution = currentFlowState.selectedExecution;
+        const isDifferentExecution = selectedExecution && selectedExecution !== currentExecutionId;
+        
+        if (hasVisualStates && (isDifferentExecution || !selectedExecution)) {
+          set({
+            flowExecutionState: {
+              ...currentFlowState,
+              nodeVisualStates: new Map(),
+            },
+          });
+          
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: "info",
+            message: `Cleared node visual states for new execution (previous: ${selectedExecution}, current: ${currentExecutionId})`,
+          });
+        } else {
+          get().addExecutionLog({
+            timestamp: new Date().toISOString(),
+            level: "debug",
+            message: `Skipped clearing node visual states - continuing same execution or no states to clear`,
+          });
+        }
+      },
+
       setExecutionProgress: (progress: number) => {
         const clampedProgress = Math.max(0, Math.min(100, progress));
         get().setExecutionState({ progress: clampedProgress });
@@ -2084,7 +2133,35 @@ export const useWorkflowStore = create<WorkflowStore>()(
           currentExecutionId: get().executionState.executionId,
         });
 
-        const { executionState, progressTracker } = get();
+        const { executionState, progressTracker, flowExecutionState } = get();
+
+        // FIXED: Allow processing of events for any known execution
+        // Check if this execution is active OR was recently active (in history)
+        const activeExecutions = flowExecutionState.activeExecutions;
+        const isActiveExecution = activeExecutions.has(data.executionId);
+        const isRecentExecution = flowExecutionState.executionHistory.some(
+          (entry) => entry.executionId === data.executionId
+        );
+        const isCurrentExecution = data.executionId === executionState.executionId;
+        
+        // Process events for active executions, recent executions, or current execution
+        if (!isActiveExecution && !isRecentExecution && !isCurrentExecution) {
+          console.log("=== SKIPPING EVENT - UNKNOWN EXECUTION ===", {
+            eventExecutionId: data.executionId,
+            currentExecutionId: executionState.executionId,
+            activeExecutionIds: Array.from(activeExecutions.keys()),
+            eventType: data.type,
+          });
+          return;
+        }
+
+        console.log("=== PROCESSING EVENT FOR EXECUTION ===", {
+          executionId: data.executionId,
+          isCurrentExecution,
+          isActiveExecution,
+          isRecentExecution,
+          eventType: data.type,
+        });
 
         switch (data.type) {
           case "node-started":

@@ -107,13 +107,9 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         executionError
       })
 
-      // Clear success state after 3 seconds
-      if (hasSuccess) {
-        const timer = setTimeout(() => {
-          setNodeExecutionState(prev => ({ ...prev, hasSuccess: false }))
-        }, 3000)
-        return () => clearTimeout(timer)
-      }
+      // FIXED: Don't auto-hide success state - let it persist until next execution
+      // Success icons should remain visible until explicitly cleared by a new execution
+      // This ensures users can see execution results even after brief delays
     } else if (nodeExecutionResult) {
       // Fallback to legacy execution results
       const isExecuting = executionResultStatus === 'success' && 
@@ -145,13 +141,9 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         executionError
       })
 
-      // Clear success state after 3 seconds
-      if (hasSuccess) {
-        const timer = setTimeout(() => {
-          setNodeExecutionState(prev => ({ ...prev, hasSuccess: false }))
-        }, 3000)
-        return () => clearTimeout(timer)
-      }
+      // FIXED: Don't auto-hide success state - let it persist until next execution
+      // Success icons should remain visible until explicitly cleared by a new execution
+      // This ensures users can see execution results even after brief delays
     } else {
       // Reset state if no execution result
       setNodeExecutionState({
