@@ -27,9 +27,9 @@ import { workflowService } from '@/services'
 import { useAuthStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { CustomNode } from './CustomNode'
-import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
 
+import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { NodePalette } from './NodePalette'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
@@ -646,14 +646,15 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
 
                                 {/* Execution Panel */}
                                 <>
+                               
                                     <ResizableHandle withHandle />
-                                    <ResizablePanel 
+                                    <ResizablePanel
                                         key={`execution-${executionPanelSize}`}
-                                        defaultSize={executionPanelSize} 
-                                        minSize={4} 
+                                        defaultSize={executionPanelSize}
+                                        minSize={4}
                                         maxSize={70}
                                     >
-                                        <ExecutionPanel
+                                          <ExecutionPanel
                                             executionState={executionState}
                                             lastExecutionResult={lastExecutionResult}
                                             executionLogs={executionLogs}
