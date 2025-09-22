@@ -882,7 +882,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         // ADDED: Set the current execution ID for tracking
         // This helps prevent execution state conflicts when multiple executions run quickly
         get().setExecutionState({ executionId });
-        
+
         if (executionId) {
           get().addExecutionLog({
             timestamp: new Date().toISOString(),
@@ -1264,7 +1264,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               // FIXED: Don't auto-clear execution state after successful executions
               // Status icons should persist until the next execution starts
               // This allows users to see execution results without timing constraints
-              
+
               // Clear execution state after a delay for successful executions
               // DISABLED: This was causing status icons to disappear after 3 seconds
               // if (finalStatus === "success") {
@@ -1884,12 +1884,13 @@ export const useWorkflowStore = create<WorkflowStore>()(
         // to ensure previous execution results don't interfere with new ones
         const currentExecutionId = get().executionState.executionId;
         const currentFlowState = get().flowExecutionState;
-        
+
         // Only clear if we have visual states and they're from a different execution
         const hasVisualStates = currentFlowState.nodeVisualStates.size > 0;
         const selectedExecution = currentFlowState.selectedExecution;
-        const isDifferentExecution = selectedExecution && selectedExecution !== currentExecutionId;
-        
+        const isDifferentExecution =
+          selectedExecution && selectedExecution !== currentExecutionId;
+
         if (hasVisualStates && (isDifferentExecution || !selectedExecution)) {
           set({
             flowExecutionState: {
@@ -1897,7 +1898,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               nodeVisualStates: new Map(),
             },
           });
-          
+
           get().addExecutionLog({
             timestamp: new Date().toISOString(),
             level: "info",
@@ -2142,8 +2143,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
         const isRecentExecution = flowExecutionState.executionHistory.some(
           (entry) => entry.executionId === data.executionId
         );
-        const isCurrentExecution = data.executionId === executionState.executionId;
-        
+        const isCurrentExecution =
+          data.executionId === executionState.executionId;
+
         // Process events for active executions, recent executions, or current execution
         if (!isActiveExecution && !isRecentExecution && !isCurrentExecution) {
           console.log("=== SKIPPING EVENT - UNKNOWN EXECUTION ===", {

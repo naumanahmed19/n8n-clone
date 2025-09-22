@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useWorkflowStore } from "../stores/workflow";
 import { NodeExecutionStatus } from "../types/execution";
 
@@ -24,7 +24,7 @@ describe("Multi-Chain Execution Status Persistence", () => {
     const store = useWorkflowStore.getState();
     store.clearExecutionLogs();
     store.clearNodeVisualStates();
-    
+
     // Set up a test workflow similar to the user's example
     const testWorkflow = {
       id: "test-workflow",
@@ -88,14 +88,14 @@ describe("Multi-Chain Execution Status Persistence", () => {
         },
       ],
       settings: {},
-      metadata: { 
+      metadata: {
         version: 1,
         title: "Multi-Chain Test",
         lastTitleUpdate: new Date().toISOString(),
-        exportVersion: "1.0.0"
+        exportVersion: "1.0.0",
       },
     };
-    
+
     store.setWorkflow(testWorkflow);
   });
 
@@ -104,7 +104,7 @@ describe("Multi-Chain Execution Status Persistence", () => {
 
     // Simulate first execution chain completing successfully
     const firstExecutionId = "exec-1";
-    
+
     // Initialize first execution
     store.initializeFlowExecution(firstExecutionId, [
       "node-1758406498566",
@@ -145,13 +145,13 @@ describe("Multi-Chain Execution Status Persistence", () => {
     // Check that first chain nodes have completed status
     const firstTriggerState = store.getNodeVisualState("node-1758406498566");
     const firstHttpState = store.getNodeVisualState("node-1758407541298");
-    
+
     expect(firstTriggerState.status).toBe(NodeExecutionStatus.COMPLETED);
     expect(firstHttpState.status).toBe(NodeExecutionStatus.COMPLETED);
 
     // Simulate second execution chain starting
     const secondExecutionId = "exec-2";
-    
+
     // Initialize second execution
     store.initializeFlowExecution(secondExecutionId, [
       "node-1758488375402",
@@ -159,11 +159,17 @@ describe("Multi-Chain Execution Status Persistence", () => {
     ]);
 
     // CRITICAL TEST: Check that first chain status is still preserved
-    const firstTriggerStateAfterSecond = store.getNodeVisualState("node-1758406498566");
-    const firstHttpStateAfterSecond = store.getNodeVisualState("node-1758407541298");
+    const firstTriggerStateAfterSecond =
+      store.getNodeVisualState("node-1758406498566");
+    const firstHttpStateAfterSecond =
+      store.getNodeVisualState("node-1758407541298");
 
-    expect(firstTriggerStateAfterSecond.status).toBe(NodeExecutionStatus.COMPLETED);
-    expect(firstHttpStateAfterSecond.status).toBe(NodeExecutionStatus.COMPLETED);
+    expect(firstTriggerStateAfterSecond.status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
+    expect(firstHttpStateAfterSecond.status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
 
     // Simulate second chain execution
     store.handleExecutionEvent({
@@ -174,11 +180,17 @@ describe("Multi-Chain Execution Status Persistence", () => {
     });
 
     // Check that first chain status is STILL preserved while second chain runs
-    const firstTriggerStateDuringSecond = store.getNodeVisualState("node-1758406498566");
-    const firstHttpStateDuringSecond = store.getNodeVisualState("node-1758407541298");
+    const firstTriggerStateDuringSecond =
+      store.getNodeVisualState("node-1758406498566");
+    const firstHttpStateDuringSecond =
+      store.getNodeVisualState("node-1758407541298");
 
-    expect(firstTriggerStateDuringSecond.status).toBe(NodeExecutionStatus.COMPLETED);
-    expect(firstHttpStateDuringSecond.status).toBe(NodeExecutionStatus.COMPLETED);
+    expect(firstTriggerStateDuringSecond.status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
+    expect(firstHttpStateDuringSecond.status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
 
     // Complete second chain
     store.handleExecutionEvent({
@@ -223,8 +235,14 @@ describe("Multi-Chain Execution Status Persistence", () => {
     const exec2 = "execution-2";
 
     // Start both executions
-    store.initializeFlowExecution(exec1, ["node-1758406498566", "node-1758407541298"]);
-    store.initializeFlowExecution(exec2, ["node-1758488375402", "node-1758489476840"]);
+    store.initializeFlowExecution(exec1, [
+      "node-1758406498566",
+      "node-1758407541298",
+    ]);
+    store.initializeFlowExecution(exec2, [
+      "node-1758488375402",
+      "node-1758489476840",
+    ]);
 
     // Both executions start their first nodes simultaneously
     store.handleExecutionEvent({
@@ -242,8 +260,12 @@ describe("Multi-Chain Execution Status Persistence", () => {
     });
 
     // Both should be in running state
-    expect(store.getNodeVisualState("node-1758406498566").status).toBe(NodeExecutionStatus.RUNNING);
-    expect(store.getNodeVisualState("node-1758488375402").status).toBe(NodeExecutionStatus.RUNNING);
+    expect(store.getNodeVisualState("node-1758406498566").status).toBe(
+      NodeExecutionStatus.RUNNING
+    );
+    expect(store.getNodeVisualState("node-1758488375402").status).toBe(
+      NodeExecutionStatus.RUNNING
+    );
 
     // First execution completes first node
     store.handleExecutionEvent({
@@ -255,8 +277,12 @@ describe("Multi-Chain Execution Status Persistence", () => {
     });
 
     // First execution's node should be completed, second should still be running
-    expect(store.getNodeVisualState("node-1758406498566").status).toBe(NodeExecutionStatus.COMPLETED);
-    expect(store.getNodeVisualState("node-1758488375402").status).toBe(NodeExecutionStatus.RUNNING);
+    expect(store.getNodeVisualState("node-1758406498566").status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
+    expect(store.getNodeVisualState("node-1758488375402").status).toBe(
+      NodeExecutionStatus.RUNNING
+    );
 
     // Second execution completes
     store.handleExecutionEvent({
@@ -268,7 +294,11 @@ describe("Multi-Chain Execution Status Persistence", () => {
     });
 
     // Both should now be completed
-    expect(store.getNodeVisualState("node-1758406498566").status).toBe(NodeExecutionStatus.COMPLETED);
-    expect(store.getNodeVisualState("node-1758488375402").status).toBe(NodeExecutionStatus.COMPLETED);
+    expect(store.getNodeVisualState("node-1758406498566").status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
+    expect(store.getNodeVisualState("node-1758488375402").status).toBe(
+      NodeExecutionStatus.COMPLETED
+    );
   });
 });

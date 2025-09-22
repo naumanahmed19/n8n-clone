@@ -1,18 +1,18 @@
 
 import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { useWorkflowStore } from '@/stores/workflow'
 import { NodeExecutionStatus } from '@/types/execution'
 import { createNodeExecutionError, logExecutionError } from '@/utils/errorHandling'
 import {
-    canNodeExecuteIndividually,
-    shouldShowDisableButton,
-    shouldShowExecuteButton
+  canNodeExecuteIndividually,
+  shouldShowDisableButton,
+  shouldShowExecuteButton
 } from '@/utils/nodeTypeClassification'
 import { clsx } from 'clsx'
 import { AlertCircle, CheckCircle, Copy, Loader2, Pause, Play, Settings, Trash2 } from 'lucide-react'
