@@ -260,7 +260,7 @@ const UpercaseNode = {
     // If no input items, create a single item with the converted text
     if (items.length === 0) {
       const transformedText = convertText(text);
-      
+
       // Create output data with appropriate fields based on operation type
       const outputData = {
         originalText: text,
@@ -268,13 +268,13 @@ const UpercaseNode = {
         transformationType: conversionType,
         processedAt: new Date().toISOString(),
       };
-      
+
       // Add prefix/postfix info only for text transformations
       if (conversionType !== "countChars" && conversionType !== "countWords") {
         outputData.prefix = prefix;
         outputData.postfix = postfix;
       }
-      
+
       // Add specific metadata for certain operations
       if (conversionType === "countChars") {
         outputData.characterCount = parseInt(transformedText);
@@ -284,7 +284,7 @@ const UpercaseNode = {
         outputData.truncateLength = truncateLength;
         outputData.wasTruncated = text.length > truncateLength;
       }
-      
+
       return [
         [
           {
@@ -307,13 +307,13 @@ const UpercaseNode = {
         transformationType: conversionType,
         processedAt: new Date().toISOString(),
       };
-      
+
       // Add prefix/postfix info only for text transformations
       if (conversionType !== "countChars" && conversionType !== "countWords") {
         outputData.prefix = prefix;
         outputData.postfix = postfix;
       }
-      
+
       // Add specific metadata for certain operations
       if (conversionType === "countChars") {
         outputData.characterCount = parseInt(transformedText);

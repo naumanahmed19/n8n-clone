@@ -135,7 +135,7 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+   <div >
       {/* Controls Bar */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50">
         <div className="flex items-center space-x-2">
@@ -229,8 +229,8 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
       )}
 
       {/* Logs Content */}
-      <div className="flex-1 min-h-0">
-        <div className="max-h-[500px] w-full overflow-auto">
+   
+    <div className="h-[calc(100dvh-540px)] overflow-y-auto p-4">
           {filteredAndSortedLogs.length === 0 ? (
             <div className="text-gray-500 text-center py-8">
               {executionLogs.length === 0 ? 'No logs available' : 'No logs match your filters'}
@@ -279,7 +279,7 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
               </div>
             )}
         </div>
-      </div>
+   
 
       {/* Summary Footer */}
       <div className="border-t bg-gray-50 px-3 py-2 text-xs text-gray-600">

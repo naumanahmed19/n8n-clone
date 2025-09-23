@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog'
+import { createField, FormGenerator } from '@/components/ui/form-generator'
 import {
   HoverCard,
   HoverCardContent,
@@ -24,7 +25,7 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCredentialStore, useWorkflowStore } from '@/stores'
-import { NodeProperty, NodeType, WorkflowNode } from '@/types'
+import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator, ValidationError } from '@/utils/nodeValidation'
 import {
   AlertCircle,
@@ -85,6 +86,27 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   const outputNodes = outputConnections.map(conn => 
     workflow?.nodes.find(n => n.id === conn.targetNodeId)
   ).filter(Boolean) as WorkflowNode[]
+
+  // Convert all node properties to FormFieldConfig for use with FormGenerator
+  const formFields = nodeType.properties?.map(property => 
+    createField({
+      name: property.name,
+      displayName: property.displayName,
+      type: property.type as any,
+      required: property.required,
+      default: property.default,
+      description: property.description,
+      placeholder: property.placeholder,
+      options: property.options,
+      displayOptions: property.displayOptions,
+    })
+  ) || []
+
+  // Get validation errors in the format expected by FormGenerator
+  const formErrors = validationErrors.reduce((acc, error) => {
+    acc[error.field] = error.message
+    return acc
+  }, {} as Record<string, string>)
 
   // Only initialize state when dialog opens, never reset during editing
   useEffect(() => {
@@ -193,152 +215,6 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
     }
   }
 
-  const renderPropertyInput = (property: NodeProperty) => {
-    const value = parameters[property.name] ?? property.default
-    const error = NodeValidator.getFieldError(validationErrors, property.name)
-
-    const shouldShow = () => {
-      if (!property.displayOptions?.show) return true
-      
-      return Object.entries(property.displayOptions.show).every(([key, values]) => {
-        const paramValue = parameters[key] ?? nodeType.properties.find(p => p.name === key)?.default
-        return values.includes(paramValue)
-      })
-    }
-
-    const shouldHide = () => {
-      if (!property.displayOptions?.hide) return false
-      
-      return Object.entries(property.displayOptions.hide).some(([key, values]) => {
-        const paramValue = parameters[key] ?? nodeType.properties.find(p => p.name === key)?.default
-        return values.includes(paramValue)
-      })
-    }
-
-    if (!shouldShow() || shouldHide()) return null
-
-    const inputClassName = `w-full ${error ? 'border-red-300 bg-red-50' : ''}`
-
-    switch (property.type) {
-      case 'string':
-        return (
-          <Input
-            type="text"
-            value={value || ''}
-            onChange={(e) => handleParameterChange(property.name, e.target.value)}
-            className={inputClassName}
-            placeholder={property.placeholder || property.description}
-          />
-        )
-
-      case 'number':
-        return (
-          <Input
-            type="number"
-            value={value || ''}
-            onChange={(e) => handleParameterChange(property.name, parseFloat(e.target.value) || 0)}
-            className={inputClassName}
-            placeholder={property.placeholder || property.description}
-          />
-        )
-
-      case 'boolean':
-        return (
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={value || false}
-              onChange={(e) => {
-                handleParameterChange(property.name, e.target.checked)
-              }}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">{property.description}</span>
-          </div>
-        )
-
-      case 'options':
-        return (
-          <select
-            value={value || ''}
-            onChange={(e) => {
-              handleParameterChange(property.name, e.target.value)
-            }}
-            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${inputClassName}`}
-          >
-            <option value="">Select an option...</option>
-            {property.options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-        )
-
-      case 'multiOptions':
-        return (
-          <div className="space-y-2">
-            {property.options?.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={(value || []).includes(option.value)}
-                  onChange={(e) => {
-                    const currentValues = value || []
-                    const newValues = e.target.checked
-                      ? [...currentValues, option.value]
-                      : currentValues.filter((v: any) => v !== option.value)
-                    handleParameterChange(property.name, newValues)
-                  }}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{option.name}</span>
-              </div>
-            ))}
-          </div>
-        )
-
-      case 'json':
-        return (
-          <textarea
-            value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-            onChange={(e) => {
-              try {
-                const parsed = JSON.parse(e.target.value)
-                handleParameterChange(property.name, parsed)
-              } catch {
-                handleParameterChange(property.name, e.target.value)
-              }
-            }}
-            rows={4}
-            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm ${inputClassName}`}
-            placeholder="Enter JSON..."
-          />
-        )
-
-      case 'dateTime':
-        return (
-          <Input
-            type="datetime-local"
-            value={value || ''}
-            onChange={(e) => handleParameterChange(property.name, e.target.value)}
-            className={inputClassName}
-          />
-        )
-
-      default:
-        return (
-          <Input
-            type="text"
-            value={value || ''}
-            onChange={(e) => handleParameterChange(property.name, e.target.value)}
-            className={inputClassName}
-            placeholder={property.placeholder || property.description}
-          />
-        )
-    }
-  }
-
   const getNodeStatusBadge = (status?: string) => {
     switch (status) {
       case 'success':
@@ -361,7 +237,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
           <ResizablePanelGroup direction="horizontal" className="flex-1">
             {/* Left Column - Inputs */}
             <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
-              <div className="h-full border-r border-gray-200 flex flex-col">
+              <div className="flex w-full h-full border-r border-gray-200 flex-col">
                 <div className="p-4 border-b h-[72px] flex items-center">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-2">
@@ -393,7 +269,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                   </div>
                 </div>
                 
-                <ScrollArea className="flex-1 p-4">
+          <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
                   {inputNodes.length > 0 ? (
                     <div className="space-y-3">
                       {inputNodes.map((inputNode, index) => {
@@ -440,7 +316,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                       <p className="text-xs text-gray-400">Connect nodes to see input data</p>
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               </div>
             </ResizablePanel>
 
@@ -448,7 +324,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
             {/* Middle Column - Node Configuration */}
             <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
-              <div className="h-full flex flex-col">
+              <div className="flex w-full h-full flex-col">
                 {/* Node Title Section */}
                 <div className="p-4 border-b bg-gray-50/50 h-[72px] flex items-center">
                   <div className="flex items-center justify-between w-full">
@@ -565,6 +441,8 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                 </div>
 
                 <Tabs defaultValue="config" className="flex-1 flex flex-col">
+
+                  
                   <div className="px-4 border-b border-gray-200">
                     <div className="flex space-x-0 -mb-px">
                       <TabsList className="h-auto p-0 bg-transparent grid w-full grid-cols-4 shadow-none">
@@ -602,7 +480,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
                   <div className="flex-1 overflow-hidden">
                     <TabsContent value="config" className="h-full mt-0">
-                      <ScrollArea className="h-full p-4">
+                      <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
                         <div className="space-y-6 max-w-lg">
                           {/* Credentials */}
                           {nodeType.credentials && nodeType.credentials.length > 0 && (
@@ -632,23 +510,14 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                           {nodeType.properties && nodeType.properties.length > 0 && (
                             <div className="space-y-4">
                               <h4 className="text-sm font-medium">Properties</h4>
-                              {nodeType.properties.map((property) => (
-                                <div key={property.name}>
-                                  <label className="block text-sm font-medium mb-2">
-                                    {property.displayName}
-                                    {property.required && <span className="text-red-500 ml-1">*</span>}
-                                  </label>
-                                  {renderPropertyInput(property)}
-                                  {NodeValidator.getFieldError(validationErrors, property.name) ? (
-                                    <div className="flex items-center space-x-1 mt-1 text-sm text-red-600">
-                                      <AlertCircle className="w-4 h-4" />
-                                      <span>{NodeValidator.getFieldError(validationErrors, property.name)}</span>
-                                    </div>
-                                  ) : property.description ? (
-                                    <p className="text-xs text-gray-500 mt-1">{property.description}</p>
-                                  ) : null}
-                                </div>
-                              ))}
+                              <FormGenerator
+                                fields={formFields}
+                                values={parameters}
+                                errors={formErrors}
+                                onChange={handleParameterChange}
+                                showRequiredIndicator={true}
+                                fieldClassName="space-y-2"
+                              />
                             </div>
                           )}
 
@@ -698,7 +567,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                             </Button>
                           </div>
                         </div>
-                      </ScrollArea>
+                      </div>
                     </TabsContent>
 
                     <TabsContent value="test" className="h-full mt-0">
@@ -711,7 +580,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                     </TabsContent>
 
                     <TabsContent value="response" className="h-full mt-0">
-                      <ScrollArea className="h-full p-4">
+                       <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
                         <div className="space-y-4">
                           {nodeExecutionResult ? (
                             <div className="space-y-4">
@@ -797,7 +666,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                             </div>
                           )}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </TabsContent>
 
                     <TabsContent value="docs" className="h-full mt-0">
@@ -814,7 +683,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
             {/* Right Column - Outputs */}
             <ResizablePanel defaultSize={35} minSize={20} maxSize={50}>
-              <div className="h-full border-l border-gray-200 flex flex-col">
+              <div className="flex w-full h-full border-l border-gray-200 flex-col">
                 <div className="p-4 border-b h-[72px] flex items-center">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-2">
