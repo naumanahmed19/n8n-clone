@@ -4,6 +4,7 @@ import ReactFlow, {
     Controls,
     MiniMap,
     NodeTypes,
+    EdgeTypes,
     ReactFlowProvider,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -23,6 +24,7 @@ import {
 import { useWorkflowStore } from '@/stores'
 import { NodeType } from '@/types'
 import { CustomNode } from './CustomNode'
+import { CustomEdge } from './CustomEdge'
 import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigDialog } from './NodeConfigDialog'
@@ -32,6 +34,10 @@ import { WorkflowToolbar } from './WorkflowToolbar'
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
+}
+
+const edgeTypes: EdgeTypes = {
+    default: CustomEdge,
 }
 
 // Error Boundary Component
@@ -323,6 +329,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                                 onSelectionChange={handleSelectionChange}
                                                 onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                                                 nodeTypes={nodeTypes}
+                                                edgeTypes={edgeTypes}
                                                 fitView
                                                 attributionPosition="bottom-left"
                                             >
