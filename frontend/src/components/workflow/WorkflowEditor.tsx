@@ -2,9 +2,9 @@ import { Component, ErrorInfo, ReactNode, useEffect } from 'react'
 import ReactFlow, {
     Background,
     Controls,
+    EdgeTypes,
     MiniMap,
     NodeTypes,
-    EdgeTypes,
     ReactFlowProvider,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -22,9 +22,11 @@ import {
     useWorkflowOperations,
 } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
+import { useAddNodeDialogStore } from '@/stores'
 import { NodeType } from '@/types'
-import { CustomNode } from './CustomNode'
+import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 import { CustomEdge } from './CustomEdge'
+import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigDialog } from './NodeConfigDialog'
@@ -120,6 +122,9 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         closeNodeProperties,
     } = useWorkflowStore()
 
+    // Command dialog state
+    const { isOpen: showAddNodeDialog, openDialog, closeDialog, position } = useAddNodeDialogStore()
+
     // Use custom hooks for better organization
     const {
         saveWorkflow,
@@ -186,6 +191,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         onUndo: undo,
         onRedo: redo,
         onDelete: () => {}, // Will be set by the hook
+        onAddNode: () => openDialog(),
     })
 
     // Convert workflow data to React Flow format with real execution status
@@ -402,6 +408,14 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     // TODO: Load and display execution details
                     toggleExecutionsPanel()
                 }}
+            />
+
+            {/* Add Node Command Dialog */}
+            <AddNodeCommandDialog
+                open={showAddNodeDialog}
+                onOpenChange={closeDialog}
+                nodeTypes={availableNodeTypes}
+                position={position}
             />
         </div>
     )

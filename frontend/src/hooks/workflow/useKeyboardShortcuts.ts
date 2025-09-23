@@ -6,6 +6,7 @@ interface UseKeyboardShortcutsProps {
   onUndo: () => void;
   onRedo: () => void;
   onDelete: () => void;
+  onAddNode?: () => void;
 }
 
 /**
@@ -17,6 +18,7 @@ export function useKeyboardShortcuts({
   onUndo,
   onRedo,
   onDelete,
+  onAddNode,
 }: UseKeyboardShortcutsProps) {
   const { selectedNodeId, removeNode, closeNodeProperties } =
     useWorkflowStore();
@@ -41,6 +43,10 @@ export function useKeyboardShortcuts({
             event.preventDefault();
             onSave();
             break;
+          case "k":
+            event.preventDefault();
+            onAddNode?.();
+            break;
         }
       }
 
@@ -49,7 +55,7 @@ export function useKeyboardShortcuts({
         onDelete();
       }
     },
-    [onSave, onUndo, onRedo, onDelete, selectedNodeId]
+    [onSave, onUndo, onRedo, onDelete, onAddNode, selectedNodeId]
   );
 
   // Delete action handler

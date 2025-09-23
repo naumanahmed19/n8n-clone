@@ -1,3 +1,5 @@
+import { useWorkflowStore, useWorkflowToolbarStore, useAddNodeDialogStore } from '@/stores'
+import { Plus, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import {
     BaseEdge,
@@ -6,10 +8,6 @@ import {
     getBezierPath,
     useReactFlow,
 } from 'reactflow'
-import { Plus, X } from 'lucide-react'
-import { useWorkflowStore } from '@/stores'
-import { useWorkflowToolbarStore } from '@/stores'
-import { WorkflowNode } from '@/types'
 
 export function CustomEdge({
     id,
@@ -23,8 +21,9 @@ export function CustomEdge({
     markerEnd,
 }: EdgeProps) {
     const { getNode, setEdges } = useReactFlow()
-    const { addNode, removeConnection, workflow } = useWorkflowStore()
+    const { removeConnection, workflow } = useWorkflowStore()
     const { showNodePalette, toggleNodePalette } = useWorkflowToolbarStore()
+    const { openDialog } = useAddNodeDialogStore()
     const [isHovered, setIsHovered] = useState(false)
 
     const [edgePath, labelX, labelY] = getBezierPath({
@@ -49,6 +48,7 @@ export function CustomEdge({
 
     const onAddNodeBetween = useCallback((event: React.MouseEvent) => {
         event.stopPropagation()
+        event.preventDefault()
         
         if (!workflow) return
 
@@ -66,34 +66,20 @@ export function CustomEdge({
             y: (sourceNode.position.y + targetNode.position.y) / 2,
         }
 
-        // Create a new generic node that can be configured
-        const newNode: WorkflowNode = {
-            id: `node-${Date.now()}`,
-            type: 'manual', // Use a generic type that exists in most n8n setups
-            name: 'Manual',
-            parameters: {},
-            position: newPosition,
-            credentials: [],
-            disabled: false,
-        }
-
-        // Add the new node first
-        addNode(newNode)
-
-        // Remove the current connection from workflow store
+        // Remove the current connection first
         removeConnection(id)
         
         // Remove from ReactFlow edges state
         setEdges((edges) => edges.filter((edge) => edge.id !== id))
 
-        // Open node palette if it's closed so user can select a different node type
+        // Open the command dialog at the calculated position
+        openDialog(newPosition)
+
+        // Open node palette if it's closed so user can see available nodes
         if (!showNodePalette) {
             toggleNodePalette()
         }
-
-        // Note: User will need to manually connect the new node
-        // This gives them control over how the connections are made
-    }, [id, workflow, getNode, addNode, removeConnection, setEdges, showNodePalette, toggleNodePalette])
+    }, [id, workflow, getNode, removeConnection, setEdges, openDialog, showNodePalette, toggleNodePalette])
 
     return (
         <>
