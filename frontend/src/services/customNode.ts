@@ -1,3 +1,4 @@
+import { env } from "../config/env";
 import {
   InstallOptions,
   InstallResult,
@@ -81,6 +82,59 @@ export class CustomNodeService {
       outputPath,
     });
     return response.data.data;
+  }
+
+  /**
+   * Generate and download a new custom node package as zip
+   */
+  async generatePackageZip(options: NodeTemplateOptions): Promise<void> {
+    // We need to use the raw fetch API for blob responses
+    const response = await fetch(
+      `${env.API_BASE_URL}${this.baseUrl}/generate-zip`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+        body: JSON.stringify({
+          ...options,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Failed to generate zip" }));
+      throw new Error(errorData.message || "Failed to generate zip");
+    }
+
+    // Get the blob from response
+    const blob = await response.blob();
+
+    // Get filename from response headers or generate one
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = `${options.name || "custom-node"}.zip`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    // Create and trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 
   /**

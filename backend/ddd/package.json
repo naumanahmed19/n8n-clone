@@ -1,0 +1,36 @@
+{
+  "name": "ddd",
+  "version": "1.0.0",
+  "description": "ddg",
+  "main": "dist/index.js",
+  "author": "",
+  "keywords": [
+    "n8n",
+    "n8n-node",
+    "workflow",
+    "automation",
+    "transform"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepare": "npm run build",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "nodes": [
+    "dist/nodes/ddd.node.js"
+  ],
+  "dependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/jest": "^29.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

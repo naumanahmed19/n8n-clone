@@ -50,18 +50,13 @@ const RupaNode = {
     console.log("Number of input items:", items.length);
     console.log("Input items:", JSON.stringify(items, null, 2));
 
-    // If no input items, create a default item for demonstration
+    // If no input items, create a default item with only selectedOperation
     const workingItems =
       items.length > 0
         ? items
         : [
             {
-              json: {
-                message: "No input data provided - using default data",
-                timestamp: new Date().toISOString(),
-                nodeType: "rupa",
-                selectedOperation: operation,
-              },
+              selectedOperation: operation,
             },
           ];
 
@@ -71,52 +66,25 @@ const RupaNode = {
 
     switch (operation) {
       case "a":
-        // Option A: Process the input data
+        // Option A: Return selectedOperation
         resultItems = workingItems.map((item) => ({
-          json: {
-            ...item.json,
-            processed: true,
-            processedAt: new Date().toISOString(),
-            operation: "Option A",
-            originalData: item.json,
-          },
+          selectedOperation: operation,
         }));
         console.log("Option A result:", JSON.stringify(resultItems, null, 2));
         break;
 
       case "b":
-        // Option B: Transform the input data
+        // Option B: Return selectedOperation
         resultItems = workingItems.map((item) => ({
-          json: {
-            ...item.json,
-            transformed: true,
-            transformedAt: new Date().toISOString(),
-            operation: "Option B",
-            transformedData: {
-              uppercase: JSON.stringify(item.json).toUpperCase(),
-              itemCount: Object.keys(item.json).length,
-            },
-          },
+          selectedOperation: operation,
         }));
         console.log("Option B result:", JSON.stringify(resultItems, null, 2));
         break;
 
       case "c":
-        // Option C: Enhance the input data
+        // Option C: Return selectedOperation
         resultItems = workingItems.map((item) => ({
-          json: {
-            ...item.json,
-            enhanced: true,
-            enhancedAt: new Date().toISOString(),
-            operation: "Option C",
-            enhancement: {
-              dataType: typeof item.json,
-              hasData: Object.keys(item.json).length > 0,
-              summary: `Enhanced item with ${
-                Object.keys(item.json).length
-              } properties`,
-            },
-          },
+          selectedOperation: operation,
         }));
         console.log("Option C result:", JSON.stringify(resultItems, null, 2));
         break;

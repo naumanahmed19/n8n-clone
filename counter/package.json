@@ -1,0 +1,25 @@
+{
+  "name": "counter",
+  "version": "1.0.0",
+  "description": "Counter node that maintains state and increments a counter",
+  "main": "index.js",
+  "author": "Ahmad",
+  "keywords": [
+    "n8n",
+    "n8n-node",
+    "workflow",
+    "automation",
+    "counter",
+    "state"
+  ],
+  "scripts": {},
+  "nodes": [
+    "nodes/counter.node.js"
+  ],
+  "dependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

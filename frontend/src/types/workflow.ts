@@ -146,6 +146,7 @@ export interface NodeProperty {
   required?: boolean;
   default?: any;
   description?: string;
+  placeholder?: string;
   options?: Array<{ name: string; value: any }>;
   displayOptions?: {
     show?: Record<string, any[]>;

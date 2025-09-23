@@ -1,135 +1,102 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useCustomNodeStore } from '../../stores/customNode';
-import { NodeTemplateOptions } from '../../types/customNode';
 
 export const NodeTemplateGenerator: React.FC = () => {
-  const { generatePackage } = useCustomNodeStore();
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [formData, setFormData] = useState<NodeTemplateOptions>({
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generatePackageZip = useCustomNodeStore((state) => state.generatePackageZip);
+
+  const [formData, setFormData] = useState({
     name: '',
     displayName: '',
     description: '',
-    type: 'action',
+    type: 'action' as 'action' | 'trigger' | 'transform',
     author: '',
     version: '1.0.0',
-    group: ['transform'],
+    group: [] as string[],
+    typescript: true,
     includeCredentials: false,
     includeTests: true,
-    typescript: true
   });
-
-  const handleInputChange = (field: keyof NodeTemplateOptions, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setResult(null);
-
     try {
-      const result = await generatePackage(formData);
-      setResult(result);
+      setIsGenerating(true);
+      await generatePackageZip(formData);
     } catch (error) {
       console.error('Failed to generate package:', error);
     } finally {
-      setLoading(false);
+      setIsGenerating(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      displayName: '',
-      description: '',
-      type: 'action',
-      author: '',
-      version: '1.0.0',
-      group: ['transform'],
-      includeCredentials: false,
-      includeTests: true,
-      typescript: true
-    });
-    setResult(null);
+  const handleChange = (field: string, value: any) => {
+    if (field === 'group') {
+      // Convert comma-separated string to array
+      const groupArray = value ? value.split(',').map((s: string) => s.trim()).filter((s: string) => s) : [];
+      setFormData(prev => ({ ...prev, [field]: groupArray }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            Generate Custom Node Package
-          </h3>
-          <p className="text-sm text-gray-600 mb-6">
-            Create a new custom node package from a template with all the necessary files and structure.
+    <div className="w-full max-w-4xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow border">
+        <div className="p-6 border-b">
+          <h2 className="text-2xl font-bold">Generate Custom Node Package</h2>
+          <p className="text-gray-600 mt-2">
+            Create a complete n8n custom node package with all necessary files. The package will be generated as a zip file for download.
           </p>
-
+        </div>
+        
+        <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Node Name *
-                </label>
+                <label className="block text-sm font-medium mb-2">Node Name</label>
                 <input
                   type="text"
-                  id="name"
-                  required
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="my-custom-node"
+                  className="w-full p-3 border rounded-md"
+                  required
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                  Lowercase, hyphen-separated name for the node
-                </p>
               </div>
 
               <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-                  Display Name *
-                </label>
+                <label className="block text-sm font-medium mb-2">Display Name</label>
                 <input
                   type="text"
-                  id="displayName"
-                  required
                   value={formData.displayName}
-                  onChange={(e) => handleInputChange('displayName', e.target.value)}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e) => handleChange('displayName', e.target.value)}
                   placeholder="My Custom Node"
+                  className="w-full p-3 border rounded-md"
+                  required
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description *
-              </label>
+              <label className="block text-sm font-medium mb-2">Description</label>
               <textarea
-                id="description"
-                required
-                rows={3}
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="A custom node that does something useful..."
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="Describe what your custom node does..."
+                rows={3}
+                className="w-full p-3 border rounded-md resize-none"
+                required
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                  Node Type *
-                </label>
+                <label className="block text-sm font-medium mb-2">Node Type</label>
                 <select
-                  id="type"
                   value={formData.type}
-                  onChange={(e) => handleInputChange('type', e.target.value as 'action' | 'trigger' | 'transform')}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e) => handleChange('type', e.target.value)}
+                  className="w-full p-3 border rounded-md"
                 >
                   <option value="action">Action</option>
                   <option value="trigger">Trigger</option>
@@ -138,157 +105,132 @@ export const NodeTemplateGenerator: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="author" className="block text-sm font-medium text-gray-700">
-                  Author
-                </label>
+                <label className="block text-sm font-medium mb-2">Author</label>
                 <input
                   type="text"
-                  id="author"
                   value={formData.author}
-                  onChange={(e) => handleInputChange('author', e.target.value)}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e) => handleChange('author', e.target.value)}
                   placeholder="Your Name"
+                  className="w-full p-3 border rounded-md"
                 />
               </div>
 
               <div>
-                <label htmlFor="version" className="block text-sm font-medium text-gray-700">
-                  Version
-                </label>
+                <label className="block text-sm font-medium mb-2">Version</label>
                 <input
                   type="text"
-                  id="version"
                   value={formData.version}
-                  onChange={(e) => handleInputChange('version', e.target.value)}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  onChange={(e) => handleChange('version', e.target.value)}
                   placeholder="1.0.0"
+                  className="w-full p-3 border rounded-md"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="group" className="block text-sm font-medium text-gray-700">
-                Node Groups
-              </label>
+              <label className="block text-sm font-medium mb-2">Groups</label>
               <input
                 type="text"
-                id="group"
-                value={formData.group?.join(', ') || ''}
-                onChange={(e) => handleInputChange('group', e.target.value.split(',').map(g => g.trim()).filter(g => g))}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="transform, integration"
+                value={formData.group.join(', ')}
+                onChange={(e) => handleChange('group', e.target.value)}
+                placeholder="utilities, helpers, integrations"
+                className="w-full p-3 border rounded-md"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Comma-separated list of groups this node belongs to
-              </p>
+              <p className="text-sm text-gray-500 mt-1">Category groups for organizing nodes (comma-separated, optional)</p>
             </div>
 
-            {/* Options */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-900">Options</h4>
-              
-              <div className="space-y-3">
-                <div className="flex items-center">
+              <h4 className="text-sm font-medium">Additional Options</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label className="flex items-center space-x-3">
                   <input
-                    id="typescript"
                     type="checkbox"
                     checked={formData.typescript}
-                    onChange={(e) => handleInputChange('typescript', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onChange={(e) => handleChange('typescript', e.target.checked)}
+                    className="w-4 h-4 text-blue-600"
                   />
-                  <label htmlFor="typescript" className="ml-2 block text-sm text-gray-900">
-                    Use TypeScript
-                  </label>
-                </div>
+                  <div>
+                    <div className="font-medium">TypeScript</div>
+                    <div className="text-sm text-gray-500">Generate TypeScript files</div>
+                  </div>
+                </label>
 
-                <div className="flex items-center">
+                <label className="flex items-center space-x-3">
                   <input
-                    id="includeCredentials"
                     type="checkbox"
                     checked={formData.includeCredentials}
-                    onChange={(e) => handleInputChange('includeCredentials', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onChange={(e) => handleChange('includeCredentials', e.target.checked)}
+                    className="w-4 h-4 text-blue-600"
                   />
-                  <label htmlFor="includeCredentials" className="ml-2 block text-sm text-gray-900">
-                    Include credentials template
-                  </label>
-                </div>
+                  <div>
+                    <div className="font-medium">Include Credentials</div>
+                    <div className="text-sm text-gray-500">Add credential handling</div>
+                  </div>
+                </label>
 
-                <div className="flex items-center">
+                <label className="flex items-center space-x-3">
                   <input
-                    id="includeTests"
                     type="checkbox"
                     checked={formData.includeTests}
-                    onChange={(e) => handleInputChange('includeTests', e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    onChange={(e) => handleChange('includeTests', e.target.checked)}
+                    className="w-4 h-4 text-blue-600"
                   />
-                  <label htmlFor="includeTests" className="ml-2 block text-sm text-gray-900">
-                    Include test files
-                  </label>
-                </div>
+                  <div>
+                    <div className="font-medium">Include Tests</div>
+                    <div className="text-sm text-gray-500">Generate test files</div>
+                  </div>
+                </label>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Reset
-              </button>
+            <div className="flex gap-4">
               <button
                 type="submit"
-                disabled={loading}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                disabled={isGenerating}
+                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                {loading ? (
+                {isGenerating ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                     Generating...
                   </>
                 ) : (
-                  'Generate Package'
+                  <>
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Generate Package
+                  </>
                 )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setFormData({
+                  name: '',
+                  displayName: '',
+                  description: '',
+                  type: 'action',
+                  author: '',
+                  version: '1.0.0',
+                  group: [],
+                  typescript: true,
+                  includeCredentials: false,
+                  includeTests: true,
+                })}
+                disabled={isGenerating}
+                className="px-6 py-3 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
               </button>
             </div>
           </form>
-
-          {/* Result */}
-          {result && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-md">
-              {result.success ? (
-                <div className="text-green-800">
-                  <h4 className="font-medium">✅ Package generated successfully!</h4>
-                  <p className="mt-1 text-sm">
-                    Package created at: <code className="bg-white px-1 rounded">{result.packagePath}</code>
-                  </p>
-                  {result.warnings && result.warnings.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium">Warnings:</p>
-                      <ul className="mt-1 text-sm list-disc list-inside">
-                        {result.warnings.map((warning: string, index: number) => (
-                          <li key={index}>{warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-red-800">
-                  <h4 className="font-medium">❌ Failed to generate package</h4>
-                  {result.errors && result.errors.length > 0 && (
-                    <ul className="mt-1 text-sm list-disc list-inside">
-                      {result.errors.map((error: string, index: number) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>

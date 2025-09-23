@@ -36,7 +36,7 @@ export interface NodeTemplateOptions {
   name: string;
   displayName: string;
   description: string;
-  type: 'action' | 'trigger' | 'transform';
+  type: "action" | "trigger" | "transform";
   author?: string;
   version?: string;
   group?: string[];
@@ -86,8 +86,8 @@ export interface NodeSearchFilters {
   verified?: boolean;
   minRating?: number;
   tags?: string[];
-  sortBy?: 'relevance' | 'downloads' | 'rating' | 'updated' | 'created';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "relevance" | "downloads" | "rating" | "updated" | "created";
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }
@@ -151,15 +151,24 @@ export interface CustomNodeState {
 
 export interface CustomNodeActions {
   loadPackages: () => Promise<void>;
-  validatePackage: (packagePath: string) => Promise<NodePackageValidationResult>;
+  validatePackage: (
+    packagePath: string
+  ) => Promise<NodePackageValidationResult>;
   loadPackage: (packagePath: string) => Promise<NodeLoadResult>;
   unloadPackage: (packageName: string) => Promise<void>;
   reloadPackage: (packageName: string) => Promise<NodeLoadResult>;
-  generatePackage: (options: NodeTemplateOptions, outputPath?: string) => Promise<TemplateGenerationResult>;
+  generatePackage: (
+    options: NodeTemplateOptions,
+    outputPath?: string
+  ) => Promise<TemplateGenerationResult>;
+  generatePackageZip: (options: NodeTemplateOptions) => Promise<void>;
   compilePackage: (packagePath: string) => Promise<NodeCompilationResult>;
   searchMarketplace: (filters: NodeSearchFilters) => Promise<NodeSearchResult>;
   getPackageInfo: (packageId: string) => Promise<NodePackageMetadata>;
-  installPackage: (packageId: string, options?: InstallOptions) => Promise<InstallResult>;
+  installPackage: (
+    packageId: string,
+    options?: InstallOptions
+  ) => Promise<InstallResult>;
   updatePackage: (packageId: string) => Promise<UpdateResult>;
   publishPackage: (options: PublishOptions) => Promise<PublishResult>;
   clearError: () => void;

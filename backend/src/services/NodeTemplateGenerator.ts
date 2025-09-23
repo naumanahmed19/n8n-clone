@@ -1,3 +1,4 @@
+import AdmZip from "adm-zip";
 import { promises as fs } from "fs";
 import * as path from "path";
 import { logger } from "../utils/logger";
@@ -18,6 +19,14 @@ export interface NodeTemplateOptions {
 export interface TemplateGenerationResult {
   success: boolean;
   packagePath?: string;
+  errors?: string[];
+  warnings?: string[];
+}
+
+export interface TemplateZipResult {
+  success: boolean;
+  zipBuffer?: Buffer;
+  filename?: string;
   errors?: string[];
   warnings?: string[];
 }
@@ -110,12 +119,123 @@ export class NodeTemplateGenerator {
   }
 
   /**
+   * Generate a new node package as a downloadable zip file
+   */
+  async generateNodePackageZip(
+    options: NodeTemplateOptions
+  ): Promise<TemplateZipResult> {
+    try {
+      const zip = new AdmZip();
+      const packageName = this.sanitizePackageName(options.name);
+
+      // Generate all files in memory and add them to zip
+      const warnings: string[] = [];
+
+      // Generate package.json
+      const packageJson = this.generatePackageJsonContent(options);
+      zip.addFile("package.json", Buffer.from(packageJson, "utf8"));
+
+      // Generate main index file
+      const indexFileName = options.typescript ? "src/index.ts" : "index.js";
+      const indexContent = this.getIndexTemplate(options);
+      zip.addFile(indexFileName, Buffer.from(indexContent, "utf8"));
+
+      // Generate main node file
+      const nodeFileName = `${options.typescript ? "src/" : ""}nodes/${
+        options.name
+      }.node.${options.typescript ? "ts" : "js"}`;
+      const nodeContent = this.getNodeTemplate(options);
+      zip.addFile(nodeFileName, Buffer.from(nodeContent, "utf8"));
+
+      // Generate credentials file if requested
+      if (options.includeCredentials) {
+        const credentialsFileName = `${
+          options.typescript ? "src/" : ""
+        }credentials/${options.name}.credentials.${
+          options.typescript ? "ts" : "js"
+        }`;
+        const credentialsContent = this.getCredentialsTemplate(options);
+        zip.addFile(
+          credentialsFileName,
+          Buffer.from(credentialsContent, "utf8")
+        );
+      }
+
+      // Generate test files if requested
+      if (options.includeTests) {
+        const testFileName = `__tests__/${options.name}.test.${
+          options.typescript ? "ts" : "js"
+        }`;
+        const testContent = this.getTestTemplate(options);
+        zip.addFile(testFileName, Buffer.from(testContent, "utf8"));
+
+        // Generate Jest config if TypeScript
+        if (options.typescript) {
+          const jestConfig = this.getJestConfig();
+          zip.addFile("jest.config.js", Buffer.from(jestConfig, "utf8"));
+        }
+      }
+
+      // Generate TypeScript config if TypeScript is enabled
+      if (options.typescript) {
+        const tsconfig = this.generateTypeScriptConfigContent(options);
+        zip.addFile("tsconfig.json", Buffer.from(tsconfig, "utf8"));
+      }
+
+      // Generate README
+      const readmeContent = this.getReadmeTemplate(options);
+      zip.addFile("README.md", Buffer.from(readmeContent, "utf8"));
+
+      // Generate .gitignore
+      const gitignoreContent = this.getGitignoreContent();
+      zip.addFile(".gitignore", Buffer.from(gitignoreContent, "utf8"));
+
+      // Get zip buffer
+      const zipBuffer = zip.toBuffer();
+      const filename = `${packageName}.zip`;
+
+      logger.info("Node package zip generated successfully", {
+        packageName: options.name,
+        filename,
+        type: options.type,
+        size: zipBuffer.length,
+      });
+
+      return {
+        success: true,
+        zipBuffer,
+        filename,
+        warnings: warnings.length > 0 ? warnings : undefined,
+      };
+    } catch (error) {
+      logger.error("Failed to generate node package zip", { error, options });
+      return {
+        success: false,
+        errors: [
+          `Failed to generate package zip: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        ],
+      };
+    }
+  }
+
+  /**
    * Generate package.json
    */
   private async generatePackageJson(
     packagePath: string,
     options: NodeTemplateOptions
   ): Promise<void> {
+    const packageJsonContent = this.generatePackageJsonContent(options);
+    const packageJsonPath = path.join(packagePath, "package.json");
+    await fs.writeFile(packageJsonPath, packageJsonContent);
+  }
+
+  /**
+   * Generate package.json content as string
+   */
+  private generatePackageJsonContent(options: NodeTemplateOptions): string {
     const packageJson = {
       name: this.sanitizePackageName(options.name),
       version: options.version || "1.0.0",
@@ -188,8 +308,7 @@ export class NodeTemplateGenerator {
       },
     };
 
-    const packageJsonPath = path.join(packagePath, "package.json");
-    await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+    return JSON.stringify(packageJson, null, 2);
   }
 
   /**
@@ -290,6 +409,16 @@ export class NodeTemplateGenerator {
     options: NodeTemplateOptions
   ): Promise<void> {
     const tsconfigPath = path.join(packagePath, "tsconfig.json");
+    const tsconfigContent = this.generateTypeScriptConfigContent(options);
+    await fs.writeFile(tsconfigPath, tsconfigContent);
+  }
+
+  /**
+   * Generate TypeScript configuration content as string
+   */
+  private generateTypeScriptConfigContent(
+    options: NodeTemplateOptions
+  ): string {
     const tsconfig = {
       compilerOptions: {
         target: "ES2020",
@@ -309,7 +438,7 @@ export class NodeTemplateGenerator {
       exclude: ["node_modules", "dist"],
     };
 
-    await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+    return JSON.stringify(tsconfig, null, 2);
   }
 
   /**
@@ -329,7 +458,15 @@ export class NodeTemplateGenerator {
    */
   private async generateGitignore(packagePath: string): Promise<void> {
     const gitignorePath = path.join(packagePath, ".gitignore");
-    const gitignore = `# Dependencies
+    const gitignoreContent = this.getGitignoreContent();
+    await fs.writeFile(gitignorePath, gitignoreContent);
+  }
+
+  /**
+   * Get .gitignore content as string
+   */
+  private getGitignoreContent(): string {
+    return `# Dependencies
 node_modules/
 
 # Build output
@@ -373,8 +510,6 @@ coverage/
 ehthumbs.db
 Thumbs.db
 `;
-
-    await fs.writeFile(gitignorePath, gitignore);
   }
 
   /**

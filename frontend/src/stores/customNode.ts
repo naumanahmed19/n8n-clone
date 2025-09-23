@@ -1,24 +1,23 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { customNodeService } from '../services/customNode';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { customNodeService } from "../services/customNode";
 import {
-  CustomNodeState,
   CustomNodeActions,
-  NodePackageInfo,
-  NodePackageValidationResult,
-  NodeLoadResult,
-  NodeCompilationResult,
-  NodeTemplateOptions,
-  TemplateGenerationResult,
-  NodeSearchFilters,
-  NodeSearchResult,
-  NodePackageMetadata,
+  CustomNodeState,
   InstallOptions,
   InstallResult,
-  UpdateResult,
+  NodeCompilationResult,
+  NodeLoadResult,
+  NodePackageMetadata,
+  NodePackageValidationResult,
+  NodeSearchFilters,
+  NodeSearchResult,
+  NodeTemplateOptions,
   PublishOptions,
-  PublishResult
-} from '../types/customNode';
+  PublishResult,
+  TemplateGenerationResult,
+  UpdateResult,
+} from "../types/customNode";
 
 interface CustomNodeStore extends CustomNodeState, CustomNodeActions {}
 
@@ -40,19 +39,27 @@ export const useCustomNodeStore = create<CustomNodeStore>()(
           const packages = await customNodeService.getLoadedPackages();
           set({ packages, loading: false });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to load packages',
-            loading: false 
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to load packages",
+            loading: false,
           });
         }
       },
 
-      validatePackage: async (packagePath: string): Promise<NodePackageValidationResult> => {
+      validatePackage: async (
+        packagePath: string
+      ): Promise<NodePackageValidationResult> => {
         set({ error: null });
         try {
           return await customNodeService.validatePackage(packagePath);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to validate package';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to validate package";
           set({ error: errorMessage });
           throw error;
         }
@@ -68,7 +75,8 @@ export const useCustomNodeStore = create<CustomNodeStore>()(
           }
           return result;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to load package';
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to load package";
           set({ error: errorMessage });
           throw error;
         }
@@ -81,7 +89,8 @@ export const useCustomNodeStore = create<CustomNodeStore>()(
           // Refresh packages list
           await get().loadPackages();
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to unload package';
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to unload package";
           set({ error: errorMessage });
           throw error;
         }
@@ -97,72 +106,116 @@ export const useCustomNodeStore = create<CustomNodeStore>()(
           }
           return result;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to reload package';
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to reload package";
           set({ error: errorMessage });
           throw error;
         }
       },
 
       generatePackage: async (
-        options: NodeTemplateOptions, 
+        options: NodeTemplateOptions,
         outputPath?: string
       ): Promise<TemplateGenerationResult> => {
         set({ error: null });
         try {
           return await customNodeService.generatePackage(options, outputPath);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to generate package';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to generate package";
           set({ error: errorMessage });
           throw error;
         }
       },
 
-      compilePackage: async (packagePath: string): Promise<NodeCompilationResult> => {
+      generatePackageZip: async (
+        options: NodeTemplateOptions
+      ): Promise<void> => {
+        set({ error: null });
+        try {
+          await customNodeService.generatePackageZip(options);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to generate package zip";
+          set({ error: errorMessage });
+          throw error;
+        }
+      },
+
+      compilePackage: async (
+        packagePath: string
+      ): Promise<NodeCompilationResult> => {
         set({ error: null });
         try {
           return await customNodeService.compilePackage(packagePath);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to compile package';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to compile package";
           set({ error: errorMessage });
           throw error;
         }
       },
 
-      searchMarketplace: async (filters: NodeSearchFilters): Promise<NodeSearchResult> => {
+      searchMarketplace: async (
+        filters: NodeSearchFilters
+      ): Promise<NodeSearchResult> => {
         set({ searchLoading: true, error: null });
         try {
           const results = await customNodeService.searchMarketplace(filters);
           set({ searchResults: results, searchLoading: false });
           return results;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to search marketplace';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to search marketplace";
           set({ error: errorMessage, searchLoading: false });
           throw error;
         }
       },
 
-      getPackageInfo: async (packageId: string): Promise<NodePackageMetadata> => {
+      getPackageInfo: async (
+        packageId: string
+      ): Promise<NodePackageMetadata> => {
         set({ error: null });
         try {
           return await customNodeService.getPackageInfo(packageId);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to get package info';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to get package info";
           set({ error: errorMessage });
           throw error;
         }
       },
 
-      installPackage: async (packageId: string, options?: InstallOptions): Promise<InstallResult> => {
+      installPackage: async (
+        packageId: string,
+        options?: InstallOptions
+      ): Promise<InstallResult> => {
         set({ error: null });
         try {
-          const result = await customNodeService.installPackage(packageId, options);
+          const result = await customNodeService.installPackage(
+            packageId,
+            options
+          );
           if (result.success) {
             // Refresh packages list
             await get().loadPackages();
           }
           return result;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to install package';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to install package";
           set({ error: errorMessage });
           throw error;
         }
@@ -178,18 +231,24 @@ export const useCustomNodeStore = create<CustomNodeStore>()(
           }
           return result;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to update package';
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to update package";
           set({ error: errorMessage });
           throw error;
         }
       },
 
-      publishPackage: async (options: PublishOptions): Promise<PublishResult> => {
+      publishPackage: async (
+        options: PublishOptions
+      ): Promise<PublishResult> => {
         set({ error: null });
         try {
           return await customNodeService.publishPackage(options);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to publish package';
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to publish package";
           set({ error: errorMessage });
           throw error;
         }
@@ -201,10 +260,10 @@ export const useCustomNodeStore = create<CustomNodeStore>()(
 
       setSelectedPackage: (pkg: NodePackageMetadata | null) => {
         set({ selectedPackage: pkg });
-      }
+      },
     }),
     {
-      name: 'custom-node-store'
+      name: "custom-node-store",
     }
   )
 );

@@ -142,43 +142,77 @@ export class NodeService {
   }
 
   /**
-   * Get all available node types
+   * Get all available node types from in-memory registry (live definitions)
    */
   async getNodeTypes(): Promise<NodeTypeInfo[]> {
     try {
-      const nodeTypes = await this.prisma.nodeType.findMany({
-        where: { active: true },
-        select: {
-          type: true,
-          displayName: true,
-          name: true,
-          description: true,
-          group: true,
-          version: true,
-          defaults: true,
-          inputs: true,
-          outputs: true,
-          properties: true,
-          icon: true,
-          color: true,
-        },
-        orderBy: { displayName: "asc" },
-      });
+      const nodeTypesFromRegistry: NodeTypeInfo[] = [];
 
-      return nodeTypes.map((node) => ({
-        ...node,
-        icon: node.icon || undefined,
-        color: node.color || undefined,
-        properties: Array.isArray(node.properties)
-          ? (node.properties as unknown as NodeProperty[])
-          : [],
-        defaults:
-          typeof node.defaults === "object" && node.defaults !== null
-            ? (node.defaults as Record<string, any>)
-            : {},
-        inputs: Array.isArray(node.inputs) ? node.inputs : ["main"],
-        outputs: Array.isArray(node.outputs) ? node.outputs : ["main"],
-      }));
+      // First, get live node definitions from in-memory registry
+      for (const [nodeType, nodeDefinition] of this.nodeRegistry.entries()) {
+        nodeTypesFromRegistry.push({
+          type: nodeDefinition.type,
+          displayName: nodeDefinition.displayName,
+          name: nodeDefinition.name,
+          description: nodeDefinition.description,
+          group: nodeDefinition.group,
+          version: nodeDefinition.version,
+          defaults: nodeDefinition.defaults || {},
+          inputs: nodeDefinition.inputs,
+          outputs: nodeDefinition.outputs,
+          properties: nodeDefinition.properties || [],
+          icon: nodeDefinition.icon,
+          color: nodeDefinition.color,
+        });
+      }
+
+      // If registry is empty, fallback to database (for built-in nodes that might be stored there)
+      if (nodeTypesFromRegistry.length === 0) {
+        logger.warn("Node registry is empty, falling back to database");
+        const nodeTypes = await this.prisma.nodeType.findMany({
+          where: { active: true },
+          select: {
+            type: true,
+            displayName: true,
+            name: true,
+            description: true,
+            group: true,
+            version: true,
+            defaults: true,
+            inputs: true,
+            outputs: true,
+            properties: true,
+            icon: true,
+            color: true,
+          },
+          orderBy: { displayName: "asc" },
+        });
+
+        return nodeTypes.map((node) => ({
+          ...node,
+          icon: node.icon || undefined,
+          color: node.color || undefined,
+          properties: Array.isArray(node.properties)
+            ? (node.properties as unknown as NodeProperty[])
+            : [],
+          defaults:
+            typeof node.defaults === "object" && node.defaults !== null
+              ? (node.defaults as Record<string, any>)
+              : {},
+          inputs: Array.isArray(node.inputs) ? node.inputs : ["main"],
+          outputs: Array.isArray(node.outputs) ? node.outputs : ["main"],
+        }));
+      }
+
+      // Sort by display name
+      nodeTypesFromRegistry.sort((a, b) =>
+        a.displayName.localeCompare(b.displayName)
+      );
+
+      logger.info(
+        `Returning ${nodeTypesFromRegistry.length} node types from in-memory registry`
+      );
+      return nodeTypesFromRegistry;
     } catch (error) {
       logger.error("Failed to get node types", { error });
       throw new Error(
@@ -190,10 +224,34 @@ export class NodeService {
   }
 
   /**
-   * Get node schema by type
+   * Get node schema by type from in-memory registry (live definition)
    */
   async getNodeSchema(nodeType: string): Promise<NodeSchema | null> {
     try {
+      // First, try to get from in-memory registry
+      const nodeDefinition = this.nodeRegistry.get(nodeType);
+
+      if (nodeDefinition) {
+        return {
+          type: nodeDefinition.type,
+          displayName: nodeDefinition.displayName,
+          name: nodeDefinition.name,
+          group: nodeDefinition.group,
+          version: nodeDefinition.version,
+          description: nodeDefinition.description,
+          defaults: nodeDefinition.defaults || {},
+          inputs: nodeDefinition.inputs,
+          outputs: nodeDefinition.outputs,
+          properties: nodeDefinition.properties || [],
+          icon: nodeDefinition.icon,
+          color: nodeDefinition.color,
+        };
+      }
+
+      // Fallback to database if not found in registry
+      logger.warn(
+        `Node type ${nodeType} not found in registry, checking database`
+      );
       const node = await this.prisma.nodeType.findUnique({
         where: { type: nodeType, active: true },
       });

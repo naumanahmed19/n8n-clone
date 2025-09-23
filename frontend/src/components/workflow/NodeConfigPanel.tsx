@@ -101,7 +101,7 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
       if (!property.displayOptions?.show) return true
       
       return Object.entries(property.displayOptions.show).every(([key, values]) => {
-        const paramValue = parameters[key]
+        const paramValue = parameters[key] ?? nodeType.properties.find(p => p.name === key)?.default
         return values.includes(paramValue)
       })
     }
@@ -110,7 +110,7 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
       if (!property.displayOptions?.hide) return false
       
       return Object.entries(property.displayOptions.hide).some(([key, values]) => {
-        const paramValue = parameters[key]
+        const paramValue = parameters[key] ?? nodeType.properties.find(p => p.name === key)?.default
         return values.includes(paramValue)
       })
     }
@@ -129,7 +129,7 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
             value={value || ''}
             onChange={(e) => handleParameterChange(property.name, e.target.value)}
             className={inputClassName}
-            placeholder={property.description}
+            placeholder={property.placeholder || property.description}
           />
         )
 
@@ -140,7 +140,7 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
             value={value || ''}
             onChange={(e) => handleParameterChange(property.name, parseFloat(e.target.value) || 0)}
             className={inputClassName}
-            placeholder={property.description}
+            placeholder={property.placeholder || property.description}
           />
         )
 
@@ -231,7 +231,7 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
             value={value || ''}
             onChange={(e) => handleParameterChange(property.name, e.target.value)}
             className={inputClassName}
-            placeholder={property.description}
+            placeholder={property.placeholder || property.description}
           />
         )
     }

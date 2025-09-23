@@ -27,10 +27,10 @@ export interface UploadResult {
 }
 
 export class NodeTypeService {
-  private baseUrl = "/node-types";
+  private baseUrl = "/nodes";
 
   /**
-   * Get all node types from the database
+   * Get all node types from NodeService (live node definitions)
    */
   async getAllNodeTypes(): Promise<NodeType[]> {
     const response = await api.get(`${this.baseUrl}`);
@@ -38,11 +38,11 @@ export class NodeTypeService {
   }
 
   /**
-   * Get node types by group
+   * Get node types by group (category)
    */
   async getNodeTypesByGroup(group: string): Promise<NodeType[]> {
     const response = await api.get(
-      `${this.baseUrl}?group=${encodeURIComponent(group)}`
+      `${this.baseUrl}?category=${encodeURIComponent(group)}`
     );
     return response.data.data;
   }
@@ -64,7 +64,7 @@ export class NodeTypeService {
     const formData = new FormData();
     formData.append("nodes", file);
 
-    const response = await api.post(`${this.baseUrl}/upload`, formData, {
+    const response = await api.post(`/node-types/upload`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -90,7 +90,7 @@ export class NodeTypeService {
    * Delete a custom node type
    */
   async deleteNodeType(type: string): Promise<void> {
-    await api.delete(`${this.baseUrl}/${encodeURIComponent(type)}`);
+    await api.delete(`/node-types/${encodeURIComponent(type)}`);
   }
 
   /**
@@ -98,7 +98,7 @@ export class NodeTypeService {
    */
   async updateNodeTypeStatus(type: string, active: boolean): Promise<NodeType> {
     const response = await api.patch(
-      `${this.baseUrl}/${encodeURIComponent(type)}`,
+      `/node-types/${encodeURIComponent(type)}`,
       {
         active,
       }
