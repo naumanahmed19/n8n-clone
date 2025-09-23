@@ -15,28 +15,50 @@ import { WorkflowService } from "../services/WorkflowService";
 const router = Router();
 const prisma = new PrismaClient();
 
-// Initialize services
+// Use lazy initialization to get services when needed
+const getNodeService = () => {
+  if (!global.nodeService) {
+    throw new Error('NodeService not initialized. Make sure the server is properly started.');
+  }
+  return global.nodeService;
+};
+
+// Initialize non-dependent services immediately
 const workflowService = new WorkflowService(prisma);
-const nodeService = new NodeService(prisma);
 const executionHistoryService = new ExecutionHistoryService(prisma);
-const executionService = new ExecutionService(
-  prisma,
-  nodeService,
-  executionHistoryService
-);
 const httpServer = createServer();
 const socketService = new SocketService(httpServer);
-const triggerService = new TriggerService(
-  prisma,
-  workflowService,
-  executionService,
-  socketService,
-  nodeService,
-  executionHistoryService
-);
 
-// Initialize trigger service
-triggerService.initialize().catch(console.error);
+// Lazy initialization for services that depend on NodeService
+let executionService: ExecutionService;
+let triggerService: TriggerService;
+
+const getExecutionService = () => {
+  if (!executionService) {
+    executionService = new ExecutionService(
+      prisma,
+      getNodeService(),
+      executionHistoryService
+    );
+  }
+  return executionService;
+};
+
+const getTriggerService = () => {
+  if (!triggerService) {
+    triggerService = new TriggerService(
+      prisma,
+      workflowService,
+      getExecutionService(),
+      socketService,
+      getNodeService(),
+      executionHistoryService
+    );
+    // Initialize trigger service when first accessed
+    triggerService.initialize().catch(console.error);
+  }
+  return triggerService;
+};
 
 // Validation middleware
 const validateRequest = (req: Request, res: Response, next: any) => {
@@ -69,7 +91,7 @@ router.post(
     const userId = req.user!.id;
     const triggerData = req.body;
 
-    const trigger = await triggerService.createTrigger(workflowId, userId, {
+    const trigger = await getTriggerService().createTrigger(workflowId, userId, {
       ...triggerData,
       workflowId,
       active: triggerData.active ?? true,
@@ -113,7 +135,7 @@ router.put(
     const userId = req.user!.id;
     const updates = req.body;
 
-    const trigger = await triggerService.updateTrigger(
+    const trigger = await getTriggerService().updateTrigger(
       workflowId,
       triggerId,
       userId,
@@ -140,7 +162,7 @@ router.delete(
     const { workflowId, triggerId } = req.params;
     const userId = req.user!.id;
 
-    await triggerService.deleteTrigger(workflowId, triggerId, userId);
+    await getTriggerService().deleteTrigger(workflowId, triggerId, userId);
 
     res.json({
       success: true,
@@ -164,7 +186,7 @@ router.post(
     const userId = req.user!.id;
     const { data } = req.body;
 
-    const result = await triggerService.handleManualTrigger(
+    const result = await getTriggerService().handleManualTrigger(
       workflowId,
       triggerId,
       userId,
@@ -221,7 +243,7 @@ router.get(
       offset: parseInt(req.query.offset as string) || 0,
     };
 
-    const events = await triggerService.getTriggerEvents(
+    const events = await getTriggerService().getTriggerEvents(
       workflowId,
       userId,
       filters
@@ -244,7 +266,7 @@ router.get(
     const { workflowId } = req.params;
     const userId = req.user!.id;
 
-    const stats = await triggerService.getTriggerStats(workflowId, userId);
+    const stats = await getTriggerService().getTriggerStats(workflowId, userId);
 
     res.json({
       success: true,
@@ -269,7 +291,7 @@ router.all(
       userAgent: req.get("User-Agent"),
     };
 
-    const result = await triggerService.handleWebhookTrigger(
+    const result = await getTriggerService().handleWebhookTrigger(
       webhookId,
       webhookRequest
     );
@@ -310,7 +332,7 @@ router.post(
       userAgent: "Webhook Test",
     };
 
-    const result = await triggerService.handleWebhookTrigger(
+    const result = await getTriggerService().handleWebhookTrigger(
       webhookId,
       testRequest
     );

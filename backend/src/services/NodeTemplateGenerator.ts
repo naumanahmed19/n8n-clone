@@ -1,12 +1,12 @@
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { logger } from '../utils/logger';
+import { promises as fs } from "fs";
+import * as path from "path";
+import { logger } from "../utils/logger";
 
 export interface NodeTemplateOptions {
   name: string;
   displayName: string;
   description: string;
-  type: 'action' | 'trigger' | 'transform';
+  type: "action" | "trigger" | "transform";
   author?: string;
   version?: string;
   group?: string[];
@@ -26,7 +26,8 @@ export class NodeTemplateGenerator {
   private templatesPath: string;
 
   constructor(templatesPath?: string) {
-    this.templatesPath = templatesPath || path.join(__dirname, '../templates/nodes');
+    this.templatesPath =
+      templatesPath || path.join(__dirname, "../templates/nodes");
   }
 
   /**
@@ -37,14 +38,17 @@ export class NodeTemplateGenerator {
     options: NodeTemplateOptions
   ): Promise<TemplateGenerationResult> {
     try {
-      const packagePath = path.join(outputPath, this.sanitizePackageName(options.name));
-      
+      const packagePath = path.join(
+        outputPath,
+        this.sanitizePackageName(options.name)
+      );
+
       // Check if package already exists
       const packageExists = await this.directoryExists(packagePath);
       if (packageExists) {
         return {
           success: false,
-          errors: [`Package directory already exists: ${packagePath}`]
+          errors: [`Package directory already exists: ${packagePath}`],
         };
       }
 
@@ -53,6 +57,9 @@ export class NodeTemplateGenerator {
 
       // Generate package.json
       await this.generatePackageJson(packagePath, options);
+
+      // Generate main index file
+      await this.generateIndexFile(packagePath, options);
 
       // Generate main node file
       await this.generateNodeFile(packagePath, options);
@@ -78,22 +85,26 @@ export class NodeTemplateGenerator {
       // Generate .gitignore
       await this.generateGitignore(packagePath);
 
-      logger.info('Node package generated successfully', { 
+      logger.info("Node package generated successfully", {
         packageName: options.name,
         packagePath,
-        type: options.type 
+        type: options.type,
       });
 
       return {
         success: true,
         packagePath,
-        warnings: []
+        warnings: [],
       };
     } catch (error) {
-      logger.error('Failed to generate node package', { error, options });
+      logger.error("Failed to generate node package", { error, options });
       return {
         success: false,
-        errors: [`Failed to generate package: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [
+          `Failed to generate package: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        ],
       };
     }
   }
@@ -101,75 +112,122 @@ export class NodeTemplateGenerator {
   /**
    * Generate package.json
    */
-  private async generatePackageJson(packagePath: string, options: NodeTemplateOptions): Promise<void> {
+  private async generatePackageJson(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
     const packageJson = {
       name: this.sanitizePackageName(options.name),
-      version: options.version || '1.0.0',
+      version: options.version || "1.0.0",
       description: options.description,
-      main: options.typescript ? 'dist/index.js' : 'index.js',
-      author: options.author || '',
+      main: options.typescript ? "dist/index.js" : "index.js",
+      author: options.author || "",
       keywords: [
-        'n8n',
-        'n8n-node',
-        'workflow',
-        'automation',
-        ...(options.group || [])
+        "n8n",
+        "n8n-node",
+        "workflow",
+        "automation",
+        ...(options.group || []),
       ],
       scripts: {
-        ...(options.typescript ? {
-          'build': 'tsc',
-          'dev': 'tsc --watch',
-          'prepare': 'npm run build'
-        } : {}),
-        ...(options.includeTests ? {
-          'test': 'jest',
-          'test:watch': 'jest --watch'
-        } : {})
+        ...(options.typescript
+          ? {
+              build: "tsc",
+              dev: "tsc --watch",
+              prepare: "npm run build",
+            }
+          : {}),
+        ...(options.includeTests
+          ? {
+              test: "jest",
+              "test:watch": "jest --watch",
+            }
+          : {}),
       },
       nodes: [
-        options.typescript ? `dist/nodes/${options.name}.node.js` : `nodes/${options.name}.node.js`
+        options.typescript
+          ? `dist/nodes/${options.name}.node.js`
+          : `nodes/${options.name}.node.js`,
       ],
-      ...(options.includeCredentials ? {
-        credentials: [
-          options.typescript ? `dist/credentials/${options.name}.credentials.js` : `credentials/${options.name}.credentials.js`
-        ]
-      } : {}),
-      dependencies: {
-        '@types/node': '^20.0.0'
-      },
-      ...(options.typescript ? {
-        devDependencies: {
-          'typescript': '^5.0.0',
-          '@types/jest': '^29.0.0',
-          ...(options.includeTests ? {
-            'jest': '^29.0.0',
-            'ts-jest': '^29.0.0'
-          } : {})
-        }
-      } : {
-        ...(options.includeTests ? {
-          devDependencies: {
-            'jest': '^29.0.0'
+      ...(options.includeCredentials
+        ? {
+            credentials: [
+              options.typescript
+                ? `dist/credentials/${options.name}.credentials.js`
+                : `credentials/${options.name}.credentials.js`,
+            ],
           }
-        } : {})
-      }),
+        : {}),
+      dependencies: {
+        "@types/node": "^20.0.0",
+      },
+      ...(options.typescript
+        ? {
+            devDependencies: {
+              typescript: "^5.0.0",
+              "@types/jest": "^29.0.0",
+              ...(options.includeTests
+                ? {
+                    jest: "^29.0.0",
+                    "ts-jest": "^29.0.0",
+                  }
+                : {}),
+            },
+          }
+        : {
+            ...(options.includeTests
+              ? {
+                  devDependencies: {
+                    jest: "^29.0.0",
+                  },
+                }
+              : {}),
+          }),
       engines: {
-        node: '>=18.0.0'
-      }
+        node: ">=18.0.0",
+      },
     };
 
-    const packageJsonPath = path.join(packagePath, 'package.json');
+    const packageJsonPath = path.join(packagePath, "package.json");
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+  }
+
+  /**
+   * Generate index.js (main entry point)
+   */
+  private async generateIndexFile(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
+    const indexFileName = options.typescript ? "src/index.ts" : "index.js";
+    const indexFilePath = path.join(packagePath, indexFileName);
+
+    // Create src directory if TypeScript
+    if (options.typescript) {
+      const srcDir = path.join(packagePath, "src");
+      await fs.mkdir(srcDir, { recursive: true });
+    }
+
+    const indexTemplate = this.getIndexTemplate(options);
+    await fs.writeFile(indexFilePath, indexTemplate);
   }
 
   /**
    * Generate main node file
    */
-  private async generateNodeFile(packagePath: string, options: NodeTemplateOptions): Promise<void> {
-    const nodesDir = path.join(packagePath, 'nodes');
+  private async generateNodeFile(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
+    const nodesDir = path.join(
+      packagePath,
+      options.typescript ? "src/nodes" : "nodes"
+    );
     await fs.mkdir(nodesDir, { recursive: true });
 
-    const nodeFileName = `${options.name}.node.${options.typescript ? 'ts' : 'js'}`;
+    const nodeFileName = `${options.name}.node.${
+      options.typescript ? "ts" : "js"
+    }`;
     const nodeFilePath = path.join(nodesDir, nodeFileName);
 
     const nodeTemplate = this.getNodeTemplate(options);
@@ -179,11 +237,19 @@ export class NodeTemplateGenerator {
   /**
    * Generate credentials file
    */
-  private async generateCredentialsFile(packagePath: string, options: NodeTemplateOptions): Promise<void> {
-    const credentialsDir = path.join(packagePath, 'credentials');
+  private async generateCredentialsFile(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
+    const credentialsDir = path.join(
+      packagePath,
+      options.typescript ? "src/credentials" : "credentials"
+    );
     await fs.mkdir(credentialsDir, { recursive: true });
 
-    const credentialsFileName = `${options.name}.credentials.${options.typescript ? 'ts' : 'js'}`;
+    const credentialsFileName = `${options.name}.credentials.${
+      options.typescript ? "ts" : "js"
+    }`;
     const credentialsFilePath = path.join(credentialsDir, credentialsFileName);
 
     const credentialsTemplate = this.getCredentialsTemplate(options);
@@ -193,11 +259,16 @@ export class NodeTemplateGenerator {
   /**
    * Generate test files
    */
-  private async generateTestFiles(packagePath: string, options: NodeTemplateOptions): Promise<void> {
-    const testsDir = path.join(packagePath, '__tests__');
+  private async generateTestFiles(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
+    const testsDir = path.join(packagePath, "__tests__");
     await fs.mkdir(testsDir, { recursive: true });
 
-    const testFileName = `${options.name}.test.${options.typescript ? 'ts' : 'js'}`;
+    const testFileName = `${options.name}.test.${
+      options.typescript ? "ts" : "js"
+    }`;
     const testFilePath = path.join(testsDir, testFileName);
 
     const testTemplate = this.getTestTemplate(options);
@@ -205,7 +276,7 @@ export class NodeTemplateGenerator {
 
     // Generate Jest config if TypeScript
     if (options.typescript) {
-      const jestConfigPath = path.join(packagePath, 'jest.config.js');
+      const jestConfigPath = path.join(packagePath, "jest.config.js");
       const jestConfig = this.getJestConfig();
       await fs.writeFile(jestConfigPath, jestConfig);
     }
@@ -214,32 +285,28 @@ export class NodeTemplateGenerator {
   /**
    * Generate TypeScript configuration
    */
-  private async generateTypeScriptConfig(packagePath: string, options: NodeTemplateOptions): Promise<void> {
-    const tsconfigPath = path.join(packagePath, 'tsconfig.json');
+  private async generateTypeScriptConfig(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
+    const tsconfigPath = path.join(packagePath, "tsconfig.json");
     const tsconfig = {
       compilerOptions: {
-        target: 'ES2020',
-        module: 'commonjs',
-        lib: ['ES2020'],
-        outDir: './dist',
-        rootDir: './src',
+        target: "ES2020",
+        module: "commonjs",
+        lib: ["ES2020"],
+        outDir: "./dist",
+        rootDir: "./src",
         strict: true,
         esModuleInterop: true,
         skipLibCheck: true,
         forceConsistentCasingInFileNames: true,
         declaration: true,
         declarationMap: true,
-        sourceMap: true
+        sourceMap: true,
       },
-      include: [
-        'nodes/**/*',
-        'credentials/**/*',
-        '__tests__/**/*'
-      ],
-      exclude: [
-        'node_modules',
-        'dist'
-      ]
+      include: ["src/**/*", "__tests__/**/*"],
+      exclude: ["node_modules", "dist"],
     };
 
     await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
@@ -248,8 +315,11 @@ export class NodeTemplateGenerator {
   /**
    * Generate README file
    */
-  private async generateReadme(packagePath: string, options: NodeTemplateOptions): Promise<void> {
-    const readmePath = path.join(packagePath, 'README.md');
+  private async generateReadme(
+    packagePath: string,
+    options: NodeTemplateOptions
+  ): Promise<void> {
+    const readmePath = path.join(packagePath, "README.md");
     const readme = this.getReadmeTemplate(options);
     await fs.writeFile(readmePath, readme);
   }
@@ -258,7 +328,7 @@ export class NodeTemplateGenerator {
    * Generate .gitignore file
    */
   private async generateGitignore(packagePath: string): Promise<void> {
-    const gitignorePath = path.join(packagePath, '.gitignore');
+    const gitignorePath = path.join(packagePath, ".gitignore");
     const gitignore = `# Dependencies
 node_modules/
 
@@ -313,8 +383,9 @@ Thumbs.db
   private getNodeTemplate(options: NodeTemplateOptions): string {
     const { name, displayName, description, type, typescript } = options;
     const className = this.toPascalCase(name);
-    
-    const imports = typescript ? `
+
+    const imports = typescript
+      ? `
 import {
   NodeDefinition,
   NodeExecuteFunction,
@@ -323,19 +394,22 @@ import {
   NodeExecutionContext,
   NodeProperty
 } from '../types/node.types';
-` : '';
+`
+      : "";
 
-    const typeAnnotations = typescript ? ': NodeDefinition' : '';
-    const executeTypeAnnotation = typescript ? ': Promise<NodeOutputData[]>' : '';
+    const typeAnnotations = typescript ? ": NodeDefinition" : "";
+    const executeTypeAnnotation = typescript
+      ? ": Promise<NodeOutputData[]>"
+      : "";
 
     switch (type) {
-      case 'action':
+      case "action":
         return `${imports}
 const ${className}Node${typeAnnotations} = {
   type: '${name}',
   displayName: '${displayName}',
   name: '${name}',
-  group: ['${options.group?.[0] || 'transform'}'],
+  group: ['${options.group?.[0] || "transform"}'],
   version: 1,
   description: '${description}',
   icon: 'fa:cog',
@@ -360,8 +434,10 @@ const ${className}Node${typeAnnotations} = {
         }
       ]
     }
-  ]${typescript ? ' as NodeProperty[]' : ''},
-  execute: async function(inputData${typescript ? ': NodeInputData' : ''})${executeTypeAnnotation} {
+  ]${typescript ? " as NodeProperty[]" : ""},
+  execute: async function(inputData${
+    typescript ? ": NodeInputData" : ""
+  })${executeTypeAnnotation} {
     const operation = this.getNodeParameter('operation');
     const items = inputData.main?.[0] || [];
 
@@ -384,10 +460,10 @@ const ${className}Node${typeAnnotations} = {
   }
 };
 
-${typescript ? 'export default' : 'module.exports ='} ${className}Node;
+${typescript ? "export default" : "module.exports ="} ${className}Node;
 `;
 
-      case 'trigger':
+      case "trigger":
         return `${imports}
 const ${className}TriggerNode${typeAnnotations} = {
   type: '${name}-trigger',
@@ -435,8 +511,10 @@ const ${className}TriggerNode${typeAnnotations} = {
         }
       }
     }
-  ]${typescript ? ' as NodeProperty[]' : ''},
-  execute: async function(inputData${typescript ? ': NodeInputData' : ''})${executeTypeAnnotation} {
+  ]${typescript ? " as NodeProperty[]" : ""},
+  execute: async function(inputData${
+    typescript ? ": NodeInputData" : ""
+  })${executeTypeAnnotation} {
     const triggerType = this.getNodeParameter('triggerType');
     
     // For trigger nodes, this method is called when the trigger fires
@@ -450,10 +528,10 @@ const ${className}TriggerNode${typeAnnotations} = {
   }
 };
 
-${typescript ? 'export default' : 'module.exports ='} ${className}TriggerNode;
+${typescript ? "export default" : "module.exports ="} ${className}TriggerNode;
 `;
 
-      case 'transform':
+      case "transform":
       default:
         return `${imports}
 const ${className}Node${typeAnnotations} = {
@@ -498,8 +576,10 @@ const ${className}Node${typeAnnotations} = {
       default: '',
       description: 'Name of the field to transform'
     }
-  ]${typescript ? ' as NodeProperty[]' : ''},
-  execute: async function(inputData${typescript ? ': NodeInputData' : ''})${executeTypeAnnotation} {
+  ]${typescript ? " as NodeProperty[]" : ""},
+  execute: async function(inputData${
+    typescript ? ": NodeInputData" : ""
+  })${executeTypeAnnotation} {
     const transformType = this.getNodeParameter('transformType');
     const fieldName = this.getNodeParameter('fieldName');
     const items = inputData.main?.[0] || [];
@@ -526,7 +606,41 @@ const ${className}Node${typeAnnotations} = {
   }
 };
 
-${typescript ? 'export default' : 'module.exports ='} ${className}Node;
+${typescript ? "export default" : "module.exports ="} ${className}Node;
+`;
+    }
+  }
+
+  /**
+   * Get index template (main entry point)
+   */
+  private getIndexTemplate(options: NodeTemplateOptions): string {
+    const { name, typescript } = options;
+    const className = this.toPascalCase(name);
+
+    if (typescript) {
+      return `// Export the node definitions
+export { default as ${className}Node } from './nodes/${name}.node';
+${
+  options.includeCredentials
+    ? `export { default as ${className}Credentials } from './credentials/${name}.credentials';`
+    : ""
+}
+`;
+    } else {
+      return `// Export the node definitions
+module.exports = {
+  nodes: {
+    '${name}': require('./nodes/${name}.node.js')
+  }${
+    options.includeCredentials
+      ? `,
+  credentials: {
+    '${name}Api': require('./credentials/${name}.credentials.js')
+  }`
+      : ""
+  }
+};
 `;
     }
   }
@@ -538,11 +652,13 @@ ${typescript ? 'export default' : 'module.exports ='} ${className}Node;
     const { name, displayName, typescript } = options;
     const className = this.toPascalCase(name);
 
-    const imports = typescript ? `
+    const imports = typescript
+      ? `
 import { CredentialDefinition, NodeProperty } from '../types/node.types';
-` : '';
+`
+      : "";
 
-    const typeAnnotation = typescript ? ': CredentialDefinition' : '';
+    const typeAnnotation = typescript ? ": CredentialDefinition" : "";
 
     return `${imports}
 const ${className}Credentials${typeAnnotation} = {
@@ -566,7 +682,7 @@ const ${className}Credentials${typeAnnotation} = {
       default: 'https://api.example.com',
       description: 'Base URL for the API'
     }
-  ]${typescript ? ' as NodeProperty[]' : ''},
+  ]${typescript ? " as NodeProperty[]" : ""},
   authenticate: {
     type: 'generic',
     properties: {
@@ -577,7 +693,7 @@ const ${className}Credentials${typeAnnotation} = {
   }
 };
 
-${typescript ? 'export default' : 'module.exports ='} ${className}Credentials;
+${typescript ? "export default" : "module.exports ="} ${className}Credentials;
 `;
   }
 
@@ -588,17 +704,19 @@ ${typescript ? 'export default' : 'module.exports ='} ${className}Credentials;
     const { name, typescript } = options;
     const className = this.toPascalCase(name);
 
-    const imports = typescript ? `
+    const imports = typescript
+      ? `
 import ${className}Node from '../nodes/${name}.node';
 import { NodeInputData, NodeExecutionContext } from '../types/node.types';
-` : `
+`
+      : `
 const ${className}Node = require('../nodes/${name}.node');
 `;
 
     return `${imports}
 
 describe('${className}Node', () => {
-  let mockContext${typescript ? ': Partial<NodeExecutionContext>' : ''};
+  let mockContext${typescript ? ": Partial<NodeExecutionContext>" : ""};
 
   beforeEach(() => {
     mockContext = {
@@ -628,7 +746,7 @@ describe('${className}Node', () => {
   });
 
   test('should execute successfully with valid input', async () => {
-    const inputData${typescript ? ': NodeInputData' : ''} = {
+    const inputData${typescript ? ": NodeInputData" : ""} = {
       main: [[
         { json: { test: 'data' } }
       ]]
@@ -655,7 +773,7 @@ describe('${className}Node', () => {
   });
 
   test('should handle empty input data', async () => {
-    const inputData${typescript ? ': NodeInputData' : ''} = {
+    const inputData${typescript ? ": NodeInputData" : ""} = {
       main: [[]]
     };
 
@@ -676,7 +794,7 @@ describe('${className}Node', () => {
   });
 
   test('should throw error for invalid operation', async () => {
-    const inputData${typescript ? ': NodeInputData' : ''} = {
+    const inputData${typescript ? ": NodeInputData" : ""} = {
       main: [[
         { json: { test: 'data' } }
       ]]
@@ -740,8 +858,8 @@ This is a ${type} node that can be used in n8n workflows.
 ### Node Properties
 
 - **Type**: ${type}
-- **Version**: ${options.version || '1.0.0'}
-- **Group**: ${options.group?.join(', ') || 'transform'}
+- **Version**: ${options.version || "1.0.0"}
+- **Group**: ${options.group?.join(", ") || "transform"}
 
 ### Configuration
 
@@ -760,14 +878,24 @@ This is a ${type} node that can be used in n8n workflows.
 # Install dependencies
 npm install
 
-# Build the project${options.typescript ? `
-npm run build` : ''}
+# Build the project${
+      options.typescript
+        ? `
+npm run build`
+        : ""
+    }
 
-# Run tests${options.includeTests ? `
-npm test` : ''}
+# Run tests${
+      options.includeTests
+        ? `
+npm test`
+        : ""
+    }
 \`\`\`
 
-${options.typescript ? `### TypeScript
+${
+  options.typescript
+    ? `### TypeScript
 
 This project is written in TypeScript. Run \`npm run build\` to compile to JavaScript.
 
@@ -775,7 +903,9 @@ This project is written in TypeScript. Run \`npm run build\` to compile to JavaS
 # Watch mode for development
 npm run dev
 \`\`\`
-` : ''}
+`
+    : ""
+}
 
 ## Contributing
 
@@ -788,11 +918,15 @@ npm run dev
 
 ## License
 
-MIT${author ? `
+MIT${
+      author
+        ? `
 
 ## Author
 
-${author}` : ''}
+${author}`
+        : ""
+    }
 `;
   }
 
@@ -802,9 +936,9 @@ ${author}` : ''}
   private sanitizePackageName(name: string): string {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .replace(/-+/g, '-');
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .replace(/-+/g, "-");
   }
 
   /**
@@ -812,10 +946,10 @@ ${author}` : ''}
    */
   private toPascalCase(str: string): string {
     return str
-      .replace(/[^a-zA-Z0-9]/g, ' ')
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('');
+      .replace(/[^a-zA-Z0-9]/g, " ")
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("");
   }
 
   /**

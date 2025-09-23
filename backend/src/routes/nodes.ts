@@ -7,7 +7,13 @@ import { NodeService } from '../services/NodeService';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const nodeService = new NodeService(prisma);
+// Use lazy initialization to get the global nodeService when needed
+const getNodeService = () => {
+  if (!global.nodeService) {
+    throw new Error('NodeService not initialized. Make sure the server is properly started.');
+  }
+  return global.nodeService;
+};
 
 const router = Router();
 
@@ -19,7 +25,7 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { page = 1, limit = 50, category, search, sortBy = 'displayName', sortOrder = 'asc' } = req.query as any;
     
-    let nodeTypes = await nodeService.getNodeTypes();
+    let nodeTypes = await getNodeService().getNodeTypes();
 
     // Filter by category
     if (category) {
@@ -74,7 +80,7 @@ router.get(
   '/categories',
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const nodeTypes = await nodeService.getNodeTypes();
+    const nodeTypes = await getNodeService().getNodeTypes();
     const categories = Array.from(
       new Set(nodeTypes.flatMap(node => node.group))
     ).sort();
@@ -97,7 +103,7 @@ router.get(
   '/:type',
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const nodeSchema = await nodeService.getNodeSchema(req.params.type);
+    const nodeSchema = await getNodeService().getNodeSchema(req.params.type);
 
     if (!nodeSchema) {
       const response: ApiResponse = {
@@ -126,7 +132,7 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { parameters = {}, inputData = { main: [[]] }, credentials = {} } = req.body;
 
-    const result = await nodeService.executeNode(
+    const result = await getNodeService().executeNode(
       req.params.type,
       parameters,
       inputData,

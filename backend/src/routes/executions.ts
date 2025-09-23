@@ -9,13 +9,28 @@ import { ApiResponse, ExecutionQuerySchema, IdParamSchema } from "../types/api";
 
 const router = Router();
 const prisma = new PrismaClient();
-const nodeService = new NodeService(prisma);
-const executionHistoryService = new ExecutionHistoryService(prisma);
-const executionService = new ExecutionService(
-  prisma,
-  nodeService,
-  executionHistoryService
-);
+// Use lazy initialization to get services when needed
+const getNodeService = () => {
+  if (!global.nodeService) {
+    throw new Error('NodeService not initialized. Make sure the server is properly started.');
+  }
+  return global.nodeService;
+};
+
+let executionHistoryService: ExecutionHistoryService;
+let executionService: ExecutionService;
+
+const getExecutionService = () => {
+  if (!executionService) {
+    executionHistoryService = new ExecutionHistoryService(prisma);
+    executionService = new ExecutionService(
+      prisma,
+      getNodeService(),
+      executionHistoryService
+    );
+  }
+  return executionService;
+};
 
 // POST /api/executions - Execute a workflow
 router.post(
@@ -29,7 +44,7 @@ router.post(
       throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
     }
 
-    const result = await executionService.executeWorkflow(
+    const result = await getExecutionService().executeWorkflow(
       workflowId,
       req.user!.id,
       triggerData,
@@ -83,7 +98,7 @@ router.get(
       offset: parseInt(offset.toString()),
     };
 
-    const result = await executionService.listExecutions(req.user!.id, filters);
+    const result = await getExecutionService().listExecutions(req.user!.id, filters);
 
     const response: ApiResponse = {
       success: true,
@@ -106,7 +121,7 @@ router.get(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const execution = await executionService.getExecution(
+    const execution = await getExecutionService().getExecution(
       req.params.id,
       req.user!.id
     );
@@ -130,7 +145,7 @@ router.get(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const progress = await executionService.getExecutionProgress(
+    const progress = await getExecutionService().getExecutionProgress(
       req.params.id,
       req.user!.id
     );
@@ -154,7 +169,7 @@ router.delete(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const result = await executionService.deleteExecution(
+    const result = await getExecutionService().deleteExecution(
       req.params.id,
       req.user!.id
     );
@@ -181,7 +196,7 @@ router.post(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const result = await executionService.cancelExecution(
+    const result = await getExecutionService().cancelExecution(
       req.params.id,
       req.user!.id
     );
@@ -208,7 +223,7 @@ router.post(
   authenticateToken,
   validateParams(IdParamSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const result = await executionService.retryExecution(
+    const result = await getExecutionService().retryExecution(
       req.params.id,
       req.user!.id
     );
@@ -233,7 +248,7 @@ router.get(
   "/stats",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const stats = await executionService.getExecutionStats(req.user!.id);
+    const stats = await getExecutionService().getExecutionStats(req.user!.id);
 
     const response: ApiResponse = {
       success: true,
@@ -325,7 +340,7 @@ router.post(
       );
     }
 
-    const result = await executionService.executeSingleNode(
+    const result = await getExecutionService().executeSingleNode(
       workflowId,
       nodeId,
       req.user!.id,

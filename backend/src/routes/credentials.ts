@@ -1,33 +1,75 @@
-import { Router, Response } from 'express';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { AppError } from '../utils/errors';
-import { credentialCreateSchema, credentialUpdateSchema } from '../utils/validation';
-import { CredentialService } from '../services/CredentialService';
+import { Response, Router } from "express";
+import { asyncHandler } from "../middleware/asyncHandler";
+import { AuthenticatedRequest, authenticateToken } from "../middleware/auth";
+import { CredentialService } from "../services/CredentialService";
+import { AppError } from "../utils/errors";
+import {
+  credentialCreateSchema,
+  credentialUpdateSchema,
+} from "../utils/validation";
 
 const router = Router();
 const credentialService = new CredentialService();
 
 // Get all credentials for the authenticated user
-router.get('/', 
+router.get(
+  "/",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { type } = req.query;
-    
+
     const credentials = await credentialService.getCredentials(
-      req.user!.id, 
+      req.user!.id,
       type as string
     );
 
     res.json({
       success: true,
-      data: credentials
+      data: credentials,
+    });
+  })
+);
+
+// Get available credential types
+router.get(
+  "/types",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const credentialTypes = credentialService.getCredentialTypes();
+
+    res.json({
+      success: true,
+      data: credentialTypes,
+    });
+  })
+);
+
+// Get expiring credentials
+router.get(
+  "/expiring/:days?",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const warningDays = parseInt(req.params.days || "7");
+
+    if (isNaN(warningDays) || warningDays < 1) {
+      throw new AppError("Warning days must be a positive number", 400);
+    }
+
+    const expiringCredentials = await credentialService.getExpiringCredentials(
+      req.user!.id,
+      warningDays
+    );
+
+    res.json({
+      success: true,
+      data: expiringCredentials,
     });
   })
 );
 
 // Get a specific credential
-router.get('/:id',
+router.get(
+  "/:id",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
@@ -35,7 +77,7 @@ router.get('/:id',
     const credential = await credentialService.getCredential(id, req.user!.id);
 
     if (!credential) {
-      throw new AppError('Credential not found', 404);
+      throw new AppError("Credential not found", 404);
     }
 
     // Don't return decrypted data in GET requests for security
@@ -43,17 +85,37 @@ router.get('/:id',
 
     res.json({
       success: true,
-      data: credentialWithoutData
+      data: credentialWithoutData,
+    });
+  })
+);
+
+// Get credential for execution (internal endpoint)
+router.get(
+  "/:id/execution",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+
+    const credentialData = await credentialService.getCredentialForExecution(
+      id,
+      req.user!.id
+    );
+
+    res.json({
+      success: true,
+      data: credentialData,
     });
   })
 );
 
 // Create a new credential
-router.post('/',
+router.post(
+  "/",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const validatedData = credentialCreateSchema.parse(req.body);
-    
+
     const credential = await credentialService.createCredential(
       req.user!.id,
       validatedData.name,
@@ -67,13 +129,14 @@ router.post('/',
 
     res.status(201).json({
       success: true,
-      data: credentialWithoutData
+      data: credentialWithoutData,
     });
   })
 );
 
 // Update a credential
-router.put('/:id',
+router.put(
+  "/:id",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
@@ -85,7 +148,7 @@ router.put('/:id',
       {
         name: validatedData.name,
         data: validatedData.data,
-        expiresAt: validatedData.expiresAt
+        expiresAt: validatedData.expiresAt,
       }
     );
 
@@ -94,13 +157,14 @@ router.put('/:id',
 
     res.json({
       success: true,
-      data: credentialWithoutData
+      data: credentialWithoutData,
     });
   })
 );
 
 // Delete a credential
-router.delete('/:id',
+router.delete(
+  "/:id",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
@@ -109,74 +173,41 @@ router.delete('/:id',
 
     res.json({
       success: true,
-      message: 'Credential deleted successfully'
-    });
-  })
-);
-
-// Get available credential types
-router.get('/types',
-  authenticateToken,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const credentialTypes = credentialService.getCredentialTypes();
-
-    res.json({
-      success: true,
-      data: credentialTypes
+      message: "Credential deleted successfully",
     });
   })
 );
 
 // Test a credential
-router.post('/test',
+router.post(
+  "/test",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { type, data } = req.body;
 
     if (!type || !data) {
-      throw new AppError('Credential type and data are required', 400);
+      throw new AppError("Credential type and data are required", 400);
     }
 
     const testResult = await credentialService.testCredential(type, data);
 
     res.json({
       success: true,
-      data: testResult
-    });
-  })
-);
-
-// Get expiring credentials
-router.get('/expiring/:days?',
-  authenticateToken,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const warningDays = parseInt(req.params.days || '7');
-    
-    if (isNaN(warningDays) || warningDays < 1) {
-      throw new AppError('Warning days must be a positive number', 400);
-    }
-
-    const expiringCredentials = await credentialService.getExpiringCredentials(
-      req.user!.id,
-      warningDays
-    );
-
-    res.json({
-      success: true,
-      data: expiringCredentials
+      data: testResult,
     });
   })
 );
 
 // Rotate a credential
-router.post('/:id/rotate',
+router.post(
+  "/:id/rotate",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const { data } = req.body;
 
     if (!data) {
-      throw new AppError('New credential data is required', 400);
+      throw new AppError("New credential data is required", 400);
     }
 
     const rotatedCredential = await credentialService.rotateCredential(
@@ -186,30 +217,13 @@ router.post('/:id/rotate',
     );
 
     // Don't return decrypted data
-    const { data: credentialData, ...credentialWithoutData } = rotatedCredential;
+    const { data: credentialData, ...credentialWithoutData } =
+      rotatedCredential;
 
     res.json({
       success: true,
       data: credentialWithoutData,
-      message: 'Credential rotated successfully'
-    });
-  })
-);
-
-// Get credential for execution (internal endpoint)
-router.get('/:id/execution',
-  authenticateToken,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { id } = req.params;
-
-    const credentialData = await credentialService.getCredentialForExecution(
-      id,
-      req.user!.id
-    );
-
-    res.json({
-      success: true,
-      data: credentialData
+      message: "Credential rotated successfully",
     });
   })
 );
