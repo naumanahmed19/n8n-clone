@@ -42,30 +42,33 @@ const RupaNode = {
     console.log("=== RUPA NODE EXECUTION START ===");
     console.log("Node type:", this.type || "rupa");
     console.log("Input data:", JSON.stringify(inputData, null, 2));
-    
+
     const operation = this.getNodeParameter("operation");
     const items = inputData.main?.[0] || [];
-    
+
     console.log("Selected operation:", operation);
     console.log("Number of input items:", items.length);
     console.log("Input items:", JSON.stringify(items, null, 2));
-    
+
     // If no input items, create a default item for demonstration
-    const workingItems = items.length > 0 ? items : [
-      {
-        json: {
-          message: "No input data provided - using default data",
-          timestamp: new Date().toISOString(),
-          nodeType: "rupa",
-          selectedOperation: operation
-        }
-      }
-    ];
-    
+    const workingItems =
+      items.length > 0
+        ? items
+        : [
+            {
+              json: {
+                message: "No input data provided - using default data",
+                timestamp: new Date().toISOString(),
+                nodeType: "rupa",
+                selectedOperation: operation,
+              },
+            },
+          ];
+
     console.log("Working with items:", workingItems.length);
-    
+
     let resultItems;
-    
+
     switch (operation) {
       case "a":
         // Option A: Process the input data
@@ -75,7 +78,7 @@ const RupaNode = {
             processed: true,
             processedAt: new Date().toISOString(),
             operation: "Option A",
-            originalData: item.json
+            originalData: item.json,
           },
         }));
         console.log("Option A result:", JSON.stringify(resultItems, null, 2));
@@ -91,8 +94,8 @@ const RupaNode = {
             operation: "Option B",
             transformedData: {
               uppercase: JSON.stringify(item.json).toUpperCase(),
-              itemCount: Object.keys(item.json).length
-            }
+              itemCount: Object.keys(item.json).length,
+            },
           },
         }));
         console.log("Option B result:", JSON.stringify(resultItems, null, 2));
@@ -109,8 +112,10 @@ const RupaNode = {
             enhancement: {
               dataType: typeof item.json,
               hasData: Object.keys(item.json).length > 0,
-              summary: `Enhanced item with ${Object.keys(item.json).length} properties`
-            }
+              summary: `Enhanced item with ${
+                Object.keys(item.json).length
+              } properties`,
+            },
           },
         }));
         console.log("Option C result:", JSON.stringify(resultItems, null, 2));
@@ -121,9 +126,12 @@ const RupaNode = {
         console.error("ERROR:", error);
         throw new Error(error);
     }
-    
+
     // Return the correct structure - just the items, not wrapped in another main array
-    console.log("Final output structure:", JSON.stringify(resultItems, null, 2));
+    console.log(
+      "Final output structure:",
+      JSON.stringify(resultItems, null, 2)
+    );
     return resultItems;
   },
 };

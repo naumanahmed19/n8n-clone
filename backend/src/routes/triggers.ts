@@ -7,7 +7,6 @@ import { AuthenticatedRequest, authenticateToken } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import { ExecutionService } from "../services/ExecutionService";
-import { NodeService } from "../services/NodeService";
 import { SocketService } from "../services/SocketService";
 import { TriggerService } from "../services/TriggerService";
 import { WorkflowService } from "../services/WorkflowService";
@@ -18,7 +17,9 @@ const prisma = new PrismaClient();
 // Use lazy initialization to get services when needed
 const getNodeService = () => {
   if (!global.nodeService) {
-    throw new Error('NodeService not initialized. Make sure the server is properly started.');
+    throw new Error(
+      "NodeService not initialized. Make sure the server is properly started."
+    );
   }
   return global.nodeService;
 };
@@ -91,11 +92,15 @@ router.post(
     const userId = req.user!.id;
     const triggerData = req.body;
 
-    const trigger = await getTriggerService().createTrigger(workflowId, userId, {
-      ...triggerData,
+    const trigger = await getTriggerService().createTrigger(
       workflowId,
-      active: triggerData.active ?? true,
-    });
+      userId,
+      {
+        ...triggerData,
+        workflowId,
+        active: triggerData.active ?? true,
+      }
+    );
 
     res.status(201).json({
       success: true,

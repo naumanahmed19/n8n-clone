@@ -3,7 +3,7 @@ import { Response, Router } from "express";
 import { AuthenticatedRequest, authenticateToken } from "../middleware/auth";
 import { AppError, asyncHandler } from "../middleware/errorHandler";
 import { validateParams, validateQuery } from "../middleware/validation";
-import { ExecutionService, NodeService } from "../services";
+import { ExecutionService } from "../services";
 import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import { ApiResponse, ExecutionQuerySchema, IdParamSchema } from "../types/api";
 
@@ -12,7 +12,9 @@ const prisma = new PrismaClient();
 // Use lazy initialization to get services when needed
 const getNodeService = () => {
   if (!global.nodeService) {
-    throw new Error('NodeService not initialized. Make sure the server is properly started.');
+    throw new Error(
+      "NodeService not initialized. Make sure the server is properly started."
+    );
   }
   return global.nodeService;
 };
@@ -98,7 +100,10 @@ router.get(
       offset: parseInt(offset.toString()),
     };
 
-    const result = await getExecutionService().listExecutions(req.user!.id, filters);
+    const result = await getExecutionService().listExecutions(
+      req.user!.id,
+      filters
+    );
 
     const response: ApiResponse = {
       success: true,

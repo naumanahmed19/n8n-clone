@@ -1,10 +1,10 @@
 // Test NodeLoader logic step by step
-const fs = require('fs').promises;
-const path = require('path');
+const fs = require("fs").promises;
+const path = require("path");
 
 class SimpleNodeLoader {
   constructor() {
-    this.customNodesPath = path.join(process.cwd(), 'custom-nodes');
+    this.customNodesPath = path.join(process.cwd(), "custom-nodes");
     this.loadedPackages = new Map();
   }
 
@@ -34,22 +34,22 @@ class SimpleNodeLoader {
 
     try {
       // Check if package.json exists
-      const packageJsonPath = path.join(packagePath, 'package.json');
+      const packageJsonPath = path.join(packagePath, "package.json");
       const packageJsonExists = await this.fileExists(packageJsonPath);
-      
+
       if (!packageJsonExists) {
-        errors.push('package.json not found');
+        errors.push("package.json not found");
         return { valid: false, errors, warnings };
       }
 
       // Parse package.json
-      const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
+      const packageJsonContent = await fs.readFile(packageJsonPath, "utf-8");
       let packageInfo;
-      
+
       try {
         packageInfo = JSON.parse(packageJsonContent);
       } catch (parseError) {
-        errors.push('Invalid package.json format');
+        errors.push("Invalid package.json format");
         return { valid: false, errors, warnings };
       }
 
@@ -57,19 +57,23 @@ class SimpleNodeLoader {
 
       // Validate required fields
       if (!packageInfo.name) {
-        errors.push('Package name is required');
+        errors.push("Package name is required");
       }
 
       if (!packageInfo.version) {
-        errors.push('Package version is required');
+        errors.push("Package version is required");
       }
 
       if (!packageInfo.main) {
-        errors.push('Package main entry point is required');
+        errors.push("Package main entry point is required");
       }
 
-      if (!packageInfo.nodes || !Array.isArray(packageInfo.nodes) || packageInfo.nodes.length === 0) {
-        errors.push('Package must define at least one node');
+      if (
+        !packageInfo.nodes ||
+        !Array.isArray(packageInfo.nodes) ||
+        packageInfo.nodes.length === 0
+      ) {
+        errors.push("Package must define at least one node");
       }
 
       // Check if main file exists
@@ -100,9 +104,8 @@ class SimpleNodeLoader {
         valid: errors.length === 0,
         errors,
         warnings,
-        packageInfo: errors.length === 0 ? packageInfo : undefined
+        packageInfo: errors.length === 0 ? packageInfo : undefined,
       };
-
     } catch (error) {
       console.error(`  Error validating package: ${error.message}`);
       errors.push(`Validation error: ${error.message}`);
@@ -113,18 +116,19 @@ class SimpleNodeLoader {
   async loadSingleNodeDefinition(nodePath) {
     try {
       console.log(`    Loading node definition from: ${nodePath}`);
-      
+
       // Clear require cache to ensure fresh load
       delete require.cache[require.resolve(nodePath)];
-      
+
       // Load the node module
       const nodeModule = require(nodePath);
-      
+
       // Extract node definition (could be default export or named export)
-      const nodeDefinition = nodeModule.default || nodeModule.nodeDefinition || nodeModule;
-      
-      if (!nodeDefinition || typeof nodeDefinition !== 'object') {
-        throw new Error('Invalid node definition format');
+      const nodeDefinition =
+        nodeModule.default || nodeModule.nodeDefinition || nodeModule;
+
+      if (!nodeDefinition || typeof nodeDefinition !== "object") {
+        throw new Error("Invalid node definition format");
       }
 
       console.log(`    ✓ Node definition loaded: ${nodeDefinition.type}`);
@@ -141,13 +145,17 @@ class SimpleNodeLoader {
 
     for (const nodePath of packageInfo.nodes) {
       try {
-        const nodeDefinition = await this.loadSingleNodeDefinition(path.join(packagePath, nodePath));
+        const nodeDefinition = await this.loadSingleNodeDefinition(
+          path.join(packagePath, nodePath)
+        );
         if (nodeDefinition) {
           nodeDefinitions.push(nodeDefinition);
         }
       } catch (error) {
         console.error(`  Failed to load node definition: ${error.message}`);
-        throw new Error(`Failed to load node from ${nodePath}: ${error.message}`);
+        throw new Error(
+          `Failed to load node from ${nodePath}: ${error.message}`
+        );
       }
     }
 
@@ -157,7 +165,7 @@ class SimpleNodeLoader {
   async loadNodePackage(packagePath) {
     try {
       console.log(`\nLoading package: ${packagePath}`);
-      
+
       // Validate package structure
       const validation = await this.validateNodePackage(packagePath);
       if (!validation.valid) {
@@ -165,31 +173,33 @@ class SimpleNodeLoader {
         return {
           success: false,
           errors: validation.errors,
-          warnings: validation.warnings
+          warnings: validation.warnings,
         };
       }
 
       const packageInfo = validation.packageInfo;
       console.log(`  Package validated successfully`);
-      
+
       // Load node definitions
-      const nodeDefinitions = await this.loadNodeDefinitions(packagePath, packageInfo);
+      const nodeDefinitions = await this.loadNodeDefinitions(
+        packagePath,
+        packageInfo
+      );
       console.log(`  Loaded ${nodeDefinitions.length} node definition(s)`);
-      
+
       // Track loaded package
       this.loadedPackages.set(packageInfo.name, packageInfo);
-      
+
       return {
         success: true,
         nodeDefinitions,
-        packageInfo
+        packageInfo,
       };
-      
     } catch (error) {
       console.error(`  Error loading package: ${error.message}`);
       return {
         success: false,
-        errors: [error.message]
+        errors: [error.message],
       };
     }
   }
@@ -198,25 +208,32 @@ class SimpleNodeLoader {
     try {
       console.log(`=== Loading all custom nodes ===`);
       console.log(`Custom nodes directory: ${this.customNodesPath}`);
-      
+
       const dirExists = await this.directoryExists(this.customNodesPath);
       console.log(`Directory exists: ${dirExists}`);
-      
+
       if (!dirExists) {
-        console.log('Custom nodes directory does not exist, skipping auto-load');
+        console.log(
+          "Custom nodes directory does not exist, skipping auto-load"
+        );
         return;
       }
 
-      const entries = await fs.readdir(this.customNodesPath, { withFileTypes: true });
-      const packageDirs = entries.filter(entry => entry.isDirectory());
-      console.log(`Found ${packageDirs.length} potential package directories:`, packageDirs.map(d => d.name));
+      const entries = await fs.readdir(this.customNodesPath, {
+        withFileTypes: true,
+      });
+      const packageDirs = entries.filter((entry) => entry.isDirectory());
+      console.log(
+        `Found ${packageDirs.length} potential package directories:`,
+        packageDirs.map((d) => d.name)
+      );
 
       let successCount = 0;
       let errorCount = 0;
 
       for (const packageDir of packageDirs) {
         const packagePath = path.join(this.customNodesPath, packageDir.name);
-        
+
         try {
           const result = await this.loadNodePackage(packagePath);
           if (result.success) {
@@ -224,11 +241,17 @@ class SimpleNodeLoader {
             console.log(`✓ Successfully loaded package: ${packageDir.name}`);
           } else {
             errorCount++;
-            console.log(`✗ Failed to load package: ${packageDir.name}`, result.errors);
+            console.log(
+              `✗ Failed to load package: ${packageDir.name}`,
+              result.errors
+            );
           }
         } catch (error) {
           errorCount++;
-          console.error(`✗ Error loading package ${packageDir.name}:`, error.message);
+          console.error(
+            `✗ Error loading package ${packageDir.name}:`,
+            error.message
+          );
         }
       }
 
@@ -237,9 +260,8 @@ class SimpleNodeLoader {
       console.log(`Packages loaded successfully: ${successCount}`);
       console.log(`Packages failed: ${errorCount}`);
       console.log(`Loaded packages: ${this.loadedPackages.size}`);
-      
     } catch (error) {
-      console.error('Failed to load custom nodes:', error);
+      console.error("Failed to load custom nodes:", error);
     }
   }
 }
