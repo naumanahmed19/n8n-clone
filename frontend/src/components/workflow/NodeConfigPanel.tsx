@@ -44,6 +44,24 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
     fetchCredentialTypes()
   }, [fetchCredentials, fetchCredentialTypes])
 
+  // useEffect(() => {
+  //   // Initialize missing default parameters from node type properties
+  //   const initializedParameters = { ...parameters }
+  //   let hasChanges = false
+
+  //   nodeType.properties.forEach(property => {
+  //     if (property.default !== undefined && initializedParameters[property.name] === undefined) {
+  //       initializedParameters[property.name] = property.default
+  //       hasChanges = true
+  //     }
+  //   })
+
+  //   if (hasChanges) {
+  //     setParameters(initializedParameters)
+  //     updateNode(node.id, { parameters: initializedParameters })
+  //   }
+  // }, [nodeType.properties, node.id, updateNode])
+
   useEffect(() => {
     // Validate node whenever parameters change
     const validation = NodeValidator.validateNode(
@@ -101,8 +119,13 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
       if (!property.displayOptions?.show) return true
       
       return Object.entries(property.displayOptions.show).every(([key, values]) => {
-        const paramValue = parameters[key] ?? nodeType.properties.find(p => p.name === key)?.default
-        return values.includes(paramValue)
+        // Get parameter value, fallback to property default, then to undefined
+        let paramValue = parameters[key];
+        if (paramValue === undefined) {
+          const keyProperty = nodeType.properties.find(p => p.name === key);
+          paramValue = keyProperty?.default;
+        }
+        return paramValue !== undefined && values.includes(paramValue);
       })
     }
 
@@ -110,8 +133,13 @@ export function NodeConfigPanel({ node, nodeType, onClose }: NodeConfigPanelProp
       if (!property.displayOptions?.hide) return false
       
       return Object.entries(property.displayOptions.hide).some(([key, values]) => {
-        const paramValue = parameters[key] ?? nodeType.properties.find(p => p.name === key)?.default
-        return values.includes(paramValue)
+        // Get parameter value, fallback to property default, then to undefined
+        let paramValue = parameters[key];
+        if (paramValue === undefined) {
+          const keyProperty = nodeType.properties.find(p => p.name === key);
+          paramValue = keyProperty?.default;
+        }
+        return paramValue !== undefined && values.includes(paramValue);
       })
     }
 

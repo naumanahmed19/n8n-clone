@@ -152,11 +152,24 @@ export function useReactFlowInteractions() {
           y: event.clientY - reactFlowBounds.top,
         });
 
+        // Initialize parameters with defaults from node type and properties
+        const parameters: Record<string, any> = { ...nodeType.defaults };
+
+        // Add default values from properties
+        nodeType.properties.forEach((property) => {
+          if (
+            property.default !== undefined &&
+            parameters[property.name] === undefined
+          ) {
+            parameters[property.name] = property.default;
+          }
+        });
+
         const newNode: WorkflowNode = {
           id: `node-${Date.now()}`,
           type: nodeType.type,
           name: nodeType.displayName,
-          parameters: { ...nodeType.defaults },
+          parameters,
           position,
           credentials: [],
           disabled: false,

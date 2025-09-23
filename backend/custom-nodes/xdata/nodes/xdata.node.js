@@ -363,10 +363,7 @@ const DateTimeNode = {
 
     const results = [];
 
-    // If no input items, create a dummy item for operations that don't need input data
-    const itemsToProcess = items.length > 0 ? items : [{ json: {} }];
-
-    for (const item of itemsToProcess) {
+    for (const item of items) {
       try {
         let result = { ...item.json };
 
