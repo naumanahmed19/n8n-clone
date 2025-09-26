@@ -689,4 +689,47 @@ export class WorkflowService {
       );
     }
   }
+
+  async getAvailableCategories(userId: string) {
+    try {
+      // Get categories from the database
+      const categories = await this.prisma.category.findMany({
+        where: {
+          active: true,
+        },
+        select: {
+          name: true,
+          displayName: true,
+          description: true,
+          color: true,
+          icon: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
+
+      // If no categories found in database, return some defaults
+      if (categories.length === 0) {
+        return [
+          "automation",
+          "integration",
+          "communication",
+          "data-processing",
+          "other",
+        ];
+      }
+
+      // Return just the category names for the API response
+      // Frontend can fetch full category details if needed
+      return categories.map((category) => category.name);
+    } catch (error) {
+      console.error("Error getting available categories:", error);
+      throw new AppError(
+        "Failed to get available categories",
+        500,
+        "CATEGORIES_FETCH_ERROR"
+      );
+    }
+  }
 }
