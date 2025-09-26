@@ -1,11 +1,11 @@
-import React from 'react'
-import { 
-  WorkflowActionsMenu, 
-  EnhancedWorkflowActionsMenu, 
-  WorkflowQuickActions,
-  CompactWorkflowActions 
+import {
+    CompactWorkflowActions,
+    EnhancedWorkflowActionsMenu,
+    WorkflowActionsMenu,
+    WorkflowQuickActions
 } from '@/components/workspace'
 import { Workflow } from '@/types'
+import React from 'react'
 
 // Example workflow data
 const exampleWorkflow: Workflow = {

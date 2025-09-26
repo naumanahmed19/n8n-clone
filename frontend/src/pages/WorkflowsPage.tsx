@@ -1,10 +1,10 @@
+import { NewWorkflowModal } from '@/components/workflow'
+import { workflowService } from '@/services'
+import { CreateWorkflowRequest } from '@/services/workflow'
 import { useAuthStore } from '@/stores'
 import { Filter, Info, Plus, Search } from 'lucide-react'
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { NewWorkflowModal } from '@/components/workflow'
-import { workflowService } from '@/services'
-import { CreateWorkflowRequest } from '@/services/workflow'
 
 export const WorkflowsPage: React.FC = () => {
   const { user } = useAuthStore()

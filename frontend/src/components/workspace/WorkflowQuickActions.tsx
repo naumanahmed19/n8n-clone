@@ -1,17 +1,16 @@
-import React from 'react'
-import { 
-  Edit, 
-  Play, 
-  Pause, 
-  Eye, 
-  History, 
-  BarChart3, 
-  Copy,
-  Share2,
-  MoreVertical,
-  Zap
-} from 'lucide-react'
 import { Workflow } from '@/types'
+import {
+    BarChart3,
+    Copy,
+    Edit,
+    Eye,
+    History,
+    Pause,
+    Play,
+    Share2,
+    Zap
+} from 'lucide-react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { WorkflowActionsMenu } from './WorkflowActionsMenu'
 

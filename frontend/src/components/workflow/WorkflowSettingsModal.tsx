@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { X, Tag, FolderOpen, Save } from 'lucide-react'
-import { Workflow } from '@/types/workflow'
 import { workflowService } from '@/services'
+import { Workflow } from '@/types/workflow'
+import { FolderOpen, Save, Tag, X } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 
 interface WorkflowSettingsModalProps {
   isOpen: boolean

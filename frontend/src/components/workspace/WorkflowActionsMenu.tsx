@@ -1,37 +1,27 @@
-import React, { useState } from 'react'
-import { 
-  MoreVertical, 
-  Copy, 
-  Share2, 
-  Download, 
-  Trash2,
-  Edit,
-  Play,
-  Pause,
-  Star,
-  Tag,
-  Eye,
-  History,
-  Settings,
-  Archive,
-  GitBranch,
-  FileText,
-  Upload,
-  AlertTriangle,
-  Clock,
-  BarChart3,
-  Users,
-  Lock,
-  Unlock,
-  BookOpen,
-  ExternalLink,
-  FolderOpen
-} from 'lucide-react'
-import { Workflow } from '@/types'
-import { useWorkspaceStore } from '@/stores/workspace'
-import { Link } from 'react-router-dom'
-import { WorkflowSettingsModal } from '../workflow/WorkflowSettingsModal'
 import { workflowService } from '@/services'
+import { useWorkspaceStore } from '@/stores/workspace'
+import { Workflow } from '@/types'
+import {
+    Archive,
+    BarChart3,
+    Copy,
+    Download,
+    Edit,
+    FileText,
+    FolderOpen,
+    GitBranch,
+    History,
+    MoreVertical,
+    Pause,
+    Play,
+    Settings,
+    Share2,
+    Star,
+    Trash2,
+    Upload
+} from 'lucide-react'
+import React, { useState } from 'react'
+import { WorkflowSettingsModal } from '../workflow/WorkflowSettingsModal'
 
 interface WorkflowActionsMenuProps {
   workflow: Workflow

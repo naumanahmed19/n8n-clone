@@ -1,26 +1,18 @@
-import React, { useState } from 'react'
-import { 
-  Play, 
-  Pause, 
-  MoreVertical, 
-  Copy, 
-  Share2, 
-  Download, 
-  Trash2,
-  Tag,
-  Calendar,
-  Activity,
-  Users,
-  Eye,
-  Edit,
-  ChevronRight,
-  FolderOpen
-} from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { Workflow } from '@/types'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { WorkflowActionsMenu } from './WorkflowActionsMenu'
+import { Workflow } from '@/types'
+import {
+    Activity,
+    Calendar,
+    Edit,
+    Eye,
+    FolderOpen,
+    Tag,
+    Users
+} from 'lucide-react'
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ShareWorkflowModal } from './ShareWorkflowModal'
+import { WorkflowActionsMenu } from './WorkflowActionsMenu'
 
 interface WorkflowListProps {
   workflows: Workflow[]

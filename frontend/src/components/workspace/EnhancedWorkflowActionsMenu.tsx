@@ -1,40 +1,31 @@
-import React, { useState } from 'react'
-import { 
-  MoreVertical, 
-  Copy, 
-  Share2, 
-  Download, 
-  Trash2,
-  Edit,
-  Play,
-  Pause,
-  Star,
-  Tag,
-  Eye,
-  History,
-  Settings,
-  Archive,
-  GitBranch,
-  FileText,
-  Upload,
-  AlertTriangle,
-  Clock,
-  BarChart3,
-  Users,
-  Lock,
-  Unlock,
-  BookOpen,
-  ExternalLink,
-  ChevronRight,
-  Calendar,
-  Globe,
-  Shield,
-  Code,
-  Zap,
-  RefreshCw
-} from 'lucide-react'
-import { Workflow } from '@/types'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { Workflow } from '@/types'
+import {
+    AlertTriangle,
+    Archive,
+    BarChart3,
+    Calendar,
+    Code,
+    Copy,
+    Download,
+    Edit,
+    ExternalLink,
+    FileText,
+    GitBranch,
+    Globe,
+    History,
+    MoreVertical,
+    Pause,
+    Play,
+    RefreshCw,
+    Settings,
+    Share2,
+    Shield,
+    Star,
+    Trash2,
+    Zap
+} from 'lucide-react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 interface EnhancedWorkflowActionsMenuProps {
