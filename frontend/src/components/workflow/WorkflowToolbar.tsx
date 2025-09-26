@@ -1,8 +1,17 @@
 
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '@/components/ui/tooltip'
 import { useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { validateImportFile } from '@/utils/errorHandling'
-import { clsx } from 'clsx'
+import { cn } from '@/lib/utils'
 import {
     AlertCircle,
     CheckCircle,
@@ -169,7 +178,7 @@ export function WorkflowToolbar({
   }
 
   return (
-    <>
+    <TooltipProvider>
       <ConfirmDialog />
       {workflow && (
         <WorkflowSettingsModal
@@ -179,173 +188,206 @@ export function WorkflowToolbar({
           onSave={handleWorkflowSettingsSave}
         />
       )}
-      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
-      {/* Left section - Breadcrumb and Edit actions */}
-      <div className="flex items-center space-x-4">
-        {/* Workflow Breadcrumb */}
-        <WorkflowBreadcrumb
-          category={workflow?.category}
-          title={mainWorkflowTitle}
-          onCategoryChange={(category) => {
-            if (workflow) {
-              updateWorkflow({ category })
-              setDirty(true)
-            }
-          }}
-          onTitleChange={handleTitleChange}
-          className="min-w-0" // Allow shrinking
-        />
+      <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border shadow-sm min-h-[60px]">
+        {/* Left section - Breadcrumb and Edit actions */}
+        <div className="flex items-center space-x-4 flex-1 min-w-0">
+          {/* Workflow Breadcrumb */}
+          <div className="flex-shrink-0">
+            <WorkflowBreadcrumb
+              category={workflow?.category}
+              title={mainWorkflowTitle}
+              onCategoryChange={(category) => {
+                if (workflow) {
+                  updateWorkflow({ category })
+                  setDirty(true)
+                }
+              }}
+              onTitleChange={handleTitleChange}
+            />
+          </div>
 
-        <div className="w-px h-6 bg-gray-300" />
+          <Separator orientation="vertical" className="h-6" />
 
-        {/* Edit actions */}
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={onUndo}
-            disabled={!canUndo}
-            className={clsx(
-              'p-2 rounded-md transition-colors',
-              canUndo
-                ? 'text-gray-700 hover:bg-gray-100'
-                : 'text-gray-400 cursor-not-allowed'
-            )}
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo className="w-4 h-4" />
-          </button>
+          {/* Edit actions */}
+          <div className="flex items-center space-x-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onUndo}
+                disabled={!canUndo}
+              >
+                <Undo className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Undo (Ctrl+Z)</p>
+            </TooltipContent>
+          </Tooltip>
 
-          <button
-            onClick={onRedo}
-            disabled={!canRedo}
-            className={clsx(
-              'p-2 rounded-md transition-colors',
-              canRedo
-                ? 'text-gray-700 hover:bg-gray-100'
-                : 'text-gray-400 cursor-not-allowed'
-            )}
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo className="w-4 h-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRedo}
+                disabled={!canRedo}
+              >
+                <Redo className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Redo (Ctrl+Y)</p>
+            </TooltipContent>
+          </Tooltip>
 
-          <button
-            onClick={handleSave}
-            disabled={isSaving || (!isDirty && !mainTitleDirty)}
-            className={clsx(
-              "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-              (isDirty || mainTitleDirty) && !isSaving
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            )}
-            title={`Save (Ctrl+S)${(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}`}
-          >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>{isSaving ? 'Saving...' : 'Save'}</span>
-            {(isDirty || mainTitleDirty) && !isSaving && (
-              <span className="w-2 h-2 bg-orange-400 rounded-full ml-1" />
-            )}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || (!isDirty && !mainTitleDirty)}
+                variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
+                size="sm"
+                className="relative"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                <span className="ml-2">{isSaving ? 'Saving...' : 'Save'}</span>
+                {(isDirty || mainTitleDirty) && !isSaving && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-2 w-2 p-0" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Save (Ctrl+S){(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       {/* Center section - Execution controls */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-3">
         {/* Workflow Status Indicator */}
         {!isWorkflowActive && (
-          <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-            <span className="text-xs font-medium">Test Mode Only</span>
-          </div>
+          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mr-1.5" />
+            Test Mode Only
+          </Badge>
         )}
-        {/* Execution has been moved to individual node toolbar buttons */}
+
         {/* Workflow Activation Toggle */}
-        <button
-          onClick={toggleWorkflowActive}
-          className={clsx(
-            "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-            isWorkflowActive
-              ? "bg-green-600 text-white hover:bg-green-700"
-              : "bg-gray-600 text-white hover:bg-gray-700"
-          )}
-          title={isWorkflowActive ? "Deactivate workflow (disable execution)" : "Activate workflow (enable execution)"}
-        >
-          <div className={clsx(
-            "w-2 h-2 rounded-full",
-            isWorkflowActive ? "bg-green-300" : "bg-gray-300"
-          )} />
-          <span>{isWorkflowActive ? 'Active' : 'Inactive'}</span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={toggleWorkflowActive}
+              variant={isWorkflowActive ? "default" : "secondary"}
+              size="sm"
+              className={cn(
+                "relative",
+                isWorkflowActive 
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : "bg-muted"
+              )}
+            >
+              <div className={cn(
+                "w-2 h-2 rounded-full mr-2",
+                isWorkflowActive ? "bg-green-200" : "bg-muted-foreground"
+              )} />
+              {isWorkflowActive ? 'Active' : 'Inactive'}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isWorkflowActive ? "Deactivate workflow (disable execution)" : "Activate workflow (enable execution)"}</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Executions History Toggle */}
-        <button
-          onClick={toggleExecutionsPanel}
-          className={clsx(
-            "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors",
-            showExecutionsPanel
-              ? "bg-purple-600 text-white hover:bg-purple-700"
-              : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-          )}
-          title={showExecutionsPanel ? "Hide executions history" : "Show executions history"}
-        >
-          <History className="w-4 h-4" />
-          <span>Executions</span>
-          {workflowExecutions && workflowExecutions.length > 0 && (
-            <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-              {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
-            </span>
-          )}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={toggleExecutionsPanel}
+              variant={showExecutionsPanel ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                "relative",
+                showExecutionsPanel 
+                  ? "bg-purple-600 hover:bg-purple-700 text-white"
+                  : ""
+              )}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Executions
+              {workflowExecutions && workflowExecutions.length > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 min-w-[1.25rem] text-xs">
+                  {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
+                </Badge>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{showExecutionsPanel ? "Hide executions history" : "Show executions history"}</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <button
-          onClick={onValidate}
-          className="flex items-center space-x-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-          title="Validate workflow"
-        >
-          <CheckCircle className="w-4 h-4" />
-          <span>Validate</span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={onValidate}
+              variant="outline"
+              size="sm"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Validate
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Validate workflow</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Right section - Import/Export and Settings */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1">
         {/* Import button with progress */}
         <div className="relative">
-          <button
-            onClick={handleImportClick}
-            disabled={isImporting || isExporting}
-            className={clsx(
-              "flex items-center space-x-2 p-2 rounded-md transition-colors",
-              isImporting
-                ? "text-blue-600 bg-blue-50"
-                : importError
-                ? "text-red-600 hover:bg-red-50"
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-            title={
-              isImporting 
-                ? "Importing workflow..." 
-                : importError 
-                ? `Import failed: ${importError}`
-                : "Import workflow"
-            }
-          >
-            {isImporting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : importError ? (
-              <AlertCircle className="w-4 h-4" />
-            ) : (
-              <Upload className="w-4 h-4" />
-            )}
-            {isImporting && importProgress > 0 && (
-              <span className="text-xs">{Math.round(importProgress)}%</span>
-            )}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleImportClick}
+                disabled={isImporting || isExporting}
+                variant={importError ? "destructive" : isImporting ? "secondary" : "ghost"}
+                size="icon"
+                className={cn(
+                  isImporting && "bg-blue-50 text-blue-600",
+                )}
+              >
+                {isImporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : importError ? (
+                  <AlertCircle className="h-4 w-4" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {isImporting 
+                  ? "Importing workflow..." 
+                  : importError 
+                  ? `Import failed: ${importError}`
+                  : "Import workflow"
+                }
+                {isImporting && importProgress > 0 && ` (${Math.round(importProgress)}%)`}
+              </p>
+            </TooltipContent>
+          </Tooltip>
           
           {/* Import progress bar */}
           {isImporting && importProgress > 0 && (
-            <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-muted rounded-full overflow-hidden">
               <div 
-                className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                className="h-full bg-primary transition-all duration-300 ease-out"
                 style={{ width: `${importProgress}%` }}
               />
             </div>
@@ -354,73 +396,84 @@ export function WorkflowToolbar({
 
         {/* Export button with progress */}
         <div className="relative">
-          <button
-            onClick={handleExportClick}
-            disabled={isExporting || isImporting}
-            className={clsx(
-              "flex items-center space-x-2 p-2 rounded-md transition-colors",
-              isExporting
-                ? "text-blue-600 bg-blue-50"
-                : exportError
-                ? "text-red-600 hover:bg-red-50"
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-            title={
-              isExporting 
-                ? "Exporting workflow..." 
-                : exportError 
-                ? `Export failed: ${exportError}`
-                : "Export workflow"
-            }
-          >
-            {isExporting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : exportError ? (
-              <AlertCircle className="w-4 h-4" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {isExporting && exportProgress > 0 && (
-              <span className="text-xs">{Math.round(exportProgress)}%</span>
-            )}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleExportClick}
+                disabled={isExporting || isImporting}
+                variant={exportError ? "destructive" : isExporting ? "secondary" : "ghost"}
+                size="icon"
+                className={cn(
+                  isExporting && "bg-blue-50 text-blue-600",
+                )}
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : exportError ? (
+                  <AlertCircle className="h-4 w-4" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {isExporting 
+                  ? "Exporting workflow..." 
+                  : exportError 
+                  ? `Export failed: ${exportError}`
+                  : "Export workflow"
+                }
+                {isExporting && exportProgress > 0 && ` (${Math.round(exportProgress)}%)`}
+              </p>
+            </TooltipContent>
+          </Tooltip>
           
           {/* Export progress bar */}
           {isExporting && exportProgress > 0 && (
-            <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-muted rounded-full overflow-hidden">
               <div 
-                className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                className="h-full bg-primary transition-all duration-300 ease-out"
                 style={{ width: `${exportProgress}%` }}
               />
             </div>
           )}
         </div>
 
-        <div className="w-px h-6 bg-gray-300 mx-2" />
+        <Separator orientation="vertical" className="h-6 mx-2" />
 
         {/* Node Palette Toggle */}
-        <button
-          onClick={toggleNodePalette}
-          className={clsx(
-            "flex items-center space-x-2 p-2 rounded-md transition-colors",
-            showNodePalette
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "text-gray-700 hover:bg-gray-100"
-          )}
-          title={showNodePalette ? "Hide node palette" : "Show node palette"}
-        >
-          <PanelRight className="w-4 h-4" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={toggleNodePalette}
+              variant={showNodePalette ? "default" : "ghost"}
+              size="icon"
+            >
+              <PanelRight className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{showNodePalette ? "Hide node palette" : "Show node palette"}</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <button
-          onClick={() => setShowSettingsModal(true)}
-          className="p-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-          title="Workflow settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-    </>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => setShowSettingsModal(true)}
+              variant="ghost"
+              size="icon"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Workflow settings</p>
+          </TooltipContent>
+        </Tooltip>
+        </div>
+      </header>
+    </TooltipProvider>
   )
 }
