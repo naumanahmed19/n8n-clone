@@ -2,13 +2,6 @@
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { validateImportFile } from '@/utils/errorHandling'
@@ -26,6 +26,7 @@ import {
   History,
   Home,
   Loader2,
+  Menu,
   MoreHorizontal,
   PanelRight,
   Plus,
@@ -33,7 +34,8 @@ import {
   Save,
   Settings,
   Undo,
-  Upload
+  Upload,
+  Workflow
 } from 'lucide-react'
 import { useState } from 'react'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
@@ -201,37 +203,32 @@ export function WorkflowToolbar({
       <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border shadow-sm min-h-[60px]">
         {/* Left section - Home, Breadcrumb and Edit actions */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">
-          {/* Home Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.location.href = '/'}
-              >
-                <Home className="h-4 w-4" />
+          {/* Navigation Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-4 w-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Go to Home</p>
-            </TooltipContent>
-          </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem onClick={() => window.location.href = '/'}>
+                <Home className="mr-2 h-4 w-4" />
+                Home
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={() => window.location.href = '/workflows/new'}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Workflow
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={() => window.location.href = '/workflows'}>
+                <Workflow className="mr-2 h-4 w-4" />
+                All Workflows
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* New Workflow Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => window.location.href = '/workflows/new'}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Create New Workflow</p>
-            </TooltipContent>
-          </Tooltip>
+          <Separator orientation="vertical" className="h-6" />
 
           {/* Workflow Breadcrumb */}
           <div className="flex-shrink-0">
