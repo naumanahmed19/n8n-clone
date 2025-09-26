@@ -23,7 +23,7 @@ export const Layout: React.FC = () => {
   return (
     <div className="h-screen bg-gray-50 flex flex-col">
       <Header />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
       <ToastContainer toasts={toasts} position="top-right" />

@@ -67,7 +67,7 @@ export const WorkspacePage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-full">
       {/* Guest Welcome Banner */}
       {user?.id === 'guest' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

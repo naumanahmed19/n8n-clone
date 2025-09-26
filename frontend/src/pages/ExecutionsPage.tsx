@@ -61,7 +61,7 @@ export const ExecutionsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-full">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>

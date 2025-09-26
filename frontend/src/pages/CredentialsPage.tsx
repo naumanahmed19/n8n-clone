@@ -43,20 +43,18 @@ export function CredentialsPage() {
     setSelectedCredentialType(null)
   }
 
-  const handleSaveCredential = (credential: Credential) => {
+  const handleSaveCredential = (_credential: Credential) => {
     handleCloseModal()
     // The store will be updated by the modal component
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <CredentialDashboard
-            onCreateCredential={handleCreateCredential}
-            onEditCredential={handleEditCredential}
-          />
-        </div>
+    <div className="min-h-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <CredentialDashboard
+          onCreateCredential={handleCreateCredential}
+          onEditCredential={handleEditCredential}
+        />
       </div>
 
       {/* Type Selector Modal */}
@@ -71,7 +69,7 @@ export function CredentialsPage() {
       {showCreateModal && selectedCredentialType && (
         <CredentialModal
           credentialType={selectedCredentialType}
-          credential={editingCredential}
+          credential={editingCredential || undefined}
           onClose={handleCloseModal}
           onSave={handleSaveCredential}
         />
