@@ -13,6 +13,8 @@ import {
 export interface CreateWorkflowRequest {
   name: string
   description?: string
+  category?: string
+  tags?: string[]
 }
 
 export interface UpdateWorkflowRequest {

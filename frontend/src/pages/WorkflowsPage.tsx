@@ -1,10 +1,25 @@
 import { useAuthStore } from '@/stores'
 import { Filter, Info, Plus, Search } from 'lucide-react'
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { NewWorkflowModal } from '@/components/workflow'
+import { workflowService } from '@/services'
+import { CreateWorkflowRequest } from '@/services/workflow'
 
 export const WorkflowsPage: React.FC = () => {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const [showNewWorkflowModal, setShowNewWorkflowModal] = useState(false)
+
+  const handleCreateWorkflow = async (data: CreateWorkflowRequest) => {
+    try {
+      const workflow = await workflowService.createWorkflow(data)
+      navigate(`/workflows/${workflow.id}`)
+    } catch (error) {
+      console.error('Failed to create workflow:', error)
+      // You could show a toast notification here
+    }
+  }
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-full">
       {/* Guest Welcome Banner */}
@@ -32,10 +47,13 @@ export const WorkflowsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Workflows</h1>
           <p className="text-gray-600">Manage and create your automation workflows</p>
         </div>
-        <Link to="/workflows/new" className="btn-primary flex items-center space-x-2">
+        <button 
+          onClick={() => setShowNewWorkflowModal(true)}
+          className="btn-primary flex items-center space-x-2"
+        >
           <Plus className="w-4 h-4" />
           <span>New Workflow</span>
-        </Link>
+        </button>
       </div>
 
       {/* Search and Filters */}
@@ -83,8 +101,20 @@ export const WorkflowsPage: React.FC = () => {
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">No workflows yet</h3>
         <p className="text-gray-600 mb-4">Get started by creating your first workflow</p>
-        <Link to="/workflows/new" className="btn-primary">Create Workflow</Link>
+        <button 
+          onClick={() => setShowNewWorkflowModal(true)}
+          className="btn-primary"
+        >
+          Create Workflow
+        </button>
       </div>
+
+      {/* New Workflow Modal */}
+      <NewWorkflowModal
+        isOpen={showNewWorkflowModal}
+        onClose={() => setShowNewWorkflowModal(false)}
+        onCreateWorkflow={handleCreateWorkflow}
+      />
     </div>
   )
 }

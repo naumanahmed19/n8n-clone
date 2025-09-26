@@ -12,7 +12,8 @@ import {
   Activity,
   Users,
   Eye,
-  Edit
+  Edit,
+  FolderOpen
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Workflow } from '@/types'
@@ -96,6 +97,16 @@ export const WorkflowGrid: React.FC<WorkflowGridProps> = ({ workflows }) => {
                   {getStatusText(workflow.active)}
                 </span>
               </div>
+
+              {/* Category */}
+              {workflow.category && (
+                <div className="mb-2">
+                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                    <FolderOpen className="w-3 h-3 mr-1" />
+                    {workflow.category}
+                  </span>
+                </div>
+              )}
 
               {/* Tags */}
               {workflow.tags && workflow.tags.length > 0 && (

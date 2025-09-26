@@ -40,6 +40,8 @@ model Workflow {
   id               String             @id @default(cuid())
   name             String
   description      String?
+  category         String?
+  tags             String[]           @default([])
   userId           String
   nodes            Json               @default("[]")
   connections      Json               @default("[]")

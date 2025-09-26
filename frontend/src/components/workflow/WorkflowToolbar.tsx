@@ -16,7 +16,9 @@ import {
   Undo,
   Upload
 } from 'lucide-react'
+import { useState } from 'react'
 import { TitleManager } from './TitleManager'
+import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
   // Minimal props - mainly for workflow operations that need main workflow store
@@ -38,9 +40,11 @@ export function WorkflowToolbar({
   onValidate,
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   
   // Get main workflow store for title synchronization, import/export, AND isDirty state
   const { 
+    workflow,
     workflowTitle: mainWorkflowTitle,
     updateTitle: updateWorkflowTitle,
     saveTitle: saveWorkflowTitle,
@@ -49,7 +53,8 @@ export function WorkflowToolbar({
     exportWorkflow: mainExportWorkflow,
     importWorkflow: mainImportWorkflow,
     isDirty, // Use isDirty from main workflow store
-    setDirty
+    setDirty,
+    updateWorkflow
   } = useWorkflowStore()
   
   // Get toolbar state from the dedicated store (excluding isDirty which comes from main store)
@@ -165,9 +170,25 @@ export function WorkflowToolbar({
     }
   }
 
+  const handleWorkflowSettingsSave = async (updates: { name?: string; description?: string; category?: string; tags?: string[] }) => {
+    if (workflow) {
+      updateWorkflow(updates)
+      setDirty(true)
+      // The actual save will happen when the user clicks the main Save button
+    }
+  }
+
   return (
     <>
       <ConfirmDialog />
+      {workflow && (
+        <WorkflowSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          workflow={workflow}
+          onSave={handleWorkflowSettingsSave}
+        />
+      )}
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
       {/* Left section - Title and Edit actions */}
       <div className="flex items-center space-x-4">
@@ -399,6 +420,7 @@ export function WorkflowToolbar({
         </button>
 
         <button
+          onClick={() => setShowSettingsModal(true)}
           className="p-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
           title="Workflow settings"
         >

@@ -13,7 +13,8 @@ import {
   Users,
   Eye,
   Edit,
-  ChevronRight
+  ChevronRight,
+  FolderOpen
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Workflow } from '@/types'
@@ -84,6 +85,9 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({ workflows }) => {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tags
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -144,6 +148,17 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({ workflows }) => {
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(workflow.active)}`}>
                       {getStatusText(workflow.active)}
                     </span>
+                  </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {workflow.category ? (
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                        <FolderOpen className="w-3 h-3 mr-1" />
+                        {workflow.category}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400">No category</span>
+                    )}
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -214,22 +229,28 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({ workflows }) => {
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-end space-x-2">
+                      {/* Quick Action Buttons */}
                       <Link
-                        to={`/workflows/${workflow.id}/edit`}
-                        className="text-primary-600 hover:text-primary-900 transition-colors"
+                        to={`/workflows/${workflow.id}`}
+                        className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded hover:bg-blue-50"
+                        title="Edit workflow"
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
                       <Link
                         to={`/workflows/${workflow.id}/executions`}
-                        className="text-gray-600 hover:text-gray-900 transition-colors"
+                        className="text-purple-600 hover:text-purple-900 transition-colors p-1 rounded hover:bg-purple-50"
+                        title="View executions"
                       >
                         <Eye className="w-4 h-4" />
                       </Link>
+                      
+                      {/* Enhanced Actions Menu */}
                       <WorkflowActionsMenu 
                         workflow={workflow}
                         onShare={() => setShareModalWorkflow(workflow)}
+                        showAdvancedOptions={true}
                       />
                     </div>
                   </td>

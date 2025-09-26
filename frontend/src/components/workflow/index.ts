@@ -1,8 +1,10 @@
 export { CustomNode } from "./CustomNode";
 export { DisableToggleToolbarButton } from "./DisableToggleToolbarButton";
 export { ExecuteToolbarButton } from "./ExecuteToolbarButton";
+export { NewWorkflowModal } from "./NewWorkflowModal";
 export { NodePalette } from "./NodePalette";
 export { TitleManager } from "./TitleManager";
 export { ToolbarButtonsDemo } from "./ToolbarButtonsDemo";
 export { WorkflowEditor, WorkflowEditorWrapper } from "./WorkflowEditor";
+export { WorkflowSettingsModal } from "./WorkflowSettingsModal";
 export { WorkflowToolbar } from "./WorkflowToolbar";

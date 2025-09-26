@@ -32,6 +32,8 @@ export class WorkflowService {
         data: {
           name: data.name,
           description: data.description,
+          category: data.category,
+          tags: data.tags || [],
           userId,
           nodes: data.nodes,
           connections: data.connections,
@@ -115,6 +117,8 @@ export class WorkflowService {
           ...(data.description !== undefined && {
             description: data.description,
           }),
+          ...(data.category !== undefined && { category: data.category }),
+          ...(data.tags !== undefined && { tags: data.tags }),
           ...(data.nodes && { nodes: data.nodes }),
           ...(data.connections && { connections: data.connections }),
           ...(data.triggers && { triggers: data.triggers }),
@@ -187,6 +191,8 @@ export class WorkflowService {
             id: true,
             name: true,
             description: true,
+            category: true,
+            tags: true,
             active: true,
             createdAt: true,
             updatedAt: true,
@@ -272,7 +278,19 @@ export class WorkflowService {
           skip,
           take: limit,
           orderBy: { [sortBy]: sortOrder },
-          include: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            active: true,
+            settings: true,
+            nodes: true,
+            connections: true,
+            createdAt: true,
+            updatedAt: true,
+            userId: true,
+            category: true,
+            tags: true,
             _count: {
               select: {
                 executions: true,
