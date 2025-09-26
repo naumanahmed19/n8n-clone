@@ -5,6 +5,7 @@ export { NewWorkflowModal } from "./NewWorkflowModal";
 export { NodePalette } from "./NodePalette";
 export { TitleManager } from "./TitleManager";
 export { ToolbarButtonsDemo } from "./ToolbarButtonsDemo";
+export { WorkflowBreadcrumb } from "./WorkflowBreadcrumb";
 export { WorkflowEditor, WorkflowEditorWrapper } from "./WorkflowEditor";
 export { WorkflowSettingsModal } from "./WorkflowSettingsModal";
 export { WorkflowToolbar } from "./WorkflowToolbar";

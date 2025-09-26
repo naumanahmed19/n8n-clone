@@ -17,7 +17,7 @@ import {
     Upload
 } from 'lucide-react'
 import { useState } from 'react'
-import { TitleManager } from './TitleManager'
+import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
@@ -47,9 +47,7 @@ export function WorkflowToolbar({
     workflow,
     workflowTitle: mainWorkflowTitle,
     updateTitle: updateWorkflowTitle,
-    saveTitle: saveWorkflowTitle,
     isTitleDirty: mainTitleDirty,
-    titleValidationError: mainTitleValidationError,
     exportWorkflow: mainExportWorkflow,
     importWorkflow: mainImportWorkflow,
     isDirty, // Use isDirty from main workflow store
@@ -151,15 +149,7 @@ export function WorkflowToolbar({
     setDirty(true) // Mark workflow as dirty when title changes
   }
 
-  const handleTitleSave = async (title: string) => {
-    try {
-      updateWorkflowTitle(title)
-      await saveWorkflowTitle()
-      // Show success toast would be handled by the store
-    } catch (error) {
-      handleError(error, 'title save')
-    }
-  }
+
 
   const handleSave = () => {
     setSaving(true)
@@ -190,16 +180,19 @@ export function WorkflowToolbar({
         />
       )}
       <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
-      {/* Left section - Title and Edit actions */}
+      {/* Left section - Breadcrumb and Edit actions */}
       <div className="flex items-center space-x-4">
-        {/* Title Manager */}
-        <TitleManager
+        {/* Workflow Breadcrumb */}
+        <WorkflowBreadcrumb
+          category={workflow?.category}
           title={mainWorkflowTitle}
-          onChange={handleTitleChange}
-          onSave={handleTitleSave}
-          isDirty={mainTitleDirty}
-          validationError={mainTitleValidationError}
-          placeholder="Untitled Workflow"
+          onCategoryChange={(category) => {
+            if (workflow) {
+              updateWorkflow({ category })
+              setDirty(true)
+            }
+          }}
+          onTitleChange={handleTitleChange}
           className="min-w-0" // Allow shrinking
         />
 

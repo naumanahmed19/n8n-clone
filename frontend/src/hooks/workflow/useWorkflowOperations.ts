@@ -43,6 +43,8 @@ export function useWorkflowOperations() {
           connections: workflow.connections,
           settings: workflow.settings,
           active: workflow.active,
+          category: workflow.category,
+          tags: workflow.tags,
         };
 
         const savedWorkflow = await workflowService.createWorkflow(
@@ -67,6 +69,8 @@ export function useWorkflowOperations() {
           connections: workflow.connections,
           settings: workflow.settings,
           active: workflow.active,
+          category: workflow.category,
+          tags: workflow.tags,
         };
 
         const updatedWorkflow = await workflowService.updateWorkflow(
