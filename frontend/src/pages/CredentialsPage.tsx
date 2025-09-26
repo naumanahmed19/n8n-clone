@@ -1,9 +1,9 @@
-import { useState } from 'react'
 import { CredentialDashboard } from '@/components/credential/CredentialDashboard'
 import { CredentialModal } from '@/components/credential/CredentialModal'
 import { CredentialTypeSelector } from '@/components/credential/CredentialTypeSelector'
 import { useCredentialStore } from '@/stores'
 import { Credential, CredentialType } from '@/types'
+import { useState } from 'react'
 
 export function CredentialsPage() {
   const { credentialTypes } = useCredentialStore()

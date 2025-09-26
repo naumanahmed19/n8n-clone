@@ -1,29 +1,26 @@
-import React, { useEffect, useState } from 'react'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Grid3X3, 
-  List, 
-  Download, 
-  Upload,
-  BarChart3,
-  Star,
-  Share2,
-  Tag,
-  Folder,
-  Info
-} from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { useAuthStore } from '@/stores'
-import { useWorkspaceStore } from '@/stores/workspace'
+import { BulkActionsBar } from '@/components/workspace/BulkActionsBar'
+import { ImportWorkflowModal } from '@/components/workspace/ImportWorkflowModal'
+import { TemplateGallery } from '@/components/workspace/TemplateGallery'
 import { WorkflowGrid } from '@/components/workspace/WorkflowGrid'
 import { WorkflowList } from '@/components/workspace/WorkflowList'
-import { WorkspaceFilters } from '@/components/workspace/WorkspaceFilters'
-import { TemplateGallery } from '@/components/workspace/TemplateGallery'
 import { WorkspaceAnalytics } from '@/components/workspace/WorkspaceAnalytics'
-import { ImportWorkflowModal } from '@/components/workspace/ImportWorkflowModal'
-import { BulkActionsBar } from '@/components/workspace/BulkActionsBar'
+import { WorkspaceFilters } from '@/components/workspace/WorkspaceFilters'
+import { useAuthStore } from '@/stores'
+import { useWorkspaceStore } from '@/stores/workspace'
+import {
+  BarChart3,
+  Filter,
+  Folder,
+  Grid3X3,
+  Info,
+  List,
+  Plus,
+  Search,
+  Star,
+  Upload
+} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export const WorkspacePage: React.FC = () => {
   const { user } = useAuthStore()

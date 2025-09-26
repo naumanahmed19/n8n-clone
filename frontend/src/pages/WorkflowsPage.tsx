@@ -1,7 +1,7 @@
-import React from 'react'
-import { Plus, Search, Filter, Info } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores'
+import { Filter, Info, Plus, Search } from 'lucide-react'
+import React from 'react'
+import { Link } from 'react-router-dom'
 
 export const WorkflowsPage: React.FC = () => {
   const { user } = useAuthStore()
