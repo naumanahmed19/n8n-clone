@@ -1,29 +1,39 @@
 
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
 } from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 import { useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { validateImportFile } from '@/utils/errorHandling'
-import { cn } from '@/lib/utils'
 import {
-    AlertCircle,
-    CheckCircle,
-    Download,
-    History,
-    Loader2,
-    PanelRight,
-    Redo,
-    Save,
-    Settings,
-    Undo,
-    Upload
+  AlertCircle,
+  CheckCircle,
+  Download,
+  History,
+  Home,
+  Loader2,
+  MoreHorizontal,
+  PanelRight,
+  Plus,
+  Redo,
+  Save,
+  Settings,
+  Undo,
+  Upload
 } from 'lucide-react'
 import { useState } from 'react'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
@@ -189,8 +199,40 @@ export function WorkflowToolbar({
         />
       )}
       <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border shadow-sm min-h-[60px]">
-        {/* Left section - Breadcrumb and Edit actions */}
+        {/* Left section - Home, Breadcrumb and Edit actions */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">
+          {/* Home Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.location.href = '/'}
+              >
+                <Home className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Go to Home</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* New Workflow Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.location.href = '/workflows/new'}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Create New Workflow</p>
+            </TooltipContent>
+          </Tooltip>
+
           {/* Workflow Breadcrumb */}
           <div className="flex-shrink-0">
             <WorkflowBreadcrumb
@@ -210,71 +252,42 @@ export function WorkflowToolbar({
 
           {/* Edit actions */}
           <div className="flex items-center space-x-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onUndo}
-                disabled={!canUndo}
-              >
-                <Undo className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Undo (Ctrl+Z)</p>
-            </TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                >
+                  <Undo className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Undo (Ctrl+Z)</p>
+              </TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onRedo}
-                disabled={!canRedo}
-              >
-                <Redo className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Redo (Ctrl+Y)</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving || (!isDirty && !mainTitleDirty)}
-                variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
-                size="sm"
-                className="relative"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                <span className="ml-2">{isSaving ? 'Saving...' : 'Save'}</span>
-                {(isDirty || mainTitleDirty) && !isSaving && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-2 w-2 p-0" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Save (Ctrl+S){(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                >
+                  <Redo className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Redo (Ctrl+Y)</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
       </div>
 
       {/* Center section - Execution controls */}
-      <div className="flex items-center space-x-3">
-        {/* Workflow Status Indicator */}
-        {!isWorkflowActive && (
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mr-1.5" />
-            Test Mode Only
-          </Badge>
-        )}
-
+      <div className="flex items-center space-x-3 mr-6">
         {/* Workflow Activation Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -346,101 +359,31 @@ export function WorkflowToolbar({
         </Tooltip>
       </div>
 
-      {/* Right section - Import/Export and Settings */}
-      <div className="flex items-center space-x-1">
-        {/* Import button with progress */}
-        <div className="relative">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleImportClick}
-                disabled={isImporting || isExporting}
-                variant={importError ? "destructive" : isImporting ? "secondary" : "ghost"}
-                size="icon"
-                className={cn(
-                  isImporting && "bg-blue-50 text-blue-600",
-                )}
-              >
-                {isImporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : importError ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isImporting 
-                  ? "Importing workflow..." 
-                  : importError 
-                  ? `Import failed: ${importError}`
-                  : "Import workflow"
-                }
-                {isImporting && importProgress > 0 && ` (${Math.round(importProgress)}%)`}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {/* Import progress bar */}
-          {isImporting && importProgress > 0 && (
-            <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300 ease-out"
-                style={{ width: `${importProgress}%` }}
-              />
-            </div>
-          )}
-        </div>
+      {/* Right section - Save, Node Palette and Settings Menu */}
+      <div className="flex items-center space-x-3">
+        {/* Save Button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || (!isDirty && !mainTitleDirty)}
+              variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
+              size="sm"
+              className="relative"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <span className="ml-2">{isSaving ? 'Saving...' : 'Save'}</span>
+              {(isDirty || mainTitleDirty) && !isSaving && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-2 w-2 p-0" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Save (Ctrl+S){(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}</p>
+          </TooltipContent>
+        </Tooltip>
 
-        {/* Export button with progress */}
-        <div className="relative">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={handleExportClick}
-                disabled={isExporting || isImporting}
-                variant={exportError ? "destructive" : isExporting ? "secondary" : "ghost"}
-                size="icon"
-                className={cn(
-                  isExporting && "bg-blue-50 text-blue-600",
-                )}
-              >
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : exportError ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>
-                {isExporting 
-                  ? "Exporting workflow..." 
-                  : exportError 
-                  ? `Export failed: ${exportError}`
-                  : "Export workflow"
-                }
-                {isExporting && exportProgress > 0 && ` (${Math.round(exportProgress)}%)`}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {/* Export progress bar */}
-          {isExporting && exportProgress > 0 && (
-            <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300 ease-out"
-                style={{ width: `${exportProgress}%` }}
-              />
-            </div>
-          )}
-        </div>
-
-        <Separator orientation="vertical" className="h-6 mx-2" />
+        <Separator orientation="vertical" className="h-6" />
 
         {/* Node Palette Toggle */}
         <Tooltip>
@@ -458,20 +401,60 @@ export function WorkflowToolbar({
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => setShowSettingsModal(true)}
-              variant="ghost"
-              size="icon"
-            >
-              <Settings className="h-4 w-4" />
+        {/* Settings Dropdown Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Workflow settings</p>
-          </TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => setShowSettingsModal(true)}>
+              <Settings className="mr-2 h-4 w-4" />
+              Workflow Settings
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem 
+              onClick={handleImportClick}
+              disabled={isImporting || isExporting}
+            >
+              {isImporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : importError ? (
+                <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              {isImporting 
+                ? `Importing... ${importProgress > 0 ? `(${Math.round(importProgress)}%)` : ''}`
+                : importError 
+                ? 'Import Failed'
+                : 'Import Workflow'
+              }
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem 
+              onClick={handleExportClick}
+              disabled={isExporting || isImporting}
+            >
+              {isExporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : exportError ? (
+                <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              {isExporting 
+                ? `Exporting... ${exportProgress > 0 ? `(${Math.round(exportProgress)}%)` : ''}`
+                : exportError 
+                ? 'Export Failed'
+                : 'Export Workflow'
+              }
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         </div>
       </header>
     </TooltipProvider>
