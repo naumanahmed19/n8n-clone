@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
 import { WorkspaceFilters } from '@/components/workspace/WorkspaceFilters'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock the workspace store
 vi.mock('@/stores/workspace', () => ({
@@ -92,15 +92,6 @@ describe('WorkspaceFilters', () => {
     expect(mockStoreState.setSelectedTags).toHaveBeenCalledWith(['notification'])
   })
 
-  it('handles status filter changes', () => {
-    render(<WorkspaceFilters />)
-
-    const activeStatus = screen.getByLabelText('Active')
-    fireEvent.click(activeStatus)
-
-    expect(mockStoreState.setFilters).toHaveBeenCalledWith({ active: true })
-  })
-
   it('handles visibility filter changes', () => {
     render(<WorkspaceFilters />)
 
@@ -171,27 +162,6 @@ describe('WorkspaceFilters', () => {
     expect(automationTag).toBeChecked()
     expect(notificationTag).toBeChecked()
     expect(dataProcessingTag).not.toBeChecked()
-  })
-
-  it('shows active state for status filters', () => {
-    vi.mocked(useWorkspaceStore).mockReturnValue({
-      ...mockStoreState,
-      filters: {
-        ...mockStoreState.filters,
-        active: true
-      }
-    })
-
-    render(<WorkspaceFilters />)
-
-    const statusSection = screen.getByText('Status').closest('div')
-    const activeStatus = within(statusSection!).getByLabelText('Active')
-    const inactiveStatus = within(statusSection!).getByLabelText('Inactive')
-    const allStatus = within(statusSection!).getByLabelText('All')
-
-    expect(activeStatus).toBeChecked()
-    expect(inactiveStatus).not.toBeChecked()
-    expect(allStatus).not.toBeChecked()
   })
 
   it('shows active state for visibility filters', () => {

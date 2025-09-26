@@ -83,10 +83,6 @@ export const UpdateWorkflowSchema = CreateWorkflowSchema.partial();
 
 export const WorkflowQuerySchema = PaginationQuerySchema.extend({
   search: z.string().optional(),
-  active: z
-    .string()
-    .optional()
-    .transform((val) => val === "true"),
   userId: z.string().uuid().optional(),
 });
 

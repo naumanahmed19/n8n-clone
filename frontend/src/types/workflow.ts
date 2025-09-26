@@ -93,7 +93,6 @@ export interface WorkflowFilters {
   search?: string;
   tags?: string[];
   category?: string;
-  active?: boolean;
   isTemplate?: boolean;
   isPublic?: boolean;
   sortBy?: "name" | "createdAt" | "updatedAt" | "popularity" | "executions";

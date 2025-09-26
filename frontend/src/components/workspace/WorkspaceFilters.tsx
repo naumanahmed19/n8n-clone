@@ -1,6 +1,6 @@
-import React from 'react'
-import { X, Tag, Folder, Calendar, Activity, Users } from 'lucide-react'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { Calendar, Folder, Tag, Users, X } from 'lucide-react'
+import React from 'react'
 
 export const WorkspaceFilters: React.FC = () => {
   const {
@@ -30,16 +30,12 @@ export const WorkspaceFilters: React.FC = () => {
     setFilters({ sortBy, sortOrder })
   }
 
-  const handleStatusFilter = (active?: boolean) => {
-    setFilters({ active })
-  }
-
   const handleVisibilityFilter = (isPublic?: boolean) => {
     setFilters({ isPublic })
   }
 
   const hasActiveFilters = selectedTags.length > 0 || selectedCategory || 
-    filters.active !== undefined || filters.isPublic !== undefined
+    filters.isPublic !== undefined
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -97,46 +93,6 @@ export const WorkspaceFilters: React.FC = () => {
                 <span className="ml-2 text-sm text-gray-700">{tag}</span>
               </label>
             ))}
-          </div>
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Activity className="w-4 h-4 inline mr-1" />
-            Status
-          </label>
-          <div className="space-y-2">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="status"
-                checked={filters.active === undefined}
-                onChange={() => handleStatusFilter(undefined)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">All</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="status"
-                checked={filters.active === true}
-                onChange={() => handleStatusFilter(true)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">Active</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="status"
-                checked={filters.active === false}
-                onChange={() => handleStatusFilter(false)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">Inactive</span>
-            </label>
           </div>
         </div>
 

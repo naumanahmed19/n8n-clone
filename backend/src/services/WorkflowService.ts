@@ -1,6 +1,10 @@
-import { PrismaClient } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
-import { CreateWorkflowRequest, UpdateWorkflowRequest, WorkflowQueryRequest } from '../types/api';
+import { PrismaClient } from "@prisma/client";
+import { AppError } from "../middleware/errorHandler";
+import {
+  CreateWorkflowRequest,
+  UpdateWorkflowRequest,
+  WorkflowQueryRequest,
+} from "../types/api";
 
 interface ValidationResult {
   isValid: boolean;
@@ -10,7 +14,6 @@ interface ValidationResult {
 
 interface WorkflowFilters {
   search?: string;
-  active?: boolean;
   tags?: string[];
   createdAfter?: Date;
   createdBefore?: Date;
@@ -34,14 +37,18 @@ export class WorkflowService {
           connections: data.connections,
           triggers: data.triggers,
           settings: data.settings,
-          active: data.active
-        }
+          active: data.active,
+        },
       });
 
       return workflow;
     } catch (error) {
-      console.error('Error creating workflow:', error);
-      throw new AppError('Failed to create workflow', 500, 'WORKFLOW_CREATE_ERROR');
+      console.error("Error creating workflow:", error);
+      throw new AppError(
+        "Failed to create workflow",
+        500,
+        "WORKFLOW_CREATE_ERROR"
+      );
     }
   }
 
@@ -50,23 +57,31 @@ export class WorkflowService {
       const workflow = await this.prisma.workflow.findFirst({
         where: {
           id,
-          ...(userId && { userId })
-        }
+          ...(userId && { userId }),
+        },
       });
 
       if (!workflow) {
-        throw new AppError('Workflow not found', 404, 'WORKFLOW_NOT_FOUND');
+        throw new AppError("Workflow not found", 404, "WORKFLOW_NOT_FOUND");
       }
 
       return workflow;
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Error fetching workflow:', error);
-      throw new AppError('Failed to fetch workflow', 500, 'WORKFLOW_FETCH_ERROR');
+      console.error("Error fetching workflow:", error);
+      throw new AppError(
+        "Failed to fetch workflow",
+        500,
+        "WORKFLOW_FETCH_ERROR"
+      );
     }
   }
 
-  async updateWorkflow(id: string, userId: string, data: UpdateWorkflowRequest) {
+  async updateWorkflow(
+    id: string,
+    userId: string,
+    data: UpdateWorkflowRequest
+  ) {
     try {
       // Check if workflow exists and belongs to user
       await this.getWorkflow(id, userId);
@@ -77,14 +92,18 @@ export class WorkflowService {
           nodes: data.nodes,
           connections: data.connections,
           triggers: data.triggers,
-          settings: data.settings
+          settings: data.settings,
         };
-        
+
         // Only validate if we have nodes data
         if (data.nodes) {
           const validation = await this.validateWorkflow(workflowData);
           if (!validation.isValid) {
-            throw new AppError(`Workflow validation failed: ${validation.errors.join(', ')}`, 400, 'WORKFLOW_VALIDATION_ERROR');
+            throw new AppError(
+              `Workflow validation failed: ${validation.errors.join(", ")}`,
+              400,
+              "WORKFLOW_VALIDATION_ERROR"
+            );
           }
         }
       }
@@ -93,21 +112,27 @@ export class WorkflowService {
         where: { id },
         data: {
           ...(data.name && { name: data.name }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
           ...(data.nodes && { nodes: data.nodes }),
           ...(data.connections && { connections: data.connections }),
           ...(data.triggers && { triggers: data.triggers }),
           ...(data.settings && { settings: data.settings }),
           ...(data.active !== undefined && { active: data.active }),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       return workflow;
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Error updating workflow:', error);
-      throw new AppError('Failed to update workflow', 500, 'WORKFLOW_UPDATE_ERROR');
+      console.error("Error updating workflow:", error);
+      throw new AppError(
+        "Failed to update workflow",
+        500,
+        "WORKFLOW_UPDATE_ERROR"
+      );
     }
   }
 
@@ -117,33 +142,39 @@ export class WorkflowService {
       await this.getWorkflow(id, userId);
 
       await this.prisma.workflow.delete({
-        where: { id }
+        where: { id },
       });
 
       return { success: true };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Error deleting workflow:', error);
-      throw new AppError('Failed to delete workflow', 500, 'WORKFLOW_DELETE_ERROR');
+      console.error("Error deleting workflow:", error);
+      throw new AppError(
+        "Failed to delete workflow",
+        500,
+        "WORKFLOW_DELETE_ERROR"
+      );
     }
   }
 
   async listWorkflows(userId: string, query: WorkflowQueryRequest) {
     try {
-      const { page = 1, limit = 10, search, active, sortBy = 'updatedAt', sortOrder = 'desc' } = query;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        sortBy = "updatedAt",
+        sortOrder = "desc",
+      } = query;
       const skip = (page - 1) * limit;
 
       const where: any = { userId };
 
       if (search) {
         where.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
         ];
-      }
-
-      if (active !== undefined) {
-        where.active = active;
       }
 
       const [workflows, total] = await Promise.all([
@@ -161,12 +192,12 @@ export class WorkflowService {
             updatedAt: true,
             _count: {
               select: {
-                executions: true
-              }
-            }
-          }
+                executions: true,
+              },
+            },
+          },
         }),
-        this.prisma.workflow.count({ where })
+        this.prisma.workflow.count({ where }),
       ]);
 
       return {
@@ -175,18 +206,39 @@ export class WorkflowService {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
-        }
+          totalPages: Math.ceil(total / limit),
+        },
       };
     } catch (error) {
-      console.error('Error listing workflows:', error);
-      throw new AppError('Failed to list workflows', 500, 'WORKFLOW_LIST_ERROR');
+      console.error("Error listing workflows:", error);
+      throw new AppError(
+        "Failed to list workflows",
+        500,
+        "WORKFLOW_LIST_ERROR"
+      );
     }
   }
 
-  async searchWorkflows(userId: string, filters: WorkflowFilters & { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' }) {
+  async searchWorkflows(
+    userId: string,
+    filters: WorkflowFilters & {
+      page?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    }
+  ) {
     try {
-      const { page = 1, limit = 10, search, active, tags, createdAfter, createdBefore, sortBy = 'updatedAt', sortOrder = 'desc' } = filters;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        tags,
+        createdAfter,
+        createdBefore,
+        sortBy = "updatedAt",
+        sortOrder = "desc",
+      } = filters;
       const skip = (page - 1) * limit;
 
       const where: any = { userId };
@@ -194,14 +246,9 @@ export class WorkflowService {
       // Text search across name and description
       if (search) {
         where.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
         ];
-      }
-
-      // Filter by active status
-      if (active !== undefined) {
-        where.active = active;
       }
 
       // Date range filters
@@ -214,8 +261,8 @@ export class WorkflowService {
       // Tag filtering (if tags are stored in workflow settings or as separate field)
       if (tags && tags.length > 0) {
         where.settings = {
-          path: ['tags'],
-          array_contains: tags
+          path: ["tags"],
+          array_contains: tags,
         };
       }
 
@@ -228,40 +275,44 @@ export class WorkflowService {
           include: {
             _count: {
               select: {
-                executions: true
-              }
+                executions: true,
+              },
             },
             executions: {
               take: 1,
-              orderBy: { createdAt: 'desc' },
+              orderBy: { createdAt: "desc" },
               select: {
                 id: true,
                 status: true,
                 startedAt: true,
-                finishedAt: true
-              }
-            }
-          }
+                finishedAt: true,
+              },
+            },
+          },
         }),
-        this.prisma.workflow.count({ where })
+        this.prisma.workflow.count({ where }),
       ]);
 
       return {
-        workflows: workflows.map(workflow => ({
+        workflows: workflows.map((workflow) => ({
           ...workflow,
           lastExecution: workflow.executions[0] || null,
-          executions: undefined // Remove the executions array, keep only lastExecution
+          executions: undefined, // Remove the executions array, keep only lastExecution
         })),
         pagination: {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
-        }
+          totalPages: Math.ceil(total / limit),
+        },
       };
     } catch (error) {
-      console.error('Error searching workflows:', error);
-      throw new AppError('Failed to search workflows', 500, 'WORKFLOW_SEARCH_ERROR');
+      console.error("Error searching workflows:", error);
+      throw new AppError(
+        "Failed to search workflows",
+        500,
+        "WORKFLOW_SEARCH_ERROR"
+      );
     }
   }
 
@@ -278,15 +329,19 @@ export class WorkflowService {
           connections: originalWorkflow.connections as any,
           triggers: originalWorkflow.triggers as any,
           settings: originalWorkflow.settings as any,
-          active: false // Always create duplicates as inactive
-        }
+          active: false, // Always create duplicates as inactive
+        },
       });
 
       return duplicatedWorkflow;
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Error duplicating workflow:', error);
-      throw new AppError('Failed to duplicate workflow', 500, 'WORKFLOW_DUPLICATE_ERROR');
+      console.error("Error duplicating workflow:", error);
+      throw new AppError(
+        "Failed to duplicate workflow",
+        500,
+        "WORKFLOW_DUPLICATE_ERROR"
+      );
     }
   }
 
@@ -296,7 +351,7 @@ export class WorkflowService {
 
     // Basic validation
     if (!workflowData.nodes || workflowData.nodes.length === 0) {
-      errors.push('Workflow must contain at least one node');
+      errors.push("Workflow must contain at least one node");
       return { isValid: false, errors, warnings };
     }
 
@@ -305,24 +360,28 @@ export class WorkflowService {
 
     // Check for duplicate node IDs
     if (nodeIdArray.length !== workflowData.nodes.length) {
-      errors.push('Workflow contains duplicate node IDs');
+      errors.push("Workflow contains duplicate node IDs");
     }
 
     // Validate individual nodes
     for (const node of workflowData.nodes) {
-      if (!node.id || typeof node.id !== 'string') {
-        errors.push('All nodes must have a valid ID');
+      if (!node.id || typeof node.id !== "string") {
+        errors.push("All nodes must have a valid ID");
       }
-      if (!node.type || typeof node.type !== 'string') {
+      if (!node.type || typeof node.type !== "string") {
         errors.push(`Node ${node.id} must have a valid type`);
       }
-      if (!node.name || typeof node.name !== 'string') {
+      if (!node.name || typeof node.name !== "string") {
         errors.push(`Node ${node.id} must have a valid name`);
       }
-      if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+      if (
+        !node.position ||
+        typeof node.position.x !== "number" ||
+        typeof node.position.y !== "number"
+      ) {
         errors.push(`Node ${node.id} must have valid position coordinates`);
       }
-      if (!node.parameters || typeof node.parameters !== 'object') {
+      if (!node.parameters || typeof node.parameters !== "object") {
         errors.push(`Node ${node.id} must have valid parameters object`);
       }
     }
@@ -338,33 +397,52 @@ export class WorkflowService {
         connectionIds.add(connection.id);
 
         // Validate connection structure
-        if (!connection.id || typeof connection.id !== 'string') {
-          errors.push('All connections must have a valid ID');
+        if (!connection.id || typeof connection.id !== "string") {
+          errors.push("All connections must have a valid ID");
         }
         if (!connection.sourceNodeId || !nodeIds.has(connection.sourceNodeId)) {
-          errors.push(`Invalid connection: source node ${connection.sourceNodeId} not found`);
+          errors.push(
+            `Invalid connection: source node ${connection.sourceNodeId} not found`
+          );
         }
         if (!connection.targetNodeId || !nodeIds.has(connection.targetNodeId)) {
-          errors.push(`Invalid connection: target node ${connection.targetNodeId} not found`);
+          errors.push(
+            `Invalid connection: target node ${connection.targetNodeId} not found`
+          );
         }
-        if (!connection.sourceOutput || typeof connection.sourceOutput !== 'string') {
-          errors.push(`Connection ${connection.id} must have a valid source output`);
+        if (
+          !connection.sourceOutput ||
+          typeof connection.sourceOutput !== "string"
+        ) {
+          errors.push(
+            `Connection ${connection.id} must have a valid source output`
+          );
         }
-        if (!connection.targetInput || typeof connection.targetInput !== 'string') {
-          errors.push(`Connection ${connection.id} must have a valid target input`);
+        if (
+          !connection.targetInput ||
+          typeof connection.targetInput !== "string"
+        ) {
+          errors.push(
+            `Connection ${connection.id} must have a valid target input`
+          );
         }
 
         // Check for self-connections
         if (connection.sourceNodeId === connection.targetNodeId) {
-          errors.push(`Node ${connection.sourceNodeId} cannot connect to itself`);
+          errors.push(
+            `Node ${connection.sourceNodeId} cannot connect to itself`
+          );
         }
       }
     }
 
     // Check for circular dependencies
-    const circularDependency = this.detectCircularDependencies(workflowData.nodes, workflowData.connections || []);
+    const circularDependency = this.detectCircularDependencies(
+      workflowData.nodes,
+      workflowData.connections || []
+    );
     if (circularDependency) {
-      errors.push('Workflow contains circular dependencies');
+      errors.push("Workflow contains circular dependencies");
     }
 
     // Check for orphaned nodes (nodes with no connections)
@@ -375,23 +453,27 @@ export class WorkflowService {
         connectedNodes.add(conn.targetNodeId);
       });
 
-      const orphanedNodes = nodeIdArray.filter(nodeId => !connectedNodes.has(nodeId));
+      const orphanedNodes = nodeIdArray.filter(
+        (nodeId) => !connectedNodes.has(nodeId)
+      );
       if (orphanedNodes.length > 0) {
-        warnings.push(`Orphaned nodes detected: ${orphanedNodes.join(', ')}`);
+        warnings.push(`Orphaned nodes detected: ${orphanedNodes.join(", ")}`);
       }
     }
 
     // Validate triggers
     if (workflowData.triggers && workflowData.triggers.length > 0) {
       for (const trigger of workflowData.triggers) {
-        if (!trigger.id || typeof trigger.id !== 'string') {
-          errors.push('All triggers must have a valid ID');
+        if (!trigger.id || typeof trigger.id !== "string") {
+          errors.push("All triggers must have a valid ID");
         }
-        if (!trigger.type || typeof trigger.type !== 'string') {
+        if (!trigger.type || typeof trigger.type !== "string") {
           errors.push(`Trigger ${trigger.id} must have a valid type`);
         }
         if (!trigger.nodeId || !nodeIds.has(trigger.nodeId)) {
-          errors.push(`Trigger ${trigger.id} references non-existent node ${trigger.nodeId}`);
+          errors.push(
+            `Trigger ${trigger.id} references non-existent node ${trigger.nodeId}`
+          );
         }
       }
     }
@@ -399,16 +481,25 @@ export class WorkflowService {
     // Validate workflow settings
     if (workflowData.settings) {
       const settings = workflowData.settings;
-      if (settings.timezone && typeof settings.timezone !== 'string') {
-        errors.push('Workflow timezone must be a valid string');
+      if (settings.timezone && typeof settings.timezone !== "string") {
+        errors.push("Workflow timezone must be a valid string");
       }
-      if (settings.saveExecutionProgress !== undefined && typeof settings.saveExecutionProgress !== 'boolean') {
-        errors.push('saveExecutionProgress must be a boolean');
+      if (
+        settings.saveExecutionProgress !== undefined &&
+        typeof settings.saveExecutionProgress !== "boolean"
+      ) {
+        errors.push("saveExecutionProgress must be a boolean");
       }
-      if (settings.saveDataErrorExecution !== undefined && !['all', 'none'].includes(settings.saveDataErrorExecution)) {
+      if (
+        settings.saveDataErrorExecution !== undefined &&
+        !["all", "none"].includes(settings.saveDataErrorExecution)
+      ) {
         errors.push('saveDataErrorExecution must be "all" or "none"');
       }
-      if (settings.saveDataSuccessExecution !== undefined && !['all', 'none'].includes(settings.saveDataSuccessExecution)) {
+      if (
+        settings.saveDataSuccessExecution !== undefined &&
+        !["all", "none"].includes(settings.saveDataSuccessExecution)
+      ) {
         errors.push('saveDataSuccessExecution must be "all" or "none"');
       }
     }
@@ -416,18 +507,21 @@ export class WorkflowService {
     return {
       isValid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
-  private detectCircularDependencies(nodes: any[], connections: any[]): boolean {
+  private detectCircularDependencies(
+    nodes: any[],
+    connections: any[]
+  ): boolean {
     const graph = new Map<string, string[]>();
     const visited = new Set<string>();
     const recursionStack = new Set<string>();
 
     // Build adjacency list
-    nodes.forEach(node => graph.set(node.id, []));
-    connections.forEach(conn => {
+    nodes.forEach((node) => graph.set(node.id, []));
+    connections.forEach((conn) => {
       const sourceConnections = graph.get(conn.sourceNodeId) || [];
       sourceConnections.push(conn.targetNodeId);
       graph.set(conn.sourceNodeId, sourceConnections);
@@ -462,22 +556,27 @@ export class WorkflowService {
 
   async getWorkflowStats(userId: string) {
     try {
-      const [totalWorkflows, activeWorkflows, totalExecutions, recentExecutions] = await Promise.all([
+      const [
+        totalWorkflows,
+        activeWorkflows,
+        totalExecutions,
+        recentExecutions,
+      ] = await Promise.all([
         this.prisma.workflow.count({ where: { userId } }),
         this.prisma.workflow.count({ where: { userId, active: true } }),
         this.prisma.execution.count({
           where: {
-            workflow: { userId }
-          }
+            workflow: { userId },
+          },
         }),
         this.prisma.execution.count({
           where: {
             workflow: { userId },
             createdAt: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-            }
-          }
-        })
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+            },
+          },
+        }),
       ]);
 
       return {
@@ -485,49 +584,67 @@ export class WorkflowService {
         activeWorkflows,
         inactiveWorkflows: totalWorkflows - activeWorkflows,
         totalExecutions,
-        recentExecutions
+        recentExecutions,
       };
     } catch (error) {
-      console.error('Error getting workflow stats:', error);
-      throw new AppError('Failed to get workflow statistics', 500, 'WORKFLOW_STATS_ERROR');
+      console.error("Error getting workflow stats:", error);
+      throw new AppError(
+        "Failed to get workflow statistics",
+        500,
+        "WORKFLOW_STATS_ERROR"
+      );
     }
   }
 
-  async bulkUpdateWorkflows(userId: string, workflowIds: string[], updates: Partial<UpdateWorkflowRequest>) {
+  async bulkUpdateWorkflows(
+    userId: string,
+    workflowIds: string[],
+    updates: Partial<UpdateWorkflowRequest>
+  ) {
     try {
       // Verify all workflows belong to the user
       const workflows = await this.prisma.workflow.findMany({
         where: {
           id: { in: workflowIds },
-          userId
+          userId,
         },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (workflows.length !== workflowIds.length) {
-        throw new AppError('Some workflows not found or access denied', 404, 'WORKFLOWS_NOT_FOUND');
+        throw new AppError(
+          "Some workflows not found or access denied",
+          404,
+          "WORKFLOWS_NOT_FOUND"
+        );
       }
 
       const result = await this.prisma.workflow.updateMany({
         where: {
           id: { in: workflowIds },
-          userId
+          userId,
         },
         data: {
           ...(updates.active !== undefined && { active: updates.active }),
-          ...(updates.description !== undefined && { description: updates.description }),
-          updatedAt: new Date()
-        }
+          ...(updates.description !== undefined && {
+            description: updates.description,
+          }),
+          updatedAt: new Date(),
+        },
       });
 
       return {
         updated: result.count,
-        workflowIds
+        workflowIds,
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Error bulk updating workflows:', error);
-      throw new AppError('Failed to bulk update workflows', 500, 'WORKFLOW_BULK_UPDATE_ERROR');
+      console.error("Error bulk updating workflows:", error);
+      throw new AppError(
+        "Failed to bulk update workflows",
+        500,
+        "WORKFLOW_BULK_UPDATE_ERROR"
+      );
     }
   }
 
@@ -537,31 +654,39 @@ export class WorkflowService {
       const workflows = await this.prisma.workflow.findMany({
         where: {
           id: { in: workflowIds },
-          userId
+          userId,
         },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (workflows.length !== workflowIds.length) {
-        throw new AppError('Some workflows not found or access denied', 404, 'WORKFLOWS_NOT_FOUND');
+        throw new AppError(
+          "Some workflows not found or access denied",
+          404,
+          "WORKFLOWS_NOT_FOUND"
+        );
       }
 
       // Delete workflows (cascading will handle executions)
       const result = await this.prisma.workflow.deleteMany({
         where: {
           id: { in: workflowIds },
-          userId
-        }
+          userId,
+        },
       });
 
       return {
         deleted: result.count,
-        workflowIds
+        workflowIds,
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Error bulk deleting workflows:', error);
-      throw new AppError('Failed to bulk delete workflows', 500, 'WORKFLOW_BULK_DELETE_ERROR');
+      console.error("Error bulk deleting workflows:", error);
+      throw new AppError(
+        "Failed to bulk delete workflows",
+        500,
+        "WORKFLOW_BULK_DELETE_ERROR"
+      );
     }
   }
 }
