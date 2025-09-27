@@ -181,7 +181,7 @@ export function WorkflowEditorPage() {
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "350px",
+          "--sidebar-width": "356px",
         } as React.CSSProperties
       }
     >

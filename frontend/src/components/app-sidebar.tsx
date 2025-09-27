@@ -1,5 +1,6 @@
 "use client"
 import { NavUser } from "@/components/nav-user"
+import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { Label } from "@/components/ui/label"
 import {
     Sidebar,
@@ -66,10 +67,16 @@ const data = {
   ],
   workflowItems: [
     {
+      title: "All Workflows",
+      url: "#",
+      icon: Workflow,
+      isActive: true,
+    },
+    {
       title: "Nodes",
       url: "#",
       icon: Database,
-      isActive: true,
+      isActive: false,
     },
     {
       title: "Executions",
@@ -226,7 +233,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <div className="text-foreground text-base font-medium">
               {activeWorkflowItem?.title}
             </div>
-            {activeWorkflowItem?.title === "Nodes" && (
+            {(activeWorkflowItem?.title === "Nodes" || activeWorkflowItem?.title === "All Workflows") && (
               <Label className="flex items-center gap-2 text-sm">
                 <span>Search</span>
                 <Search className="h-4 w-4" />
@@ -234,7 +241,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
           </div>
           <SidebarInput 
-            placeholder="Search nodes..." 
+            placeholder={activeWorkflowItem?.title === "All Workflows" ? "Search workflows..." : "Search nodes..."} 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -242,6 +249,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarContent>
           <SidebarGroup className="px-0">
             <SidebarGroupContent>
+              {activeWorkflowItem?.title === "All Workflows" && (
+                <WorkflowsList searchTerm={searchTerm} />
+              )}
+              
               {activeWorkflowItem?.title === "Nodes" && (
                 <>
                   {filteredNodeCategories.map((category) => (

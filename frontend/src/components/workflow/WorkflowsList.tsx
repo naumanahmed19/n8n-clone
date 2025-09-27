@@ -1,23 +1,20 @@
-import React, { useEffect, useState } from 'react'
-import { workflowService } from '@/services'
-import { Workflow } from '@/types'
-import { 
-  Activity, 
-  Calendar, 
-  Clock, 
-  MoreHorizontal, 
-  Play, 
-  Square, 
-  Workflow as WorkflowIcon 
-} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
+import { workflowService } from '@/services'
+import { Workflow } from '@/types'
+import {
+    Activity,
+    Calendar,
+    MoreHorizontal,
+    Workflow as WorkflowIcon
+} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 
 interface WorkflowsListProps {
   searchTerm?: string
@@ -33,8 +30,8 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
       try {
         setIsLoading(true)
         setError(null)
-        const fetchedWorkflows = await workflowService.getWorkflows()
-        setWorkflows(fetchedWorkflows)
+        const response = await workflowService.getWorkflows()
+        setWorkflows(response.data)
       } catch (err) {
         console.error('Failed to fetch workflows:', err)
         setError('Failed to load workflows')
