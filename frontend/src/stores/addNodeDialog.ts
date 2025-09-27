@@ -1,17 +1,31 @@
-import { create } from 'zustand'
+import { create } from "zustand";
+
+interface NodeInsertionContext {
+  sourceNodeId: string;
+  targetNodeId: string;
+  sourceOutput?: string;
+  targetInput?: string;
+}
 
 interface AddNodeDialogStore {
-  isOpen: boolean
-  position?: { x: number; y: number }
-  
-  openDialog: (position?: { x: number; y: number }) => void
-  closeDialog: () => void
+  isOpen: boolean;
+  position?: { x: number; y: number };
+  insertionContext?: NodeInsertionContext;
+
+  openDialog: (
+    position?: { x: number; y: number },
+    insertionContext?: NodeInsertionContext
+  ) => void;
+  closeDialog: () => void;
 }
 
 export const useAddNodeDialogStore = create<AddNodeDialogStore>((set) => ({
   isOpen: false,
   position: undefined,
-  
-  openDialog: (position) => set({ isOpen: true, position }),
-  closeDialog: () => set({ isOpen: false, position: undefined }),
-}))
+  insertionContext: undefined,
+
+  openDialog: (position, insertionContext) =>
+    set({ isOpen: true, position, insertionContext }),
+  closeDialog: () =>
+    set({ isOpen: false, position: undefined, insertionContext: undefined }),
+}));

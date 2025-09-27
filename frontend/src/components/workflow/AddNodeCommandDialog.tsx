@@ -1,18 +1,17 @@
-import { NodeType } from '@/types'
+import { Badge } from '@/components/ui/badge'
+import {
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+} from '@/components/ui/command'
+import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
+import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { useCallback, useMemo } from 'react'
 import { useReactFlow } from 'reactflow'
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '@/components/ui/command'
-import { useWorkflowStore } from '@/stores'
-import { WorkflowNode } from '@/types'
-import { Badge } from '@/components/ui/badge'
 
 interface AddNodeCommandDialogProps {
   open: boolean
@@ -27,7 +26,8 @@ export function AddNodeCommandDialog({
   nodeTypes,
   position,
 }: AddNodeCommandDialogProps) {
-  const { addNode } = useWorkflowStore()
+  const { addNode, addConnection } = useWorkflowStore()
+  const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
 
   // Group nodes by category
@@ -89,9 +89,36 @@ export function AddNodeCommandDialog({
       disabled: false,
     }
 
+    // Add the node first
     addNode(newNode)
+
+    // If we have insertion context, create connections to wire the new node between existing nodes
+    if (insertionContext) {
+      // Create connection from source node to new node
+      const sourceConnection: WorkflowConnection = {
+        id: `${insertionContext.sourceNodeId}-${newNode.id}-${Date.now()}`,
+        sourceNodeId: insertionContext.sourceNodeId,
+        sourceOutput: insertionContext.sourceOutput || 'main',
+        targetNodeId: newNode.id,
+        targetInput: 'main',
+      }
+
+      // Create connection from new node to target node
+      const targetConnection: WorkflowConnection = {
+        id: `${newNode.id}-${insertionContext.targetNodeId}-${Date.now() + 1}`,
+        sourceNodeId: newNode.id,
+        sourceOutput: 'main',
+        targetNodeId: insertionContext.targetNodeId,
+        targetInput: insertionContext.targetInput || 'main',
+      }
+
+      // Add both connections
+      addConnection(sourceConnection)
+      addConnection(targetConnection)
+    }
+
     onOpenChange(false)
-  }, [addNode, onOpenChange, position, reactFlowInstance])
+  }, [addNode, addConnection, onOpenChange, position, reactFlowInstance, insertionContext])
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>

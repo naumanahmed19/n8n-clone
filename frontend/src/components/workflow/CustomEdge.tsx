@@ -1,4 +1,4 @@
-import { useWorkflowStore, useWorkflowToolbarStore, useAddNodeDialogStore } from '@/stores'
+import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { Plus, X } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import {
@@ -22,7 +22,6 @@ export function CustomEdge({
 }: EdgeProps) {
     const { getNode, setEdges } = useReactFlow()
     const { removeConnection, workflow } = useWorkflowStore()
-    const { showNodePalette, toggleNodePalette } = useWorkflowToolbarStore()
     const { openDialog } = useAddNodeDialogStore()
     const [isHovered, setIsHovered] = useState(false)
 
@@ -72,14 +71,17 @@ export function CustomEdge({
         // Remove from ReactFlow edges state
         setEdges((edges) => edges.filter((edge) => edge.id !== id))
 
-        // Open the command dialog at the calculated position
-        openDialog(newPosition)
-
-        // Open node palette if it's closed so user can see available nodes
-        if (!showNodePalette) {
-            toggleNodePalette()
+        // Create insertion context to reconnect after node is added
+        const insertionContext = {
+            sourceNodeId: connection.sourceNodeId,
+            targetNodeId: connection.targetNodeId,
+            sourceOutput: connection.sourceOutput,
+            targetInput: connection.targetInput,
         }
-    }, [id, workflow, getNode, removeConnection, setEdges, openDialog, showNodePalette, toggleNodePalette])
+
+        // Open the command dialog at the calculated position with insertion context
+        openDialog(newPosition, insertionContext)
+    }, [id, workflow, getNode, removeConnection, setEdges, openDialog])
 
     return (
         <>

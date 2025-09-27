@@ -1,4 +1,3 @@
-
 import {
   ContextMenu,
   ContextMenuContent,
@@ -11,6 +10,7 @@ import { NodeExecutionStatus } from '@/types/execution'
 import { createNodeExecutionError, logExecutionError } from '@/utils/errorHandling'
 import {
   canNodeExecuteIndividually,
+  isTriggerNode,
   shouldShowDisableButton,
   shouldShowExecuteButton
 } from '@/utils/nodeTypeClassification'
@@ -50,7 +50,6 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   const executionState = useWorkflowStore(state => state.executionState)
   const getNodeExecutionResult = useWorkflowStore(state => state.getNodeExecutionResult)
   const getNodeVisualState = useWorkflowStore(state => state.getNodeVisualState)
-  // const flowExecutionState = useWorkflowStore(state => state.flowExecutionState)
   
   // Local state for node execution feedback
   const [nodeExecutionState, setNodeExecutionState] = useState<{
@@ -106,10 +105,6 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         lastExecutionTime: nodeExecutionTime,
         executionError
       })
-
-      // FIXED: Don't auto-hide success state - let it persist until next execution
-      // Success icons should remain visible until explicitly cleared by a new execution
-      // This ensures users can see execution results even after brief delays
     } else if (nodeExecutionResult) {
       // Fallback to legacy execution results
       const isExecuting = executionResultStatus === 'success' && 
@@ -140,10 +135,6 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         lastExecutionTime: executionResultEndTime,
         executionError
       })
-
-      // FIXED: Don't auto-hide success state - let it persist until next execution
-      // Success icons should remain visible until explicitly cleared by a new execution
-      // This ensures users can see execution results even after brief delays
     } else {
       // Reset state if no execution result
       setNodeExecutionState({
@@ -350,146 +341,165 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     return ''
   }
 
+  // Check if this is a trigger node to apply different styling
+  const isTriggr = isTriggerNode(data.nodeType)
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div
-          className={clsx(
-            'px-4 py-2 shadow-md rounded-md border-2 min-w-[150px] transition-all duration-200',
-            getNodeColor(),
-            getAnimationClasses(),
-            data.disabled && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-      {/* Input handle */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className={clsx(
-          "w-3 h-3 border-2 border-white",
-          data.disabled ? "!bg-gray-300" : "!bg-gray-400"
-        )}
-      />
-
-      {/* Node content */}
-      <div className="flex items-center space-x-2">
-        {/* Node icon */}
-        <div 
-          className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
-          style={{ backgroundColor: data.color || '#666' }}
-        >
-          {data.icon || data.nodeType.charAt(0).toUpperCase()}
-        </div>
-
-        {/* Node label */}
-        <div className="flex-1">
-          <div className="text-sm font-medium text-gray-900 truncate">
-            {data.label}
-          </div>
-          <div className="text-xs text-gray-500 truncate">
-            {data.nodeType}
-          </div>
-        </div>
-
-        {/* Status icon */}
-        {getStatusIcon()}
-      </div>
-
-      {/* Progress bar for running nodes */}
-      {nodeVisualState && 
-       nodeVisualState.status === NodeExecutionStatus.RUNNING && 
-       nodeVisualState.progress > 0 && (
-        <div className="mt-2">
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div 
-              className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-              style={{ width: `${nodeVisualState.progress}%` }}
-            />
-          </div>
-          <div className="text-xs text-gray-500 mt-1 text-center">
-            {nodeVisualState.progress}%
-            {nodeVisualState.executionTime && (
-              <span className="ml-2">
-                {Math.round(nodeVisualState.executionTime / 1000)}s
-              </span>
+        <div className="flex flex-col items-center">
+          {/* Main Node Container */}
+          <div
+            className={clsx(
+              'p-3 shadow-md border-2 transition-all duration-200 relative',
+              // Different shapes for trigger nodes - reverse D shape (semicircle on left)
+              isTriggr 
+                ? 'rounded-l-full rounded-r-none w-16 h-16' 
+                : 'rounded-md w-16 h-16',
+              getNodeColor(),
+              getAnimationClasses(),
+              data.disabled && 'opacity-50 cursor-not-allowed'
             )}
+          >
+            {/* Input handle - trigger nodes typically don't have inputs, but if they do, make them distinctive */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              className={clsx(
+                "w-3 h-3 border-2 border-white",
+                // Make trigger node handles more rounded
+                isTriggr ? "rounded-full" : "",
+                data.disabled ? "!bg-gray-300" : "!bg-gray-400"
+              )}
+            />
+
+            {/* Node content - centered icon and status */}
+            <div className="flex items-center justify-center h-full relative">
+              {/* Node icon */}
+              <div 
+                className={clsx(
+                  "w-8 h-8 flex items-center justify-center text-white text-sm font-bold",
+                  // Keep trigger node icons rounded for better appearance in reverse D shape
+                  isTriggr ? 'rounded-full' : 'rounded'
+                )}
+                style={{ backgroundColor: data.color || '#666' }}
+              >
+                {data.icon || data.nodeType.charAt(0).toUpperCase()}
+              </div>
+
+              {/* Status icon - positioned in top right corner */}
+              {getStatusIcon() && (
+                <div className="absolute -top-1 -right-1">
+                  {getStatusIcon()}
+                </div>
+              )}
+            </div>
+
+            {/* Output handle */}
+            <Handle
+              type="source"
+              position={Position.Right}
+              className={clsx(
+                "w-3 h-3 border-2 border-white",
+                // Make trigger node handles more rounded
+                isTriggr ? "rounded-full" : "",
+                data.disabled ? "!bg-gray-300" : "!bg-gray-400"
+              )}
+            />
+
+            {/* Disabled overlay */}
+            {data.disabled && (
+              <div className="absolute top-1 right-1" data-testid="disabled-overlay">
+                <Pause className="w-3 h-3 text-gray-400" />
+              </div>
+            )}
+
+            {/* Node Toolbar - appears on hover */}
+            <NodeToolbar
+              isVisible={true} // Always allow toolbar to be shown on hover
+              position={Position.Top}
+              offset={10}
+              align="center"
+            >
+              <div 
+                className="flex gap-1" 
+                role="toolbar" 
+                aria-label={`Controls for ${data.label}`}
+                aria-orientation="horizontal"
+              >
+                {/* Execute button - only for nodes that can be executed individually */}
+                {shouldShowExecuteButton(data.nodeType) && (
+                  <ExecuteToolbarButton
+                    nodeId={id}
+                    nodeType={data.nodeType}
+                    isExecuting={nodeExecutionState.isExecuting}
+                    canExecute={
+                      canNodeExecuteIndividually(data.nodeType) && 
+                      !data.disabled && 
+                      executionState.status !== 'running' // Disable during workflow execution
+                    }
+                    hasError={nodeExecutionState.hasError}
+                    hasSuccess={nodeExecutionState.hasSuccess}
+                    executionError={nodeExecutionState.executionError}
+                    onExecute={handleExecuteNode}
+                    onRetry={handleRetryNode}
+                  />
+                )}
+                
+                {/* Disable/Enable toggle button - for all nodes that can be disabled */}
+                {shouldShowDisableButton(data.nodeType) && (
+                  <DisableToggleToolbarButton
+                    nodeId={id}
+                    nodeLabel={data.label}
+                    disabled={data.disabled}
+                    onToggle={handleToggleDisabled}
+                  />
+                )}
+              </div>
+            </NodeToolbar>
           </div>
-        </div>
-      )}
 
-      {/* Execution time display for completed nodes */}
-      {nodeVisualState && 
-       nodeVisualState.status === NodeExecutionStatus.COMPLETED && 
-       nodeVisualState.executionTime && (
-        <div className="mt-1 text-xs text-gray-500 text-center">
-          {Math.round(nodeVisualState.executionTime / 1000)}s
-        </div>
-      )}
+          {/* Node label - below the node */}
+          <div className="mt-2 text-center max-w-[120px]">
+            <div className="text-xs font-medium text-gray-900 truncate">
+              {data.label}
+            </div>
+          </div>
 
-      {/* Disabled overlay */}
-      {data.disabled && (
-        <div className="absolute top-1 right-1" data-testid="disabled-overlay">
-          <Pause className="w-3 h-3 text-gray-400" />
-        </div>
-      )}
-
-      {/* Output handle */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className={clsx(
-          "w-3 h-3 border-2 border-white",
-          data.disabled ? "!bg-gray-300" : "!bg-gray-400"
-        )}
-      />
-
-      {/* Node Toolbar - appears on hover */}
-      <NodeToolbar
-        isVisible={true} // Always allow toolbar to be shown on hover
-        position={Position.Top}
-        offset={10}
-        align="center"
-      >
-        <div 
-          className="flex gap-1" 
-          role="toolbar" 
-          aria-label={`Controls for ${data.label}`}
-          aria-orientation="horizontal"
-        >
-          {/* Execute button - only for nodes that can be executed individually */}
-          {shouldShowExecuteButton(data.nodeType) && (
-            <ExecuteToolbarButton
-              nodeId={id}
-              nodeType={data.nodeType}
-              isExecuting={nodeExecutionState.isExecuting}
-              canExecute={
-                canNodeExecuteIndividually(data.nodeType) && 
-                !data.disabled && 
-                executionState.status !== 'running' // Disable during workflow execution
-              }
-              hasError={nodeExecutionState.hasError}
-              hasSuccess={nodeExecutionState.hasSuccess}
-              executionError={nodeExecutionState.executionError}
-              onExecute={handleExecuteNode}
-              onRetry={handleRetryNode}
-            />
+          {/* Progress bar for running nodes */}
+          {nodeVisualState && 
+           nodeVisualState.status === NodeExecutionStatus.RUNNING && 
+           nodeVisualState.progress > 0 && (
+            <div className="mt-2 w-full max-w-[120px]">
+              <div className="w-full bg-gray-200 rounded-full h-1">
+                <div 
+                  className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                  style={{ width: `${nodeVisualState.progress}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-1 text-center">
+                {nodeVisualState.progress}%
+                {nodeVisualState.executionTime && (
+                  <span className="ml-2">
+                    {Math.round(nodeVisualState.executionTime / 1000)}s
+                  </span>
+                )}
+              </div>
+            </div>
           )}
-          
-          {/* Disable/Enable toggle button - for all nodes that can be disabled */}
-          {shouldShowDisableButton(data.nodeType) && (
-            <DisableToggleToolbarButton
-              nodeId={id}
-              nodeLabel={data.label}
-              disabled={data.disabled}
-              onToggle={handleToggleDisabled}
-            />
+
+          {/* Execution time display for completed nodes */}
+          {nodeVisualState && 
+           nodeVisualState.status === NodeExecutionStatus.COMPLETED && 
+           nodeVisualState.executionTime && (
+            <div className="mt-1 text-xs text-gray-500 text-center">
+              {Math.round(nodeVisualState.executionTime / 1000)}s
+            </div>
           )}
-        </div>
-      </NodeToolbar>
         </div>
       </ContextMenuTrigger>
+      
       <ContextMenuContent className="w-48">
-        {/* Properties option */}
         <ContextMenuItem
           onClick={handleContextMenuOpenProperties}
           className="cursor-pointer"
@@ -498,7 +508,6 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
           Properties
         </ContextMenuItem>
 
-        {/* Execute Node option */}
         <ContextMenuItem
           onClick={handleContextMenuExecuteNode}
           className="cursor-pointer"
@@ -507,10 +516,8 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
           Execute Node
         </ContextMenuItem>
 
-        {/* Separator */}
         <ContextMenuSeparator />
 
-        {/* Duplicate option */}
         <ContextMenuItem
           onClick={handleContextMenuDuplicate}
           className="cursor-pointer"
@@ -519,8 +526,8 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
           Duplicate
         </ContextMenuItem>
 
-        {/* Delete option */}
         <ContextMenuSeparator />
+        
         <ContextMenuItem
           onClick={handleContextMenuDelete}
           className="cursor-pointer text-red-600 focus:text-red-600"
