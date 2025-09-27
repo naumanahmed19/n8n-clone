@@ -1,20 +1,49 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { WorkflowEditorWrapper } from '@/components'
+import { AppSidebar } from '@/components/app-sidebar'
+import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
 import { useWorkflowStore } from '@/stores'
 import { useAuthStore } from '@/stores'
 import { workflowService } from '@/services'
 import { NodeType, Workflow } from '@/types'
 import { Loader2, AlertCircle } from 'lucide-react'
+import { 
+  useWorkflowOperations
+} from '@/hooks/workflow'
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@/components/ui/sidebar"
 
 export function WorkflowEditorPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { workflow, setWorkflow, setLoading, isLoading } = useWorkflowStore()
+  const { 
+    workflow, 
+    setWorkflow, 
+    setLoading, 
+    isLoading, 
+    canUndo,
+    canRedo,
+    undo,
+    redo
+  } = useWorkflowStore()
   const { user } = useAuthStore()
   const [error, setError] = useState<string | null>(null)
   const [nodeTypes, setNodeTypes] = useState<NodeType[]>([])
   const [isLoadingNodeTypes, setIsLoadingNodeTypes] = useState(true)
+  
+  // Workflow operations for toolbar
+  const { 
+    saveWorkflow,
+    validateAndShowResult 
+  } = useWorkflowOperations()
+
+  // Toolbar handlers
+  const handleSave = async () => {
+    await saveWorkflow()
+  }
 
   // Load node types from backend
   useEffect(() => {
@@ -150,8 +179,27 @@ export function WorkflowEditorPage() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden">
-      <WorkflowEditorWrapper nodeTypes={nodeTypes} />
-    </div>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "350px",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar />
+      <SidebarInset>
+        <WorkflowToolbar
+          canUndo={canUndo()}
+          canRedo={canRedo()}
+          onUndo={undo}
+          onRedo={redo}
+          onSave={handleSave}
+          onValidate={validateAndShowResult}
+        />
+        <div className="flex flex-1 flex-col h-full overflow-hidden">
+          <WorkflowEditorWrapper nodeTypes={nodeTypes} />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
   Tooltip,
   TooltipContent,
@@ -24,19 +25,14 @@ import {
   CheckCircle,
   Download,
   History,
-  Home,
-  Key,
   Loader2,
-  Menu,
   MoreHorizontal,
   PanelRight,
-  Plus,
   Redo,
   Save,
   Settings,
   Undo,
-  Upload,
-  Workflow
+  Upload
 } from 'lucide-react'
 import { useState } from 'react'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
@@ -202,39 +198,10 @@ export function WorkflowToolbar({
         />
       )}
       <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border shadow-sm min-h-[60px]">
-        {/* Left section - Home, Breadcrumb and Edit actions */}
+        {/* Left section - Sidebar trigger, Home, Breadcrumb and Edit actions */}
         <div className="flex items-center space-x-4 flex-1 min-w-0">
-          {/* Navigation Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={() => window.location.href = '/'}>
-                <Home className="mr-2 h-4 w-4" />
-                Home
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => window.location.href = '/workflows/new'}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Workflow
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => window.location.href = '/workflows'}>
-                <Workflow className="mr-2 h-4 w-4" />
-                All Workflows
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => window.location.href = '/credentials'}>
-                <Key className="mr-2 h-4 w-4" />
-                Credentials
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Separator orientation="vertical" className="h-6" />
+          {/* Sidebar Trigger - only show when sidebar is available */}
+          <SidebarTrigger className="-ml-1" />
 
           {/* Workflow Breadcrumb */}
           <div className="flex-shrink-0">

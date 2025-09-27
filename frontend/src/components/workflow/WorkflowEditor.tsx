@@ -32,7 +32,7 @@ import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { NodePalette } from './NodePalette'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
-import { WorkflowToolbar } from './WorkflowToolbar'
+
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
@@ -263,21 +263,10 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     const selectedNodeType = selectedNode ? availableNodeTypes.find(nt => nt.type === selectedNode.type) : null
 
     return (
-        <div className="flex flex-col h-screen w-screen">
-            {/* Full Width Toolbar */}
+        <div className="flex flex-col h-full w-full">
             <WorkflowErrorBoundary>
-                <WorkflowToolbar
-                    // Minimal props - workflow operations that need main workflow store
-                    canUndo={canUndo()}
-                    canRedo={canRedo()}
-                    onUndo={undo}
-                    onRedo={redo}
-                    onSave={saveWorkflow}
-                    onValidate={validateAndShowResult}
-                />
-
                 {/* Main Content Area with Resizable Panels */}
-                <div className="flex-1 flex">
+                <div className="flex-1 flex h-full">
                     <ResizablePanelGroup direction="horizontal" className="flex-1">
                         {/* Main Editor Area */}
                         <ResizablePanel defaultSize={showNodePalette ? 80 : 100} minSize={50}>
