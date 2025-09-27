@@ -1,9 +1,13 @@
 import { CustomNodeUpload } from '@/components/customNode/CustomNodeUpload'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
 import { useNodeTypes } from '@/hooks/useNodeTypes'
+import { globalToastManager } from '@/hooks/useToast'
+import { nodeTypeService } from '@/services/nodeType'
 import { NodeType } from '@/types'
 import {
     ChevronDown,
@@ -17,11 +21,22 @@ import {
     GripVertical,
     List,
     Play,
+    Power,
+    PowerOff,
     Settings,
+    Trash2,
     Upload,
     Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+
+// Extended node type that might have additional properties for custom nodes
+interface ExtendedNodeType extends NodeType {
+  id?: string;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface NodeTypesListProps {
   searchTerm?: string
@@ -74,6 +89,9 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
   const { nodeTypes, isLoading, error: hookError, refetch } = useNodeTypes()
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<string>('available')
+  const [processingNode, setProcessingNode] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [nodeToDelete, setNodeToDelete] = useState<NodeType | null>(null)
 
   // Update context when hook data changes
   useEffect(() => {
@@ -171,7 +189,146 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
     }))
   }
 
+  // Show delete confirmation dialog
+  const showDeleteDialog = (nodeType: NodeType) => {
+    setNodeToDelete(nodeType);
+    setDeleteDialogOpen(true);
+  };
 
+  // Delete/uninstall a custom node
+  const handleDeleteNode = async () => {
+    if (!nodeToDelete) return;
+
+    setProcessingNode(nodeToDelete.type);
+    setDeleteDialogOpen(false);
+    
+    try {
+      console.log('Attempting to delete node:', nodeToDelete.type);
+      console.log('Full node details:', nodeToDelete);
+      
+      // Check if this is a database node (has id) vs a service node (only has type)
+      const extendedNode = nodeToDelete as ExtendedNodeType;
+      console.log('Extended node properties:', {
+        id: extendedNode.id,
+        type: nodeToDelete.type,
+        hasId: !!extendedNode.id,
+        createdAt: extendedNode.createdAt
+      });
+      
+      // For database nodes, we might need to check if they actually exist in the database
+      if (!extendedNode.id || !extendedNode.createdAt) {
+        throw new Error('This appears to be a core system node that cannot be uninstalled. Only custom uploaded nodes can be removed.');
+      }
+      
+      await nodeTypeService.deleteNodeType(nodeToDelete.type);
+      console.log('Delete successful');
+      
+      globalToastManager.showSuccess(
+        'Node Uninstalled',
+        { message: `Successfully uninstalled ${nodeToDelete.displayName}` }
+      );
+      
+      // Refresh the list
+      await refetch();
+      
+    } catch (error: any) {
+      console.error('Failed to delete node:', error);
+      console.error('Error details:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message,
+        url: error?.config?.url
+      });
+      
+      let errorMessage = `Failed to uninstall ${nodeToDelete.displayName}`;
+      
+      if (error?.response?.status === 404) {
+        errorMessage = 'This node was not found in the database. It may be a core system node that cannot be uninstalled, or it may have already been removed.';
+      } else if (error?.response?.status === 401) {
+        errorMessage = 'You are not authorized to delete this node.';
+      } else if (error?.response?.status === 403) {
+        errorMessage = 'You do not have permission to delete this node.';
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message?.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      globalToastManager.showError(
+        'Uninstall Failed',
+        { 
+          message: errorMessage,
+          duration: 10000
+        }
+      );
+    } finally {
+      setProcessingNode(null);
+      setNodeToDelete(null);
+    }
+  };
+
+  // Toggle node active status
+  const handleToggleNodeStatus = async (nodeType: NodeType) => {
+    
+    const nodeWithStatus = nodeType as ExtendedNodeType;
+    const newStatus = !(nodeWithStatus.active ?? true); // Default to true if not set
+    setProcessingNode(nodeType.type);
+    
+    try {
+      await nodeTypeService.updateNodeTypeStatus(nodeType.type, newStatus);
+      
+      globalToastManager.showSuccess(
+        `Node ${newStatus ? 'Enabled' : 'Disabled'}`,
+        { message: `${nodeType.displayName} is now ${newStatus ? 'active' : 'inactive'}` }
+      );
+      
+      // Refresh the list
+      refetch();
+      
+    } catch (error: any) {
+      console.error('Failed to toggle node status:', error);
+      globalToastManager.showError(
+        'Status Update Failed',
+        { 
+          message: error?.response?.data?.message || `Failed to update ${nodeType.displayName}`,
+          duration: 8000
+        }
+      );
+    } finally {
+      setProcessingNode(null);
+    }
+  };
+
+  // Check if a node is a custom node (you can adjust this logic based on your needs)
+  const isCustomNode = (nodeType: NodeType) => {
+    const extendedNode = nodeType as ExtendedNodeType;
+    console.log('Checking if node is custom:', {
+      type: nodeType.type,
+      displayName: nodeType.displayName,
+      group: nodeType.group,
+      hasId: !!extendedNode.id,
+      createdAt: extendedNode.createdAt
+    });
+    
+    // A custom node should have an ID and createdAt (database properties)
+    // and not be in standard core categories
+    const hasDbProperties = !!extendedNode.id && !!extendedNode.createdAt;
+    const isNotCore = !['Core', 'Trigger', 'Regular', 'Transform'].every(category => 
+      !nodeType.group.some(g => g.toLowerCase().includes(category.toLowerCase()))
+    );
+    
+    const isCustom = hasDbProperties && (
+      nodeType.type.includes('custom-') || 
+      nodeType.group.includes('Custom') ||
+      isNotCore
+    );
+    
+    console.log('Custom node result:', isCustom);
+    return isCustom;
+  };
 
   const renderNodeList = () => (
     <div className="space-y-0">
@@ -204,22 +361,27 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
               {group.nodeTypes.map((nodeType) => {
                 const IconComponent = getNodeIcon(nodeType)
                 
-                return (
+                const nodeElement = (
                   <div
-                    key={nodeType.type}
                     className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border-b last:border-b-0 cursor-move group min-h-0 overflow-hidden transition-colors"
+                    style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                     draggable
+
                     onDragStart={(e) => {
                       // Use the same data format as NodePalette for consistency
                       e.dataTransfer.setData('application/reactflow', JSON.stringify(nodeType))
                       e.dataTransfer.effectAllowed = 'move'
                       
-                      // Add visual feedback during drag
-                      e.currentTarget.style.opacity = '0.5'
+                      // Add visual feedback during drag - only to this element
+                      const target = e.currentTarget as HTMLElement
+                      target.style.opacity = '0.5'
+                      target.style.transform = 'scale(0.98)'
                     }}
                     onDragEnd={(e) => {
                       // Reset visual feedback after drag
-                      e.currentTarget.style.opacity = '1'
+                      const target = e.currentTarget as HTMLElement
+                      target.style.opacity = '1'
+                      target.style.transform = 'scale(1)'
                     }}
                   >
                     <div 
@@ -253,6 +415,54 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
                     </div>
                   </div>
                 )
+
+                // Check if this is a deletable custom node
+                const extendedNode = nodeType as ExtendedNodeType;
+                const isDeletable = !!(extendedNode.id && extendedNode.createdAt);
+                
+                // Wrap with context menu
+                return (
+                  <ContextMenu key={nodeType.type}>
+                    <ContextMenuTrigger className="block w-full">
+                      {nodeElement}
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      <ContextMenuItem
+                        onClick={() => handleToggleNodeStatus(nodeType)}
+                        disabled={processingNode === nodeType.type || !isDeletable}
+                      >
+                        {(nodeType as ExtendedNodeType).active !== false ? (
+                          <>
+                            <PowerOff className="h-4 w-4 mr-2" />
+                            Disable Node
+                          </>
+                        ) : (
+                          <>
+                            <Power className="h-4 w-4 mr-2" />
+                            Enable Node
+                          </>
+                        )}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => {
+                          if (isDeletable) {
+                            showDeleteDialog(nodeType);
+                          } else {
+                            globalToastManager.showError(
+                              'Cannot Uninstall',
+                              { message: 'This is a core system node that cannot be uninstalled. Only custom uploaded nodes can be removed.' }
+                            );
+                          }
+                        }}
+                        disabled={processingNode === nodeType.type}
+                        className={isDeletable ? "text-destructive focus:text-destructive" : "text-muted-foreground"}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isDeletable ? 'Uninstall Node' : 'Cannot Uninstall (Core)'}
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                )
               })}
             </div>
           )}
@@ -262,7 +472,8 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
   )
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-0 rounded-none border-b bg-transparent h-auto p-0">
         <TabsTrigger 
           value="available" 
@@ -331,5 +542,23 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
         </div>
       </TabsContent>
     </Tabs>
+
+    {/* Delete Confirmation Dialog */}
+    <ConfirmDialog
+      isOpen={deleteDialogOpen}
+      onClose={() => {
+        setDeleteDialogOpen(false);
+        setNodeToDelete(null);
+      }}
+      onConfirm={handleDeleteNode}
+      title="Uninstall Node"
+      message={`Are you sure you want to uninstall "${nodeToDelete?.displayName}"? This action cannot be undone and will remove the node from your workflow editor.`}
+      confirmText={processingNode === nodeToDelete?.type ? 'Uninstalling...' : 'Uninstall Node'}
+      cancelText="Cancel"
+      severity="danger"
+      loading={processingNode === nodeToDelete?.type}
+      disabled={processingNode === nodeToDelete?.type}
+    />
+    </>
   )
 }

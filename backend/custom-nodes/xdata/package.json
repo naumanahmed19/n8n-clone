@@ -1,20 +1,14 @@
 {
-  "name": "datetime-node",
+  "name": "xdata",
   "version": "1.0.0",
-  "description": "Comprehensive DateTime operations node for n8n including formatting, parsing, arithmetic, timezone conversions, and more",
+  "description": "xdata",
   "main": "index.js",
   "author": "",
   "keywords": [
     "n8n",
     "n8n-node",
     "workflow",
-    "automation",
-    "datetime",
-    "date",
-    "time",
-    "timezone",
-    "formatting",
-    "parsing"
+    "automation"
   ],
   "scripts": {},
   "nodes": [

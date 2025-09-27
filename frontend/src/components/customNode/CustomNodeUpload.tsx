@@ -1,7 +1,7 @@
-import { AlertCircle, CheckCircle, FileArchive, RefreshCw, Upload, X, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react';
-import React, { useCallback, useState } from 'react';
+import { AlertCircle, CheckCircle, ChevronDown, ChevronRight, FileArchive, RefreshCw, Upload, X } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { globalToastManager } from '../../hooks/useToast';
-import { nodeTypeService } from '../../services/nodeType';
+import { NodeType, nodeTypeService } from '../../services/nodeType';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -21,6 +21,10 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
     error: null,
   });
   const [showGuidelines, setShowGuidelines] = useState(false);
+  const [showInstalledNodes, setShowInstalledNodes] = useState(false);
+  const [installedNodes, setInstalledNodes] = useState<NodeType[]>([]);
+  const [loadingNodes, setLoadingNodes] = useState(false);
+  const [processingNode, setProcessingNode] = useState<string | null>(null);
 
   const resetState = () => {
     setState(prev => ({
@@ -29,6 +33,100 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
       error: null,
     }));
   };
+
+  // Load installed custom nodes
+  const loadInstalledNodes = async () => {
+    setLoadingNodes(true);
+    try {
+      const allNodes = await nodeTypeService.getAllNodeTypes();
+      // Filter for custom nodes (you can adjust this logic based on how you identify custom nodes)
+      const customNodes = allNodes.filter(node => 
+        node.type.includes('custom-') || 
+        node.group.includes('Custom') ||
+        !['core', 'trigger', 'regular'].some(category => node.group.includes(category))
+      );
+      setInstalledNodes(customNodes);
+    } catch (error) {
+      console.error('Failed to load installed nodes:', error);
+      globalToastManager.showError(
+        'Failed to Load Nodes',
+        { message: 'Could not load installed custom nodes' }
+      );
+    } finally {
+      setLoadingNodes(false);
+    }
+  };
+
+  // Delete/uninstall a custom node
+  const handleDeleteNode = async (nodeType: NodeType) => {
+    if (!confirm(`Are you sure you want to uninstall "${nodeType.displayName}"?`)) {
+      return;
+    }
+
+    setProcessingNode(nodeType.type);
+    try {
+      await nodeTypeService.deleteNodeType(nodeType.type);
+      
+      globalToastManager.showSuccess(
+        'Node Uninstalled',
+        { message: `Successfully uninstalled ${nodeType.displayName}` }
+      );
+      
+      // Refresh the list
+      await loadInstalledNodes();
+      
+      if (onUploadSuccess) {
+        onUploadSuccess(); // Refresh parent components
+      }
+    } catch (error: any) {
+      console.error('Failed to delete node:', error);
+      globalToastManager.showError(
+        'Uninstall Failed',
+        { 
+          message: error?.response?.data?.message || `Failed to uninstall ${nodeType.displayName}`,
+          duration: 8000
+        }
+      );
+    } finally {
+      setProcessingNode(null);
+    }
+  };
+
+  // Toggle node active status
+  const handleToggleNodeStatus = async (nodeType: NodeType) => {
+    const newStatus = !nodeType.active;
+    setProcessingNode(nodeType.type);
+    
+    try {
+      await nodeTypeService.updateNodeTypeStatus(nodeType.type, newStatus);
+      
+      globalToastManager.showSuccess(
+        `Node ${newStatus ? 'Enabled' : 'Disabled'}`,
+        { message: `${nodeType.displayName} is now ${newStatus ? 'active' : 'inactive'}` }
+      );
+      
+      // Refresh the list
+      await loadInstalledNodes();
+    } catch (error: any) {
+      console.error('Failed to toggle node status:', error);
+      globalToastManager.showError(
+        'Status Update Failed',
+        { 
+          message: error?.response?.data?.message || `Failed to update ${nodeType.displayName}`,
+          duration: 8000
+        }
+      );
+    } finally {
+      setProcessingNode(null);
+    }
+  };
+
+  // Load nodes when section is first expanded
+  useEffect(() => {
+    if (showInstalledNodes && installedNodes.length === 0 && !loadingNodes) {
+      loadInstalledNodes();
+    }
+  }, [showInstalledNodes, installedNodes.length, loadingNodes]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
