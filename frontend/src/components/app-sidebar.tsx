@@ -1,6 +1,6 @@
 "use client"
 import { NavUser } from "@/components/nav-user"
-import { WorkflowsList } from "@/components/workflow/WorkflowsList"
+import { CredentialsList } from "@/components/credential/CredentialsList"
 import { Label } from "@/components/ui/label"
 import {
     Sidebar,
@@ -16,6 +16,7 @@ import {
     useSidebar
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
+import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { useAuthStore } from "@/stores"
 import {
     Activity,
@@ -71,6 +72,12 @@ const data = {
       url: "#",
       icon: Workflow,
       isActive: true,
+    },
+    {
+      title: "All Credentials",
+      url: "#",
+      icon: Key,
+      isActive: false,
     },
     {
       title: "Nodes",
@@ -233,7 +240,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <div className="text-foreground text-base font-medium">
               {activeWorkflowItem?.title}
             </div>
-            {(activeWorkflowItem?.title === "Nodes" || activeWorkflowItem?.title === "All Workflows") && (
+            {(activeWorkflowItem?.title === "Nodes" || activeWorkflowItem?.title === "All Workflows" || activeWorkflowItem?.title === "All Credentials") && (
               <Label className="flex items-center gap-2 text-sm">
                 <span>Search</span>
                 <Search className="h-4 w-4" />
@@ -241,7 +248,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
           </div>
           <SidebarInput 
-            placeholder={activeWorkflowItem?.title === "All Workflows" ? "Search workflows..." : "Search nodes..."} 
+            placeholder={
+              activeWorkflowItem?.title === "All Workflows" ? "Search workflows..." :
+              activeWorkflowItem?.title === "All Credentials" ? "Search credentials..." :
+              "Search nodes..."
+            } 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -251,6 +262,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupContent>
               {activeWorkflowItem?.title === "All Workflows" && (
                 <WorkflowsList searchTerm={searchTerm} />
+              )}
+              
+              {activeWorkflowItem?.title === "All Credentials" && (
+                <CredentialsList searchTerm={searchTerm} />
               )}
               
               {activeWorkflowItem?.title === "Nodes" && (
