@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useWorkflowOperations } from '@/hooks/workflow/useWorkflowOperations'
 import { ExecutionState } from '@/types'
 import { CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
-import { useWorkflowOperations } from '@/hooks/workflow/useWorkflowOperations'
 
 interface ExecutionPanelHeaderProps {
   executionState: ExecutionState

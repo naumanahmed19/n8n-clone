@@ -3,6 +3,7 @@ import { CredentialsList } from "@/components/credential/CredentialsList"
 import { NavUser } from "@/components/nav-user"
 import { NodeTypesList } from "@/components/node/NodeTypesList"
 import { Button } from "@/components/ui/button"
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog"
 import {
   Sidebar,
   SidebarContent,
@@ -19,7 +20,7 @@ import { Switch } from "@/components/ui/switch"
 import { VariablesList } from "@/components/variable/VariablesList"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { useSidebarContext } from "@/contexts"
-import { useAuthStore } from "@/stores"
+import { useAuthStore, useWorkflowStore } from "@/stores"
 import {
   Activity,
   ArrowLeft,
@@ -110,11 +111,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setDetailSidebar
   } = useSidebarContext()
 
+  // Get workflow state to check for unsaved changes
+  const { isDirty, isTitleDirty } = useWorkflowStore()
+  const { showConfirm, ConfirmDialog } = useConfirmDialog()
 
+  const handleNavigation = async (url: string) => {
+    // Check if navigating to "New Workflow" and there are unsaved changes
+    if (url === "/workflows/new" && (isDirty || isTitleDirty)) {
+      const confirmed = await showConfirm({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes in the current workflow. Creating a new workflow will discard these changes.',
+        details: [
+          'All unsaved changes will be lost',
+          'Consider saving your current workflow first'
+        ],
+        confirmText: 'Create New Workflow',
+        cancelText: 'Cancel',
+        severity: 'warning'
+      })
 
+      if (!confirmed) return
+    }
 
-
-  const handleNavigation = (url: string) => {
     navigate(url)
   }
 
@@ -309,6 +327,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarContent>
       </Sidebar>
       </div>
+      <ConfirmDialog />
     </Sidebar>
   )
 }
