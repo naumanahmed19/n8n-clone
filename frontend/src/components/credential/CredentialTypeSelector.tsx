@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { X, Key, Search } from 'lucide-react'
-import { CredentialType } from '@/types'
 import { useCredentialStore } from '@/stores'
+import { CredentialType } from '@/types'
+import { Key, Search, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface CredentialTypeSelectorProps {
   onSelect: (credentialType: CredentialType) => void
@@ -9,11 +9,14 @@ interface CredentialTypeSelectorProps {
 }
 
 export function CredentialTypeSelector({ onSelect, onClose }: CredentialTypeSelectorProps) {
+  console.log('CredentialTypeSelector mounted')
   const { credentialTypes, fetchCredentialTypes, isLoading } = useCredentialStore()
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
+    console.log('CredentialTypeSelector effect, credentialTypes:', credentialTypes.length)
     if (credentialTypes.length === 0) {
+      console.log('Fetching credential types...')
       fetchCredentialTypes()
     }
   }, [credentialTypes.length, fetchCredentialTypes])

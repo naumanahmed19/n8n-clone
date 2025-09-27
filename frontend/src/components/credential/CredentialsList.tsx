@@ -1,27 +1,35 @@
+import { CredentialFormSidebar } from '@/components/credential/CredentialFormSidebar'
 import { CredentialsHeader } from '@/components/credential/CredentialsHeader'
+import { CredentialTypeSelection } from '@/components/credential/CredentialTypeSelection'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { useSidebarContext } from '@/contexts'
 import { credentialService } from '@/services'
+import { useCredentialStore } from '@/stores'
+import { Credential, CredentialType } from '@/types'
 import {
   Activity,
   Calendar,
   Clock,
+  Copy,
+  Edit,
   Key as KeyIcon,
   MoreHorizontal,
-  Search,
   Shield,
+  TestTube,
+  Trash2,
   Users
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 interface CredentialsListProps {}
 
@@ -34,11 +42,146 @@ export function CredentialsList({}: CredentialsListProps) {
     setIsCredentialsLoaded,
     credentialsError: error,
     setCredentialsError: setError,
-    setHeaderSlot
+    setHeaderSlot,
+    setDetailSidebar
   } = useSidebarContext()
+  
+  const { 
+    credentialTypes,
+    fetchCredentialTypes,
+    deleteCredential: deleteCredentialFromStore 
+  } = useCredentialStore()
   
   const [isLoading, setIsLoading] = useState(!isCredentialsLoaded)
   const [localSearchTerm, setLocalSearchTerm] = useState("")
+  
+  // Dialog states
+  const [editingCredential, setEditingCredential] = useState<Credential | null>(null)
+
+  // CRUD handlers (defined early to avoid hoisting issues)
+  const handleCreateCredential = () => {
+    console.log('Create credential clicked')
+    setEditingCredential(null)
+    setDetailSidebar({
+      isOpen: true,
+      title: 'Create New Credential',
+      content: <CredentialTypeSelection onTypeSelect={handleTypeSelect} />
+    })
+  }
+  
+  const handleTypeSelect = (credentialType: CredentialType) => {
+    setDetailSidebar({
+      isOpen: true,
+      title: `Create ${credentialType.displayName}`,
+      content: (
+        <CredentialFormSidebar
+          credentialType={credentialType}
+          editingCredential={editingCredential || undefined}
+          onSuccess={handleCredentialSuccess}
+          onCancel={handleCloseDetailSidebar}
+        />
+      )
+    })
+  }
+  
+  const handleCloseDetailSidebar = () => {
+    setDetailSidebar(null)
+    setEditingCredential(null)
+  }
+
+  const handleEditCredential = (credential: Credential) => {
+    console.log('Edit credential clicked:', credential)
+    setEditingCredential(credential)
+    
+    // Find the credential type for the editing credential
+    const credentialType = credentialTypes.find(ct => ct.name === credential.type)
+    
+    if (credentialType) {
+      setDetailSidebar({
+        isOpen: true,
+        title: `Edit ${credential.name}`,
+        content: (
+          <CredentialFormSidebar
+            credentialType={credentialType}
+            editingCredential={credential}
+            onSuccess={handleCredentialSuccess}
+            onCancel={handleCloseDetailSidebar}
+          />
+        )
+      })
+    } else {
+      toast.error('Credential type not found')
+    }
+  }
+
+  const handleDeleteCredential = async (credential: Credential) => {
+    try {
+      await deleteCredentialFromStore(credential.id)
+      // Refresh the credentials list
+      const updatedCredentials = credentials.filter(c => c.id !== credential.id)
+      setCredentials(updatedCredentials)
+      toast.success('Credential deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete credential:', error)
+      toast.error('Failed to delete credential')
+    }
+  }
+
+  const handleTestCredential = async (credential: Credential) => {
+    try {
+      // This would need to be implemented in the store/service
+      toast.info(`Testing credential: ${credential.name}`)
+      // const result = await testCredential({ type: credential.type, data: credential.data })
+      // if (result.success) {
+      //   toast.success('Credential test successful')
+      // } else {
+      //   toast.error('Credential test failed: ' + result.error)
+      // }
+    } catch (error) {
+      toast.error('Failed to test credential')
+    }
+  }
+
+  const handleDuplicateCredential = (credential: Credential) => {
+    // Find the credential type and open the form with that type
+    const credentialType = credentialTypes.find(ct => ct.name === credential.type)
+    
+    if (credentialType) {
+      setEditingCredential(null) // Don't pre-fill data for security
+      setDetailSidebar({
+        isOpen: true,
+        title: `Create ${credentialType.displayName}`,
+        content: (
+          <CredentialFormSidebar
+            credentialType={credentialType}
+            onSuccess={handleCredentialSuccess}
+            onCancel={handleCloseDetailSidebar}
+          />
+        )
+      })
+      toast.info(`Creating duplicate of credential: ${credential.name}`)
+    } else {
+      toast.error('Credential type not found')
+    }
+  }
+
+  const handleCredentialSuccess = async () => {
+    try {
+      // Refresh credentials list
+      const updatedCredentials = await credentialService.getCredentials()
+      setCredentials(updatedCredentials)
+      handleCloseDetailSidebar()
+      toast.success(`Credential ${editingCredential ? 'updated' : 'created'} successfully`)
+    } catch (error) {
+      console.error('Failed to refresh credentials:', error)
+      // Still close sidebar on success
+      handleCloseDetailSidebar()
+    }
+  }
+
+  const handleCredentialClick = (credentialId: string) => {
+    navigate(`/credentials/${credentialId}`)
+  }
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -77,11 +220,19 @@ export function CredentialsList({}: CredentialsListProps) {
     )
   }, [credentials, localSearchTerm])
 
+  // Initialize credential types
+  useEffect(() => {
+    fetchCredentialTypes()
+  }, [fetchCredentialTypes])
+
   // Set header slot for credentials
   useEffect(() => {
     setHeaderSlot(
       <CredentialsHeader 
-        credentialsCount={filteredCredentials.length} 
+        credentialsCount={filteredCredentials.length}
+        searchTerm={localSearchTerm}
+        onSearchChange={setLocalSearchTerm}
+        onCreateClick={handleCreateCredential}
       />
     )
     
@@ -89,16 +240,29 @@ export function CredentialsList({}: CredentialsListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, filteredCredentials.length])
-
-  const handleCredentialClick = (credentialId: string) => {
-    navigate(`/credentials/${credentialId}`)
-  }
+  }, [setHeaderSlot, filteredCredentials.length, localSearchTerm, handleCreateCredential])
 
   const handleCredentialAction = (action: string, credentialId: string, event: React.MouseEvent) => {
     event.stopPropagation()
-    console.log(`${action} credential:`, credentialId)
-    // TODO: Implement credential actions (edit, test, delete, etc.)
+    const credential = credentials.find(c => c.id === credentialId)
+    if (!credential) return
+
+    switch (action) {
+      case 'edit':
+        handleEditCredential(credential)
+        break
+      case 'test':
+        handleTestCredential(credential)
+        break
+      case 'duplicate':
+        handleDuplicateCredential(credential)
+        break
+      case 'delete':
+        handleDeleteCredential(credential)
+        break
+      default:
+        console.log(`Unknown action: ${action}`)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -181,14 +345,16 @@ export function CredentialsList({}: CredentialsListProps) {
             {localSearchTerm ? 'No credentials match your search' : 'No credentials found'}
           </p>
           {!localSearchTerm && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => navigate('/credentials/new')}
-            >
-              Create Your First Credential
-            </Button>
+            <div className="space-y-2 mt-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleCreateCredential}
+              >
+                Create Your First Credential
+              </Button>
+
+            </div>
           )}
         </div>
       </div>
@@ -196,20 +362,7 @@ export function CredentialsList({}: CredentialsListProps) {
   }
 
   return (
-    <div className="p-0">
-      {/* Search input for credentials */}
-      <div className="p-4 border-b">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search credentials..."
-            value={localSearchTerm}
-            onChange={(e) => setLocalSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-      </div>
-      
+    <>
       <div className="space-y-0">
         {filteredCredentials.map((credential) => (
           <div
@@ -271,22 +424,27 @@ export function CredentialsList({}: CredentialsListProps) {
                     <DropdownMenuItem
                       onClick={(e) => handleCredentialAction('edit', credential.id, e)}
                     >
+                      <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => handleCredentialAction('test', credential.id, e)}
                     >
+                      <TestTube className="h-4 w-4 mr-2" />
                       Test
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => handleCredentialAction('duplicate', credential.id, e)}
                     >
+                      <Copy className="h-4 w-4 mr-2" />
                       Duplicate
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={(e) => handleCredentialAction('delete', credential.id, e)}
                       className="text-red-600"
                     >
+                      <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -323,6 +481,8 @@ export function CredentialsList({}: CredentialsListProps) {
           </div>
         ))}
       </div>
-    </div>
+
+      {/* Detail sidebar is managed by the main app sidebar */}
+    </>
   )
 }

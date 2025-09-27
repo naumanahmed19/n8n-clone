@@ -35,6 +35,12 @@ interface SidebarContextType {
   setCurrentWorkflowId: (id: string | null) => void
   headerSlot: ReactNode
   setHeaderSlot: (slot: ReactNode) => void
+  detailSidebar: {
+    isOpen: boolean
+    title: string
+    content: ReactNode
+  } | null
+  setDetailSidebar: (sidebar: { isOpen: boolean; title: string; content: ReactNode } | null) => void
 }
 
 const SidebarContext = createContext<SidebarContextType | null>(null)
@@ -62,6 +68,11 @@ export function SidebarContextProvider({ children }: SidebarProviderProps) {
   const [nodeTypesError, setNodeTypesErrorState] = useState<string | null>(null)
   const [currentWorkflowId, setCurrentWorkflowIdState] = useState<string | null>(null)
   const [headerSlot, setHeaderSlotState] = useState<ReactNode>(null)
+  const [detailSidebar, setDetailSidebarState] = useState<{
+    isOpen: boolean
+    title: string
+    content: ReactNode
+  } | null>(null)
 
   // Stable setter functions
   const setActiveWorkflowItem = useCallback((item: WorkflowItem) => {
@@ -145,6 +156,8 @@ export function SidebarContextProvider({ children }: SidebarProviderProps) {
         setCurrentWorkflowId,
         headerSlot,
         setHeaderSlot,
+        detailSidebar,
+        setDetailSidebar: setDetailSidebarState,
       }}
     >
       {children}

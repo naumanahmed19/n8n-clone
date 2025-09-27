@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
-import * as crypto from 'crypto';
-import { logger } from '../utils/logger';
-import { AppError } from '../utils/errors';
+import { PrismaClient } from "@prisma/client";
+import * as crypto from "crypto";
+import { AppError } from "../utils/errors";
+import { logger } from "../utils/logger";
 
 export interface CredentialData {
   [key: string]: any;
@@ -20,7 +20,7 @@ export interface CredentialType {
 export interface CredentialProperty {
   displayName: string;
   name: string;
-  type: 'string' | 'password' | 'number' | 'boolean' | 'options';
+  type: "string" | "password" | "number" | "boolean" | "options";
   required?: boolean;
   default?: any;
   description?: string;
@@ -49,17 +49,19 @@ export interface CredentialRotationConfig {
 export class CredentialService {
   private prisma: PrismaClient;
   private encryptionKey: string;
-  private algorithm = 'aes-256-cbc';
+  private algorithm = "aes-256-cbc";
 
   constructor() {
     this.prisma = new PrismaClient();
-    
+
     // Use environment variable or generate a secure key
     const keyString = process.env.CREDENTIAL_ENCRYPTION_KEY;
     if (!keyString || keyString.length !== 64) {
-      throw new Error('CREDENTIAL_ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
+      throw new Error(
+        "CREDENTIAL_ENCRYPTION_KEY must be a 64-character hex string (32 bytes)"
+      );
     }
-    
+
     this.encryptionKey = keyString;
   }
 
@@ -69,18 +71,18 @@ export class CredentialService {
   private encryptData(data: CredentialData): string {
     try {
       const iv = crypto.randomBytes(16);
-      const key = Buffer.from(this.encryptionKey, 'hex');
+      const key = Buffer.from(this.encryptionKey, "hex");
       const cipher = crypto.createCipheriv(this.algorithm, key, iv);
 
-      let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
-      encrypted += cipher.final('hex');
-      
+      let encrypted = cipher.update(JSON.stringify(data), "utf8", "hex");
+      encrypted += cipher.final("hex");
+
       // Combine IV and encrypted data
-      const combined = iv.toString('hex') + ':' + encrypted;
+      const combined = iv.toString("hex") + ":" + encrypted;
       return combined;
     } catch (error) {
-      logger.error('Failed to encrypt credential data:', error);
-      throw new AppError('Failed to encrypt credential data', 500);
+      logger.error("Failed to encrypt credential data:", error);
+      throw new AppError("Failed to encrypt credential data", 500);
     }
   }
 
@@ -89,24 +91,24 @@ export class CredentialService {
    */
   private decryptData(encryptedData: string): CredentialData {
     try {
-      const parts = encryptedData.split(':');
+      const parts = encryptedData.split(":");
       if (parts.length !== 2) {
-        throw new Error('Invalid encrypted data format');
+        throw new Error("Invalid encrypted data format");
       }
 
-      const iv = Buffer.from(parts[0], 'hex');
+      const iv = Buffer.from(parts[0], "hex");
       const encrypted = parts[1];
-      const key = Buffer.from(this.encryptionKey, 'hex');
+      const key = Buffer.from(this.encryptionKey, "hex");
 
       const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
 
-      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+      let decrypted = decipher.update(encrypted, "hex", "utf8");
+      decrypted += decipher.final("utf8");
 
       return JSON.parse(decrypted);
     } catch (error) {
-      logger.error('Failed to decrypt credential data:', error);
-      throw new AppError('Failed to decrypt credential data', 500);
+      logger.error("Failed to decrypt credential data:", error);
+      throw new AppError("Failed to decrypt credential data", 500);
     }
   }
 
@@ -133,12 +135,12 @@ export class CredentialService {
     const existingCredential = await this.prisma.credential.findFirst({
       where: {
         name,
-        userId
-      }
+        userId,
+      },
     });
 
     if (existingCredential) {
-      throw new AppError('A credential with this name already exists', 400);
+      throw new AppError("A credential with this name already exists", 400);
     }
 
     // Encrypt the credential data
@@ -150,27 +152,30 @@ export class CredentialService {
         type,
         userId,
         data: encryptedData,
-        expiresAt
-      }
+        expiresAt,
+      },
     });
 
     logger.info(`Credential created: ${name} (${type}) for user ${userId}`);
 
     return {
       ...credential,
-      data: data // Return decrypted data
+      data: data, // Return decrypted data
     };
   }
 
   /**
    * Get credential by ID with decrypted data
    */
-  async getCredential(id: string, userId: string): Promise<CredentialWithData | null> {
+  async getCredential(
+    id: string,
+    userId: string
+  ): Promise<CredentialWithData | null> {
     const credential = await this.prisma.credential.findFirst({
       where: {
         id,
-        userId
-      }
+        userId,
+      },
     });
 
     if (!credential) {
@@ -179,14 +184,14 @@ export class CredentialService {
 
     // Check if credential is expired
     if (credential.expiresAt && credential.expiresAt < new Date()) {
-      throw new AppError('Credential has expired', 401);
+      throw new AppError("Credential has expired", 401);
     }
 
     const decryptedData = this.decryptData(credential.data);
 
     return {
       ...credential,
-      data: decryptedData
+      data: decryptedData,
     };
   }
 
@@ -208,11 +213,11 @@ export class CredentialService {
         userId: true,
         expiresAt: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
       },
       orderBy: {
-        name: 'asc'
-      }
+        name: "asc",
+      },
     });
 
     return credentials;
@@ -231,11 +236,11 @@ export class CredentialService {
     }
   ): Promise<CredentialWithData> {
     const existingCredential = await this.prisma.credential.findFirst({
-      where: { id, userId }
+      where: { id, userId },
     });
 
     if (!existingCredential) {
-      throw new AppError('Credential not found', 404);
+      throw new AppError("Credential not found", 404);
     }
 
     // Check name conflicts
@@ -244,21 +249,21 @@ export class CredentialService {
         where: {
           name: updates.name,
           userId,
-          id: { not: id }
-        }
+          id: { not: id },
+        },
       });
 
       if (nameConflict) {
-        throw new AppError('A credential with this name already exists', 400);
+        throw new AppError("A credential with this name already exists", 400);
       }
     }
 
     const updateData: any = {};
-    
+
     if (updates.name) {
       updateData.name = updates.name;
     }
-    
+
     if (updates.data) {
       const credentialType = this.getCredentialType(existingCredential.type);
       if (credentialType) {
@@ -266,23 +271,25 @@ export class CredentialService {
       }
       updateData.data = this.encryptData(updates.data);
     }
-    
+
     if (updates.expiresAt !== undefined) {
       updateData.expiresAt = updates.expiresAt;
     }
 
     const credential = await this.prisma.credential.update({
       where: { id },
-      data: updateData
+      data: updateData,
     });
 
-    logger.info(`Credential updated: ${credential.name} (${credential.type}) for user ${userId}`);
+    logger.info(
+      `Credential updated: ${credential.name} (${credential.type}) for user ${userId}`
+    );
 
     const decryptedData = updates.data || this.decryptData(credential.data);
 
     return {
       ...credential,
-      data: decryptedData
+      data: decryptedData,
     };
   }
 
@@ -291,28 +298,33 @@ export class CredentialService {
    */
   async deleteCredential(id: string, userId: string): Promise<void> {
     const credential = await this.prisma.credential.findFirst({
-      where: { id, userId }
+      where: { id, userId },
     });
 
     if (!credential) {
-      throw new AppError('Credential not found', 404);
+      throw new AppError("Credential not found", 404);
     }
 
     await this.prisma.credential.delete({
-      where: { id }
+      where: { id },
     });
 
-    logger.info(`Credential deleted: ${credential.name} (${credential.type}) for user ${userId}`);
+    logger.info(
+      `Credential deleted: ${credential.name} (${credential.type}) for user ${userId}`
+    );
   }
 
   /**
    * Get credential for node execution (with decrypted data)
    */
-  async getCredentialForExecution(credentialId: string, userId: string): Promise<CredentialData> {
+  async getCredentialForExecution(
+    credentialId: string,
+    userId: string
+  ): Promise<CredentialData> {
     const credential = await this.getCredential(credentialId, userId);
-    
+
     if (!credential) {
-      throw new AppError('Credential not found', 404);
+      throw new AppError("Credential not found", 404);
     }
 
     return credential.data;
@@ -321,7 +333,10 @@ export class CredentialService {
   /**
    * Test credential connection
    */
-  async testCredential(type: string, data: CredentialData): Promise<{ success: boolean; message: string }> {
+  async testCredential(
+    type: string,
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
     const credentialType = this.getCredentialType(type);
     if (!credentialType) {
       return { success: false, message: `Unknown credential type: ${type}` };
@@ -331,19 +346,24 @@ export class CredentialService {
     try {
       this.validateCredentialData(credentialType, data);
     } catch (error) {
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      };
     }
 
     // Perform type-specific testing
     switch (type) {
-      case 'httpBasicAuth':
+      case "httpBasicAuth":
         return this.testHttpBasicAuth(data);
-      case 'apiKey':
+      case "apiKey":
         return this.testApiKey(data);
-      case 'oauth2':
+      case "oauth2":
         return this.testOAuth2(data);
+      case "bearerToken":
+        return this.testBearerToken(data);
       default:
-        return { success: true, message: 'Credential format is valid' };
+        return { success: true, message: "Credential format is valid" };
     }
   }
 
@@ -359,28 +379,32 @@ export class CredentialService {
         userId,
         expiresAt: {
           lte: warningDate,
-          gt: new Date()
-        }
+          gt: new Date(),
+        },
       },
       select: {
         id: true,
         name: true,
         type: true,
-        expiresAt: true
-      }
+        expiresAt: true,
+      },
     });
   }
 
   /**
    * Rotate credential (create new version)
    */
-  async rotateCredential(id: string, userId: string, newData: CredentialData): Promise<CredentialWithData> {
+  async rotateCredential(
+    id: string,
+    userId: string,
+    newData: CredentialData
+  ): Promise<CredentialWithData> {
     const existingCredential = await this.prisma.credential.findFirst({
-      where: { id, userId }
+      where: { id, userId },
     });
 
     if (!existingCredential) {
-      throw new AppError('Credential not found', 404);
+      throw new AppError("Credential not found", 404);
     }
 
     // Validate new credential data
@@ -395,10 +419,12 @@ export class CredentialService {
 
     const updatedCredential = await this.updateCredential(id, userId, {
       data: newData,
-      expiresAt: newExpiresAt
+      expiresAt: newExpiresAt,
     });
 
-    logger.info(`Credential rotated: ${existingCredential.name} (${existingCredential.type}) for user ${userId}`);
+    logger.info(
+      `Credential rotated: ${existingCredential.name} (${existingCredential.type}) for user ${userId}`
+    );
 
     return updatedCredential;
   }
@@ -409,100 +435,127 @@ export class CredentialService {
   getCredentialTypes(): CredentialType[] {
     return [
       {
-        name: 'httpBasicAuth',
-        displayName: 'HTTP Basic Auth',
-        description: 'Username and password for HTTP Basic Authentication',
+        name: "httpBasicAuth",
+        displayName: "HTTP Basic Auth",
+        description: "Username and password for HTTP Basic Authentication",
         properties: [
           {
-            displayName: 'Username',
-            name: 'username',
-            type: 'string',
+            displayName: "Username",
+            name: "username",
+            type: "string",
             required: true,
-            description: 'Username for authentication',
-            placeholder: 'Enter username'
+            description: "Username for authentication",
+            placeholder: "Enter username",
           },
           {
-            displayName: 'Password',
-            name: 'password',
-            type: 'password',
+            displayName: "Password",
+            name: "password",
+            type: "password",
             required: true,
-            description: 'Password for authentication',
-            placeholder: 'Enter password'
-          }
+            description: "Password for authentication",
+            placeholder: "Enter password",
+          },
         ],
-        icon: '🔐',
-        color: '#4F46E5',
-        testable: true
+        icon: "🔐",
+        color: "#4F46E5",
+        testable: true,
       },
       {
-        name: 'apiKey',
-        displayName: 'API Key',
-        description: 'API key for service authentication',
+        name: "apiKey",
+        displayName: "API Key",
+        description: "API key for service authentication",
         properties: [
           {
-            displayName: 'API Key',
-            name: 'apiKey',
-            type: 'password',
+            displayName: "API Key",
+            name: "apiKey",
+            type: "password",
             required: true,
-            description: 'Your API key',
-            placeholder: 'Enter API key'
+            description: "Your API key",
+            placeholder: "Enter API key",
           },
           {
-            displayName: 'Header Name',
-            name: 'headerName',
-            type: 'string',
+            displayName: "Header Name",
+            name: "headerName",
+            type: "string",
             required: false,
-            default: 'Authorization',
-            description: 'Header name for the API key',
-            placeholder: 'Authorization'
-          }
+            default: "Authorization",
+            description: "Header name for the API key",
+            placeholder: "Authorization",
+          },
         ],
-        icon: '🔑',
-        color: '#059669',
-        testable: true
+        icon: "🔑",
+        color: "#059669",
+        testable: true,
       },
       {
-        name: 'oauth2',
-        displayName: 'OAuth2',
-        description: 'OAuth2 authentication credentials',
+        name: "oauth2",
+        displayName: "OAuth2",
+        description: "OAuth2 authentication credentials",
         properties: [
           {
-            displayName: 'Client ID',
-            name: 'clientId',
-            type: 'string',
+            displayName: "Client ID",
+            name: "clientId",
+            type: "string",
             required: true,
-            description: 'OAuth2 client ID',
-            placeholder: 'Enter client ID'
+            description: "OAuth2 client ID",
+            placeholder: "Enter client ID",
           },
           {
-            displayName: 'Client Secret',
-            name: 'clientSecret',
-            type: 'password',
+            displayName: "Client Secret",
+            name: "clientSecret",
+            type: "password",
             required: true,
-            description: 'OAuth2 client secret',
-            placeholder: 'Enter client secret'
+            description: "OAuth2 client secret",
+            placeholder: "Enter client secret",
           },
           {
-            displayName: 'Access Token',
-            name: 'accessToken',
-            type: 'password',
+            displayName: "Access Token",
+            name: "accessToken",
+            type: "password",
             required: false,
-            description: 'OAuth2 access token',
-            placeholder: 'Enter access token'
+            description: "OAuth2 access token",
+            placeholder: "Enter access token",
           },
           {
-            displayName: 'Refresh Token',
-            name: 'refreshToken',
-            type: 'password',
+            displayName: "Refresh Token",
+            name: "refreshToken",
+            type: "password",
             required: false,
-            description: 'OAuth2 refresh token',
-            placeholder: 'Enter refresh token'
-          }
+            description: "OAuth2 refresh token",
+            placeholder: "Enter refresh token",
+          },
         ],
-        icon: '🔒',
-        color: '#DC2626',
-        testable: true
-      }
+        icon: "🔒",
+        color: "#DC2626",
+        testable: true,
+      },
+      {
+        name: "bearerToken",
+        displayName: "Bearer Token",
+        description: "Bearer token for HTTP Authorization header",
+        properties: [
+          {
+            displayName: "Bearer Token",
+            name: "token",
+            type: "password",
+            required: true,
+            description: "Bearer token for authentication",
+            placeholder: "Enter bearer token",
+          },
+          {
+            displayName: "Token Prefix",
+            name: "tokenPrefix",
+            type: "string",
+            required: false,
+            default: "Bearer",
+            description: 'Prefix for the token (usually "Bearer")',
+            placeholder: "Bearer",
+          },
+        ],
+        icon: "🎫",
+        color: "#7C3AED",
+        testable: true,
+      },
     ];
   }
 
@@ -510,19 +563,25 @@ export class CredentialService {
    * Get credential type definition
    */
   getCredentialType(type: string): CredentialType | null {
-    return this.getCredentialTypes().find(ct => ct.name === type) || null;
+    return this.getCredentialTypes().find((ct) => ct.name === type) || null;
   }
 
   /**
    * Validate credential data against type definition
    */
-  private validateCredentialData(credentialType: CredentialType, data: CredentialData): void {
+  private validateCredentialData(
+    credentialType: CredentialType,
+    data: CredentialData
+  ): void {
     const errors: string[] = [];
 
     for (const property of credentialType.properties) {
       const value = data[property.name];
 
-      if (property.required && (value === undefined || value === null || value === '')) {
+      if (
+        property.required &&
+        (value === undefined || value === null || value === "")
+      ) {
         errors.push(`${property.displayName} is required`);
         continue;
       }
@@ -530,25 +589,30 @@ export class CredentialService {
       if (value !== undefined && value !== null) {
         // Type validation
         switch (property.type) {
-          case 'string':
-          case 'password':
-            if (typeof value !== 'string') {
+          case "string":
+          case "password":
+            if (typeof value !== "string") {
               errors.push(`${property.displayName} must be a string`);
             }
             break;
-          case 'number':
-            if (typeof value !== 'number') {
+          case "number":
+            if (typeof value !== "number") {
               errors.push(`${property.displayName} must be a number`);
             }
             break;
-          case 'boolean':
-            if (typeof value !== 'boolean') {
+          case "boolean":
+            if (typeof value !== "boolean") {
               errors.push(`${property.displayName} must be a boolean`);
             }
             break;
-          case 'options':
-            if (property.options && !property.options.some(opt => opt.value === value)) {
-              errors.push(`${property.displayName} must be one of the allowed options`);
+          case "options":
+            if (
+              property.options &&
+              !property.options.some((opt) => opt.value === value)
+            ) {
+              errors.push(
+                `${property.displayName} must be one of the allowed options`
+              );
             }
             break;
         }
@@ -556,49 +620,90 @@ export class CredentialService {
     }
 
     if (errors.length > 0) {
-      throw new AppError(`Credential validation failed: ${errors.join(', ')}`, 400);
+      throw new AppError(
+        `Credential validation failed: ${errors.join(", ")}`,
+        400
+      );
     }
   }
 
   /**
    * Test HTTP Basic Auth credentials
    */
-  private async testHttpBasicAuth(data: CredentialData): Promise<{ success: boolean; message: string }> {
+  private async testHttpBasicAuth(
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
     if (!data.username || !data.password) {
-      return { success: false, message: 'Username and password are required' };
+      return { success: false, message: "Username and password are required" };
     }
 
     // In a real implementation, you might test against a specific endpoint
     // For now, just validate the format
-    return { success: true, message: 'HTTP Basic Auth credentials are valid' };
+    return { success: true, message: "HTTP Basic Auth credentials are valid" };
   }
 
   /**
    * Test API Key credentials
    */
-  private async testApiKey(data: CredentialData): Promise<{ success: boolean; message: string }> {
+  private async testApiKey(
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
     if (!data.apiKey) {
-      return { success: false, message: 'API key is required' };
+      return { success: false, message: "API key is required" };
     }
 
     // Basic format validation
     if (data.apiKey.length < 10) {
-      return { success: false, message: 'API key appears to be too short' };
+      return { success: false, message: "API key appears to be too short" };
     }
 
-    return { success: true, message: 'API key format is valid' };
+    return { success: true, message: "API key format is valid" };
   }
 
   /**
    * Test OAuth2 credentials
    */
-  private async testOAuth2(data: CredentialData): Promise<{ success: boolean; message: string }> {
+  private async testOAuth2(
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
     if (!data.clientId || !data.clientSecret) {
-      return { success: false, message: 'Client ID and Client Secret are required' };
+      return {
+        success: false,
+        message: "Client ID and Client Secret are required",
+      };
     }
 
     // In a real implementation, you might test the OAuth2 flow
-    return { success: true, message: 'OAuth2 credentials are valid' };
+    return { success: true, message: "OAuth2 credentials are valid" };
+  }
+
+  /**
+   * Test Bearer Token credentials
+   */
+  private async testBearerToken(
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
+    if (!data.token) {
+      return { success: false, message: "Bearer token is required" };
+    }
+
+    // Basic format validation
+    if (data.token.length < 10) {
+      return {
+        success: false,
+        message: "Bearer token appears to be too short",
+      };
+    }
+
+    // Check if tokenPrefix is provided and valid
+    if (data.tokenPrefix && data.tokenPrefix.trim().length === 0) {
+      return {
+        success: false,
+        message: "Token prefix cannot be empty if provided",
+      };
+    }
+
+    return { success: true, message: "Bearer token credentials are valid" };
   }
 
   /**
@@ -609,24 +714,28 @@ export class CredentialService {
       return obj;
     }
 
-    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
+    if (
+      typeof obj === "string" ||
+      typeof obj === "number" ||
+      typeof obj === "boolean"
+    ) {
       return obj;
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.deepSanitize(item));
+      return obj.map((item) => this.deepSanitize(item));
     }
 
-    if (typeof obj === 'object') {
+    if (typeof obj === "object") {
       const sanitized: any = {};
-      const dangerousProps = ['__proto__', 'constructor', 'prototype'];
-      
+      const dangerousProps = ["__proto__", "constructor", "prototype"];
+
       for (const [key, value] of Object.entries(obj)) {
         if (!dangerousProps.includes(key)) {
           sanitized[key] = this.deepSanitize(value);
         }
       }
-      
+
       return sanitized;
     }
 
