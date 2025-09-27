@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Grid3X3, List, Search } from 'lucide-react'
+import { Folder, List, Search } from 'lucide-react'
 
 interface WorkflowsHeaderProps {
   viewMode: 'list' | 'categorized'
@@ -39,7 +39,7 @@ export function WorkflowsHeader({
             className="h-6 px-2"
             onClick={() => setViewMode('categorized')}
           >
-            <Grid3X3 className="h-3 w-3" />
+            <Folder className="h-3 w-3" />
           </Button>
         </div>
       </div>
