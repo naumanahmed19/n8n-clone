@@ -14,6 +14,7 @@ import {
     Database,
     FolderOpen,
     Globe,
+    GripVertical,
     List,
     Play,
     Settings,
@@ -244,8 +245,11 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start mt-0.5">
-                      v{nodeType.version}
+                    <div className="flex items-center gap-2 shrink-0 self-start mt-0.5">
+                      <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                        v{nodeType.version}
+                      </div>
+                      <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-60 transition-opacity" />
                     </div>
                   </div>
                 )
