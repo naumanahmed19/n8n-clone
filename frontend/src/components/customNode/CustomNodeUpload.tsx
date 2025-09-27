@@ -1,10 +1,9 @@
-import { AlertCircle, CheckCircle, FileArchive, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileArchive, RefreshCw, Upload, X, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { globalToastManager } from '../../hooks/useToast';
 import { nodeTypeService } from '../../services/nodeType';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 
 interface UploadState {
@@ -21,6 +20,7 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
     result: null,
     error: null,
   });
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   const resetState = () => {
     setState(prev => ({
@@ -131,161 +131,155 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Upload Area */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Upload className="mr-2 h-5 w-5" />
-            Upload Custom Nodes
-          </CardTitle>
-          <CardDescription>
-            Upload a ZIP file containing your custom node package. The ZIP should include node definitions, package.json, and any required dependencies.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              state.dragActive
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            {state.uploading ? (
-              <div className="flex flex-col items-center">
-                <RefreshCw className="h-12 w-12 text-blue-500 animate-spin mb-4" />
-                <p className="text-lg font-medium text-gray-900">Uploading...</p>
-                <p className="text-sm text-gray-500">Processing your custom node package</p>
-              </div>
-            ) : (
-              <>
-                <FileArchive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Drop your ZIP file here, or{' '}
-                  <label className="text-blue-600 hover:text-blue-500 cursor-pointer underline">
-                    browse
-                    <Input
-                      type="file"
-                      accept=".zip"
-                      onChange={handleFileInput}
-                      className="hidden"
-                      disabled={state.uploading}
-                    />
-                  </label>
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Supported format: ZIP files containing custom node packages
-                </p>
-                <p className="text-xs text-gray-400 mt-2">
-                  Maximum file size: 50MB
-                </p>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="p-4 border-b">
+        <div className="flex items-center gap-2 mb-3">
+          <Upload className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Upload Custom Nodes</span>
+        </div>
+        
+        <div
+          className={`relative border border-dashed rounded-md p-4 text-center transition-colors text-sm ${
+            state.dragActive
+              ? 'border-primary bg-primary/5'
+              : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          {state.uploading ? (
+            <div className="flex flex-col items-center py-2">
+              <RefreshCw className="h-6 w-6 text-primary animate-spin mb-2" />
+              <p className="text-sm font-medium">Uploading...</p>
+              <p className="text-xs text-muted-foreground">Processing node package</p>
+            </div>
+          ) : (
+            <div className="py-2">
+              <FileArchive className="mx-auto h-6 w-6 text-muted-foreground mb-2" />
+              <p className="text-sm mb-1">
+                Drop ZIP file here or{' '}
+                <label className="text-primary hover:text-primary/80 cursor-pointer underline">
+                  browse
+                  <Input
+                    type="file"
+                    accept=".zip"
+                    onChange={handleFileInput}
+                    className="hidden"
+                    disabled={state.uploading}
+                  />
+                </label>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                ZIP files only • Max 50MB
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Error Display */}
       {state.error && (
-        <Card className="border-red-200">
-          <CardContent className="pt-6">
-            <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-red-800">Upload Failed</h3>
-                <p className="text-sm text-red-700 mt-1">{state.error}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetState}
-                className="ml-3"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+        <div className="p-4 border-b bg-destructive/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-destructive">Upload Failed</p>
+              <p className="text-xs text-destructive/80 mt-1">{state.error}</p>
             </div>
-          </CardContent>
-        </Card>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetState}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Success Display */}
       {state.result && state.result.success && (
-        <Card className="border-green-200">
-          <CardContent className="pt-6">
-            <div className="flex items-start">
-              <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-green-800">Upload Successful</h3>
-                <p className="text-sm text-green-700 mt-1">{state.result.message}</p>
-                
-                {state.result.nodes && state.result.nodes.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="text-sm font-medium text-green-800 mb-2">
-                      Added Nodes ({state.result.nodes.length}):
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {state.result.nodes.map((node: any, index: number) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {node.displayName}
-                        </Badge>
-                      ))}
-                    </div>
+        <div className="p-4 border-b bg-green-50">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-green-800">Upload Successful</p>
+              <p className="text-xs text-green-700 mt-1">{state.result.message}</p>
+              
+              {state.result.nodes && state.result.nodes.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-green-700 mb-1">
+                    Added {state.result.nodes.length} node(s):
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {state.result.nodes.slice(0, 3).map((node: any, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs h-5">
+                        {node.displayName}
+                      </Badge>
+                    ))}
+                    {state.result.nodes.length > 3 && (
+                      <Badge variant="secondary" className="text-xs h-5">
+                        +{state.result.nodes.length - 3} more
+                      </Badge>
+                    )}
                   </div>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetState}
-                className="ml-3"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetState}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
       )}
 
-      {/* Upload Guidelines */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Upload Guidelines</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-medium mb-2">ZIP Structure Requirements:</h4>
-            <ul className="text-sm text-gray-600 space-y-1 ml-4">
-              <li>• <code>package.json</code> - Package metadata and dependencies</li>
-              <li>• <code>nodes/</code> - Directory containing node implementation files</li>
-              <li>• <code>credentials/</code> - (Optional) Custom credential types</li>
-              <li>• <code>dist/</code> - (Optional) Compiled JavaScript files</li>
-            </ul>
+      {/* Guidelines Section */}
+      <div className="border-b">
+        <div
+          className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={() => setShowGuidelines(!showGuidelines)}
+        >
+          <div className="flex items-center gap-2">
+            {showGuidelines ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium">Upload Guidelines</span>
           </div>
-          
-          <div>
-            <h4 className="font-medium mb-2">Node File Requirements:</h4>
-            <ul className="text-sm text-gray-600 space-y-1 ml-4">
-              <li>• Each node should have a <code>.node.ts</code> or <code>.node.js</code> file</li>
-              <li>• Node description file <code>.node.json</code> (optional but recommended)</li>
-              <li>• Proper export of the node class extending INode interface</li>
-            </ul>
-          </div>
+        </div>
 
-          <div>
-            <h4 className="font-medium mb-2">Best Practices:</h4>
-            <ul className="text-sm text-gray-600 space-y-1 ml-4">
-              <li>• Include proper TypeScript definitions</li>
-              <li>• Add comprehensive documentation</li>
-              <li>• Test your nodes before uploading</li>
-              <li>• Follow n8n naming conventions</li>
-            </ul>
+        {showGuidelines && (
+          <div className="px-4 pb-4 space-y-3">
+            <div>
+              <h4 className="text-sm font-medium mb-1">Required Files:</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5 ml-3">
+                <li>• package.json - Package metadata</li>
+                <li>• nodes/ - Node implementation files</li>
+                <li>• credentials/ - (Optional) Custom credentials</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-sm font-medium mb-1">Node Files:</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5 ml-3">
+                <li>• .node.ts or .node.js files</li>
+                <li>• .node.json description files</li>
+                <li>• Proper node class exports</li>
+              </ul>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };
