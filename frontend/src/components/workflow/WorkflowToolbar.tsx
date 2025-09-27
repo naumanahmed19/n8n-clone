@@ -25,6 +25,7 @@ import {
   Download,
   History,
   Home,
+  Key,
   Loader2,
   Menu,
   MoreHorizontal,
@@ -224,6 +225,11 @@ export function WorkflowToolbar({
               <DropdownMenuItem onClick={() => window.location.href = '/workflows'}>
                 <Workflow className="mr-2 h-4 w-4" />
                 All Workflows
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={() => window.location.href = '/credentials'}>
+                <Key className="mr-2 h-4 w-4" />
+                Credentials
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
