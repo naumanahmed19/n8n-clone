@@ -16,6 +16,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
+import { VariablesList } from "@/components/variable/VariablesList"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { useSidebarContext } from "@/contexts"
 import { useAuthStore } from "@/stores"
@@ -27,10 +28,11 @@ import {
   Key,
   Plus,
   Settings,
+  Variable,
   Workflow
 } from "lucide-react"
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
 // This is sample data for the workflow editor
 const data = {
@@ -59,7 +61,7 @@ const data = {
       title: "All Workflows",
       url: "#",
       icon: Workflow,
-      isActive: true,
+      isActive: false,
     },
     {
       title: "All Credentials",
@@ -68,10 +70,16 @@ const data = {
       isActive: false,
     },
     {
+      title: "Variables",
+      url: "#",
+      icon: Variable,
+      isActive: false,
+    },
+    {
       title: "Nodes",
       url: "#",
       icon: Database,
-      isActive: false,
+      isActive: true,
     },
     {
       title: "Executions",
@@ -93,6 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { setOpen } = useSidebar()
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const { id: workflowId } = useParams<{ id: string }>()
   const { 
     activeWorkflowItem, 
     setActiveWorkflowItem,
@@ -101,12 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setDetailSidebar
   } = useSidebarContext()
 
-  // Initialize activeWorkflowItem if it's not set
-  React.useEffect(() => {
-    if (!activeWorkflowItem.title && data.workflowItems[0]) {
-      setActiveWorkflowItem(data.workflowItems[0])
-    }
-  }, [activeWorkflowItem.title, setActiveWorkflowItem])
+
 
 
 
@@ -251,6 +255,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   
                   {activeWorkflowItem?.title === "All Credentials" && (
                     <CredentialsList />
+                  )}
+                  
+                  {activeWorkflowItem?.title === "Variables" && (
+                    <VariablesList currentWorkflowId={workflowId && workflowId !== 'new' ? workflowId : undefined} />
                   )}
                   
                   {activeWorkflowItem?.title === "Nodes" && (

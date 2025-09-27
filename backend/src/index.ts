@@ -18,6 +18,7 @@ import flowExecutionRoutes from "./routes/flow-execution";
 import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
 import triggerRoutes from "./routes/triggers";
+import variableRoutes from "./routes/variables";
 import { workflowRoutes } from "./routes/workflows";
 
 // Import middleware
@@ -107,6 +108,7 @@ app.get("/", (req, res) => {
       nodes: "/api/nodes",
       nodeTypes: "/api/node-types",
       credentials: "/api/credentials",
+      variables: "/api/variables",
       triggers: "/api/triggers",
       webhooks: "/api/triggers/webhooks",
       customNodes: "/api/custom-nodes",
@@ -126,6 +128,7 @@ app.use("/api/executions", executionRoutes);
 app.use("/api/nodes", nodeRoutes);
 app.use("/api/node-types", nodeTypeRoutes);
 app.use("/api/credentials", credentialRoutes);
+app.use("/api/variables", variableRoutes);
 app.use("/api/triggers", triggerRoutes);
 app.use("/api/custom-nodes", customNodeRoutes);
 app.use("/api/flow-execution", flowExecutionRoutes);
@@ -151,6 +154,7 @@ httpServer.listen(PORT, async () => {
   console.log(`   - Nodes: http://localhost:${PORT}/api/nodes`);
   console.log(`   - Node Types: http://localhost:${PORT}/api/node-types`);
   console.log(`   - Credentials: http://localhost:${PORT}/api/credentials`);
+  console.log(`   - Variables: http://localhost:${PORT}/api/variables`);
   console.log(`   - Triggers: http://localhost:${PORT}/api/triggers`);
   console.log(`   - Webhooks: http://localhost:${PORT}/api/triggers/webhooks`);
   console.log(`   - Custom Nodes: http://localhost:${PORT}/api/custom-nodes`);

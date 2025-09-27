@@ -51,7 +51,7 @@ interface SidebarProviderProps {
 
 export function SidebarContextProvider({ children }: SidebarProviderProps) {
   const [activeWorkflowItem, setActiveWorkflowItemState] = useState<WorkflowItem>({
-    title: "All Workflows",
+    title: "Nodes",
     url: "#",
     icon: null,
     isActive: true,
