@@ -21,8 +21,7 @@ import {
     useWorkflowEditorUI,
     useWorkflowOperations,
 } from '@/hooks/workflow'
-import { useWorkflowStore } from '@/stores'
-import { useAddNodeDialogStore } from '@/stores'
+import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType } from '@/types'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 import { CustomEdge } from './CustomEdge'
