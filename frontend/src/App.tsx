@@ -1,13 +1,15 @@
-import { Layout, ProtectedRoute } from '@/components'
+import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
 import { Toaster } from '@/components/ui/sonner'
-import { CredentialsPage, CustomNodesPage, ExecutionsPage, LoginPage, RegisterPage, WorkflowEditorPage, WorkspacePage } from '@/pages'
+import { SidebarContextProvider } from '@/contexts'
+import { CredentialsPage, CustomNodesPage, ExecutionsPage, LoginPage, RegisterPage, WorkspacePage } from '@/pages'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function App() {
   return (
     <>
       <Router>
-        <Routes>
+        <SidebarContextProvider>
+          <Routes>
           {/* Public routes */}
           <Route
             path="/login"
@@ -42,27 +44,20 @@ function App() {
             <Route path="custom-nodes" element={<CustomNodesPage />} />
           </Route>
 
-          {/* Workflow editor routes without layout */}
+          {/* Workflow editor routes with persistent layout */}
           <Route
-            path="/workflows/:id/edit"
+            path="/workflows/*"
             element={
               <ProtectedRoute>
-                <WorkflowEditorPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/workflows/new"
-            element={
-              <ProtectedRoute>
-                <WorkflowEditorPage />
+                <WorkflowEditorLayout />
               </ProtectedRoute>
             }
           />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+          </Routes>
+        </SidebarContextProvider>
       </Router>
       <Toaster />
     </>

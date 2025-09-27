@@ -1,0 +1,125 @@
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { Workflow, Credential } from '@/types'
+
+interface WorkflowItem {
+  title: string
+  url: string
+  icon: any
+  isActive: boolean
+}
+
+interface SidebarContextType {
+  activeWorkflowItem: WorkflowItem
+  setActiveWorkflowItem: (item: WorkflowItem) => void
+  searchTerm: string
+  setSearchTerm: (term: string) => void
+  workflowsData: Workflow[]
+  setWorkflowsData: (data: Workflow[]) => void
+  credentialsData: Credential[]
+  setCredentialsData: (data: Credential[]) => void
+  isWorkflowsLoaded: boolean
+  setIsWorkflowsLoaded: (loaded: boolean) => void
+  isCredentialsLoaded: boolean
+  setIsCredentialsLoaded: (loaded: boolean) => void
+  workflowsError: string | null
+  setWorkflowsError: (error: string | null) => void
+  credentialsError: string | null
+  setCredentialsError: (error: string | null) => void
+  currentWorkflowId: string | null
+  setCurrentWorkflowId: (id: string | null) => void
+}
+
+const SidebarContext = createContext<SidebarContextType | null>(null)
+
+interface SidebarProviderProps {
+  children: ReactNode
+}
+
+export function SidebarContextProvider({ children }: SidebarProviderProps) {
+  const [activeWorkflowItem, setActiveWorkflowItemState] = useState<WorkflowItem>({
+    title: "All Workflows",
+    url: "#",
+    icon: null,
+    isActive: true,
+  })
+  const [searchTerm, setSearchTermState] = useState("")
+  const [workflowsData, setWorkflowsDataState] = useState<Workflow[]>([])
+  const [credentialsData, setCredentialsDataState] = useState<Credential[]>([])
+  const [isWorkflowsLoaded, setIsWorkflowsLoadedState] = useState(false)
+  const [isCredentialsLoaded, setIsCredentialsLoadedState] = useState(false)
+  const [workflowsError, setWorkflowsErrorState] = useState<string | null>(null)
+  const [credentialsError, setCredentialsErrorState] = useState<string | null>(null)
+  const [currentWorkflowId, setCurrentWorkflowIdState] = useState<string | null>(null)
+
+  // Stable setter functions
+  const setActiveWorkflowItem = useCallback((item: WorkflowItem) => {
+    setActiveWorkflowItemState(item)
+  }, [])
+
+  const setSearchTerm = useCallback((term: string) => {
+    setSearchTermState(term)
+  }, [])
+
+  const setWorkflowsData = useCallback((data: Workflow[]) => {
+    setWorkflowsDataState(data)
+  }, [])
+
+  const setCredentialsData = useCallback((data: Credential[]) => {
+    setCredentialsDataState(data)
+  }, [])
+
+  const setIsWorkflowsLoaded = useCallback((loaded: boolean) => {
+    setIsWorkflowsLoadedState(loaded)
+  }, [])
+
+  const setIsCredentialsLoaded = useCallback((loaded: boolean) => {
+    setIsCredentialsLoadedState(loaded)
+  }, [])
+
+  const setWorkflowsError = useCallback((error: string | null) => {
+    setWorkflowsErrorState(error)
+  }, [])
+
+  const setCredentialsError = useCallback((error: string | null) => {
+    setCredentialsErrorState(error)
+  }, [])
+
+  const setCurrentWorkflowId = useCallback((id: string | null) => {
+    setCurrentWorkflowIdState(id)
+  }, [])
+
+  return (
+    <SidebarContext.Provider
+      value={{
+        activeWorkflowItem,
+        setActiveWorkflowItem,
+        searchTerm,
+        setSearchTerm,
+        workflowsData,
+        setWorkflowsData,
+        credentialsData,
+        setCredentialsData,
+        isWorkflowsLoaded,
+        setIsWorkflowsLoaded,
+        isCredentialsLoaded,
+        setIsCredentialsLoaded,
+        workflowsError,
+        setWorkflowsError,
+        credentialsError,
+        setCredentialsError,
+        currentWorkflowId,
+        setCurrentWorkflowId,
+      }}
+    >
+      {children}
+    </SidebarContext.Provider>
+  )
+}
+
+export function useSidebarContext() {
+  const context = useContext(SidebarContext)
+  if (!context) {
+    throw new Error('useSidebarContext must be used within a SidebarContextProvider')
+  }
+  return context
+}

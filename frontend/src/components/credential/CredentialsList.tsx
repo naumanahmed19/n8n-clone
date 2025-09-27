@@ -1,40 +1,58 @@
-import React, { useEffect, useState } from 'react'
-import { credentialService } from '@/services'
-import { Credential } from '@/types'
-import { 
-  Activity, 
-  Calendar, 
-  MoreHorizontal, 
-  Shield,
-  Key as KeyIcon,
-  Clock,
-  Users
-} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
+import { credentialService } from '@/services'
+import {
+    Activity,
+    Calendar,
+    Clock,
+    Key as KeyIcon,
+    MoreHorizontal,
+    Shield,
+    Users
+} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useSidebarContext } from '@/contexts'
 
 interface CredentialsListProps {
   searchTerm?: string
 }
 
 export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
-  const [credentials, setCredentials] = useState<Credential[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const {
+    credentialsData: credentials,
+    setCredentialsData: setCredentials,
+    isCredentialsLoaded,
+    setIsCredentialsLoaded,
+    credentialsError: error,
+    setCredentialsError: setError
+  } = useSidebarContext()
+  
+  const [isLoading, setIsLoading] = useState(!isCredentialsLoaded)
 
   useEffect(() => {
     const fetchCredentials = async () => {
+      // Don't fetch if we already have data loaded
+      if (isCredentialsLoaded && credentials.length > 0) {
+        setIsLoading(false)
+        return
+      }
+
       try {
         setIsLoading(true)
         setError(null)
+        
+        // Fetch fresh data
         const fetchedCredentials = await credentialService.getCredentials()
         setCredentials(fetchedCredentials)
+        setIsCredentialsLoaded(true)
       } catch (err) {
         console.error('Failed to fetch credentials:', err)
         setError('Failed to load credentials')
@@ -44,7 +62,7 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
     }
 
     fetchCredentials()
-  }, [])
+  }, [isCredentialsLoaded, credentials.length])
 
   // Filter credentials based on search term
   const filteredCredentials = React.useMemo(() => {
@@ -57,7 +75,7 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
   }, [credentials, searchTerm])
 
   const handleCredentialClick = (credentialId: string) => {
-    window.location.href = `/credentials/${credentialId}`
+    navigate(`/credentials/${credentialId}`)
   }
 
   const handleCredentialAction = (action: string, credentialId: string, event: React.MouseEvent) => {
@@ -150,7 +168,7 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
               variant="outline" 
               size="sm" 
               className="mt-2"
-              onClick={() => window.location.href = '/credentials/new'}
+              onClick={() => navigate('/credentials/new')}
             >
               Create Your First Credential
             </Button>

@@ -1,6 +1,6 @@
 "use client"
-import { NavUser } from "@/components/nav-user"
 import { CredentialsList } from "@/components/credential/CredentialsList"
+import { NavUser } from "@/components/nav-user"
 import { Label } from "@/components/ui/label"
 import {
     Sidebar,
@@ -18,6 +18,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { useAuthStore } from "@/stores"
+import { useSidebarContext } from "@/contexts"
+import { useNavigate } from "react-router-dom"
 import {
     Activity,
     Clock,
@@ -122,12 +124,22 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  // Note: I'm using state to show active item.
-  // IRL you should use the url/router.
-  const [activeWorkflowItem, setActiveWorkflowItem] = React.useState(data.workflowItems[0])
-  const [searchTerm, setSearchTerm] = React.useState("")
   const { setOpen } = useSidebar()
   const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const { 
+    activeWorkflowItem, 
+    setActiveWorkflowItem, 
+    searchTerm, 
+    setSearchTerm 
+  } = useSidebarContext()
+
+  // Initialize activeWorkflowItem if it's not set
+  React.useEffect(() => {
+    if (!activeWorkflowItem.title && data.workflowItems[0]) {
+      setActiveWorkflowItem(data.workflowItems[0])
+    }
+  }, [activeWorkflowItem.title, setActiveWorkflowItem])
 
   const filteredNodeCategories = React.useMemo(() => {
     if (!searchTerm) return data.nodeCategories
@@ -141,7 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [searchTerm])
 
   const handleNavigation = (url: string) => {
-    window.location.href = url
+    navigate(url)
   }
 
   return (

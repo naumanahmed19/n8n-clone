@@ -7,7 +7,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { workflowService } from '@/services'
-import { Workflow } from '@/types'
+import { useSidebarContext } from '@/contexts'
 import {
     Activity,
     Calendar,
@@ -15,23 +15,41 @@ import {
     Workflow as WorkflowIcon
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 interface WorkflowsListProps {
   searchTerm?: string
 }
 
 export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
-  const [workflows, setWorkflows] = useState<Workflow[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const {
+    workflowsData: workflows,
+    setWorkflowsData: setWorkflows,
+    isWorkflowsLoaded,
+    setIsWorkflowsLoaded,
+    workflowsError: error,
+    setWorkflowsError: setError
+  } = useSidebarContext()
+  
+  const [isLoading, setIsLoading] = useState(!isWorkflowsLoaded)
 
   useEffect(() => {
     const fetchWorkflows = async () => {
+      // Don't fetch if we already have data loaded
+      if (isWorkflowsLoaded && workflows.length > 0) {
+        setIsLoading(false)
+        return
+      }
+
       try {
         setIsLoading(true)
         setError(null)
+        
+        // Fetch fresh data
         const response = await workflowService.getWorkflows()
         setWorkflows(response.data)
+        setIsWorkflowsLoaded(true)
       } catch (err) {
         console.error('Failed to fetch workflows:', err)
         setError('Failed to load workflows')
@@ -41,7 +59,7 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
     }
 
     fetchWorkflows()
-  }, [])
+  }, [isWorkflowsLoaded, workflows.length])
 
   // Filter workflows based on search term
   const filteredWorkflows = React.useMemo(() => {
@@ -54,7 +72,8 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
   }, [workflows, searchTerm])
 
   const handleWorkflowClick = (workflowId: string) => {
-    window.location.href = `/workflows/${workflowId}/edit`
+    // Use replace to avoid adding to history stack and help with component reuse
+    navigate(`/workflows/${workflowId}/edit`, { replace: true })
   }
 
   const handleWorkflowAction = (action: string, workflowId: string, event: React.MouseEvent) => {
@@ -121,7 +140,7 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
               variant="outline" 
               size="sm" 
               className="mt-2"
-              onClick={() => window.location.href = '/workflows/new'}
+              onClick={() => navigate('/workflows/new')}
             >
               Create Your First Workflow
             </Button>
