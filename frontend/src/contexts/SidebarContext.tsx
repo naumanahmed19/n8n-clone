@@ -1,4 +1,4 @@
-import { Credential, Workflow, NodeType } from '@/types'
+import { Credential, NodeType, Workflow } from '@/types'
 import { createContext, ReactNode, useCallback, useContext, useState } from 'react'
 
 interface WorkflowItem {

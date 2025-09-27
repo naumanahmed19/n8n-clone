@@ -1,24 +1,24 @@
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CustomNodeUpload } from '@/components/customNode/CustomNodeUpload'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
 import { useNodeTypes } from '@/hooks/useNodeTypes'
 import { NodeType } from '@/types'
 import {
-  Clock,
-  Command,
-  Database,
-  Play,
-  Settings,
-  Globe,
-  Code,
-  Zap,
-  ChevronDown,
-  ChevronRight,
-  FolderOpen,
-  Upload,
-  List
+    ChevronDown,
+    ChevronRight,
+    Clock,
+    Code,
+    Command,
+    Database,
+    FolderOpen,
+    Globe,
+    List,
+    Play,
+    Settings,
+    Upload,
+    Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -206,17 +206,19 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
                 return (
                   <div
                     key={nodeType.type}
-                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border-b last:border-b-0 cursor-pointer group min-h-0 overflow-hidden"
+                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border-b last:border-b-0 cursor-move group min-h-0 overflow-hidden transition-colors"
                     draggable
                     onDragStart={(e) => {
-                      e.dataTransfer.setData("application/json", JSON.stringify({
-                        type: "node",
-                        nodeType: nodeType.type,
-                        displayName: nodeType.displayName,
-                        description: nodeType.description,
-                        properties: nodeType.properties,
-                        defaults: nodeType.defaults
-                      }))
+                      // Use the same data format as NodePalette for consistency
+                      e.dataTransfer.setData('application/reactflow', JSON.stringify(nodeType))
+                      e.dataTransfer.effectAllowed = 'move'
+                      
+                      // Add visual feedback during drag
+                      e.currentTarget.style.opacity = '0.5'
+                    }}
+                    onDragEnd={(e) => {
+                      // Reset visual feedback after drag
+                      e.currentTarget.style.opacity = '1'
                     }}
                   >
                     <div 

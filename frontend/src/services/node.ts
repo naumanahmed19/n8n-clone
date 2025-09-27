@@ -1,70 +1,79 @@
-import { apiClient } from './api'
-import { NodeType, ApiResponse } from '@/types'
+import { NodeType } from "@/types";
+import { apiClient } from "./api";
 
 export interface TestNodeRequest {
-  parameters: Record<string, any>
-  inputData: any
-  credentials?: string[]
+  parameters: Record<string, any>;
+  inputData: any;
+  credentials?: string[];
 }
 
 export interface TestNodeResponse {
-  success: boolean
-  data?: any
-  error?: string
-  executionTime?: number
+  success: boolean;
+  data?: any;
+  error?: string;
+  executionTime?: number;
 }
 
 export class NodeService {
   async getNodeTypes(): Promise<NodeType[]> {
-    const response: any = await apiClient.get('/nodes')
-    
+    const response: any = await apiClient.get("/nodes");
+
     if (!response.success) {
-      throw new Error('Failed to fetch node types')
+      throw new Error("Failed to fetch node types");
     }
-    
+
     // response.data contains the NodeType[] array
-    const nodeTypesArray: NodeType[] = response.data || []
-    return nodeTypesArray
+    const nodeTypesArray: NodeType[] = response.data || [];
+    return nodeTypesArray;
   }
 
   async getNodeType(type: string): Promise<NodeType> {
-    const response = await apiClient.get<NodeType>(`/nodes/${type}`)
+    const response = await apiClient.get<NodeType>(`/nodes/${type}`);
     if (!response.success || !response.data) {
-      throw new Error('Failed to fetch node type')
+      throw new Error("Failed to fetch node type");
     }
-    return response.data
+    return response.data;
   }
 
-  async testNode(nodeType: string, request: TestNodeRequest): Promise<TestNodeResponse> {
-    const response = await apiClient.post<TestNodeResponse>(`/nodes/${nodeType}/test`, request)
-    return response.data || { success: false, error: 'Unknown error' }
+  async testNode(
+    nodeType: string,
+    request: TestNodeRequest
+  ): Promise<TestNodeResponse> {
+    const response = await apiClient.post<TestNodeResponse>(
+      `/nodes/${nodeType}/test`,
+      request
+    );
+    return response.data || { success: false, error: "Unknown error" };
   }
 
-  async validateNodeParameters(nodeType: string, parameters: Record<string, any>): Promise<{
-    isValid: boolean
-    errors: Array<{ field: string; message: string }>
+  async validateNodeParameters(
+    nodeType: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    isValid: boolean;
+    errors: Array<{ field: string; message: string }>;
   }> {
     const response = await apiClient.post<{
-      isValid: boolean
-      errors: Array<{ field: string; message: string }>
-    }>(`/nodes/${nodeType}/validate`, { parameters })
-    
-    return response.data || { isValid: false, errors: [] }
+      isValid: boolean;
+      errors: Array<{ field: string; message: string }>;
+    }>(`/nodes/${nodeType}/validate`, { parameters });
+
+    return response.data || { isValid: false, errors: [] };
   }
 
   async getNodeDocumentation(nodeType: string): Promise<{
-    description: string
-    examples: any[]
-    properties: any[]
+    description: string;
+    examples: any[];
+    properties: any[];
   }> {
     const response = await apiClient.get<{
-      description: string
-      examples: any[]
-      properties: any[]
-    }>(`/nodes/${nodeType}/docs`)
-    
-    return response.data || { description: '', examples: [], properties: [] }
+      description: string;
+      examples: any[];
+      properties: any[];
+    }>(`/nodes/${nodeType}/docs`);
+
+    return response.data || { description: "", examples: [], properties: [] };
   }
 }
 
-export const nodeService = new NodeService()
+export const nodeService = new NodeService();
