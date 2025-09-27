@@ -9,12 +9,14 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { workflowService } from '@/services/workflow'
-import { ChevronDown, FolderOpen } from 'lucide-react'
+import { ChevronDown, FolderOpen, Plus } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import { CreateCategoryModal } from './CreateCategoryModal'
 
 interface WorkflowBreadcrumbProps {
   category?: string
@@ -35,6 +37,7 @@ export function WorkflowBreadcrumb({
   const [tempTitle, setTempTitle] = useState(title)
   const [availableCategories, setAvailableCategories] = useState<string[]>([])
   const [isLoadingCategories, setIsLoadingCategories] = useState(false)
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
 
   // Load available categories
   useEffect(() => {
@@ -85,9 +88,27 @@ export function WorkflowBreadcrumb({
     // Don't auto-save category, let the main save handle it
   }
 
+  const handleCategoryCreated = async (categoryName: string) => {
+    // Refresh the categories list
+    try {
+      const categories = await workflowService.getAvailableCategories()
+      setAvailableCategories(categories)
+      // Select the newly created category
+      onCategoryChange(categoryName)
+    } catch (error) {
+      console.error('Failed to refresh categories:', error)
+    }
+  }
+
   return (
-    <div className={className}>
-      <Breadcrumb>
+    <>
+      <CreateCategoryModal
+        isOpen={showCreateCategoryModal}
+        onClose={() => setShowCreateCategoryModal(false)}
+        onCategoryCreated={handleCategoryCreated}
+      />
+      <div className={className}>
+        <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <DropdownMenu>
@@ -101,6 +122,14 @@ export function WorkflowBreadcrumb({
                   <DropdownMenuItem disabled>Loading categories...</DropdownMenuItem>
                 ) : (
                   <>
+                    <DropdownMenuItem 
+                      onClick={() => setShowCreateCategoryModal(true)}
+                      className="text-blue-600 font-medium"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add new category
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleCategorySelect('')}>
                       <FolderOpen className="w-4 h-4 mr-2" />
                       Uncategorized
@@ -147,6 +176,7 @@ export function WorkflowBreadcrumb({
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-    </div>
+      </div>
+    </>
   )
 }

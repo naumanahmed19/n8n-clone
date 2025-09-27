@@ -1,7 +1,20 @@
+import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { workflowService } from '@/services'
 import { CreateWorkflowRequest } from '@/services/workflow'
 import { FolderOpen, Plus, Tag, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import { CreateCategoryModal } from './CreateCategoryModal'
 
 interface NewWorkflowModalProps {
   isOpen: boolean
@@ -22,6 +35,7 @@ export function NewWorkflowModal({
   const [availableCategories, setAvailableCategories] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
 
   // Load available categories on mount
   useEffect(() => {
@@ -91,49 +105,61 @@ export function NewWorkflowModal({
     }
   }
 
+  const handleCategoryCreated = async (categoryName: string) => {
+    // Refresh the categories list
+    try {
+      const categories = await workflowService.getAvailableCategories()
+      setAvailableCategories(categories)
+      // Select the newly created category
+      setCategory(categoryName)
+    } catch (error) {
+      console.error('Failed to refresh categories:', error)
+    }
+  }
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Create New Workflow</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
+    <>
+      <CreateCategoryModal
+        isOpen={showCreateCategoryModal}
+        onClose={() => setShowCreateCategoryModal(false)}
+        onCategoryCreated={handleCategoryCreated}
+      />
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Workflow</DialogTitle>
+            <DialogDescription>
+              Set up your new workflow with a name, description, and organize it with categories and tags.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
           {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="workflowName">
               Workflow Name *
-            </label>
-            <input
-              type="text"
+            </Label>
+            <Input
+              id="workflowName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter workflow name"
               autoFocus
             />
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="workflowDescription">
               Description
-            </label>
-            <textarea
+            </Label>
+            <Textarea
+              id="workflowDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               placeholder="Describe what this workflow will do"
             />
           </div>
@@ -147,18 +173,28 @@ export function NewWorkflowModal({
             {isLoading ? (
               <div className="text-sm text-gray-500">Loading categories...</div>
             ) : (
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Select a category (optional)</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select a category (optional)</option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateCategoryModal(true)}
+                  className="w-full px-3 py-2 text-left text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add new category
+                </button>
+              </div>
             )}
           </div>
 
@@ -210,33 +246,32 @@ export function NewWorkflowModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
-          <button
+        <DialogFooter>
+          <Button
+            variant="outline"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleCreate}
             disabled={isCreating || !name.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
             {isCreating ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Creating...</span>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Creating...
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4" />
-                <span>Create Workflow</span>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Workflow
               </>
             )}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

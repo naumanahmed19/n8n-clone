@@ -38,6 +38,25 @@ router.get(
   })
 );
 
+// POST /api/workflows/categories - Create a new category
+router.post(
+  "/categories",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const category = await workflowService.createCategory(
+      req.user!.id,
+      req.body
+    );
+
+    const response: ApiResponse = {
+      success: true,
+      data: category,
+    };
+
+    res.status(201).json(response);
+  })
+);
+
 // GET /api/workflows - List workflows
 router.get(
   "/",

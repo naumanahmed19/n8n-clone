@@ -750,4 +750,54 @@ export class WorkflowService {
       );
     }
   }
+
+  async createCategory(
+    userId: string,
+    categoryData: {
+      name: string;
+      displayName: string;
+      description?: string;
+      color?: string;
+      icon?: string;
+    }
+  ) {
+    try {
+      // Check if category already exists
+      const existingCategory = await this.prisma.category.findUnique({
+        where: { name: categoryData.name },
+      });
+
+      if (existingCategory) {
+        throw new AppError(
+          "Category with this name already exists",
+          400,
+          "CATEGORY_EXISTS"
+        );
+      }
+
+      // Create the category
+      const category = await this.prisma.category.create({
+        data: {
+          name: categoryData.name.toLowerCase().replace(/\s+/g, "-"),
+          displayName: categoryData.displayName,
+          description: categoryData.description,
+          color: categoryData.color || "#6B7280",
+          icon: categoryData.icon || "📁",
+          active: true,
+        },
+      });
+
+      return category;
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      console.error("Error creating category:", error);
+      throw new AppError(
+        "Failed to create category",
+        500,
+        "CATEGORY_CREATE_ERROR"
+      );
+    }
+  }
 }

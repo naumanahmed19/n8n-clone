@@ -1,7 +1,20 @@
+import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { workflowService } from '@/services'
 import { Workflow } from '@/types/workflow'
-import { FolderOpen, Save, Tag, X } from 'lucide-react'
+import { FolderOpen, Plus, Save, Tag, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import { CreateCategoryModal } from './CreateCategoryModal'
 
 interface WorkflowSettingsModalProps {
   isOpen: boolean
@@ -24,6 +37,7 @@ export function WorkflowSettingsModal({
   const [availableCategories, setAvailableCategories] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
 
   // Load available categories on mount
   useEffect(() => {
@@ -88,100 +102,120 @@ export function WorkflowSettingsModal({
     }
   }
 
-  if (!isOpen) return null
+  const handleCategoryCreated = async (categoryName: string) => {
+    // Refresh the categories list
+    try {
+      const categories = await workflowService.getAvailableCategories()
+      setAvailableCategories(categories)
+      // Select the newly created category
+      setCategory(categoryName)
+    } catch (error) {
+      console.error('Failed to refresh categories:', error)
+    }
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Workflow Settings</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
+    <>
+      <CreateCategoryModal
+        isOpen={showCreateCategoryModal}
+        onClose={() => setShowCreateCategoryModal(false)}
+        onCategoryCreated={handleCategoryCreated}
+      />
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Workflow Settings</DialogTitle>
+            <DialogDescription>
+              Manage your workflow's basic information and categorization.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
           {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Workflow Name
-            </label>
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="workflowName">
+              Workflow Name *
+            </Label>
+            <Input
+              id="workflowName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter workflow name"
             />
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="workflowDescription">
               Description
-            </label>
-            <textarea
+            </Label>
+            <Textarea
+              id="workflowDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               placeholder="Describe what this workflow does"
             />
           </div>
 
           {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <FolderOpen className="w-4 h-4 inline mr-1" />
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" />
               Category
-            </label>
+            </Label>
             {isLoading ? (
-              <div className="text-sm text-gray-500">Loading categories...</div>
+              <div className="text-sm text-muted-foreground">Loading categories...</div>
             ) : (
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Select a category</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">Select a category</option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateCategoryModal(true)}
+                  className="w-full px-3 py-2 text-left text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add new category
+                </button>
+              </div>
             )}
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Tag className="w-4 h-4 inline mr-1" />
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Tag className="w-4 h-4" />
               Tags
-            </label>
+            </Label>
             
             {/* Tag Input */}
-            <div className="flex space-x-2 mb-3">
-              <input
-                type="text"
+            <div className="flex space-x-2">
+              <Input
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Add a tag"
+                className="flex-1"
               />
-              <button
+              <Button
+                type="button"
                 onClick={handleAddTag}
                 disabled={!newTag.trim() || tags.includes(newTag.trim())}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                size="sm"
               >
                 Add
-              </button>
+              </Button>
             </div>
 
             {/* Existing Tags */}
@@ -190,12 +224,13 @@ export function WorkflowSettingsModal({
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground rounded-full"
                   >
                     {tag}
                     <button
+                      type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
+                      className="ml-1 text-muted-foreground hover:text-foreground"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -206,33 +241,32 @@ export function WorkflowSettingsModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t bg-gray-50">
-          <button
+        <DialogFooter>
+          <Button
+            variant="outline"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={isSaving || !name.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
             {isSaving ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Saving...</span>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Saving...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
-                <span>Save</span>
+                <Save className="w-4 h-4 mr-2" />
+                Save
               </>
             )}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

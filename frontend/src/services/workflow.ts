@@ -286,6 +286,20 @@ class WorkflowService {
     return response.data;
   }
 
+  async createCategory(categoryData: {
+    name: string;
+    displayName: string;
+    description?: string;
+    color?: string;
+    icon?: string;
+  }): Promise<any> {
+    const response = await api.post<ApiResponse<any>>(
+      "/workflows/categories",
+      categoryData
+    );
+    return response.data;
+  }
+
   async updateWorkflowTags(id: string, tags: string[]): Promise<Workflow> {
     const response = await api.put<ApiResponse<Workflow>>(
       `/workflows/${id}/tags`,
