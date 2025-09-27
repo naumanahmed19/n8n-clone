@@ -6,6 +6,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useSidebarContext } from '@/contexts'
 import { credentialService } from '@/services'
 import {
     Activity,
@@ -18,7 +19,6 @@ import {
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSidebarContext } from '@/contexts'
 
 interface CredentialsListProps {
   searchTerm?: string
@@ -62,7 +62,7 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
     }
 
     fetchCredentials()
-  }, [isCredentialsLoaded, credentials.length])
+  }, [isCredentialsLoaded, setCredentials, setIsCredentialsLoaded, setError])
 
   // Filter credentials based on search term
   const filteredCredentials = React.useMemo(() => {

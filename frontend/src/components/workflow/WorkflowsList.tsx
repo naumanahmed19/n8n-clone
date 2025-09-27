@@ -6,8 +6,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { workflowService } from '@/services'
 import { useSidebarContext } from '@/contexts'
+import { workflowService } from '@/services'
 import {
     Activity,
     Calendar,
@@ -59,7 +59,7 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
     }
 
     fetchWorkflows()
-  }, [isWorkflowsLoaded, workflows.length])
+  }, [isWorkflowsLoaded, setWorkflows, setIsWorkflowsLoaded, setError])
 
   // Filter workflows based on search term
   const filteredWorkflows = React.useMemo(() => {

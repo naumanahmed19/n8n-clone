@@ -3,37 +3,37 @@ import { CredentialsList } from "@/components/credential/CredentialsList"
 import { NavUser } from "@/components/nav-user"
 import { Label } from "@/components/ui/label"
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarHeader,
-    SidebarInput,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    useSidebar
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarInput,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
-import { useAuthStore } from "@/stores"
 import { useSidebarContext } from "@/contexts"
-import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "@/stores"
 import {
-    Activity,
-    Clock,
-    Command,
-    Database,
-    Home,
-    Key,
-    Play,
-    Plus,
-    Search,
-    Settings,
-    Workflow
+  Activity,
+  Clock,
+  Command,
+  Database,
+  Home,
+  Key,
+  Play,
+  Plus,
+  Search,
+  Settings,
+  Workflow
 } from "lucide-react"
 import * as React from "react"
+import { useNavigate } from "react-router-dom"
 
 // This is sample data for the workflow editor
 const data = {
