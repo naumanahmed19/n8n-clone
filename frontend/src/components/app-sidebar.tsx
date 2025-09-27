@@ -1,6 +1,7 @@
 "use client"
 import { CredentialsList } from "@/components/credential/CredentialsList"
 import { NavUser } from "@/components/nav-user"
+import { NodeTypesList } from "@/components/node/NodeTypesList"
 import { Label } from "@/components/ui/label"
 import {
   Sidebar,
@@ -21,12 +22,9 @@ import { useSidebarContext } from "@/contexts"
 import { useAuthStore } from "@/stores"
 import {
   Activity,
-  Clock,
-  Command,
   Database,
   Home,
   Key,
-  Play,
   Plus,
   Search,
   Settings,
@@ -100,27 +98,7 @@ const data = {
       isActive: false,
     },
   ],
-  nodeCategories: [
-    {
-      name: "Core Nodes",
-      category: "core",
-      nodes: [
-        { name: "Start", icon: Play },
-        { name: "Set", icon: Settings },
-        { name: "Code", icon: Command },
-        { name: "HTTP Request", icon: Activity },
-      ]
-    },
-    {
-      name: "Triggers",
-      category: "trigger", 
-      nodes: [
-        { name: "Manual Trigger", icon: Play },
-        { name: "Cron", icon: Clock },
-        { name: "Webhook", icon: Activity },
-      ]
-    }
-  ],
+
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -141,16 +119,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [activeWorkflowItem.title, setActiveWorkflowItem])
 
-  const filteredNodeCategories = React.useMemo(() => {
-    if (!searchTerm) return data.nodeCategories
-    
-    return data.nodeCategories.map(category => ({
-      ...category,
-      nodes: category.nodes.filter(node => 
-        node.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    })).filter(category => category.nodes.length > 0)
-  }, [searchTerm])
+
 
   const handleNavigation = (url: string) => {
     navigate(url)
@@ -281,32 +250,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               )}
               
               {activeWorkflowItem?.title === "Nodes" && (
-                <>
-                  {filteredNodeCategories.map((category) => (
-                    <div key={category.category} className="border-b last:border-b-0">
-                      <div className="p-3 bg-muted/30">
-                        <h4 className="text-sm font-medium text-foreground">{category.name}</h4>
-                      </div>
-                      {category.nodes.map((node) => (
-                        <a
-                          href="#"
-                          key={node.name}
-                          className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center gap-3 p-3 text-sm leading-tight border-b last:border-b-0 cursor-pointer"
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("application/json", JSON.stringify({
-                              type: "node",
-                              nodeType: node.name.toLowerCase().replace(/\s+/g, '-')
-                            }))
-                          }}
-                        >
-                          <node.icon className="h-4 w-4 shrink-0" />
-                          <span className="font-medium">{node.name}</span>
-                        </a>
-                      ))}
-                    </div>
-                  ))}
-                </>
+                <NodeTypesList searchTerm={searchTerm} />
               )}
               
               {activeWorkflowItem?.title === "Executions" && (

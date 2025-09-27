@@ -1,5 +1,5 @@
 import { apiClient } from './api'
-import { NodeType } from '@/types'
+import { NodeType, ApiResponse } from '@/types'
 
 export interface TestNodeRequest {
   parameters: Record<string, any>
@@ -16,12 +16,19 @@ export interface TestNodeResponse {
 
 export class NodeService {
   async getNodeTypes(): Promise<NodeType[]> {
-    const response = await apiClient.get<NodeType[]>('/node-types')
-    return response.data || []
+    const response: any = await apiClient.get('/nodes')
+    
+    if (!response.success) {
+      throw new Error('Failed to fetch node types')
+    }
+    
+    // response.data contains the NodeType[] array
+    const nodeTypesArray: NodeType[] = response.data || []
+    return nodeTypesArray
   }
 
   async getNodeType(type: string): Promise<NodeType> {
-    const response = await apiClient.get<NodeType>(`/node-types/${type}`)
+    const response = await apiClient.get<NodeType>(`/nodes/${type}`)
     if (!response.success || !response.data) {
       throw new Error('Failed to fetch node type')
     }
