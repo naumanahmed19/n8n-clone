@@ -98,7 +98,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { setOpen } = useSidebar()
+  const { open, setOpen } = useSidebar()
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const { id: workflowId } = useParams<{ id: string }>()
@@ -187,8 +187,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         hidden: false,
                       }}
                       onClick={() => {
-                        setActiveWorkflowItem(item)
-                        setOpen(true)
+                        if (activeWorkflowItem?.title === item.title) {
+                          // Toggle sidebar if same item is clicked
+                          setOpen(!open)
+                        } else {
+                          // Set new item and open sidebar
+                          setActiveWorkflowItem(item)
+                          setOpen(true)
+                        }
                       }}
                       isActive={activeWorkflowItem?.title === item.title}
                       className="px-2.5 md:px-2"
