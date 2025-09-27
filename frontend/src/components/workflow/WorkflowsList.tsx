@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useSidebarContext } from '@/contexts'
 import { workflowService } from '@/services'
+import type { Workflow } from '@/types'
 import {
   Activity,
   Calendar,
@@ -20,8 +21,7 @@ import {
   Workflow as WorkflowIcon
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import type { Workflow } from '@/types'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 interface WorkflowsListProps {
   searchTerm?: string
