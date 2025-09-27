@@ -28,6 +28,16 @@ function App() {
             }
           />
 
+          {/* Workflow editor routes with persistent layout - must come before main routes */}
+          <Route
+            path="/workflows/:id/*"
+            element={
+              <ProtectedRoute>
+                <WorkflowEditorLayout />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Main application routes with layout */}
           <Route
             path="/"
@@ -43,16 +53,6 @@ function App() {
             <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />
           </Route>
-
-          {/* Workflow editor routes with persistent layout */}
-          <Route
-            path="/workflows/*"
-            element={
-              <ProtectedRoute>
-                <WorkflowEditorLayout />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/login" replace />} />

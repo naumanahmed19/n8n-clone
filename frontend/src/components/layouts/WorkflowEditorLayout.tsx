@@ -1,25 +1,22 @@
 import { WorkflowEditorWrapper } from '@/components'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
-    SidebarInset,
-    SidebarProvider,
+  SidebarInset,
+  SidebarProvider,
 } from "@/components/ui/sidebar"
 import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
 import {
-    useWorkflowOperations
+  useWorkflowOperations
 } from '@/hooks/workflow'
 import { workflowService } from '@/services'
 import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, Workflow } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 export function WorkflowEditorLayout() {
-  const location = useLocation()
-  // Extract ID from pathname: /workflows/123/edit -> 123, /workflows/new -> new
-  const pathSegments = location.pathname.split('/')
-  const id = pathSegments[2] // workflows/[id]/edit or workflows/[new]
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   // Debug: Log when component renders
@@ -140,7 +137,7 @@ export function WorkflowEditorLayout() {
     }
 
     loadWorkflow()
-  }, [id, setWorkflow, setLoading, user?.id, workflow])
+  }, [id, setWorkflow, setLoading, user?.id])
 
   if (isLoadingNodeTypes) {
     return (

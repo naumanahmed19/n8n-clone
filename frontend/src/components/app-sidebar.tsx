@@ -44,22 +44,11 @@ const data = {
       icon: Home,
       isActive: false,
     },
-    {
-      title: "Workflows", 
-      url: "/workflows",
-      icon: Workflow,
-      isActive: false,
-    },
+
     {
       title: "New Workflow",
       url: "/workflows/new", 
       icon: Plus,
-      isActive: false,
-    },
-    {
-      title: "Credentials",
-      url: "/credentials",
-      icon: Key,
       isActive: false,
     },
   ],
