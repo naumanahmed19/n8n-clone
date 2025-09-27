@@ -29,7 +29,6 @@ import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigDialog } from './NodeConfigDialog'
-import { NodePalette } from './NodePalette'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 
 
@@ -360,18 +359,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                             </ResizablePanelGroup>
                         </ResizablePanel>
 
-                        {/* Node Palette Panel */}
-                        {showNodePalette && (
-                            <>
-                                <ResizableHandle withHandle />
-                                <ResizablePanel defaultSize={15} minSize={0.2} maxSize={15}>
-                                    <NodePalette
-                                        nodeTypes={availableNodeTypes}
-                                        onNodeDragStart={() => {}} // Handled in NodePalette component
-                                    />
-                                </ResizablePanel>
-                            </>
-                        )}
+                     
                     </ResizablePanelGroup>
                 </div>
             </WorkflowErrorBoundary>
