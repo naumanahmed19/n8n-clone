@@ -197,11 +197,11 @@ export function WorkflowToolbar({
           onSave={handleWorkflowSettingsSave}
         />
       )}
-      <header className="flex items-center justify-between px-4 py-3 bg-background border-b border-border shadow-sm min-h-[60px]">
+      <header className="flex items-center justify-between px-3 py-1.5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 shadow-sm min-h-[48px]">
         {/* Left section - Sidebar trigger, Home, Breadcrumb and Edit actions */}
-        <div className="flex items-center space-x-4 flex-1 min-w-0">
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
           {/* Sidebar Trigger - only show when sidebar is available */}
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1 h-7 w-7" />
 
           {/* Workflow Breadcrumb */}
           <div className="flex-shrink-0">
@@ -218,19 +218,20 @@ export function WorkflowToolbar({
             />
           </div>
 
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-4" />
 
           {/* Edit actions */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-0.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={onUndo}
                   disabled={!canUndo}
+                  className="h-7 w-7 p-0"
                 >
-                  <Undo className="h-4 w-4" />
+                  <Undo className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -242,11 +243,12 @@ export function WorkflowToolbar({
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={onRedo}
                   disabled={!canRedo}
+                  className="h-7 w-7 p-0"
                 >
-                  <Redo className="h-4 w-4" />
+                  <Redo className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -257,7 +259,7 @@ export function WorkflowToolbar({
       </div>
 
       {/* Center section - Execution controls */}
-      <div className="flex items-center space-x-3 mr-6">
+      <div className="flex items-center space-x-2 mr-4">
         {/* Workflow Activation Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -266,14 +268,14 @@ export function WorkflowToolbar({
               variant={isWorkflowActive ? "default" : "secondary"}
               size="sm"
               className={cn(
-                "relative",
+                "relative h-7 px-2.5 text-xs",
                 isWorkflowActive 
                   ? "bg-green-600 hover:bg-green-700 text-white" 
                   : "bg-muted"
               )}
             >
               <div className={cn(
-                "w-2 h-2 rounded-full mr-2",
+                "w-1.5 h-1.5 rounded-full mr-1.5",
                 isWorkflowActive ? "bg-green-200" : "bg-muted-foreground"
               )} />
               {isWorkflowActive ? 'Active' : 'Inactive'}
@@ -292,16 +294,16 @@ export function WorkflowToolbar({
               variant={showExecutionsPanel ? "default" : "outline"}
               size="sm"
               className={cn(
-                "relative",
+                "relative h-7 px-2.5 text-xs",
                 showExecutionsPanel 
                   ? "bg-purple-600 hover:bg-purple-700 text-white"
                   : ""
               )}
             >
-              <History className="h-4 w-4 mr-2" />
+              <History className="h-3.5 w-3.5 mr-1.5" />
               Executions
               {workflowExecutions && workflowExecutions.length > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 min-w-[1.25rem] text-xs">
+                <Badge variant="secondary" className="ml-1.5 h-4 min-w-[1rem] text-[10px] px-1">
                   {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
                 </Badge>
               )}
@@ -318,8 +320,9 @@ export function WorkflowToolbar({
               onClick={onValidate}
               variant="outline"
               size="sm"
+              className="h-7 px-2.5 text-xs"
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
               Validate
             </Button>
           </TooltipTrigger>
@@ -330,7 +333,7 @@ export function WorkflowToolbar({
       </div>
 
       {/* Right section - Save, Node Palette and Settings Menu */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         {/* Save Button */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -339,12 +342,12 @@ export function WorkflowToolbar({
               disabled={isSaving || (!isDirty && !mainTitleDirty)}
               variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
               size="sm"
-              className="relative"
+              className="relative h-7 px-2.5 text-xs"
             >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              <span className="ml-2">{isSaving ? 'Saving...' : 'Save'}</span>
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              <span className="ml-1.5">{isSaving ? 'Saving...' : 'Save'}</span>
               {(isDirty || mainTitleDirty) && !isSaving && (
-                <Badge variant="destructive" className="absolute -top-1 -right-1 h-2 w-2 p-0" />
+                <Badge variant="destructive" className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 p-0" />
               )}
             </Button>
           </TooltipTrigger>
@@ -353,7 +356,7 @@ export function WorkflowToolbar({
           </TooltipContent>
         </Tooltip>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-4" />
 
         {/* Node Palette Toggle */}
         <Tooltip>
@@ -361,9 +364,10 @@ export function WorkflowToolbar({
             <Button
               onClick={toggleNodePalette}
               variant={showNodePalette ? "default" : "ghost"}
-              size="icon"
+              size="sm"
+              className="h-7 w-7 p-0"
             >
-              <PanelRight className="h-4 w-4" />
+              <PanelRight className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -374,13 +378,13 @@ export function WorkflowToolbar({
         {/* Settings Dropdown Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => setShowSettingsModal(true)}>
-              <Settings className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => setShowSettingsModal(true)} className="text-xs">
+              <Settings className="mr-2 h-3.5 w-3.5" />
               Workflow Settings
             </DropdownMenuItem>
             
@@ -389,13 +393,14 @@ export function WorkflowToolbar({
             <DropdownMenuItem 
               onClick={handleImportClick}
               disabled={isImporting || isExporting}
+              className="text-xs"
             >
               {isImporting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
               ) : importError ? (
-                <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+                <AlertCircle className="mr-2 h-3.5 w-3.5 text-red-500" />
               ) : (
-                <Upload className="mr-2 h-4 w-4" />
+                <Upload className="mr-2 h-3.5 w-3.5" />
               )}
               {isImporting 
                 ? `Importing... ${importProgress > 0 ? `(${Math.round(importProgress)}%)` : ''}`
@@ -408,13 +413,14 @@ export function WorkflowToolbar({
             <DropdownMenuItem 
               onClick={handleExportClick}
               disabled={isExporting || isImporting}
+              className="text-xs"
             >
               {isExporting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
               ) : exportError ? (
-                <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+                <AlertCircle className="mr-2 h-3.5 w-3.5 text-red-500" />
               ) : (
-                <Download className="mr-2 h-4 w-4" />
+                <Download className="mr-2 h-3.5 w-3.5" />
               )}
               {isExporting 
                 ? `Exporting... ${exportProgress > 0 ? `(${Math.round(exportProgress)}%)` : ''}`
