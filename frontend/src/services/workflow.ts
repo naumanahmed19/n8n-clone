@@ -300,6 +300,12 @@ class WorkflowService {
     return response.data;
   }
 
+  async deleteCategory(categoryName: string): Promise<void> {
+    await api.delete(
+      `/workflows/categories/${encodeURIComponent(categoryName)}`
+    );
+  }
+
   async updateWorkflowTags(id: string, tags: string[]): Promise<Workflow> {
     const response = await api.put<ApiResponse<Workflow>>(
       `/workflows/${id}/tags`,

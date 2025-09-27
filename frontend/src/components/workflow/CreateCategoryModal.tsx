@@ -10,6 +10,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { useGlobalToast } from '@/hooks/useToast'
 import { workflowService } from '@/services/workflow'
 import { FolderOpen } from 'lucide-react'
 import React, { useState } from 'react'
@@ -45,6 +46,7 @@ export function CreateCategoryModal({
   const [selectedIcon, setSelectedIcon] = useState('📁')
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { showSuccess, showError } = useGlobalToast()
 
   const handleCreate = async () => {
     if (!name.trim() || !displayName.trim()) return
@@ -63,10 +65,23 @@ export function CreateCategoryModal({
 
       await workflowService.createCategory(categoryData)
       onCategoryCreated(categoryData.name)
+      
+      // Show success toast
+      showSuccess('Category created successfully', {
+        message: `"${categoryData.displayName}" category has been created.`
+      })
+      
       handleClose()
     } catch (error: any) {
       console.error('Failed to create category:', error)
-      setError(error.response?.data?.error?.message || 'Failed to create category')
+      const errorMessage = error.response?.data?.error?.message || 'Failed to create category'
+      setError(errorMessage)
+      
+      // Show error toast
+      showError('Failed to create category', {
+        message: errorMessage,
+        duration: 8000
+      })
     } finally {
       setIsCreating(false)
     }

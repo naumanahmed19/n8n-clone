@@ -4,7 +4,9 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { ToastContainer } from '@/components/ui/Toast'
 import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
+import { useGlobalToast } from '@/hooks/useToast'
 import {
   useWorkflowOperations
 } from '@/hooks/workflow'
@@ -32,6 +34,7 @@ export function WorkflowEditorLayout() {
     redo
   } = useWorkflowStore()
   const { user } = useAuthStore()
+  const { toasts } = useGlobalToast()
   const [error, setError] = useState<string | null>(null)
   const [nodeTypes, setNodeTypes] = useState<NodeType[]>([])
   const [isLoadingNodeTypes, setIsLoadingNodeTypes] = useState(true)
@@ -215,6 +218,7 @@ export function WorkflowEditorLayout() {
           </>
         )}
       </SidebarInset>
+      <ToastContainer toasts={toasts} position="top-right" />
     </SidebarProvider>
   )
 }

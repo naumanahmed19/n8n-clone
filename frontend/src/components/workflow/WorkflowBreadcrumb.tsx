@@ -13,8 +13,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { useGlobalToast } from '@/hooks/useToast'
 import { workflowService } from '@/services/workflow'
-import { ChevronDown, FolderOpen, Plus } from 'lucide-react'
+import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { CreateCategoryModal } from './CreateCategoryModal'
 
@@ -38,6 +39,8 @@ export function WorkflowBreadcrumb({
   const [availableCategories, setAvailableCategories] = useState<string[]>([])
   const [isLoadingCategories, setIsLoadingCategories] = useState(false)
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false)
+  const { showSuccess, showError } = useGlobalToast()
 
   // Load available categories
   useEffect(() => {
@@ -100,6 +103,40 @@ export function WorkflowBreadcrumb({
     }
   }
 
+  const handleDeleteCategory = async (categoryName: string) => {
+    try {
+      setIsDeletingCategory(true)
+      await workflowService.deleteCategory(categoryName)
+      
+      // Refresh the categories list
+      const categories = await workflowService.getAvailableCategories()
+      setAvailableCategories(categories)
+      
+      // If the deleted category was selected, clear selection
+      if (category === categoryName) {
+        onCategoryChange('')
+      }
+
+      // Show success toast
+      showSuccess('Category deleted successfully', {
+        message: `"${categoryName}" category has been removed.`
+      })
+    } catch (error: any) {
+      console.error('Failed to delete category:', error)
+      
+      // Show error toast
+      const errorMessage = error.response?.data?.error?.message || 
+        'Failed to delete category. It may be in use by some workflows.'
+      
+      showError('Failed to delete category', {
+        message: errorMessage,
+        duration: 8000
+      })
+    } finally {
+      setIsDeletingCategory(false)
+    }
+  }
+
   return (
     <>
       <CreateCategoryModal
@@ -137,11 +174,27 @@ export function WorkflowBreadcrumb({
                     {availableCategories.map((cat) => (
                       <DropdownMenuItem
                         key={cat}
-                        onClick={() => handleCategorySelect(cat)}
-                        className={category === cat ? 'bg-accent' : ''}
+                        className={`group ${category === cat ? 'bg-accent' : ''}`}
+                        onSelect={(e) => e.preventDefault()}
                       >
-                        <FolderOpen className="w-4 h-4 mr-2" />
-                        {cat}
+                        <div 
+                          className="flex items-center flex-1 cursor-pointer"
+                          onClick={() => handleCategorySelect(cat)}
+                        >
+                          <FolderOpen className="w-4 h-4 mr-2" />
+                          {cat}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCategory(cat)
+                          }}
+                          disabled={isDeletingCategory}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive hover:text-destructive-foreground rounded transition-all ml-2"
+                          title={`Delete ${cat} category`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </DropdownMenuItem>
                     ))}
                   </>

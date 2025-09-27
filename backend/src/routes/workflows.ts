@@ -57,6 +57,25 @@ router.post(
   })
 );
 
+// DELETE /api/workflows/categories/:name - Delete a category
+router.delete(
+  "/categories/:name",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const result = await workflowService.deleteCategory(
+      req.user!.id,
+      req.params.name
+    );
+
+    const response: ApiResponse = {
+      success: true,
+      data: result,
+    };
+
+    res.json(response);
+  })
+);
+
 // GET /api/workflows - List workflows
 router.get(
   "/",

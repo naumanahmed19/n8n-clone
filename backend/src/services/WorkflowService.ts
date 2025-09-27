@@ -800,4 +800,50 @@ export class WorkflowService {
       );
     }
   }
+
+  async deleteCategory(userId: string, categoryName: string) {
+    try {
+      // Check if category exists
+      const category = await this.prisma.category.findUnique({
+        where: { name: categoryName },
+      });
+
+      if (!category) {
+        throw new AppError("Category not found", 404, "CATEGORY_NOT_FOUND");
+      }
+
+      // Check if any workflows are using this category
+      const workflowsWithCategory = await this.prisma.workflow.findFirst({
+        where: {
+          category: categoryName,
+          userId: userId,
+        },
+      });
+
+      if (workflowsWithCategory) {
+        throw new AppError(
+          "Cannot delete category that is being used by workflows",
+          400,
+          "CATEGORY_IN_USE"
+        );
+      }
+
+      // Delete the category
+      await this.prisma.category.delete({
+        where: { name: categoryName },
+      });
+
+      return { message: "Category deleted successfully" };
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      console.error("Error deleting category:", error);
+      throw new AppError(
+        "Failed to delete category",
+        500,
+        "CATEGORY_DELETE_ERROR"
+      );
+    }
+  }
 }

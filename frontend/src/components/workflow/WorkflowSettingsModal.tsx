@@ -10,11 +10,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { workflowService } from '@/services'
 import { Workflow } from '@/types/workflow'
-import { FolderOpen, Plus, Save, Tag, X } from 'lucide-react'
+import { Save, Tag, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { CreateCategoryModal } from './CreateCategoryModal'
+import { CategorySelect } from './CategorySelect'
 
 interface WorkflowSettingsModalProps {
   isOpen: boolean
@@ -34,29 +33,7 @@ export function WorkflowSettingsModal({
   const [category, setCategory] = useState(workflow.category || '')
   const [tags, setTags] = useState(workflow.tags || [])
   const [newTag, setNewTag] = useState('')
-  const [availableCategories, setAvailableCategories] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
-
-  // Load available categories on mount
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoading(true)
-        const categories = await workflowService.getAvailableCategories()
-        setAvailableCategories(categories)
-      } catch (error) {
-        console.error('Failed to load categories:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    if (isOpen) {
-      loadCategories()
-    }
-  }, [isOpen])
 
   // Reset form when workflow changes
   useEffect(() => {
@@ -102,25 +79,7 @@ export function WorkflowSettingsModal({
     }
   }
 
-  const handleCategoryCreated = async (categoryName: string) => {
-    // Refresh the categories list
-    try {
-      const categories = await workflowService.getAvailableCategories()
-      setAvailableCategories(categories)
-      // Select the newly created category
-      setCategory(categoryName)
-    } catch (error) {
-      console.error('Failed to refresh categories:', error)
-    }
-  }
-
   return (
-    <>
-      <CreateCategoryModal
-        isOpen={showCreateCategoryModal}
-        onClose={() => setShowCreateCategoryModal(false)}
-        onCategoryCreated={handleCategoryCreated}
-      />
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -160,36 +119,14 @@ export function WorkflowSettingsModal({
 
           {/* Category */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <FolderOpen className="w-4 h-4" />
-              Category
-            </Label>
-            {isLoading ? (
-              <div className="text-sm text-muted-foreground">Loading categories...</div>
-            ) : (
-              <div className="space-y-2">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">Select a category</option>
-                  {availableCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateCategoryModal(true)}
-                  className="w-full px-3 py-2 text-left text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add new category
-                </button>
-              </div>
-            )}
+            <Label>Category</Label>
+            <CategorySelect
+              value={category}
+              onValueChange={setCategory}
+              placeholder="Select a category"
+              allowCreate={true}
+              showDeleteOption={true}
+            />
           </div>
 
           {/* Tags */}
@@ -267,6 +204,5 @@ export function WorkflowSettingsModal({
         </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
   )
 }

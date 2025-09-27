@@ -1,3 +1,4 @@
+export { CategorySelect } from "./CategorySelect";
 export { CreateCategoryModal } from "./CreateCategoryModal";
 export { CustomNode } from "./CustomNode";
 export { DisableToggleToolbarButton } from "./DisableToggleToolbarButton";
