@@ -1,5 +1,8 @@
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ExecutionState } from '@/types'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { useWorkflowOperations } from '@/hooks/workflow/useWorkflowOperations'
 
 interface ExecutionPanelHeaderProps {
   executionState: ExecutionState
@@ -10,8 +13,9 @@ interface ExecutionPanelHeaderProps {
 export function ExecutionPanelHeader({ 
   executionState, 
   isExpanded, 
-  onToggle 
+  onToggle
 }: ExecutionPanelHeaderProps) {
+  const { validateAndShowResult } = useWorkflowOperations()
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'success': return 'text-green-600'
@@ -39,13 +43,31 @@ export function ExecutionPanelHeader({
           </div>
         )}
       </div>
-      <button
-        onClick={onToggle}
-        className="text-gray-400 hover:text-gray-600 p-1"
-        title={isExpanded ? "Minimize execution panel" : "Expand execution panel"}
-      >
-        {isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-      </button>
+      <div className="flex items-center space-x-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={validateAndShowResult}
+              variant="outline"
+              size="sm"
+              className="h-7 px-2.5 text-xs"
+            >
+              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+              Validate
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Validate workflow</p>
+          </TooltipContent>
+        </Tooltip>
+        <button
+          onClick={onToggle}
+          className="text-gray-400 hover:text-gray-600 p-1"
+          title={isExpanded ? "Minimize execution panel" : "Expand execution panel"}
+        >
+          {isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+        </button>
+      </div>
     </div>
   )
 }

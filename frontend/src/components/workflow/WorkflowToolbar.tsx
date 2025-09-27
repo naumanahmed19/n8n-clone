@@ -22,12 +22,10 @@ import { useAddNodeDialogStore, useWorkflowStore, useWorkflowToolbarStore } from
 import { validateImportFile } from '@/utils/errorHandling'
 import {
   AlertCircle,
-  CheckCircle,
   Download,
   History,
   Loader2,
   MoreHorizontal,
-  PanelRight,
   Redo,
   Save,
   Settings,
@@ -46,7 +44,6 @@ interface WorkflowToolbarProps {
   onUndo: () => void
   onRedo: () => void
   onSave: () => void
-  onValidate: () => void
 }
 
 export function WorkflowToolbar({
@@ -56,7 +53,6 @@ export function WorkflowToolbar({
   onUndo,
   onRedo,
   onSave,
-  onValidate,
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -107,10 +103,8 @@ export function WorkflowToolbar({
     
     // UI state
     showExecutionsPanel,
-    showNodePalette,
     isSaving,
     toggleExecutionsPanel,
-    toggleNodePalette,
     setSaving,
     
     // Workflow activation state
@@ -279,7 +273,7 @@ export function WorkflowToolbar({
       </div>
 
       {/* Center section - Command Palette */}
-      <div className="flex items-center justify-center flex-1">
+      <div className="flex items-center justify-center">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -301,8 +295,8 @@ export function WorkflowToolbar({
           </Tooltip>
       </div>
 
-      {/* Right section - Execution controls */}
-      <div className="flex items-center space-x-2 justify-end">
+      {/* Right section - All controls */}
+      <div className="flex items-center space-x-2 flex-1 justify-end">
         {/* Workflow Activation Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -357,26 +351,6 @@ export function WorkflowToolbar({
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={onValidate}
-              variant="outline"
-              size="sm"
-              className="h-7 px-2.5 text-xs"
-            >
-              <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-              Validate
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Validate workflow</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* Far Right section - Save, Node Palette and Settings Menu */}
-      <div className="flex items-center space-x-2 flex-1 justify-end">
         {/* Save Button */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -396,25 +370,6 @@ export function WorkflowToolbar({
           </TooltipTrigger>
           <TooltipContent>
             <p>Save (Ctrl+S){(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-4" />
-
-        {/* Node Palette Toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={toggleNodePalette}
-              variant={showNodePalette ? "default" : "ghost"}
-              size="sm"
-              className="h-7 w-7 p-0"
-            >
-              <PanelRight className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{showNodePalette ? "Hide node palette" : "Show node palette"}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -474,7 +429,7 @@ export function WorkflowToolbar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        </div>
+      </div>
       </header>
     </TooltipProvider>
   )
