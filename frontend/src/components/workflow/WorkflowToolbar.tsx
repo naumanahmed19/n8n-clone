@@ -18,7 +18,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
+import { useWorkflowStore, useWorkflowToolbarStore, useAddNodeDialogStore } from '@/stores'
 import { validateImportFile } from '@/utils/errorHandling'
 import {
   AlertCircle,
@@ -31,10 +31,11 @@ import {
   Redo,
   Save,
   Settings,
+  Terminal,
   Undo,
   Upload
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
@@ -59,6 +60,24 @@ export function WorkflowToolbar({
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  
+  // Add Node Dialog store
+  const { openDialog } = useAddNodeDialogStore()
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd+K on Mac, Ctrl+K on Windows/Linux
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k' && !event.shiftKey) {
+        event.preventDefault()
+        event.stopPropagation()
+        openDialog()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [openDialog])
   
   // Get main workflow store for title synchronization, import/export, AND isDirty state
   const { 
@@ -197,7 +216,7 @@ export function WorkflowToolbar({
           onSave={handleWorkflowSettingsSave}
         />
       )}
-      <header className="flex items-center justify-between px-3 py-1.5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 shadow-sm min-h-[48px]">
+      <header className="flex items-center px-3 py-1.5 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 shadow-sm min-h-[48px]">
         {/* Left section - Sidebar trigger, Home, Breadcrumb and Edit actions */}
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           {/* Sidebar Trigger - only show when sidebar is available */}
@@ -256,10 +275,34 @@ export function WorkflowToolbar({
               </TooltipContent>
             </Tooltip>
           </div>
+
       </div>
 
-      {/* Center section - Execution controls */}
-      <div className="flex items-center space-x-2 mr-4">
+      {/* Center section - Command Palette */}
+      <div className="flex items-center justify-center flex-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => openDialog()}
+                variant="outline"
+                size="sm"
+                className="h-7 px-3 text-xs border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+              >
+                <Terminal className="h-3.5 w-3.5 mr-1.5" />
+                Add Node
+                <kbd className="ml-2 pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Add a node (⌘K)</p>
+            </TooltipContent>
+          </Tooltip>
+      </div>
+
+      {/* Right section - Execution controls */}
+      <div className="flex items-center space-x-2 justify-end">
         {/* Workflow Activation Toggle */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -332,8 +375,8 @@ export function WorkflowToolbar({
         </Tooltip>
       </div>
 
-      {/* Right section - Save, Node Palette and Settings Menu */}
-      <div className="flex items-center space-x-2">
+      {/* Far Right section - Save, Node Palette and Settings Menu */}
+      <div className="flex items-center space-x-2 flex-1 justify-end">
         {/* Save Button */}
         <Tooltip>
           <TooltipTrigger asChild>
