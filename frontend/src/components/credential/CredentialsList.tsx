@@ -1,30 +1,31 @@
+import { CredentialsHeader } from '@/components/credential/CredentialsHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
 import { useSidebarContext } from '@/contexts'
 import { credentialService } from '@/services'
 import {
-    Activity,
-    Calendar,
-    Clock,
-    Key as KeyIcon,
-    MoreHorizontal,
-    Shield,
-    Users
+  Activity,
+  Calendar,
+  Clock,
+  Key as KeyIcon,
+  MoreHorizontal,
+  Search,
+  Shield,
+  Users
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-interface CredentialsListProps {
-  searchTerm?: string
-}
+interface CredentialsListProps {}
 
-export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
+export function CredentialsList({}: CredentialsListProps) {
   const navigate = useNavigate()
   const {
     credentialsData: credentials,
@@ -32,10 +33,12 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
     isCredentialsLoaded,
     setIsCredentialsLoaded,
     credentialsError: error,
-    setCredentialsError: setError
+    setCredentialsError: setError,
+    setHeaderSlot
   } = useSidebarContext()
   
   const [isLoading, setIsLoading] = useState(!isCredentialsLoaded)
+  const [localSearchTerm, setLocalSearchTerm] = useState("")
 
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -66,13 +69,27 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
 
   // Filter credentials based on search term
   const filteredCredentials = React.useMemo(() => {
-    if (!searchTerm) return credentials
+    if (!localSearchTerm) return credentials
     
     return credentials.filter(credential =>
-      credential.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      credential.type.toLowerCase().includes(searchTerm.toLowerCase())
+      credential.name.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
+      credential.type.toLowerCase().includes(localSearchTerm.toLowerCase())
     )
-  }, [credentials, searchTerm])
+  }, [credentials, localSearchTerm])
+
+  // Set header slot for credentials
+  useEffect(() => {
+    setHeaderSlot(
+      <CredentialsHeader 
+        credentialsCount={filteredCredentials.length} 
+      />
+    )
+    
+    // Clean up header slot when component unmounts
+    return () => {
+      setHeaderSlot(null)
+    }
+  }, [setHeaderSlot, filteredCredentials.length])
 
   const handleCredentialClick = (credentialId: string) => {
     navigate(`/credentials/${credentialId}`)
@@ -161,9 +178,9 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
         <div className="text-center text-muted-foreground">
           <KeyIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
           <p className="text-sm">
-            {searchTerm ? 'No credentials match your search' : 'No credentials found'}
+            {localSearchTerm ? 'No credentials match your search' : 'No credentials found'}
           </p>
-          {!searchTerm && (
+          {!localSearchTerm && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -180,6 +197,19 @@ export function CredentialsList({ searchTerm = "" }: CredentialsListProps) {
 
   return (
     <div className="p-0">
+      {/* Search input for credentials */}
+      <div className="p-4 border-b">
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search credentials..."
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+      
       <div className="space-y-0">
         {filteredCredentials.map((credential) => (
           <div

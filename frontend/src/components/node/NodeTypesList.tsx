@@ -1,9 +1,11 @@
 import { CustomNodeUpload } from '@/components/customNode/CustomNodeUpload'
+import { NodeMarketplace } from '@/components/node/NodeMarketplace'
+import { NodesHeader } from '@/components/node/NodesHeader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
 import { useNodeTypes } from '@/hooks/useNodeTypes'
 import { globalToastManager } from '@/hooks/useToast'
@@ -19,13 +21,11 @@ import {
     FolderOpen,
     Globe,
     GripVertical,
-    List,
     Play,
     Power,
     PowerOff,
     Settings,
     Trash2,
-    Upload,
     Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -38,9 +38,7 @@ interface ExtendedNodeType extends NodeType {
   updatedAt?: string;
 }
 
-interface NodeTypesListProps {
-  searchTerm?: string
-}
+interface NodeTypesListProps {}
 
 // Icon mapping for different node types
 const getNodeIcon = (nodeType: NodeType) => {
@@ -76,15 +74,19 @@ const getNodeIcon = (nodeType: NodeType) => {
   return Command
 }
 
-export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
+export function NodeTypesList({}: NodeTypesListProps) {
   const { 
     nodeTypesData: nodeTypesFromContext,
     setNodeTypesData,
     isNodeTypesLoaded,
     setIsNodeTypesLoaded,
     nodeTypesError: error,
-    setNodeTypesError: setError
+    setNodeTypesError: setError,
+    setHeaderSlot
   } = useSidebarContext()
+  
+  // Search term for nodes
+  const [searchTerm, setSearchTerm] = useState("")
   
   const { nodeTypes, isLoading, error: hookError, refetch } = useNodeTypes()
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
@@ -115,15 +117,16 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
     setActiveTab('available')
   }
 
-  // Filter node types based on search term
+  // Filter node types based on search term (use search for available nodes)
   const filteredNodeTypes = useMemo(() => {
-    if (!searchTerm) return activeNodeTypes
+    const effectiveSearchTerm = searchTerm
+    if (!effectiveSearchTerm) return activeNodeTypes
     
     return activeNodeTypes.filter(nodeType =>
-      nodeType.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      nodeType.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      nodeType.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      nodeType.group.some(group => group.toLowerCase().includes(searchTerm.toLowerCase()))
+      nodeType.displayName.toLowerCase().includes(effectiveSearchTerm.toLowerCase()) ||
+      nodeType.description.toLowerCase().includes(effectiveSearchTerm.toLowerCase()) ||
+      nodeType.type.toLowerCase().includes(effectiveSearchTerm.toLowerCase()) ||
+      nodeType.group.some(group => group.toLowerCase().includes(effectiveSearchTerm.toLowerCase()))
     )
   }, [activeNodeTypes, searchTerm])
 
@@ -181,6 +184,24 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
       setExpandedCategories(prev => ({ ...prev, ...initialExpanded }))
     }
   }, [categorizedNodeTypes, expandedCategories])
+
+  // Set header slot for nodes
+  useEffect(() => {
+    setHeaderSlot(
+      <NodesHeader 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        nodeCount={activeNodeTypes.length}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+    )
+    
+    // Clean up header slot when component unmounts
+    return () => {
+      setHeaderSlot(null)
+    }
+  }, [setHeaderSlot, activeTab, setActiveTab, activeNodeTypes.length, searchTerm, setSearchTerm])
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
@@ -300,34 +321,6 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
     } finally {
       setProcessingNode(null);
     }
-  };
-
-  // Check if a node is a custom node (you can adjust this logic based on your needs)
-  const isCustomNode = (nodeType: NodeType) => {
-    const extendedNode = nodeType as ExtendedNodeType;
-    console.log('Checking if node is custom:', {
-      type: nodeType.type,
-      displayName: nodeType.displayName,
-      group: nodeType.group,
-      hasId: !!extendedNode.id,
-      createdAt: extendedNode.createdAt
-    });
-    
-    // A custom node should have an ID and createdAt (database properties)
-    // and not be in standard core categories
-    const hasDbProperties = !!extendedNode.id && !!extendedNode.createdAt;
-    const isNotCore = !['Core', 'Trigger', 'Regular', 'Transform'].every(category => 
-      !nodeType.group.some(g => g.toLowerCase().includes(category.toLowerCase()))
-    );
-    
-    const isCustom = hasDbProperties && (
-      nodeType.type.includes('custom-') || 
-      nodeType.group.includes('Custom') ||
-      isNotCore
-    );
-    
-    console.log('Custom node result:', isCustom);
-    return isCustom;
   };
 
   const renderNodeList = () => (
@@ -473,25 +466,8 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
 
   return (
     <>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-0 rounded-none border-b bg-transparent h-auto p-0">
-        <TabsTrigger 
-          value="available" 
-          className="rounded-none border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none flex items-center gap-2 px-3 py-2"
-        >
-          <List className="h-4 w-4" />
-          Available ({activeNodeTypes.length})
-        </TabsTrigger>
-        <TabsTrigger 
-          value="upload" 
-          className="rounded-none border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none flex items-center gap-2 px-3 py-2"
-        >
-          <Upload className="h-4 w-4" />
-          Upload
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="available" className="mt-0 p-0">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">      
+        <TabsContent value="available" className="mt-0 p-0">
         {isLoading ? (
           <div className="p-4">
             <div className="space-y-3">
@@ -534,6 +510,10 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
         ) : (
           renderNodeList()
         )}
+      </TabsContent>
+      
+      <TabsContent value="marketplace" className="mt-0 p-0">
+        <NodeMarketplace searchTerm={searchTerm} />
       </TabsContent>
       
       <TabsContent value="upload" className="mt-0 p-0">

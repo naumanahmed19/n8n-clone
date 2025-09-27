@@ -2,7 +2,6 @@
 import { CredentialsList } from "@/components/credential/CredentialsList"
 import { NavUser } from "@/components/nav-user"
 import { NodeTypesList } from "@/components/node/NodeTypesList"
-import { Label } from "@/components/ui/label"
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +9,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
-  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -26,7 +24,6 @@ import {
   Home,
   Key,
   Plus,
-  Search,
   Settings,
   Workflow
 } from "lucide-react"
@@ -107,9 +104,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navigate = useNavigate()
   const { 
     activeWorkflowItem, 
-    setActiveWorkflowItem, 
-    searchTerm, 
-    setSearchTerm 
+    setActiveWorkflowItem,
+    headerSlot
   } = useSidebarContext()
 
   // Initialize activeWorkflowItem if it's not set
@@ -221,36 +217,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <div className="text-foreground text-base font-medium">
               {activeWorkflowItem?.title}
             </div>
-            {(activeWorkflowItem?.title === "Nodes" || activeWorkflowItem?.title === "All Workflows" || activeWorkflowItem?.title === "All Credentials") && (
-              <Label className="flex items-center gap-2 text-sm">
-                <span>Search</span>
-                <Search className="h-4 w-4" />
-              </Label>
-            )}
           </div>
-          <SidebarInput 
-            placeholder={
-              activeWorkflowItem?.title === "All Workflows" ? "Search workflows..." :
-              activeWorkflowItem?.title === "All Credentials" ? "Search credentials..." :
-              "Search nodes..."
-            } 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          {/* Render header slot if available - each component provides its own header and search */}
+          {headerSlot}
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="px-0">
             <SidebarGroupContent>
               {activeWorkflowItem?.title === "All Workflows" && (
-                <WorkflowsList searchTerm={searchTerm} />
+                <WorkflowsList />
               )}
               
               {activeWorkflowItem?.title === "All Credentials" && (
-                <CredentialsList searchTerm={searchTerm} />
+                <CredentialsList />
               )}
               
               {activeWorkflowItem?.title === "Nodes" && (
-                <NodeTypesList searchTerm={searchTerm} />
+                <NodeTypesList />
               )}
               
               {activeWorkflowItem?.title === "Executions" && (

@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { WorkflowsHeader } from '@/components/workflow/WorkflowsHeader'
 import { useSidebarContext } from '@/contexts'
 import { workflowService } from '@/services'
 import type { Workflow } from '@/types'
@@ -15,19 +16,15 @@ import {
   ChevronDown,
   ChevronRight,
   FolderOpen,
-  Grid3X3,
-  List,
   MoreHorizontal,
   Workflow as WorkflowIcon
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-interface WorkflowsListProps {
-  searchTerm?: string
-}
+interface WorkflowsListProps {}
 
-export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
+export function WorkflowsList({}: WorkflowsListProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const {
@@ -36,12 +33,14 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
     isWorkflowsLoaded,
     setIsWorkflowsLoaded,
     workflowsError: error,
-    setWorkflowsError: setError
+    setWorkflowsError: setError,
+    setHeaderSlot
   } = useSidebarContext()
   
   const [isLoading, setIsLoading] = useState(!isWorkflowsLoaded)
   const [viewMode, setViewMode] = useState<'list' | 'categorized'>('list')
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
+  const [searchTerm, setSearchTerm] = useState("")
 
   // Extract the currently active workflow ID from URL if in editor
   const activeWorkflowId = useMemo(() => {
@@ -126,6 +125,24 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
       setExpandedCategories(prev => ({ ...prev, ...initialExpanded }))
     }
   }, [categorizedWorkflows, expandedCategories])
+
+  // Set header slot for workflows
+  useEffect(() => {
+    setHeaderSlot(
+      <WorkflowsHeader 
+        viewMode={viewMode} 
+        setViewMode={setViewMode} 
+        workflowCount={filteredWorkflows.length}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+    )
+    
+    // Clean up header slot when component unmounts
+    return () => {
+      setHeaderSlot(null)
+    }
+  }, [setHeaderSlot, viewMode, setViewMode, filteredWorkflows.length, searchTerm, setSearchTerm])
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
@@ -303,33 +320,6 @@ export function WorkflowsList({ searchTerm = "" }: WorkflowsListProps) {
 
   return (
     <div className="p-0">
-      {/* View Mode Toggle */}
-      <div className="p-3 border-b">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Workflows ({filteredWorkflows.length})
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-6 px-2"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-3 w-3" />
-            </Button>
-            <Button
-              variant={viewMode === 'categorized' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-6 px-2"
-              onClick={() => setViewMode('categorized')}
-            >
-              <Grid3X3 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="space-y-0">
         {viewMode === 'list' ? (

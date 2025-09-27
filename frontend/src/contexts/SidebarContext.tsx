@@ -33,6 +33,8 @@ interface SidebarContextType {
   setNodeTypesError: (error: string | null) => void
   currentWorkflowId: string | null
   setCurrentWorkflowId: (id: string | null) => void
+  headerSlot: ReactNode
+  setHeaderSlot: (slot: ReactNode) => void
 }
 
 const SidebarContext = createContext<SidebarContextType | null>(null)
@@ -59,6 +61,7 @@ export function SidebarContextProvider({ children }: SidebarProviderProps) {
   const [credentialsError, setCredentialsErrorState] = useState<string | null>(null)
   const [nodeTypesError, setNodeTypesErrorState] = useState<string | null>(null)
   const [currentWorkflowId, setCurrentWorkflowIdState] = useState<string | null>(null)
+  const [headerSlot, setHeaderSlotState] = useState<ReactNode>(null)
 
   // Stable setter functions
   const setActiveWorkflowItem = useCallback((item: WorkflowItem) => {
@@ -109,6 +112,10 @@ export function SidebarContextProvider({ children }: SidebarProviderProps) {
     setCurrentWorkflowIdState(id)
   }, [])
 
+  const setHeaderSlot = useCallback((slot: ReactNode) => {
+    setHeaderSlotState(slot)
+  }, [])
+
   return (
     <SidebarContext.Provider
       value={{
@@ -136,6 +143,8 @@ export function SidebarContextProvider({ children }: SidebarProviderProps) {
         setNodeTypesError,
         currentWorkflowId,
         setCurrentWorkflowId,
+        headerSlot,
+        setHeaderSlot,
       }}
     >
       {children}
