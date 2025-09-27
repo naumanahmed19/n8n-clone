@@ -1,6 +1,11 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -118,7 +123,7 @@ export function WorkflowsList({}: WorkflowsListProps) {
     const initialExpanded: Record<string, boolean> = {}
     categorizedWorkflows.forEach(group => {
       if (!(group.category in expandedCategories)) {
-        initialExpanded[group.category] = true // Start expanded
+        initialExpanded[group.category] = false // Start collapsed
       }
     })
     if (Object.keys(initialExpanded).length > 0) {
@@ -143,13 +148,6 @@ export function WorkflowsList({}: WorkflowsListProps) {
       setHeaderSlot(null)
     }
   }, [setHeaderSlot, viewMode, setViewMode, filteredWorkflows.length, searchTerm, setSearchTerm])
-
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }))
-  }
 
   const handleWorkflowClick = (workflowId: string) => {
     // Use replace to avoid adding to history stack and help with component reuse
@@ -328,12 +326,29 @@ export function WorkflowsList({}: WorkflowsListProps) {
         ) : (
           // Categorized view
           categorizedWorkflows.map((group) => (
-            <div key={group.category} className="border-b last:border-b-0">
+            <Collapsible
+              key={group.category}
+              open={expandedCategories[group.category]}
+              onOpenChange={(open) => {
+                if (open) {
+                  // Close all other categories when opening this one
+                  const newState: Record<string, boolean> = {}
+                  Object.keys(expandedCategories).forEach(key => {
+                    newState[key] = key === group.category
+                  })
+                  setExpandedCategories(newState)
+                } else {
+                  // Just close this category
+                  setExpandedCategories(prev => ({
+                    ...prev,
+                    [group.category]: false
+                  }))
+                }
+              }}
+              className="border-b last:border-b-0"
+            >
               {/* Category Header */}
-              <div
-                className="flex items-center justify-between p-3 bg-sidebar-accent/30 cursor-pointer hover:bg-sidebar-accent/50 transition-colors"
-                onClick={() => toggleCategory(group.category)}
-              >
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors text-left">
                 <div className="flex items-center gap-2">
                   {expandedCategories[group.category] ? (
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -348,15 +363,13 @@ export function WorkflowsList({}: WorkflowsListProps) {
                 <Badge variant="secondary" className="text-xs h-5">
                   {group.count}
                 </Badge>
-              </div>
+              </CollapsibleTrigger>
 
               {/* Category Workflows */}
-              {expandedCategories[group.category] && (
-                <div className="space-y-0">
-                  {group.workflows.map((workflow) => renderWorkflowItem(workflow))}
-                </div>
-              )}
-            </div>
+              <CollapsibleContent className="space-y-0">
+                {group.workflows.map((workflow) => renderWorkflowItem(workflow))}
+              </CollapsibleContent>
+            </Collapsible>
           ))
         )}
       </div>
