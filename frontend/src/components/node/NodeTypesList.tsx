@@ -357,13 +357,13 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
 
           {/* Category Node Types */}
           {expandedCategories[group.category] && (
-            <div className="space-y-0">
+            <div className="p-3 space-y-0">
               {group.nodeTypes.map((nodeType) => {
                 const IconComponent = getNodeIcon(nodeType)
                 
                 const nodeElement = (
                   <div
-                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border-b last:border-b-0 cursor-move group min-h-0 overflow-hidden transition-colors"
+                    className="bg-white hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors"
                     style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                     draggable
 
@@ -397,7 +397,7 @@ export function NodeTypesList({ searchTerm = "" }: NodeTypesListProps) {
                           className="text-xs text-muted-foreground overflow-hidden leading-relaxed mt-1"
                           style={{
                             display: '-webkit-box',
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: 1,
                             WebkitBoxOrient: 'vertical',
                             wordBreak: 'break-word',
                             hyphens: 'auto'
