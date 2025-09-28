@@ -6,15 +6,31 @@ A modern workflow automation platform built with React, Node.js, and TypeScript.
 
 - 🎨 Visual workflow editor with drag-and-drop interface
 - 🔧 Extensible node system for custom integrations
-- ⚡ Real-time execution monitoring
+- ⚡ Real-time execution monitoring with unified API
+- 🎯 **Unified Execution System** - Single node and workflow executions use the same API
+- 📊 Progress tracking for both single nodes and complete workflows
+- 🔍 Complete execution details and output data visualization
 - 🔒 Secure credential management
 - 🐳 Docker-ready deployment
 - 📊 Execution history and analytics
 - 🔌 Custom node development kit
 
+### ✨ Latest Improvements
+
+**Unified Execution API** - Major system improvement delivering:
+
+- **Single API Endpoint**: Both workflow and single node executions use `/api/executions`
+- **Consistent Response Format**: Identical response structure with standard UUID execution IDs
+- **Full Feature Parity**: Progress tracking, result viewing, and execution details for single nodes
+- **Real Execution Logic**: Single node executions perform actual HTTP requests (no mock data)
+- **Complete Output Data**: Frontend displays actual API response data in execution results
+
+See `EXECUTION_SYSTEM_UNIFIED.md` for complete technical details.
+
 ## Tech Stack
 
 **Frontend:**
+
 - React 18 with TypeScript
 - React Flow for visual workflow editor
 - Zustand for state management
@@ -22,6 +38,7 @@ A modern workflow automation platform built with React, Node.js, and TypeScript.
 - Vite for build tooling
 
 **Backend:**
+
 - Node.js with Express.js
 - TypeScript for type safety
 - Prisma ORM with PostgreSQL
@@ -40,35 +57,40 @@ A modern workflow automation platform built with React, Node.js, and TypeScript.
 ### Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd n8n-clone
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 4. **Start development environment with Docker**
+
    ```bash
    npm run docker:dev
    ```
 
    Or run services individually:
+
    ```bash
    # Start database and Redis
    docker-compose -f docker-compose.dev.yml up postgres redis -d
-   
+
    # Start backend
    npm run dev:backend
-   
+
    # Start frontend (in another terminal)
    npm run dev:frontend
    ```
@@ -81,6 +103,7 @@ A modern workflow automation platform built with React, Node.js, and TypeScript.
 ### Production Deployment
 
 1. **Build and run with Docker Compose**
+
    ```bash
    npm run docker:prod
    ```

@@ -189,6 +189,64 @@ const details = await executionService.getExecutionDetails(result.executionId);
 3. **✅ Response Alignment**: Unified response structure across execution types
 4. **✅ Status Consistency**: Same status values for both execution modes
 5. **✅ API Simplification**: Removed redundant endpoint and consolidated logic
+6. **✅ Mock Data Issue**: Single node executions now execute actual node logic instead of mock data
+7. **✅ Output Data Missing**: Frontend now fetches detailed execution results to display actual output data
+
+## Recent Critical Fixes (Latest Updates)
+
+### **🔧 Mock Data Execution Problem**
+
+**Issue**: Single node executions were using mock data instead of executing actual node logic.
+
+**Root Cause**:
+
+```typescript
+// BEFORE: Always used mock data if available
+if ((node as any).mockData) {
+  // Used mock data instead of actual execution
+  nodeResult = { success: true, data: mockData };
+}
+```
+
+**Solution**:
+
+```typescript
+// AFTER: Always execute actual node logic for single node execution
+// For single node execution, always execute the actual node (skip mock data)
+nodeResult = await this.nodeService.executeNode(
+  node.type,
+  nodeParameters,
+  nodeInputData,
+  node.credentials ? {} : undefined,
+  `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+);
+```
+
+### **📊 Missing Output Data in UI**
+
+**Issue**: Single node execution results showed `undefined` output data in the frontend.
+
+**Root Cause**:
+
+```typescript
+// BEFORE: Frontend didn't fetch detailed execution results
+data: undefined, // No individual node data in unified response
+outputData: undefined, // No individual node data in unified response
+```
+
+**Solution**:
+
+```typescript
+// AFTER: Frontend fetches detailed execution results
+const executionDetails = await executionService.getExecutionDetails(
+  result.executionId
+);
+const nodeExecution = executionDetails.nodeExecutions.find(
+  (nodeExec) => nodeExec.nodeId === nodeId
+);
+data: nodeOutputData, // Now we have the actual output data
+outputData: nodeOutputData, // Now we have the actual output data
+```
 
 ## Testing Verification
 
@@ -198,3 +256,13 @@ The unified API now enables:
 2. **Progress Tracking**: `GET /api/executions/{executionId}/progress` works for single nodes
 3. **Result Viewing**: `GET /api/executions/{executionId}` shows single node details
 4. **Consistent UI**: Same progress indicators and result display for both modes
+5. **🆕 Actual Execution**: Single nodes now make real HTTP requests and return actual API data
+6. **🆕 Complete Output Data**: Frontend displays actual execution results instead of mock/undefined data
+
+### **Verification Steps**
+
+1. **Execute Single Node**: Right-click on HTTP Request node → "Execute Node"
+2. **Check Network Logs**: Verify actual HTTP request is made to the target URL
+3. **View Output**: Confirm actual API response data appears in the output panel
+4. **Progress Tracking**: Verify `GET /api/executions/{executionId}` returns complete node execution details
+5. **Data Consistency**: Ensure output data matches the actual API response structure

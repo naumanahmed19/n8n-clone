@@ -71,14 +71,9 @@ export interface SingleNodeExecutionRequest {
   mode?: "single" | "workflow";
 }
 
-export interface SingleNodeExecutionResult {
-  executionId: string;
-  status: "completed" | "failed" | "cancelled" | "partial";
-  executedNodes: string[];
-  failedNodes: string[];
-  duration: number;
-  hasFailures: boolean;
-}
+// Note: SingleNodeExecutionResult is now identical to ExecutionResponse
+// due to unified API - keeping interface for backward compatibility
+export type SingleNodeExecutionResult = ExecutionResponse;
 
 export class ExecutionService {
   /**
