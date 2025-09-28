@@ -1,0 +1,159 @@
+import { CredentialSelector } from '@/components/credential/CredentialSelector'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { createField, FormGenerator } from '@/components/ui/form-generator'
+import { Separator } from '@/components/ui/separator'
+import { useCredentialStore, useNodeConfigDialogStore } from '@/stores'
+import { NodeType, WorkflowNode } from '@/types'
+import { NodeValidator } from '@/utils/nodeValidation'
+import {
+  AlertCircle,
+  CheckCircle,
+  Trash2
+} from 'lucide-react'
+import { useEffect } from 'react'
+
+interface ConfigTabProps {
+  node: WorkflowNode
+  nodeType: NodeType
+  onDelete: () => void
+}
+
+export function ConfigTab({ node, nodeType, onDelete }: ConfigTabProps) {
+  const { fetchCredentials, fetchCredentialTypes } = useCredentialStore()
+  const {
+    parameters,
+    nodeName,
+    credentials,
+    validationErrors,
+    hasUnsavedChanges,
+    updateParameters,
+    updateCredentials,
+    setValidationErrors
+  } = useNodeConfigDialogStore()
+
+  useEffect(() => {
+    fetchCredentials()
+    fetchCredentialTypes()
+  }, [fetchCredentials, fetchCredentialTypes])
+
+  useEffect(() => {
+    const validation = NodeValidator.validateNode(
+      { ...node, name: nodeName, parameters, credentials: Object.values(credentials) },
+      nodeType.properties
+    )
+    setValidationErrors(validation.errors)
+  }, [node.id, nodeName, parameters, credentials, nodeType.properties, setValidationErrors])
+
+  // Convert all node properties to FormFieldConfig for use with FormGenerator
+  const formFields = nodeType.properties?.map(property => 
+    createField({
+      name: property.name,
+      displayName: property.displayName,
+      type: property.type as any,
+      required: property.required,
+      default: property.default,
+      description: property.description,
+      placeholder: property.placeholder,
+      options: property.options,
+      displayOptions: property.displayOptions,
+    })
+  ) || []
+
+  // Get validation errors in the format expected by FormGenerator
+  const formErrors = validationErrors.reduce((acc, error) => {
+    acc[error.field] = error.message
+    return acc
+  }, {} as Record<string, string>)
+
+  return (
+    <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
+      <div className="space-y-6 max-w-lg">
+        {/* Credentials */}
+        {nodeType.credentials && nodeType.credentials.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Credentials</h4>
+            {nodeType.credentials?.map((credentialDef) => (
+              <div key={credentialDef.name}>
+                <label className="block text-sm font-medium mb-2">
+                  {credentialDef.displayName}
+                  {credentialDef.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <CredentialSelector
+                  credentialType={credentialDef.name}
+                  value={credentials[credentialDef.name]}
+                  onChange={(credentialId) => updateCredentials(credentialDef.name, credentialId)}
+                  required={credentialDef.required}
+                />
+                {credentialDef.description && (
+                  <p className="text-xs text-gray-500 mt-1">{credentialDef.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Node Properties */}
+        {nodeType.properties && nodeType.properties.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Properties</h4>
+            <FormGenerator
+              fields={formFields}
+              values={parameters}
+              errors={formErrors}
+              onChange={updateParameters}
+              showRequiredIndicator={true}
+              fieldClassName="space-y-2"
+            />
+          </div>
+        )}
+
+        {/* Validation Summary */}
+        {validationErrors.length > 0 && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-sm font-medium text-red-700">
+                  {validationErrors.length} validation error{validationErrors.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <ul className="text-sm text-red-600 space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>• {error.message}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Success Indicator */}
+        {validationErrors.length === 0 && hasUnsavedChanges && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-3">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-medium text-green-700">
+                  Configuration is valid
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Delete Node */}
+        <Separator />
+        <div>
+          <Button
+            onClick={onDelete}
+            variant="destructive"
+            className="w-full"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Node
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -3,6 +3,7 @@ export * from "./addNodeDialog";
 export * from "./auth";
 export * from "./credential";
 export * from "./customNode";
+export * from "./nodeConfigDialog";
 export * from "./workflow";
 export * from "./workflowToolbar";
 export * from "./workspace";
