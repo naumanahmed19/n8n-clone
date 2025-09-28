@@ -6,12 +6,6 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
@@ -29,16 +23,14 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
-  Info,
-  FolderOpen,
-  MoreHorizontal,
-  Zap,
-  Settings,
   Code,
+  FolderOpen,
   GitBranch,
-  Clock
+  Info,
+  Settings,
+  Zap
 } from 'lucide-react'
-import { useState, useMemo, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface InputsColumnProps {
   node: WorkflowNode
