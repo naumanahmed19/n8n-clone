@@ -1,15 +1,17 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import {
-    ArrowRight,
-    Database,
-    Edit,
-    X
+  Copy,
+  Database,
+  Edit,
+  Pin,
+  PinOff,
+  X
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -18,38 +20,19 @@ interface OutputColumnProps {
 }
 
 export function OutputColumn({ node }: OutputColumnProps) {
-  const { workflow, getNodeExecutionResult } = useWorkflowStore()
+  const { getNodeExecutionResult } = useWorkflowStore()
   const {
     mockData,
+    mockDataPinned,
     mockDataEditor,
     openMockDataEditor,
     closeMockDataEditor,
     updateMockDataContent,
-    updateMockData
+    updateMockData,
+    toggleMockDataPinned
   } = useNodeConfigDialogStore()
 
   const nodeExecutionResult = getNodeExecutionResult(node.id)
-
-  // Get connected output nodes
-  const outputConnections = workflow?.connections.filter(conn => conn.sourceNodeId === node.id) || []
-  const outputNodes = outputConnections.map(conn => 
-    workflow?.nodes.find(n => n.id === conn.targetNodeId)
-  ).filter(Boolean) as WorkflowNode[]
-
-  const getNodeStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'success':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Success</Badge>
-      case 'error':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Error</Badge>
-      case 'running':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Running</Badge>
-      case 'skipped':
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Skipped</Badge>
-      default:
-        return <Badge variant="outline">Idle</Badge>
-    }
-  }
 
   const handleMockDataSave = () => {
     try {
@@ -68,203 +51,179 @@ export function OutputColumn({ node }: OutputColumnProps) {
     toast.success('Mock data cleared')
   }
 
+  // Determine what data to show - mock data if pinned and available, otherwise execution result
+  const displayData = mockDataPinned && mockData ? mockData : nodeExecutionResult?.data
+  const isShowingMockData = mockDataPinned && mockData
+
   return (
-    <div className="flex w-full h-full border-l border-gray-200 flex-col">
-      <div className="p-4 border-b h-[72px] flex items-center">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center space-x-2">
-            <ArrowRight className="w-4 h-4 text-gray-500" />
-            <h3 className="font-medium">Output Data</h3>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Database className="w-4 h-4 text-blue-600" />
-            <Button
-              onClick={openMockDataEditor}
-              size="sm"
-              variant="outline"
-              className="flex items-center space-x-1"
-            >
-              <Edit className="w-3 h-3" />
-              <span>Mock Data</span>
-            </Button>
-          </div>
+    <div className="flex w-full h-full border-l flex-col bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+        <div className="flex items-center gap-2">
+          <Database className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-semibold text-sm">Output Data</h3>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Pin Mock Data Toggle */}
+          {mockData && (
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-background border">
+              <Switch
+                checked={mockDataPinned}
+                onCheckedChange={toggleMockDataPinned}
+              />
+              <div className="flex items-center gap-1">
+                {mockDataPinned ? (
+                  <Pin className="h-3 w-3 text-orange-600" />
+                ) : (
+                  <PinOff className="h-3 w-3 text-muted-foreground" />
+                )}
+                <span className="text-xs font-medium">
+                  {mockDataPinned ? 'Pinned' : 'Pin Mock'}
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {/* Edit Mock Data Button */}
+          <Button
+            onClick={openMockDataEditor}
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <Edit className="h-3 w-3" />
+            <span className="text-xs">Edit Mock</span>
+          </Button>
         </div>
       </div>
       
-      <ScrollArea className="flex-1 p-4">
-        {/* Mock Data Editor */}
-        {mockDataEditor.isOpen && (
-          <div className="mb-6">
-            <Card className="border-orange-200 bg-orange-50/30">
-              <CardHeader className="pb-2">
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-4 h-full flex flex-col space-y-4">
+            {/* Mock Data Editor */}
+            {mockDataEditor.isOpen && (
+              <div className="border border-amber-200 bg-amber-50/50 rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm text-orange-800">Set Mock Output Data</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Edit className="h-4 w-4" />
+                    <h3 className="text-sm font-medium">Mock Data Editor</h3>
+                  </div>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={closeMockDataEditor}
                     className="h-6 w-6 p-0"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <p className="text-xs text-orange-700">
-                    Enter JSON data that will be used as output for the next nodes. This will override execution results.
-                  </p>
-                  <Textarea
-                    value={mockDataEditor.content}
-                    onChange={(e) => updateMockDataContent(e.target.value)}
-                    placeholder='{\n  "status": "success",\n  "data": {\n    "message": "Hello World"\n  }\n}'
-                    className="font-mono text-sm"
-                    rows={8}
-                  />
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={handleMockDataSave}
-                      size="sm"
-                      className="flex-1"
-                    >
-                      Save Mock Data
-                    </Button>
-                    <Button
-                      onClick={handleMockDataClear}
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Clear
-                    </Button>
-                  </div>
+                
+                <p className="text-sm text-muted-foreground">
+                  Define JSON data to use as output. When pinned, this overrides execution results.
+                </p>
+                <Textarea
+                  value={mockDataEditor.content}
+                  onChange={(e) => updateMockDataContent(e.target.value)}
+                  placeholder='{\n  "message": "Hello World",\n  "data": {\n    "success": true\n  }\n}'
+                  className="font-mono text-xs min-h-[120px] resize-none"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleMockDataSave}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Save Changes
+                  </Button>
+                  <Button
+                    onClick={handleMockDataClear}
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Clear All
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Current Output Data - Mock or Execution */}
-        {(mockData || nodeExecutionResult?.data) && (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
-              <Database className="w-4 h-4 text-green-600" />
-              <span>Current Output Data</span>
-              <Badge className={mockData ? "bg-orange-100 text-orange-800 hover:bg-orange-100" : "bg-green-100 text-green-800 hover:bg-green-100"}>
-                {mockData ? 'Mock Data' : nodeExecutionResult?.status}
-              </Badge>
-            </h4>
-            <Card className={mockData ? "border-orange-200 bg-orange-50/30" : "border-green-200 bg-green-50/30"}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">
-                    {mockData ? 'Mock Output Data' : 'Execution Output Data'}
-                  </CardTitle>
+            {/* Main Output Display */}
+            {displayData ? (
+              <div className="flex flex-col h-full space-y-4">
+                <div className="flex items-center justify-between flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Database className="h-4 w-4" />
+                      <h3 className="text-sm font-medium">
+                        {isShowingMockData ? 'Mock Data Output' : 'Execution Output'}
+                      </h3>
+                    </div>
+                    <Badge 
+                      variant={isShowingMockData ? "secondary" : "default"}
+                      className={isShowingMockData ? "bg-amber-100 text-amber-800" : ""}
+                    >
+                      {isShowingMockData ? 'Mock' : nodeExecutionResult?.status || 'Ready'}
+                    </Badge>
+                  </div>
+                  
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const dataToShow = mockData || nodeExecutionResult?.data
-                      navigator.clipboard.writeText(JSON.stringify(dataToShow, null, 2))
+                      navigator.clipboard.writeText(JSON.stringify(displayData, null, 2))
                       toast.success('Copied to clipboard')
                     }}
-                    className="h-6 px-2 text-xs"
+                    className="h-7 px-2 text-xs gap-1"
                   >
-                    📋 Copy
+                    <Copy className="h-3 w-3" />
+                    Copy
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-40">
-                  <pre className="text-xs bg-white p-3 rounded border overflow-auto font-mono whitespace-pre-wrap">
-                    {JSON.stringify(mockData || nodeExecutionResult?.data, null, 2)}
-                  </pre>
-                </ScrollArea>
-                {mockData && (
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-xs text-orange-600">This mock data will be used as output for connected nodes.</p>
+
+                <div className="rounded-md border bg-muted/30 p-3 flex-1 min-h-0">
+                  <ScrollArea className="h-full w-full">
+                    <pre className="text-xs font-mono whitespace-pre-wrap break-all">
+                      {JSON.stringify(displayData, null, 2)}
+                    </pre>
+                  </ScrollArea>
+                </div>
+                
+                {isShowingMockData && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground flex-shrink-0">
+                    <span>💡 This mock data is currently pinned and will be used for connected nodes</span>
                     <Button
                       onClick={openMockDataEditor}
                       size="sm"
                       variant="ghost"
-                      className="text-xs"
+                      className="h-6 px-2 text-xs"
                     >
                       Edit
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Database className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <h3 className="font-medium text-sm mb-2">No Output Data</h3>
+                <p className="text-xs text-muted-foreground mb-4 max-w-[200px]">
+                  Execute the workflow or create mock data to see output
+                </p>
+                <Button
+                  onClick={openMockDataEditor}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                >
+                  <Edit className="h-3 w-3" />
+                  Create Mock Data
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Connected Output Nodes */}
-        {outputNodes.length > 0 ? (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium flex items-center space-x-2">
-              <ArrowRight className="w-4 h-4 text-blue-600" />
-              <span>Connected Outputs</span>
-            </h4>
-            
-            <div className="space-y-3">
-              {outputNodes.map((outputNode, index) => {
-                const connection = outputConnections[index]
-                const outputNodeExecutionResult = getNodeExecutionResult(outputNode.id)
-                
-                return (
-                  <Card key={outputNode.id} className="p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div 
-                          className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: '#6b7280' }}
-                        >
-                          {outputNode.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm font-medium truncate">{outputNode.name}</span>
-                      </div>
-                      {outputNodeExecutionResult && getNodeStatusBadge(outputNodeExecutionResult.status)}
-                    </div>
-                    
-                    <div className="text-xs text-gray-500 mb-2">
-                      Output: <code className="bg-gray-100 px-1 rounded">{connection.sourceOutput}</code>
-                      {' → '}
-                      Input: <code className="bg-gray-100 px-1 rounded">{connection.targetInput}</code>
-                    </div>
-
-                    {/* Show current node's output data that would be sent to this output node */}
-                    {nodeExecutionResult?.data && (
-                      <details className="mt-2">
-                        <summary className="text-xs text-blue-600 cursor-pointer">View Sent Data</summary>
-                        <pre className="text-xs bg-gray-50 p-2 rounded mt-1 overflow-auto max-h-24 whitespace-pre-wrap">
-                          {JSON.stringify(nodeExecutionResult.data, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-32 text-center space-y-3">
-            <ArrowRight className="w-8 h-8 text-gray-300" />
-            <div>
-              <p className="text-sm text-gray-500 mb-1">No output data</p>
-              <p className="text-xs text-gray-400 mb-3">Execute the node or set mock data</p>
-              <Button
-                onClick={openMockDataEditor}
-                size="sm"
-                variant="outline"
-                className="flex items-center space-x-1"
-              >
-                <Edit className="w-3 h-3" />
-                <span>Add Mock Data</span>
-              </Button>
-            </div>
-          </div>
-        )}
-      </ScrollArea>
+        </ScrollArea>
+      </div>
     </div>
   )
 }

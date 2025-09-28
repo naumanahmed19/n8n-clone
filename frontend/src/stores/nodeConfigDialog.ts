@@ -19,6 +19,7 @@ interface NodeConfigDialogState {
   isDisabled: boolean;
   credentials: Record<string, string>;
   mockData: any;
+  mockDataPinned: boolean;
 
   // UI state
   validationErrors: ValidationError[];
@@ -39,6 +40,7 @@ interface NodeConfigDialogState {
     credentialId: string | undefined
   ) => void;
   updateMockData: (data: any) => void;
+  toggleMockDataPinned: () => void;
   setValidationErrors: (errors: ValidationError[]) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
   setIsEditingName: (isEditing: boolean) => void;
@@ -59,6 +61,7 @@ const initialState = {
   isDisabled: false,
   credentials: {},
   mockData: null,
+  mockDataPinned: false,
   validationErrors: [],
   hasUnsavedChanges: false,
   isEditingName: false,
@@ -87,6 +90,7 @@ export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
           {}
         ),
         mockData: node.mockData || null,
+        mockDataPinned: node.mockDataPinned || false,
         hasUnsavedChanges: false,
         validationErrors: [],
         mockDataEditor: {
@@ -149,6 +153,13 @@ export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
           ...get().mockDataEditor,
           content: data ? JSON.stringify(data, null, 2) : "",
         },
+      });
+    },
+
+    toggleMockDataPinned: () => {
+      set({
+        mockDataPinned: !get().mockDataPinned,
+        hasUnsavedChanges: true,
       });
     },
 

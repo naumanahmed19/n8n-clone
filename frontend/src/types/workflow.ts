@@ -7,6 +7,7 @@ export interface WorkflowNode {
   credentials?: string[];
   disabled: boolean;
   mockData?: any;
+  mockDataPinned?: boolean;
 }
 
 export interface WorkflowConnection {
