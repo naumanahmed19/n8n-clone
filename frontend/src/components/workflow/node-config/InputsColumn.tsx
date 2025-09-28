@@ -11,17 +11,17 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import { getNodeExecutionCapability } from '@/utils/nodeTypeClassification'
@@ -34,9 +34,8 @@ import {
   GitBranch,
   Info,
   Settings,
-  Zap,
-  FileText,
-  Table
+  Table,
+  Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
