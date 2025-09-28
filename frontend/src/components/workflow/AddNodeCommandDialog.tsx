@@ -1,15 +1,16 @@
 import { Badge } from '@/components/ui/badge'
 import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
+      CommandDialog,
+      CommandEmpty,
+      CommandGroup,
+      CommandInput,
+      CommandItem,
+      CommandList,
+      CommandSeparator,
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
+import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { useCallback, useMemo } from 'react'
 import { useReactFlow } from 'reactflow'
 

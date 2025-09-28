@@ -23,6 +23,7 @@ import {
 } from '@/hooks/workflow'
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType } from '@/types'
+import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 import { CustomEdge } from './CustomEdge'
 import { CustomNode } from './CustomNode'
@@ -227,6 +228,9 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                 }
             }
 
+            // Find the corresponding node type definition to get inputs/outputs info
+            const nodeTypeDefinition = availableNodeTypes.find(nt => nt.type === node.type)
+            
             return {
                 id: node.id,
                 type: 'custom',
@@ -237,6 +241,20 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     parameters: node.parameters,
                     disabled: node.disabled,
                     status: nodeStatus,
+                    // Add inputs/outputs information from node type definition
+                    inputs: nodeTypeDefinition?.inputs || [],
+                    outputs: nodeTypeDefinition?.outputs || [],
+                    // Add position and style information
+                    position: node.position,
+                    dimensions: { width: 64, height: 64 }, // Default dimensions for now
+                    customStyle: {
+                        backgroundColor: nodeTypeDefinition?.color || '#666',
+                        borderColor: undefined, // Will be handled by CSS based on selection state
+                        borderWidth: 2,
+                        borderRadius: isTriggerNode(node.type) ? 32 : 8, // Rounded for triggers
+                        shape: isTriggerNode(node.type) ? 'trigger' : 'rectangle',
+                        opacity: node.disabled ? 0.5 : 1.0
+                    },
                     // Add execution result data for display
                     executionResult: nodeResult,
                     lastExecutionData: lastExecutionResult?.nodeResults.find(nr => nr.nodeId === node.id)

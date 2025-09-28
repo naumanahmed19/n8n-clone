@@ -31,6 +31,20 @@ interface CustomNodeData {
   status?: 'idle' | 'running' | 'success' | 'error'
   icon?: string
   color?: string
+  // Node definition properties
+  inputs?: string[]
+  outputs?: string[]
+  // Position and style properties
+  position?: { x: number; y: number }
+  dimensions?: { width: number; height: number }
+  customStyle?: {
+    backgroundColor?: string
+    borderColor?: string
+    borderWidth?: number
+    borderRadius?: number
+    shape?: 'rectangle' | 'circle' | 'diamond' | 'trigger'
+    opacity?: number
+  }
   // Additional properties for node toolbar
   nodeGroup?: string[]
   canExecuteIndividually?: boolean
@@ -361,17 +375,38 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
               data.disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
-            {/* Input handle - trigger nodes typically don't have inputs, but if they do, make them distinctive */}
-            <Handle
-              type="target"
-              position={Position.Left}
-              className={clsx(
-                "w-3 h-3 border-2 border-white",
-                // Make trigger node handles more rounded
-                isTriggr ? "rounded-full" : "",
-                data.disabled ? "!bg-gray-300" : "!bg-gray-400"
-              )}
-            />
+            {/* Input handles - render multiple if node has multiple inputs */}
+            {data.inputs && data.inputs.length > 0 && (
+              <>
+                {data.inputs.map((input, index) => {
+                  const totalInputs = data.inputs!.length
+                  const isSingleInput = totalInputs === 1
+                  
+                  // For single input, center it. For multiple inputs, distribute them vertically
+                  const top = isSingleInput 
+                    ? '50%' 
+                    : `${((index + 1) / (totalInputs + 1)) * 100}%`
+                  
+                  return (
+                    <Handle
+                      key={`input-${input}-${index}`}
+                      id={input}
+                      type="target"
+                      position={Position.Left}
+                      style={{
+                        top,
+                        transform: 'translateY(-50%)',
+                        left: '-6px'
+                      }}
+                      className={clsx(
+                        "w-3 h-3 border-2 border-white",
+                        data.disabled ? "!bg-gray-300" : "!bg-gray-400"
+                      )}
+                    />
+                  )
+                })}
+              </>
+            )}
 
             {/* Node content - centered icon and status */}
             <div className="flex items-center justify-center h-full relative">
@@ -395,17 +430,40 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
               )}
             </div>
 
-            {/* Output handle */}
-            <Handle
-              type="source"
-              position={Position.Right}
-              className={clsx(
-                "w-3 h-3 border-2 border-white",
-                // Make trigger node handles more rounded
-                isTriggr ? "rounded-full" : "",
-                data.disabled ? "!bg-gray-300" : "!bg-gray-400"
-              )}
-            />
+            {/* Output handles - render multiple if node has multiple outputs */}
+            {data.outputs && data.outputs.length > 0 && (
+              <>
+                {data.outputs.map((output, index) => {
+                  const totalOutputs = data.outputs!.length
+                  const isSingleOutput = totalOutputs === 1
+                  
+                  // For single output, center it. For multiple outputs, distribute them vertically
+                  const top = isSingleOutput 
+                    ? '50%' 
+                    : `${((index + 1) / (totalOutputs + 1)) * 100}%`
+                  
+                  return (
+                    <Handle
+                      key={`output-${output}-${index}`}
+                      id={output}
+                      type="source"
+                      position={Position.Right}
+                      style={{
+                        top,
+                        transform: 'translateY(-50%)',
+                        right: '-6px'
+                      }}
+                      className={clsx(
+                        "w-3 h-3 border-2 border-white",
+                        // Make trigger node handles more rounded
+                        isTriggr ? "rounded-full" : "",
+                        data.disabled ? "!bg-gray-300" : "!bg-gray-400"
+                      )}
+                    />
+                  )
+                })}
+              </>
+            )}
 
             {/* Disabled overlay */}
             {data.disabled && (
