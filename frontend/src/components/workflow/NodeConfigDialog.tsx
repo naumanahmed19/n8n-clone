@@ -24,6 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { useCredentialStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator, ValidationError } from '@/utils/nodeValidation'
@@ -33,12 +34,14 @@ import {
   ArrowRight,
   CheckCircle,
   Database,
+  Edit,
   FileText,
   Info,
   Loader2,
   Play,
   Settings,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -71,6 +74,18 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isEditingName, setIsEditingName] = useState(false)
   const [isExecuting, setIsExecuting] = useState(false)
+  const [mockData, setMockData] = useState(node.mockData || null)
+  const [isMockDataEditorOpen, setIsMockDataEditorOpen] = useState(false)
+  const [mockDataString, setMockDataString] = useState(
+    node.mockData ? JSON.stringify(node.mockData, null, 2) : ''
+  )
+
+  // Debug: Log node data to see if mockData exists
+  console.log('NodeConfigDialog - node data:', { 
+    nodeId: node.id, 
+    hasMockData: !!node.mockData,
+    mockData: node.mockData 
+  })
 
   // Get the execution result for this node
   const nodeExecutionResult = getNodeExecutionResult(node.id)
@@ -149,7 +164,8 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
         parameters, 
         name: nodeName, 
         disabled: isDisabled,
-        credentials: Object.values(credentials).filter(Boolean) as string[]
+        credentials: Object.values(credentials).filter(Boolean) as string[],
+        mockData
       })
       setHasUnsavedChanges(false)
     }
@@ -171,6 +187,30 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
     setIsDisabled(disabled)
     setHasUnsavedChanges(true)
     // Don't update store immediately - save on dialog close
+  }
+
+  const handleMockDataSave = () => {
+    try {
+      const parsed = JSON.parse(mockDataString)
+      setMockData(parsed)
+      setIsMockDataEditorOpen(false)
+      setHasUnsavedChanges(true)
+      toast.success('Mock data saved successfully')
+    } catch (error) {
+      toast.error('Invalid JSON format. Please check your syntax.')
+    }
+  }
+
+  const handleMockDataClear = () => {
+    setMockData(null)
+    setMockDataString('')
+    setIsMockDataEditorOpen(false)
+    setHasUnsavedChanges(true)
+    toast.success('Mock data cleared')
+  }
+
+  const handleMockDataEdit = () => {
+    setIsMockDataEditorOpen(true)
   }
 
   const handleCredentialChange = (credentialType: string, credentialId: string | undefined) => {
@@ -688,37 +728,99 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-2">
                       <ArrowRight className="w-4 h-4 text-gray-500" />
-                      <h3 className="font-medium">Output & Response</h3>
-                      <Badge variant="outline">{outputNodes.length}</Badge>
+                      <h3 className="font-medium">Output Data</h3>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Database className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">Data</span>
+                      <Button
+                        onClick={handleMockDataEdit}
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center space-x-1"
+                      >
+                        <Edit className="w-3 h-3" />
+                        <span>Mock Data</span>
+                      </Button>
                     </div>
                   </div>
                 </div>
                 
                 <ScrollArea className="flex-1 p-4">
-                  {/* Current Node Response Data */}
-                  {nodeExecutionResult?.data && (
+                  {/* Mock Data Editor */}
+                  {isMockDataEditorOpen && (
+                    <div className="mb-6">
+                      <Card className="border-orange-200 bg-orange-50/30">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm text-orange-800">Set Mock Output Data</CardTitle>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setIsMockDataEditorOpen(false)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <p className="text-xs text-orange-700">
+                              Enter JSON data that will be used as output for the next nodes. This will override execution results.
+                            </p>
+                            <Textarea
+                              value={mockDataString}
+                              onChange={(e) => setMockDataString(e.target.value)}
+                              placeholder='{\n  "status": "success",\n  "data": {\n    "message": "Hello World"\n  }\n}'
+                              className="font-mono text-sm"
+                              rows={8}
+                            />
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={handleMockDataSave}
+                                size="sm"
+                                className="flex-1"
+                              >
+                                Save Mock Data
+                              </Button>
+                              <Button
+                                onClick={handleMockDataClear}
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Current Output Data - Mock or Execution */}
+                  {(mockData || nodeExecutionResult?.data) && (
                     <div className="mb-6">
                       <h4 className="text-sm font-medium mb-3 flex items-center space-x-2">
                         <Database className="w-4 h-4 text-green-600" />
-                        <span>Node Response Data</span>
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                          {nodeExecutionResult.status}
+                        <span>Current Output Data</span>
+                        <Badge className={mockData ? "bg-orange-100 text-orange-800 hover:bg-orange-100" : "bg-green-100 text-green-800 hover:bg-green-100"}>
+                          {mockData ? 'Mock Data' : nodeExecutionResult?.status}
                         </Badge>
                       </h4>
-                      <Card className="border-green-200 bg-green-50/30">
+                      <Card className={mockData ? "border-orange-200 bg-orange-50/30" : "border-green-200 bg-green-50/30"}>
                         <CardHeader className="pb-2">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm">Output Data</CardTitle>
+                            <CardTitle className="text-sm">
+                              {mockData ? 'Mock Output Data' : 'Execution Output Data'}
+                            </CardTitle>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                navigator.clipboard.writeText(JSON.stringify(nodeExecutionResult.data, null, 2))
-                                toast?.success('Copied to clipboard')
+                                const dataToShow = mockData || nodeExecutionResult?.data
+                                navigator.clipboard.writeText(JSON.stringify(dataToShow, null, 2))
+                                toast.success('Copied to clipboard')
                               }}
                               className="h-6 px-2 text-xs"
                             >
@@ -729,9 +831,22 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                         <CardContent>
                           <ScrollArea className="h-40">
                             <pre className="text-xs bg-white p-3 rounded border overflow-auto font-mono whitespace-pre-wrap">
-                              {JSON.stringify(nodeExecutionResult.data, null, 2)}
+                              {JSON.stringify(mockData || nodeExecutionResult?.data, null, 2)}
                             </pre>
                           </ScrollArea>
+                          {mockData && (
+                            <div className="mt-2 flex items-center justify-between">
+                              <p className="text-xs text-orange-600">This mock data will be used as output for connected nodes.</p>
+                              <Button
+                                onClick={handleMockDataEdit}
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs"
+                              >
+                                Edit
+                              </Button>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     </div>
@@ -785,13 +900,24 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                         })}
                       </div>
                     </div>
-                  ) : !nodeExecutionResult?.data ? (
-                    <div className="flex flex-col items-center justify-center h-32 text-center">
-                      <ArrowRight className="w-8 h-8 text-gray-300 mb-2" />
-                      <p className="text-sm text-gray-500">No output data</p>
-                      <p className="text-xs text-gray-400">Execute the node to see response data</p>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-32 text-center space-y-3">
+                      <ArrowRight className="w-8 h-8 text-gray-300" />
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">No output data</p>
+                        <p className="text-xs text-gray-400 mb-3">Execute the node or set mock data</p>
+                        <Button
+                          onClick={handleMockDataEdit}
+                          size="sm"
+                          variant="outline"
+                          className="flex items-center space-x-1"
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>Add Mock Data</span>
+                        </Button>
+                      </div>
                     </div>
-                  ) : null}
+                  )}
                 </ScrollArea>
               </div>
             </ResizablePanel>

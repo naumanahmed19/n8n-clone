@@ -43,6 +43,7 @@ export const CreateWorkflowSchema = z.object({
         }),
         credentials: z.array(z.string()).optional(),
         disabled: z.boolean().default(false),
+        mockData: z.any().optional(),
       })
     )
     .default([]),

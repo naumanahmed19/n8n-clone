@@ -11,7 +11,7 @@ const CounterNode = {
     name: "counter",
   },
   inputs: ["main", "additional"],
-  outputs: ["main", "additional"],
+  outputs: ["main", "additional", "xxx"],
   properties: [
     {
       displayName: "Operation",

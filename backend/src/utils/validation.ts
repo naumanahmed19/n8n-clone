@@ -28,6 +28,7 @@ export const nodeSchema = z.object({
   }),
   credentials: z.array(z.string()).optional(),
   disabled: z.boolean(),
+  mockData: z.any().optional(),
 })
 
 export const connectionSchema = z.object({

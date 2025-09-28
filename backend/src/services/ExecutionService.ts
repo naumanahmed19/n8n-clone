@@ -1297,13 +1297,31 @@ export class ExecutionService {
           // Single node execution mode: execute only this node in isolation
           const startTime = Date.now();
 
-          const nodeResult = await this.nodeService.executeNode(
-            node.type,
-            nodeParameters,
-            nodeInputData,
-            node.credentials ? {} : undefined, // TODO: Load actual credentials
-            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-          );
+          let nodeResult;
+          
+          // Check if node has mock data - if so, use it instead of executing
+          if ((node as any).mockData) {
+            logger.info(`Using mock data for node ${nodeId}`, {
+              nodeId,
+              nodeType: node.type,
+              mockDataSize: JSON.stringify((node as any).mockData).length,
+            });
+            
+            // Use mock data as the execution result
+            nodeResult = {
+              success: true,
+              data: [{ main: Array.isArray((node as any).mockData) ? (node as any).mockData : [(node as any).mockData] }]
+            };
+          } else {
+            // Execute the actual node
+            nodeResult = await this.nodeService.executeNode(
+              node.type,
+              nodeParameters,
+              nodeInputData,
+              node.credentials ? {} : undefined, // TODO: Load actual credentials
+              `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            );
+          }
 
           const endTime = Date.now();
           const duration = endTime - startTime;
