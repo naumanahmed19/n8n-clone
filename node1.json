@@ -1,0 +1,223 @@
+{
+  "workflowId": "cmg2m23640001ide5h5iqqupu",
+  "triggerData": {
+    "timestamp": "2025-09-28T16:18:28.778Z",
+    "source": "manual",
+    "triggeredBy": "user",
+    "workflowName": "Chat Api",
+    "nodeCount": 3,
+    "triggerNodeId": "node-1759076295668",
+    "triggerNodeType": "manual-trigger"
+  },
+  "triggerNodeId": "node-1759076295668",
+  "workflowData": {
+    "nodes": [
+      {
+        "id": "node-1759003172175",
+        "name": "Webhook Trigger",
+        "type": "webhook-trigger",
+        "disabled": false,
+        "mockData": [
+          {
+            "code": 1,
+            "name": "First item"
+          },
+          {
+            "code": 2,
+            "name": "Second item"
+          }
+        ],
+        "position": {
+          "x": 161.5,
+          "y": 135
+        },
+        "parameters": {
+          "path": "",
+          "password": "sdfsdf",
+          "username": "dfsf",
+          "headerName": "Authorization",
+          "httpMethod": "POST",
+          "queryParam": "token",
+          "responseData": "firstEntryJson",
+          "responseMode": "onReceived",
+          "expectedValue": "erwer",
+          "authentication": "header"
+        },
+        "credentials": []
+      },
+      {
+        "id": "node-1759007294170",
+        "name": "HTTP Request",
+        "type": "http-request",
+        "disabled": false,
+        "mockData": [
+          {
+            "id": "node-1759003172175",
+            "name": "Webhook Trigger",
+            "type": "webhook-trigger",
+            "disabled": false,
+            "position": {
+              "x": 161.5,
+              "y": 135
+            },
+            "parameters": {
+              "path": "",
+              "password": "",
+              "username": "",
+              "headerName": "Authorization",
+              "httpMethod": "POST",
+              "queryParam": "token",
+              "responseData": "firstEntryJson",
+              "responseMode": "onReceived",
+              "expectedValue": "",
+              "authentication": {
+                "type": "none"
+              }
+            },
+            "credentials": []
+          },
+          {
+            "id": "node-1759007294170",
+            "name": "HTTP Request",
+            "type": "http-request",
+            "disabled": false,
+            "position": {
+              "x": 338.5,
+              "y": 103.25
+            },
+            "parameters": {
+              "url": "aaaaa",
+              "body": "",
+              "method": "GET",
+              "headers": [
+                {
+                  "code": 1,
+                  "name": "First item"
+                },
+                {
+                  "code": 2,
+                  "name": "Second item"
+                }
+              ],
+              "timeout": 30000,
+              "maxRedirects": 5,
+              "followRedirects": true
+            },
+            "credentials": []
+          },
+          {
+            "id": "node-1759047411263",
+            "name": "Manual Trigger Test",
+            "type": "manual-trigger",
+            "disabled": false,
+            "position": {
+              "x": 17.22933763188745,
+              "y": -15.875
+            },
+            "parameters": {
+              "defaultData": "{}",
+              "description": "Test",
+              "maxDataSize": 1048576,
+              "validateData": true,
+              "allowCustomData": false
+            },
+            "credentials": []
+          },
+          {
+            "id": "node-1759047809306",
+            "name": "counter",
+            "type": "counter",
+            "disabled": false,
+            "mockData": [
+              {
+                "code": 1,
+                "name": "First item"
+              },
+              {
+                "code": 2,
+                "name": "Second item"
+              }
+            ],
+            "position": {
+              "x": 352.9640973036343,
+              "y": -9.141046307151228
+            },
+            "parameters": {
+              "name": "counter",
+              "operation": "process"
+            },
+            "credentials": []
+          }
+        ],
+        "position": {
+          "x": 338.5,
+          "y": 103.25
+        },
+        "parameters": {
+          "url": "aaaaa",
+          "body": "",
+          "method": "GET",
+          "headers": [
+            {
+              "code": 1,
+              "name": "First item"
+            },
+            {
+              "code": 2,
+              "name": "Second item"
+            }
+          ],
+          "timeout": 30000,
+          "maxRedirects": 5,
+          "followRedirects": true
+        },
+        "credentials": []
+      },
+      {
+        "id": "node-1759076295668",
+        "name": "Manual Trigger",
+        "type": "manual-trigger",
+        "disabled": false,
+        "position": {
+          "x": 184.75,
+          "y": 263.125
+        },
+        "parameters": {
+          "defaultData": "{}",
+          "description": "",
+          "maxDataSize": 1048576,
+          "validateData": true,
+          "allowCustomData": false
+        },
+        "credentials": []
+      }
+    ],
+    "connections": [
+      {
+        "id": "node-1759003172175-node-1759007294170-1759007296033",
+        "targetInput": "main",
+        "sourceNodeId": "node-1759003172175",
+        "sourceOutput": "main",
+        "targetNodeId": "node-1759007294170"
+      },
+      {
+        "id": "node-1759076295668-node-1759007294170-1759076297515",
+        "targetInput": "main",
+        "sourceNodeId": "node-1759076295668",
+        "sourceOutput": "main",
+        "targetNodeId": "node-1759007294170"
+      }
+    ],
+    "settings": {
+      "timezone": "UTC",
+      "callerPolicy": "workflowsFromSameOwner",
+      "saveExecutionProgress": true,
+      "saveDataErrorExecution": "all",
+      "saveDataSuccessExecution": "all"
+    }
+  },
+  "options": {
+    "timeout": 300000,
+    "manual": true
+  }
+}

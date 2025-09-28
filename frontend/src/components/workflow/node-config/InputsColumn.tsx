@@ -39,19 +39,212 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+/**
+ * Main props for the InputsColumn component
+ * @param node - The workflow node whose inputs/connections to display
+ */
 interface InputsColumnProps {
   node: WorkflowNode
 }
 
+/**
+ * Props for SchemaViewer - Renders JSON data as an expandable tree structure
+ * Uses recursive rendering to handle nested objects/arrays with proper visual hierarchy
+ * @param data - The JSON data to display (object, array, or primitive value)
+ * @param level - Current nesting depth for indentation (0 = root level)
+ * @param keyName - Property name from parent object for context display
+ */
 interface SchemaViewerProps {
   data: any
   level: number
   keyName?: string
 }
 
-function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
-  const [isExpanded, setIsExpanded] = useState(level < 2) // Auto-expand first 2 levels
+/**
+ * Props for UnifiedTreeNode - Combines workflow node header with execution data
+ * Creates a unified tree where each node shows both metadata and actual data results
+ * @param node - Workflow node containing metadata (name, type, etc.)
+ * @param connection - Connection info (input/output mapping details)
+ * @param nodeExecutionResult - Actual execution data from workflow runs
+ * @param level - Tree depth for proper visual nesting
+ * @param expandedState - Global expand/collapse state for all tree nodes
+ * @param onExpandedChange - Callback to update expansion state
+ * @param getNodeIcon - Function to get appropriate icon for node type
+ * @param getNodeStatusBadge - Function to get status badge for execution state
+ */
+interface UnifiedTreeNodeProps {
+  node: WorkflowNode
+  connection: any
+  nodeExecutionResult: any
+  level: number
+  expandedState: Record<string, boolean>
+  onExpandedChange: (key: string, expanded: boolean) => void
+  getNodeIcon: (type: string) => React.ReactNode
+  getNodeStatusBadge: (status?: string) => React.ReactNode
+}
+
+/**
+ * UnifiedTreeNode Component - Node Header + Data Integration
+ * 
+ * CONCEPT:
+ * - Combines workflow node metadata with actual execution data
+ * - Creates single tree hierarchy instead of separate sections
+ * - Node header acts as parent, execution data as children
+ * 
+ * STRUCTURE:
+ * - Header: Node name, icon, status badge, connection details (in tooltip)
+ * - Content: Execution data rendered through SchemaViewer
+ * - Both use same expansion state for unified experience
+ * 
+ * DATA EXTRACTION:
+ * - Uses getRelevantData() to extract meaningful data from execution results
+ * - Handles different data structures (arrays, objects, primitives)
+ * - Filters out empty/null values for cleaner display
+ */
+function UnifiedTreeNode({ 
+  node: inputNode, 
+  connection, 
+  nodeExecutionResult, 
+  level, 
+  expandedState, 
+  onExpandedChange,
+  getNodeIcon,
+  getNodeStatusBadge 
+}: UnifiedTreeNodeProps) {
+  const isNodeExpanded = expandedState[inputNode.id] || false
+  const nodeData = nodeExecutionResult?.data ? getRelevantData(nodeExecutionResult.data) : null
   
+  // Indentation for tree hierarchy - matches SchemaViewer pattern
+  const indentStyle = { paddingLeft: `${level * 12}px` }
+  
+  return (
+    <div style={indentStyle}>
+      <Collapsible open={isNodeExpanded} onOpenChange={(open) => onExpandedChange(inputNode.id, open)}>
+        {/* Node Header */}
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between w-full p-3 bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors text-left group cursor-pointer">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              {isNodeExpanded ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
+              {getNodeIcon(inputNode.type)}
+              <div 
+                className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: '#6b7280' }}
+              >
+                {inputNode.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium truncate">
+                {inputNode.name}
+              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      Output: <code className="bg-muted px-1 rounded">{connection.sourceOutput}</code>
+                      {' → '}
+                      Input: <code className="bg-muted px-1 rounded">{connection.targetInput}</code>
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <span 
+                className={`w-2 h-2 rounded-full ${
+                  inputNode.disabled ? 'bg-muted-foreground' : 'bg-green-500'
+                }`}
+                title={inputNode.disabled ? "Disabled" : "Enabled"}
+              />
+              {/* Show data preview in header */}
+              {nodeData && (
+                <span className="text-xs text-muted-foreground italic">
+                  {Array.isArray(nodeData) ? `[${nodeData.length} items]` : 
+                   typeof nodeData === 'object' ? `{${Object.keys(nodeData).length} keys}` : 
+                   typeof nodeData}
+                </span>
+              )}
+            </div>
+            
+            {nodeExecutionResult && (
+              <div className="flex-shrink-0">
+                {getNodeStatusBadge(nodeExecutionResult.status)}
+              </div>
+            )}
+          </div>
+        </CollapsibleTrigger>
+
+        {/* Node Data as part of the tree */}
+        <CollapsibleContent className="space-y-0">
+          {nodeData ? (
+            <div className="bg-muted/20">
+              {Array.isArray(nodeData) ? (
+                // For arrays, show items directly
+                nodeData.map((item, index) => (
+                  <SchemaViewer
+                    key={index}
+                    data={item}
+                    level={level + 1}
+                    keyName={`[${index}]`}
+                    expandedState={expandedState}
+                    onExpandedChange={onExpandedChange}
+                  />
+                ))
+              ) : (
+                // For objects, show properties directly
+                Object.entries(nodeData).map(([key, value]) => (
+                  <SchemaViewer
+                    key={key}
+                    data={value}
+                    level={level + 1}
+                    keyName={key}
+                    expandedState={expandedState}
+                    onExpandedChange={onExpandedChange}
+                  />
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="p-4 bg-muted/30 text-xs text-muted-foreground italic">
+              No execution data available. Run the workflow to see data.
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  )
+}
+
+/**
+ * SchemaViewer Component - Recursive JSON Data Tree Renderer
+ * 
+ * PURPOSE:
+ * - Displays JSON data as expandable tree matching exact structure
+ * - Handles nested objects/arrays with proper visual hierarchy
+ * - Shows data types and previews for all value types
+ * 
+ * VISUAL RULES:
+ * - Each level indented by 16px for clear nesting
+ * - Sibling properties align at same visual level
+ * - Complex types (objects/arrays) are expandable
+ * - Primitive values show inline with type hints
+ * 
+ * RECURSION PATTERN:
+ * - Calls itself for each nested property/array item
+ * - Maintains level counter for proper indentation
+ * - Uses unique keys for independent expand/collapse state
+ */
+function SchemaViewer({ data, level, keyName, expandedState, onExpandedChange }: SchemaViewerProps & {
+  expandedState?: Record<string, boolean>
+  onExpandedChange?: (key: string, expanded: boolean) => void
+}) {
+  const itemKey = keyName ? `${level}-${keyName}` : `${level}-root`
+  const isExpanded = expandedState ? (expandedState[itemKey] ?? (level < 2)) : (level < 2)
+  
+  // Helper functions for data type analysis and display
   const getValueType = (value: any): string => {
     if (value === null) return 'null'
     if (Array.isArray(value)) return `array[${value.length}]`
@@ -71,19 +264,20 @@ function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
     return value !== null && (typeof value === 'object' || Array.isArray(value))
   }
   
-  const indentStyle = { paddingLeft: `${level * 12}px` }
+  const indentStyle = { paddingLeft: `${level * 16}px` }
   
   if (!isComplexType(data)) {
     // Simple value - just display inline
     return (
-      <div style={indentStyle} className="flex items-center gap-2 py-0.5">
+      <div style={indentStyle} className="flex items-center gap-2 py-0.5 px-2">
+        <div className="w-2 h-px bg-muted-foreground/30"></div>
         {keyName && (
           <>
-            <span className="font-mono text-blue-600 text-xs">{keyName}</span>
+            <span className="font-mono text-blue-600 text-xs font-medium">{keyName}</span>
             <span className="text-muted-foreground">:</span>
           </>
         )}
-        <span className="text-xs font-mono bg-muted px-1 rounded">
+        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
           {getValuePreview(data)}
         </span>
         <span className="text-xs text-muted-foreground italic">
@@ -96,21 +290,25 @@ function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
   // Complex object or array
   return (
     <div style={indentStyle}>
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <Collapsible 
+        open={isExpanded} 
+        onOpenChange={(open) => onExpandedChange?.(itemKey, open)}
+      >
         <CollapsibleTrigger asChild>
-          <div className="flex items-center gap-1 py-0.5 hover:bg-muted/50 rounded px-1 cursor-pointer group">
+          <div className="flex items-center gap-2 py-0.5 px-2 hover:bg-muted/30 rounded cursor-pointer group">
+            <div className="w-2 h-px bg-muted-foreground/30"></div>
             {isExpanded ? (
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             ) : (
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             )}
             {keyName && (
               <>
-                <span className="font-mono text-blue-600 text-xs">{keyName}</span>
+                <span className="font-mono text-blue-600 text-xs font-medium">{keyName}</span>
                 <span className="text-muted-foreground">:</span>
               </>
             )}
-            <span className="text-xs font-mono bg-muted px-1 rounded">
+            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
               {Array.isArray(data) ? `[${data.length}]` : `{${Object.keys(data).length}}`}
             </span>
             <span className="text-xs text-muted-foreground italic">
@@ -120,7 +318,7 @@ function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
         </CollapsibleTrigger>
         
         <CollapsibleContent>
-          <div className="mt-1">
+          <div>
             {Array.isArray(data) ? (
               // Array handling
               data.map((item, index) => (
@@ -129,6 +327,8 @@ function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
                   data={item}
                   level={level + 1}
                   keyName={`[${index}]`}
+                  expandedState={expandedState}
+                  onExpandedChange={onExpandedChange}
                 />
               ))
             ) : (
@@ -139,6 +339,8 @@ function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
                   data={value}
                   level={level + 1}
                   keyName={key}
+                  expandedState={expandedState}
+                  onExpandedChange={onExpandedChange}
                 />
               ))
             )}
@@ -149,6 +351,25 @@ function SchemaViewer({ data, level, keyName }: SchemaViewerProps) {
   )
 }
 
+/**
+ * getRelevantData - Data Extraction Utility
+ * 
+ * PURPOSE:
+ * - Extracts meaningful data from n8n execution results
+ * - Handles nested execution metadata to find actual user data
+ * - Standardizes different data structure patterns
+ * 
+ * N8N DATA PATTERNS:
+ * - Array[0].json - Most common: data wrapped in execution array
+ * - Array[0].main - Recursive: data in 'main' property  
+ * - Object.json - Direct: data in 'json' property
+ * - Raw values - Primitive data types
+ * 
+ * FILTERING:
+ * - Returns first item from arrays (n8n executions often single-item)
+ * - Unwraps execution metadata to reveal actual payload
+ * - Falls back to raw data if no known patterns match
+ */
 function getRelevantData(executionData: any): any {
   // Extract the most relevant data from execution result
   // Usually the actual data is nested within execution metadata
@@ -184,13 +405,33 @@ function getRelevantData(executionData: any): any {
   return executionData
 }
 
+/**
+ * InputsColumn Component Architecture Overview:
+ * 
+ * STRUCTURE:
+ * 1. Tab Interface (Schema, JSON, Table) - allows switching data view modes
+ * 2. Unified Tree - merges node headers with execution data in single hierarchy
+ * 3. Recursive SchemaViewer - handles nested data display with proper indentation
+ * 
+ * DATA FLOW:
+ * - Fetches input connections for current node
+ * - Retrieves execution results for each connected node
+ * - Unifies node metadata with execution data
+ * - Renders as expandable tree matching JSON structure
+ * 
+ * VISUAL HIERARCHY:
+ * - Each tree level uses 16px indentation increment
+ * - Sibling properties appear at same visual level as in JSON
+ * - Connection details moved to tooltips for cleaner interface
+ */
 export function InputsColumn({ node }: InputsColumnProps) {
   const { workflow, getNodeExecutionResult } = useWorkflowStore()
 
+  // State management for tree expansion and active tab view
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<'schema' | 'json' | 'table'>('schema')
 
-  // Get connected input nodes
+  // Get connected input nodes - these are nodes that feed data into current node
   const inputConnections = workflow?.connections.filter(conn => conn.targetNodeId === node.id) || []
   const inputNodes = inputConnections.map(conn => 
     workflow?.nodes.find(n => n.id === conn.sourceNodeId)
@@ -348,7 +589,7 @@ export function InputsColumn({ node }: InputsColumnProps) {
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
         <div className="h-[calc(100dvh-262px)] overflow-y-auto">
           
-          {/* Schema Tab */}
+          {/* Schema Tab - Unified Tree */}
           <TabsContent value="schema" className="m-0 p-0">
             <div className="space-y-0">
               {nodeItems.map((item) => {
@@ -356,84 +597,22 @@ export function InputsColumn({ node }: InputsColumnProps) {
                 const nodeExecutionResult = getNodeExecutionResult(inputNode.id)
                 
                 return (
-                  <Collapsible
+                  <UnifiedTreeNode
                     key={inputNode.id}
-                    open={expandedCategories[inputNode.id]}
-                    onOpenChange={(open) => {
+                    node={inputNode}
+                    connection={connection}
+                    nodeExecutionResult={nodeExecutionResult}
+                    level={0}
+                    expandedState={expandedCategories}
+                    onExpandedChange={(key, expanded) => {
                       setExpandedCategories(prev => ({
                         ...prev,
-                        [inputNode.id]: open
+                        [key]: expanded
                       }))
                     }}
-                    className="border-b last:border-b-0"
-                  >
-                    {/* Node Header */}
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors text-left group">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {expandedCategories[inputNode.id] ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        {getNodeIcon(inputNode.type)}
-                        <div 
-                          className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                          style={{ backgroundColor: '#6b7280' }}
-                        >
-                          {inputNode.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm font-medium truncate">
-                          {inputNode.name}
-                        </span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">
-                                Output: <code className="bg-muted px-1 rounded">{connection.sourceOutput}</code>
-                                {' → '}
-                                Input: <code className="bg-muted px-1 rounded">{connection.targetInput}</code>
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <span 
-                          className={`w-2 h-2 rounded-full ${
-                            inputNode.disabled ? 'bg-muted-foreground' : 'bg-green-500'
-                          }`}
-                          title={inputNode.disabled ? "Disabled" : "Enabled"}
-                        />
-                      </div>
-                      
-                      {nodeExecutionResult && (
-                        <div className="flex-shrink-0">
-                          {getNodeStatusBadge(nodeExecutionResult.status)}
-                        </div>
-                      )}
-                    </CollapsibleTrigger>
-
-                    {/* Node Content */}
-                    <CollapsibleContent className="space-y-0">
-                      <div className="p-4 bg-muted/30">
-                        {/* Schema View - Structured display */}
-                        {nodeExecutionResult?.data && (
-                          <div className="text-xs">
-                            <div className="font-medium mb-2 text-muted-foreground">Data Schema:</div>
-                            <SchemaViewer data={getRelevantData(nodeExecutionResult.data)} level={0} />
-                          </div>
-                        )}
-                        
-                        {!nodeExecutionResult?.data && (
-                          <div className="text-xs text-muted-foreground">
-                            <div className="font-medium mb-1">Data Schema:</div>
-                            <p className="italic">No execution data available. Run the workflow to see schema.</p>
-                          </div>
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    getNodeIcon={getNodeIcon}
+                    getNodeStatusBadge={getNodeStatusBadge}
+                  />
                 )
               })}
             </div>

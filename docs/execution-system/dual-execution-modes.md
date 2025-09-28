@@ -243,29 +243,68 @@ const triggerData = prepareTriggerData({
    └── Cleanup and resource release
 ```
 
-#### 3. Multi-Trigger Handling
+#### 3. Multi-Trigger Handling (Enhanced)
 
 ```typescript
-// Backend: ExecutionService.executeWorkflow()
+// Backend: ExecutionService.executeWorkflow() - Fixed Implementation
 async executeWorkflow(
   workflowId: string,
   userId: string,
   triggerData?: any,
   options: ExecutionOptions = {},
-  triggerNodeId?: string // NEW: Specific trigger to start from
+  triggerNodeId?: string // ✅ Critical for multi-trigger isolation
 ) {
-  // Find starting trigger
+  // Find starting trigger with validation
   const startingTrigger = triggerNodeId
-    ? workflow.nodes.find(n => n.id === triggerNodeId)
-    : workflow.nodes.find(n => n.type.includes('trigger'));
+    ? triggerNodes.find(n => n.id === triggerNodeId)
+    : triggerNodes[0]; // Fallback to first trigger
 
-  // Execute workflow from specific trigger
-  const executionPlan = this.createExecutionPlan(workflow, startingTrigger);
-  const result = await this.executeWorkflowPlan(executionPlan);
+  if (!startingTrigger) {
+    throw new Error(`Trigger node ${triggerNodeId} not found`);
+  }
 
-  return result;
+  // Execute with trigger-specific isolation
+  const flowResult = await this.flowExecutionEngine.executeFromTrigger(
+    startingTrigger.id,
+    workflowId,
+    userId,
+    triggerData,
+    options,
+    parsedWorkflow // ✅ Prevents infinite dependency loops
+  );
+
+  return flowResult;
+}
+
+// FlowExecutionEngine: Dependency filtering for isolation
+private async initializeNodeStates(context, workflow, startNodeId) {
+  // ✅ Get reachable nodes from trigger to prevent infinite loops
+  const reachableNodes = this.getReachableNodes(startNodeId, workflow.connections);
+
+  for (const node of workflow.nodes) {
+    const allDependencies = this.dependencyResolver.getDependencies(node.id, workflow.connections);
+
+    // ✅ Filter dependencies to only include reachable nodes
+    const reachableDependencies = allDependencies.filter(depId =>
+      reachableNodes.has(depId) || depId === startNodeId
+    );
+
+    // Use filtered dependencies to prevent infinite waiting
+    const nodeState = {
+      nodeId: node.id,
+      dependencies: reachableDependencies, // ✅ Key fix
+      // ... other properties
+    };
+  }
 }
 ```
+
+**Key Improvements**:
+
+- ✅ **Dependency Filtering**: Only considers dependencies reachable from the trigger
+- ✅ **Infinite Loop Prevention**: Retry limits and timeout handling
+- ✅ **Execution Isolation**: Each trigger creates independent execution context
+- ✅ **Enhanced Logging**: Detailed debugging information for troubleshooting
 
 ### Implementation Details
 

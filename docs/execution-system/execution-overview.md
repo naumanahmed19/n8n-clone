@@ -116,6 +116,19 @@ Multi-Trigger Workflow Example:
 - Clicking Trigger B toolbar: Executes B → Node 2 → Node 1 → Output
 ```
 
+#### Multi-Trigger Isolation (Fixed Issue)
+
+**Problem Solved**: Previously, when multiple triggers connected to shared downstream nodes, the system would create infinite dependency loops causing executions to hang.
+
+**Solution**: The system now implements **trigger-specific dependency filtering**:
+
+- Each execution context only considers dependencies reachable from the initiating trigger
+- Unreachable dependencies are filtered out to prevent infinite loops
+- Retry limits prevent hanging executions
+- Detailed logging helps debug dependency issues
+
+For complete details, see [Multi-Trigger Handling](./multi-trigger-handling.md).
+
 ### Real-time Progress Tracking
 
 - WebSocket connections for live updates

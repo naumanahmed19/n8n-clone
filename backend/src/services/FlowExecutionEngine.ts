@@ -439,11 +439,32 @@ export class FlowExecutionEngine extends EventEmitter {
       });
     }
 
+    // Get all nodes reachable from the starting node (trigger-specific execution path)
+    const reachableNodes = this.getReachableNodes(
+      startNodeId,
+      workflow.connections
+    );
+    reachableNodes.add(startNodeId); // Include the starting node itself
+
+    logger.debug("Reachable nodes from trigger", {
+      startNodeId,
+      reachableNodes: Array.from(reachableNodes),
+      executionId: context.executionId,
+    });
+
     for (const node of workflow.nodes) {
-      const dependencies = this.dependencyResolver.getDependencies(
+      // Get all dependencies for this node
+      const allDependencies = this.dependencyResolver.getDependencies(
         node.id,
         workflow.connections
       );
+
+      // Filter dependencies to only include those reachable from the starting trigger
+      // This prevents infinite loops when multiple triggers connect to the same downstream node
+      const reachableDependencies = allDependencies.filter(
+        (depId) => reachableNodes.has(depId) || depId === startNodeId
+      );
+
       const dependents = this.dependencyResolver.getDownstreamNodes(
         node.id,
         workflow.connections
@@ -452,7 +473,8 @@ export class FlowExecutionEngine extends EventEmitter {
       logger.debug("Initializing node state", {
         nodeId: node.id,
         nodeType: node.type,
-        dependencies,
+        allDependencies,
+        reachableDependencies,
         dependents,
         executionId: context.executionId,
       });
@@ -460,7 +482,7 @@ export class FlowExecutionEngine extends EventEmitter {
       const nodeState: NodeExecutionState = {
         nodeId: node.id,
         status: FlowNodeStatus.IDLE,
-        dependencies,
+        dependencies: reachableDependencies, // Use filtered dependencies
         dependents,
         progress: 0,
       };
@@ -476,6 +498,21 @@ export class FlowExecutionEngine extends EventEmitter {
     if (startNodeState) {
       startNodeState.status = FlowNodeStatus.QUEUED;
     }
+
+    logger.info("Node states initialized for trigger execution", {
+      executionId: context.executionId,
+      startNodeId,
+      totalNodes: context.nodeStates.size,
+      reachableFromTrigger: Array.from(reachableNodes),
+      nodeStates: Array.from(context.nodeStates.entries()).map(
+        ([nodeId, state]) => ({
+          nodeId,
+          status: state.status,
+          dependencies: state.dependencies,
+          dependents: state.dependents,
+        })
+      ),
+    });
   }
 
   private async executeFlow(
@@ -485,6 +522,8 @@ export class FlowExecutionEngine extends EventEmitter {
     const nodeResults = new Map<string, NodeExecutionResult>();
     const executedNodes: string[] = [];
     const failedNodes: string[] = [];
+    const nodeRetryCount = new Map<string, number>(); // Track retry counts to prevent infinite loops
+    const maxRetries = 10; // Maximum retries per node
 
     while (!context.cancelled && !context.paused) {
       const queue = this.nodeQueue.get(context.executionId) || [];
@@ -515,15 +554,52 @@ export class FlowExecutionEngine extends EventEmitter {
         context
       );
       if (!dependenciesSatisfied) {
+        // Check retry count to prevent infinite loops
+        const retryCount = nodeRetryCount.get(nodeId) || 0;
+        if (retryCount >= maxRetries) {
+          logger.error(
+            "Node exceeded maximum retry attempts, marking as failed",
+            {
+              nodeId,
+              retryCount,
+              maxRetries,
+              dependencies: nodeState.dependencies,
+              executionId: context.executionId,
+            }
+          );
+
+          // Mark node as failed instead of continuing to retry
+          const failedResult: NodeExecutionResult = {
+            nodeId,
+            status: FlowNodeStatus.FAILED,
+            error: new Error(
+              `Node dependencies could not be satisfied after ${maxRetries} attempts. This may indicate a configuration issue with multiple triggers connecting to the same node.`
+            ),
+            duration: 0,
+          };
+
+          nodeResults.set(nodeId, failedResult);
+          failedNodes.push(nodeId);
+          nodeState.status = FlowNodeStatus.FAILED;
+          nodeState.error = failedResult.error;
+          continue;
+        }
+
         logger.debug("Node dependencies not satisfied, re-queuing", {
           nodeId,
+          retryCount,
           dependencies: nodeState.dependencies,
           executionId: context.executionId,
         });
+
+        nodeRetryCount.set(nodeId, retryCount + 1);
         queue.push(nodeId);
         this.nodeQueue.set(context.executionId, queue);
         continue;
       }
+
+      // Reset retry count on successful dependency satisfaction
+      nodeRetryCount.delete(nodeId);
 
       logger.info("Executing node", {
         nodeId,
@@ -881,5 +957,41 @@ export class FlowExecutionEngine extends EventEmitter {
     }
 
     return inputData;
+  }
+
+  /**
+   * Get all nodes reachable from a starting node through forward connections
+   * This helps create trigger-specific execution contexts to prevent infinite loops
+   * when multiple triggers connect to shared downstream nodes
+   */
+  private getReachableNodes(
+    startNodeId: string,
+    connections: any[]
+  ): Set<string> {
+    const reachable = new Set<string>();
+    const visited = new Set<string>();
+
+    const traverse = (nodeId: string) => {
+      if (visited.has(nodeId)) {
+        return; // Prevent infinite loops in case of cycles
+      }
+      visited.add(nodeId);
+
+      // Find all nodes that this node connects to (downstream)
+      const downstreamConnections = connections.filter(
+        (conn) => conn.sourceNodeId === nodeId
+      );
+
+      for (const connection of downstreamConnections) {
+        const targetNodeId = connection.targetNodeId;
+        if (!reachable.has(targetNodeId)) {
+          reachable.add(targetNodeId);
+          traverse(targetNodeId); // Recursively traverse downstream
+        }
+      }
+    };
+
+    traverse(startNodeId);
+    return reachable;
   }
 }
