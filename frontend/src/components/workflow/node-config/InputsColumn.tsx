@@ -2,9 +2,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'

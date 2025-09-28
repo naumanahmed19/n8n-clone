@@ -7,9 +7,9 @@ import { useCredentialStore, useNodeConfigDialogStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-  AlertCircle,
-  CheckCircle,
-  Trash2
+    AlertCircle,
+    CheckCircle,
+    Trash2
 } from 'lucide-react'
 import { useEffect } from 'react'
 

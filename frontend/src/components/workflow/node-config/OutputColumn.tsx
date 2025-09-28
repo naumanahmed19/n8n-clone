@@ -6,10 +6,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import {
-  ArrowRight,
-  Database,
-  Edit,
-  X
+    ArrowRight,
+    Database,
+    Edit,
+    X
 } from 'lucide-react'
 import { toast } from 'sonner'
 

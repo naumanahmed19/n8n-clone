@@ -1,50 +1,53 @@
-import { create } from 'zustand'
-import { WorkflowNode, NodeType } from '@/types'
-import { ValidationError } from '@/utils/nodeValidation'
+import { NodeType, WorkflowNode } from "@/types";
+import { ValidationError } from "@/utils/nodeValidation";
+import { create } from "zustand";
 
 interface MockDataEditor {
-  isOpen: boolean
-  content: string
+  isOpen: boolean;
+  content: string;
 }
 
 interface NodeConfigDialogState {
   // Dialog state
-  isOpen: boolean
-  node: WorkflowNode | null
-  nodeType: NodeType | null
-  
+  isOpen: boolean;
+  node: WorkflowNode | null;
+  nodeType: NodeType | null;
+
   // Form state
-  parameters: Record<string, any>
-  nodeName: string
-  isDisabled: boolean
-  credentials: Record<string, string>
-  mockData: any
-  
+  parameters: Record<string, any>;
+  nodeName: string;
+  isDisabled: boolean;
+  credentials: Record<string, string>;
+  mockData: any;
+
   // UI state
-  validationErrors: ValidationError[]
-  hasUnsavedChanges: boolean
-  isEditingName: boolean
-  isExecuting: boolean
-  mockDataEditor: MockDataEditor
-  activeTab: string
-  
+  validationErrors: ValidationError[];
+  hasUnsavedChanges: boolean;
+  isEditingName: boolean;
+  isExecuting: boolean;
+  mockDataEditor: MockDataEditor;
+  activeTab: string;
+
   // Actions
-  openDialog: (node: WorkflowNode, nodeType: NodeType) => void
-  closeDialog: () => void
-  updateParameters: (propertyName: string, value: any) => void
-  updateNodeName: (name: string) => void
-  updateDisabled: (disabled: boolean) => void
-  updateCredentials: (credentialType: string, credentialId: string | undefined) => void
-  updateMockData: (data: any) => void
-  setValidationErrors: (errors: ValidationError[]) => void
-  setHasUnsavedChanges: (hasChanges: boolean) => void
-  setIsEditingName: (isEditing: boolean) => void
-  setIsExecuting: (isExecuting: boolean) => void
-  openMockDataEditor: () => void
-  closeMockDataEditor: () => void
-  updateMockDataContent: (content: string) => void
-  setActiveTab: (tab: string) => void
-  resetState: () => void
+  openDialog: (node: WorkflowNode, nodeType: NodeType) => void;
+  closeDialog: () => void;
+  updateParameters: (propertyName: string, value: any) => void;
+  updateNodeName: (name: string) => void;
+  updateDisabled: (disabled: boolean) => void;
+  updateCredentials: (
+    credentialType: string,
+    credentialId: string | undefined
+  ) => void;
+  updateMockData: (data: any) => void;
+  setValidationErrors: (errors: ValidationError[]) => void;
+  setHasUnsavedChanges: (hasChanges: boolean) => void;
+  setIsEditingName: (isEditing: boolean) => void;
+  setIsExecuting: (isExecuting: boolean) => void;
+  openMockDataEditor: () => void;
+  closeMockDataEditor: () => void;
+  updateMockDataContent: (content: string) => void;
+  setActiveTab: (tab: string) => void;
+  resetState: () => void;
 }
 
 const initialState = {
@@ -52,7 +55,7 @@ const initialState = {
   node: null,
   nodeType: null,
   parameters: {},
-  nodeName: '',
+  nodeName: "",
   isDisabled: false,
   credentials: {},
   mockData: null,
@@ -62,134 +65,142 @@ const initialState = {
   isExecuting: false,
   mockDataEditor: {
     isOpen: false,
-    content: ''
+    content: "",
   },
-  activeTab: 'config'
-}
+  activeTab: "config",
+};
 
-export const useNodeConfigDialogStore = create<NodeConfigDialogState>((set, get) => ({
-  ...initialState,
+export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
+  (set, get) => ({
+    ...initialState,
 
-  openDialog: (node: WorkflowNode, nodeType: NodeType) => {
-    set({
-      isOpen: true,
-      node,
-      nodeType,
-      parameters: node.parameters,
-      nodeName: node.name,
-      isDisabled: node.disabled,
-      credentials: (node.credentials || []).reduce((acc, cred) => ({ ...acc, [cred]: cred }), {}),
-      mockData: node.mockData || null,
-      hasUnsavedChanges: false,
-      validationErrors: [],
-      mockDataEditor: {
-        isOpen: false,
-        content: node.mockData ? JSON.stringify(node.mockData, null, 2) : ''
+    openDialog: (node: WorkflowNode, nodeType: NodeType) => {
+      set({
+        isOpen: true,
+        node,
+        nodeType,
+        parameters: node.parameters,
+        nodeName: node.name,
+        isDisabled: node.disabled,
+        credentials: (node.credentials || []).reduce(
+          (acc, cred) => ({ ...acc, [cred]: cred }),
+          {}
+        ),
+        mockData: node.mockData || null,
+        hasUnsavedChanges: false,
+        validationErrors: [],
+        mockDataEditor: {
+          isOpen: false,
+          content: node.mockData ? JSON.stringify(node.mockData, null, 2) : "",
+        },
+      });
+    },
+
+    closeDialog: () => {
+      set({ ...initialState });
+    },
+
+    updateParameters: (propertyName: string, value: any) => {
+      const { parameters } = get();
+      set({
+        parameters: { ...parameters, [propertyName]: value },
+        hasUnsavedChanges: true,
+      });
+    },
+
+    updateNodeName: (name: string) => {
+      set({
+        nodeName: name,
+        hasUnsavedChanges: true,
+      });
+    },
+
+    updateDisabled: (disabled: boolean) => {
+      set({
+        isDisabled: disabled,
+        hasUnsavedChanges: true,
+      });
+    },
+
+    updateCredentials: (
+      credentialType: string,
+      credentialId: string | undefined
+    ) => {
+      const { credentials } = get();
+      const newCredentials = { ...credentials };
+
+      if (credentialId) {
+        newCredentials[credentialType] = credentialId;
+      } else {
+        delete newCredentials[credentialType];
       }
-    })
-  },
 
-  closeDialog: () => {
-    set({ ...initialState })
-  },
+      set({
+        credentials: newCredentials,
+        hasUnsavedChanges: true,
+      });
+    },
 
-  updateParameters: (propertyName: string, value: any) => {
-    const { parameters } = get()
-    set({
-      parameters: { ...parameters, [propertyName]: value },
-      hasUnsavedChanges: true
-    })
-  },
+    updateMockData: (data: any) => {
+      set({
+        mockData: data,
+        hasUnsavedChanges: true,
+        mockDataEditor: {
+          ...get().mockDataEditor,
+          content: data ? JSON.stringify(data, null, 2) : "",
+        },
+      });
+    },
 
-  updateNodeName: (name: string) => {
-    set({
-      nodeName: name,
-      hasUnsavedChanges: true
-    })
-  },
+    setValidationErrors: (errors: ValidationError[]) => {
+      set({ validationErrors: errors });
+    },
 
-  updateDisabled: (disabled: boolean) => {
-    set({
-      isDisabled: disabled,
-      hasUnsavedChanges: true
-    })
-  },
+    setHasUnsavedChanges: (hasChanges: boolean) => {
+      set({ hasUnsavedChanges: hasChanges });
+    },
 
-  updateCredentials: (credentialType: string, credentialId: string | undefined) => {
-    const { credentials } = get()
-    const newCredentials = { ...credentials }
-    
-    if (credentialId) {
-      newCredentials[credentialType] = credentialId
-    } else {
-      delete newCredentials[credentialType]
-    }
-    
-    set({
-      credentials: newCredentials,
-      hasUnsavedChanges: true
-    })
-  },
+    setIsEditingName: (isEditing: boolean) => {
+      set({ isEditingName: isEditing });
+    },
 
-  updateMockData: (data: any) => {
-    set({
-      mockData: data,
-      hasUnsavedChanges: true,
-      mockDataEditor: {
-        ...get().mockDataEditor,
-        content: data ? JSON.stringify(data, null, 2) : ''
-      }
-    })
-  },
+    setIsExecuting: (isExecuting: boolean) => {
+      set({ isExecuting: isExecuting });
+    },
 
-  setValidationErrors: (errors: ValidationError[]) => {
-    set({ validationErrors: errors })
-  },
+    openMockDataEditor: () => {
+      set({
+        mockDataEditor: {
+          ...get().mockDataEditor,
+          isOpen: true,
+        },
+      });
+    },
 
-  setHasUnsavedChanges: (hasChanges: boolean) => {
-    set({ hasUnsavedChanges: hasChanges })
-  },
+    closeMockDataEditor: () => {
+      set({
+        mockDataEditor: {
+          ...get().mockDataEditor,
+          isOpen: false,
+        },
+      });
+    },
 
-  setIsEditingName: (isEditing: boolean) => {
-    set({ isEditingName: isEditing })
-  },
+    updateMockDataContent: (content: string) => {
+      set({
+        mockDataEditor: {
+          ...get().mockDataEditor,
+          content,
+        },
+      });
+    },
 
-  setIsExecuting: (isExecuting: boolean) => {
-    set({ isExecuting: isExecuting })
-  },
+    setActiveTab: (tab: string) => {
+      set({ activeTab: tab });
+    },
 
-  openMockDataEditor: () => {
-    set({
-      mockDataEditor: {
-        ...get().mockDataEditor,
-        isOpen: true
-      }
-    })
-  },
-
-  closeMockDataEditor: () => {
-    set({
-      mockDataEditor: {
-        ...get().mockDataEditor,
-        isOpen: false
-      }
-    })
-  },
-
-  updateMockDataContent: (content: string) => {
-    set({
-      mockDataEditor: {
-        ...get().mockDataEditor,
-        content
-      }
-    })
-  },
-
-  setActiveTab: (tab: string) => {
-    set({ activeTab: tab })
-  },
-
-  resetState: () => {
-    set({ ...initialState })
-  }
-}))
+    resetState: () => {
+      set({ ...initialState });
+    },
+  })
+);

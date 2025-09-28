@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -12,18 +12,18 @@ import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-  AlertCircle,
-  Database,
-  FileText,
-  Info,
-  Loader2,
-  Play,
-  Settings
+    AlertCircle,
+    Database,
+    FileText,
+    Info,
+    Loader2,
+    Play,
+    Settings
 } from 'lucide-react'
 import { ConfigTab } from './tabs/ConfigTab'
-import { TestTab } from './tabs/TestTab'
-import { ResponseTab } from './tabs/ResponseTab'
 import { DocsTab } from './tabs/DocsTab'
+import { ResponseTab } from './tabs/ResponseTab'
+import { TestTab } from './tabs/TestTab'
 
 interface MiddleColumnProps {
   node: WorkflowNode
