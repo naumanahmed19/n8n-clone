@@ -1,4 +1,5 @@
-import { NodeExecutionStatus, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
 import {
   Execution,
   ExecutionFilters,
@@ -423,6 +424,8 @@ export class ExecutionService {
     userId: string
   ): Promise<Execution | null> {
     try {
+      logger.info(`Getting execution ${executionId} for user ${userId}`);
+
       const execution = await this.prisma.execution.findFirst({
         where: {
           id: executionId,
@@ -441,6 +444,25 @@ export class ExecutionService {
           },
         },
       });
+
+      if (!execution) {
+        // Try to find the execution without user filter for debugging
+        const executionWithoutUserFilter =
+          await this.prisma.execution.findUnique({
+            where: { id: executionId },
+            include: { workflow: true },
+          });
+
+        if (executionWithoutUserFilter) {
+          logger.warn(
+            `Execution ${executionId} exists but not for user ${userId}. Workflow userId: ${executionWithoutUserFilter.workflow?.userId}`
+          );
+        } else {
+          logger.warn(`Execution ${executionId} not found in database`);
+        }
+      } else {
+        logger.info(`Found execution ${executionId} for user ${userId}`);
+      }
 
       return execution as any;
     } catch (error) {
@@ -1123,6 +1145,7 @@ export class ExecutionService {
       });
 
       if (!workflow) {
+        logger.error(`Workflow ${workflowId} not found for user ${userId}`);
         return {
           success: false,
           error: {
@@ -1131,6 +1154,12 @@ export class ExecutionService {
           },
         };
       }
+
+      logger.info(`Found workflow ${workflowId} for user ${userId}`, {
+        workflowName: workflow.name,
+        workflowId: workflow.id,
+        userId: workflow.userId,
+      });
 
       // Parse nodes from JSON
       const workflowNodes = Array.isArray(workflow.nodes)
@@ -1277,18 +1306,10 @@ export class ExecutionService {
             success: true, // Execution started and ran, even if some nodes failed
             data: {
               executionId: flowResult.executionId,
-              nodeId,
-              status: flowResult.status === "completed" ? "success" : "failed",
-              data: flowResult.nodeResults
-                ? Array.from(flowResult.nodeResults.values()).map((result) => ({
-                    main: result.data || [],
-                  }))
-                : [],
-              startTime: Date.now() - flowResult.totalDuration,
-              endTime: Date.now(),
-              duration: flowResult.totalDuration,
+              status: flowResult.status, // Use the same status values as main workflow execution
               executedNodes: flowResult.executedNodes,
               failedNodes: flowResult.failedNodes,
+              duration: flowResult.totalDuration,
               hasFailures: flowResult.failedNodes.length > 0,
             },
             error: executionError,
@@ -1298,55 +1319,81 @@ export class ExecutionService {
           const startTime = Date.now();
 
           let nodeResult;
-          
-          // Check if node has mock data - if so, use it instead of executing
-          if ((node as any).mockData) {
-            logger.info(`Using mock data for node ${nodeId}`, {
-              nodeId,
-              nodeType: node.type,
-              mockDataSize: JSON.stringify((node as any).mockData).length,
-            });
-            
-            // Use mock data as the execution result
-            nodeResult = {
-              success: true,
-              data: [{ main: Array.isArray((node as any).mockData) ? (node as any).mockData : [(node as any).mockData] }]
-            };
-          } else {
-            // Execute the actual node
-            nodeResult = await this.nodeService.executeNode(
-              node.type,
-              nodeParameters,
-              nodeInputData,
-              node.credentials ? {} : undefined, // TODO: Load actual credentials
-              `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-            );
-          }
+
+          // For single node execution, always execute the actual node (skip mock data)
+          // Mock data should only be used in test scenarios, not for real single node execution
+          logger.info(`Executing actual node logic for single node execution`, {
+            nodeId,
+            nodeType: node.type,
+            hasMockData: !!(node as any).mockData,
+            mode: "single",
+          });
+
+          // Execute the actual node
+          nodeResult = await this.nodeService.executeNode(
+            node.type,
+            nodeParameters,
+            nodeInputData,
+            node.credentials ? {} : undefined, // TODO: Load actual credentials
+            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          );
 
           const endTime = Date.now();
           const duration = endTime - startTime;
 
-          // Create single node execution record
-          const executionRecord = await this.prisma.singleNodeExecution.create({
+          // Generate proper UUID for execution ID (same as workflow executions)
+          const executionId = uuidv4();
+
+          // Create main execution record (same table as workflow executions)
+          logger.info(`Creating execution record for single node`, {
+            executionId,
+            workflowId,
+            nodeId,
+            userId,
+            status: nodeResult.success ? "SUCCESS" : "ERROR",
+          });
+
+          const executionRecord = await this.prisma.execution.create({
             data: {
-              id: `single_${Date.now()}_${Math.random()
-                .toString(36)
-                .substr(2, 9)}`,
+              id: executionId,
               workflowId,
-              nodeId,
-              nodeType: node.type,
               status: nodeResult.success ? "SUCCESS" : "ERROR",
               startedAt: new Date(startTime),
               finishedAt: new Date(endTime),
-              inputData: nodeInputData,
-              outputData: nodeResult.data || {},
-              parameters: nodeParameters,
+              triggerData: nodeInputData || undefined,
               error: nodeResult.success
-                ? null
+                ? undefined
+                : {
+                    message: nodeResult.error
+                      ? String(nodeResult.error)
+                      : "Node execution failed",
+                    nodeId: nodeId,
+                    timestamp: new Date(),
+                  },
+            },
+          });
+
+          logger.info(`Successfully created execution record`, {
+            executionId: executionRecord.id,
+            workflowId: executionRecord.workflowId,
+          });
+
+          // Also create detailed node execution record
+          await this.prisma.nodeExecution.create({
+            data: {
+              id: `${executionId}_${nodeId}`,
+              executionId: executionId,
+              nodeId: nodeId,
+              status: nodeResult.success ? "SUCCESS" : "ERROR",
+              startedAt: new Date(startTime),
+              finishedAt: new Date(endTime),
+              inputData: nodeInputData || {},
+              outputData: nodeResult.data || {},
+              error: nodeResult.success
+                ? undefined
                 : nodeResult.error
                 ? String(nodeResult.error)
                 : "Unknown error",
-              userId,
             },
           });
 
@@ -1371,14 +1418,10 @@ export class ExecutionService {
             success: true, // Execution started and ran, even if node failed
             data: {
               executionId: executionRecord.id,
-              nodeId,
-              status: nodeResult.success ? "success" : "failed",
-              data: nodeResult.data ? [{ main: nodeResult.data }] : [],
-              startTime,
-              endTime,
-              duration,
+              status: nodeResult.success ? "completed" : "failed", // Use same status values as workflow execution
               executedNodes: [nodeId],
               failedNodes: nodeResult.success ? [] : [nodeId],
+              duration,
               hasFailures: !nodeResult.success,
             },
             error: executionError,
@@ -1418,22 +1461,35 @@ export class ExecutionService {
 
       // Try to create a failed execution record
       try {
-        await this.prisma.singleNodeExecution.create({
+        const failedExecutionId = uuidv4();
+
+        await this.prisma.execution.create({
           data: {
-            id: `single_${Date.now()}_${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
+            id: failedExecutionId,
             workflowId,
-            nodeId,
-            nodeType: "unknown",
-            status: "ERROR" as NodeExecutionStatus,
+            status: "ERROR",
+            startedAt: new Date(),
+            finishedAt: new Date(),
+            triggerData: inputData || undefined,
+            error: {
+              message: error instanceof Error ? error.message : "Unknown error",
+              nodeId: nodeId,
+              timestamp: new Date(),
+            },
+          },
+        });
+
+        await this.prisma.nodeExecution.create({
+          data: {
+            id: `${failedExecutionId}_${nodeId}`,
+            executionId: failedExecutionId,
+            nodeId: nodeId,
+            status: "ERROR",
             startedAt: new Date(),
             finishedAt: new Date(),
             inputData: inputData || {},
             outputData: {},
-            parameters: parameters || {},
             error: error instanceof Error ? error.message : "Unknown error",
-            userId,
           },
         });
       } catch (recordError) {

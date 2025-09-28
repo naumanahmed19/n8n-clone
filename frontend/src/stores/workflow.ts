@@ -1330,46 +1330,79 @@ export const useWorkflowStore = create<WorkflowStore>()(
             });
 
             // Update node execution result
+            const endTime = Date.now();
+            const startTime = endTime - result.duration;
+            const isSuccess =
+              result.status === "completed" && !result.hasFailures;
+
+            // Get detailed execution results to fetch actual output data
+            let nodeOutputData: any = undefined;
+            let nodeError: any = undefined;
+
+            try {
+              const executionDetails =
+                await executionService.getExecutionDetails(result.executionId);
+
+              // Find the executed node's output data
+              const nodeExecution = executionDetails.nodeExecutions.find(
+                (nodeExec) => nodeExec.nodeId === nodeId
+              );
+
+              if (nodeExecution) {
+                nodeOutputData = nodeExecution.outputData;
+                nodeError = nodeExecution.error;
+              }
+            } catch (error) {
+              console.warn(
+                "Failed to get execution details for single node:",
+                error
+              );
+              nodeError = "Failed to retrieve execution details";
+            }
+
             get().updateNodeExecutionResult(nodeId, {
               nodeId,
               nodeName: node.name,
-              status: result.status === "success" ? "success" : "error",
-              startTime: result.startTime,
-              endTime: result.endTime,
+              status: isSuccess ? "success" : "error",
+              startTime,
+              endTime,
               duration: result.duration,
-              data: result.data,
-              error: result.error,
+              data: nodeOutputData, // Now we have the actual output data
+              error:
+                nodeError ||
+                (result.hasFailures ? "Node execution failed" : undefined),
             });
 
             // CRITICAL: Update node visual states for single node execution
             // This ensures that success/failed icons persist after single node execution
-            const visualStatus =
-              result.status === "success"
-                ? NodeExecutionStatus.COMPLETED
-                : NodeExecutionStatus.FAILED;
+            const visualStatus = isSuccess
+              ? NodeExecutionStatus.COMPLETED
+              : NodeExecutionStatus.FAILED;
 
             get().updateNodeExecutionState(nodeId, visualStatus, {
-              progress: result.status === "success" ? 100 : undefined,
-              error: result.error,
-              outputData: result.data,
-              startTime: result.startTime,
-              endTime: result.endTime,
+              progress: isSuccess ? 100 : undefined,
+              error:
+                nodeError ||
+                (result.hasFailures ? "Node execution failed" : undefined),
+              outputData: nodeOutputData, // Now we have the actual output data
+              startTime,
+              endTime,
             });
 
             get().addExecutionLog({
               timestamp: new Date().toISOString(),
-              level: result.status === "success" ? "info" : "error",
+              level: isSuccess ? "info" : "error",
               nodeId,
               message: `Node execution ${
-                result.status === "success"
-                  ? "completed successfully"
-                  : "failed"
+                isSuccess ? "completed successfully" : "failed"
               }: ${node.name}`,
               data: {
                 nodeId,
                 status: result.status,
                 duration: result.duration,
-                error: result.error,
+                hasFailures: result.hasFailures,
+                executedNodes: result.executedNodes,
+                failedNodes: result.failedNodes,
               },
             });
 

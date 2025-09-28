@@ -32,11 +32,12 @@ jest.mock("@/services/execution", () => ({
       ],
     }),
     executeSingleNode: jest.fn().mockResolvedValue({
-      status: "success",
-      startTime: Date.now() - 1000,
-      endTime: Date.now(),
+      executionId: "exec-1",
+      status: "completed",
+      executedNodes: ["node-1"],
+      failedNodes: [],
       duration: 1000,
-      data: { result: "success" },
+      hasFailures: false,
     }),
   },
 }));

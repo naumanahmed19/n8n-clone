@@ -110,9 +110,11 @@ const handleKeyPress = useCallback(
 ### 3. Programmatic Execution
 
 ```typescript
-// API endpoint for single node execution
-POST /api/executions/nodes/:nodeId
+// API endpoint for single node execution (unified endpoint)
+POST /api/executions
 {
+  "workflowId": "workflow-uuid",
+  "nodeId": "node-uuid",
   "inputData": { /* optional test data */ },
   "parameters": { /* optional parameter overrides */ },
   "mode": "single"

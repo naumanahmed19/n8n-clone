@@ -34,26 +34,58 @@ const getExecutionService = () => {
   return executionService;
 };
 
-// POST /api/executions - Execute a workflow
+// POST /api/executions - Execute a workflow or single node
 router.post(
   "/",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { workflowId, triggerData, options, triggerNodeId, workflowData } =
-      req.body;
+    const {
+      workflowId,
+      triggerData,
+      options,
+      triggerNodeId,
+      workflowData,
+      nodeId,
+      inputData,
+      parameters,
+      mode = "workflow",
+    } = req.body;
 
     if (!workflowId) {
       throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
     }
 
-    const result = await getExecutionService().executeWorkflow(
-      workflowId,
-      req.user!.id,
-      triggerData,
-      options,
-      triggerNodeId, // Pass the specific trigger node ID
-      workflowData // Pass the optional workflow data
-    );
+    let result;
+
+    // Handle single node execution if nodeId is provided
+    if (nodeId) {
+      if (!["single", "workflow"].includes(mode)) {
+        throw new AppError(
+          "Mode must be 'single' or 'workflow'",
+          400,
+          "INVALID_MODE"
+        );
+      }
+
+      result = await getExecutionService().executeSingleNode(
+        workflowId,
+        nodeId,
+        req.user!.id,
+        inputData,
+        parameters,
+        mode
+      );
+    } else {
+      // Handle regular workflow execution
+      result = await getExecutionService().executeWorkflow(
+        workflowId,
+        req.user!.id,
+        triggerData,
+        options,
+        triggerNodeId, // Pass the specific trigger node ID
+        workflowData // Pass the optional workflow data
+      );
+    }
 
     // Always return success for started executions, but include failure details
     const response: ApiResponse = {
@@ -318,59 +350,6 @@ router.get(
     };
 
     res.json(response);
-  })
-);
-
-// POST /api/executions/nodes/:nodeId - Execute a single node
-router.post(
-  "/nodes/:nodeId",
-  authenticateToken,
-  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { nodeId } = req.params;
-    const { workflowId, inputData, parameters, mode = "single" } = req.body;
-
-    if (!workflowId) {
-      throw new AppError("Workflow ID is required", 400, "MISSING_WORKFLOW_ID");
-    }
-
-    if (!nodeId) {
-      throw new AppError("Node ID is required", 400, "MISSING_NODE_ID");
-    }
-
-    if (mode && !["single", "workflow"].includes(mode)) {
-      throw new AppError(
-        "Mode must be 'single' or 'workflow'",
-        400,
-        "INVALID_MODE"
-      );
-    }
-
-    const result = await getExecutionService().executeSingleNode(
-      workflowId,
-      nodeId,
-      req.user!.id,
-      inputData,
-      parameters,
-      mode
-    );
-
-    // Always return success for started executions, but include failure details
-    const response: ApiResponse = {
-      success: true,
-      data: result.data,
-      // Include error/warning details if some nodes failed
-      ...(result.error && {
-        warnings: [
-          {
-            type: "NODE_FAILURES",
-            message: result.error.message,
-            details: result.error,
-          },
-        ],
-      }),
-    };
-
-    res.status(201).json(response);
   })
 );
 

@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useWorkflowStore } from '@/stores/workflow'
-import { executionService } from '@/services/execution'
+import { executionService } from "@/services/execution";
+import { useWorkflowStore } from "@/stores/workflow";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the execution service
-vi.mock('@/services/execution', () => ({
+vi.mock("@/services/execution", () => ({
   executionService: {
-    executeSingleNode: vi.fn()
-  }
-}))
+    executeSingleNode: vi.fn(),
+  },
+}));
 
-describe('WorkflowStore - executeNode', () => {
+describe("WorkflowStore - executeNode", () => {
   beforeEach(() => {
     // Reset the store
     useWorkflowStore.setState({
@@ -19,7 +19,7 @@ describe('WorkflowStore - executeNode', () => {
       isDirty: false,
       history: [],
       historyIndex: -1,
-      workflowTitle: '',
+      workflowTitle: "",
       isTitleDirty: false,
       titleValidationError: null,
       isExporting: false,
@@ -29,12 +29,12 @@ describe('WorkflowStore - executeNode', () => {
       importError: null,
       exportError: null,
       executionState: {
-        status: 'idle',
+        status: "idle",
         progress: 0,
         startTime: undefined,
         endTime: undefined,
         error: undefined,
-        executionId: undefined
+        executionId: undefined,
       },
       lastExecutionResult: null,
       realTimeResults: new Map(),
@@ -43,180 +43,183 @@ describe('WorkflowStore - executeNode', () => {
       propertyPanelNodeId: null,
       contextMenuVisible: false,
       contextMenuPosition: null,
-      contextMenuNodeId: null
-    })
+      contextMenuNodeId: null,
+    });
 
     // Clear all mocks
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  it('should execute single node successfully', async () => {
+  it("should execute single node successfully", async () => {
     const mockWorkflow = {
-      id: 'workflow-1',
-      name: 'Test Workflow',
-      description: 'Test workflow description',
-      userId: 'user-1',
+      id: "workflow-1",
+      name: "Test Workflow",
+      description: "Test workflow description",
+      userId: "user-1",
       nodes: [
         {
-          id: 'node-1',
-          type: 'manual-trigger',
-          name: 'Manual Trigger',
+          id: "node-1",
+          type: "manual-trigger",
+          name: "Manual Trigger",
           parameters: {},
           position: { x: 100, y: 100 },
           credentials: [],
-          disabled: false
-        }
+          disabled: false,
+        },
       ],
       connections: [],
       settings: {},
       active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    }
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
 
     const mockExecutionResult = {
-      executionId: 'exec-1',
-      nodeId: 'node-1',
-      status: 'success' as const,
-      data: [{ main: [{ json: { result: 'success' } }] }],
-      startTime: Date.now(),
-      endTime: Date.now() + 1000,
-      duration: 1000
-    }
+      executionId: "exec-1",
+      status: "completed" as const,
+      executedNodes: ["node-1"],
+      failedNodes: [],
+      duration: 1000,
+      hasFailures: false,
+    };
 
     // Mock the execution service
-    vi.mocked(executionService.executeSingleNode).mockResolvedValue(mockExecutionResult)
+    vi.mocked(executionService.executeSingleNode).mockResolvedValue(
+      mockExecutionResult
+    );
 
     // Set up the store with a workflow
-    useWorkflowStore.getState().setWorkflow(mockWorkflow)
+    useWorkflowStore.getState().setWorkflow(mockWorkflow);
 
     // Execute the node
-    await useWorkflowStore.getState().executeNode('node-1')
+    await useWorkflowStore.getState().executeNode("node-1");
 
     // Verify the execution service was called correctly
     expect(executionService.executeSingleNode).toHaveBeenCalledWith({
-      workflowId: 'workflow-1',
-      nodeId: 'node-1',
+      workflowId: "workflow-1",
+      nodeId: "node-1",
       inputData: { main: [[]] },
-      parameters: {}
-    })
+      parameters: {},
+    });
 
     // Verify the node execution result was updated
-    const state = useWorkflowStore.getState()
-    const nodeResult = state.getNodeExecutionResult('node-1')
-    
-    expect(nodeResult).toBeDefined()
-    expect(nodeResult?.status).toBe('success')
-    expect(nodeResult?.nodeId).toBe('node-1')
-    expect(nodeResult?.nodeName).toBe('Manual Trigger')
-  })
+    const state = useWorkflowStore.getState();
+    const nodeResult = state.getNodeExecutionResult("node-1");
 
-  it('should handle node execution error', async () => {
+    expect(nodeResult).toBeDefined();
+    expect(nodeResult?.status).toBe("success");
+    expect(nodeResult?.nodeId).toBe("node-1");
+    expect(nodeResult?.nodeName).toBe("Manual Trigger");
+  });
+
+  it("should handle node execution error", async () => {
     const mockWorkflow = {
-      id: 'workflow-1',
-      name: 'Test Workflow',
-      description: 'Test workflow description',
-      userId: 'user-1',
+      id: "workflow-1",
+      name: "Test Workflow",
+      description: "Test workflow description",
+      userId: "user-1",
       nodes: [
         {
-          id: 'node-1',
-          type: 'manual-trigger',
-          name: 'Manual Trigger',
+          id: "node-1",
+          type: "manual-trigger",
+          name: "Manual Trigger",
           parameters: {},
           position: { x: 100, y: 100 },
           credentials: [],
-          disabled: false
-        }
+          disabled: false,
+        },
       ],
       connections: [],
       settings: {},
       active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    }
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
 
     // Mock the execution service to throw an error
-    vi.mocked(executionService.executeSingleNode).mockRejectedValue(new Error('Execution failed'))
+    vi.mocked(executionService.executeSingleNode).mockRejectedValue(
+      new Error("Execution failed")
+    );
 
     // Set up the store with a workflow
-    useWorkflowStore.getState().setWorkflow(mockWorkflow)
+    useWorkflowStore.getState().setWorkflow(mockWorkflow);
 
     // Execute the node
-    await useWorkflowStore.getState().executeNode('node-1')
+    await useWorkflowStore.getState().executeNode("node-1");
 
     // Verify the node execution result shows error
-    const state = useWorkflowStore.getState()
-    const nodeResult = state.getNodeExecutionResult('node-1')
-    
-    expect(nodeResult).toBeDefined()
-    expect(nodeResult?.status).toBe('error')
-    expect(nodeResult?.error).toBe('Execution failed')
-  })
+    const state = useWorkflowStore.getState();
+    const nodeResult = state.getNodeExecutionResult("node-1");
 
-  it('should not execute if no workflow is loaded', async () => {
+    expect(nodeResult).toBeDefined();
+    expect(nodeResult?.status).toBe("error");
+    expect(nodeResult?.error).toBe("Execution failed");
+  });
+
+  it("should not execute if no workflow is loaded", async () => {
     // Execute node without setting a workflow
-    await useWorkflowStore.getState().executeNode('node-1')
+    await useWorkflowStore.getState().executeNode("node-1");
 
     // Verify the execution service was not called
-    expect(executionService.executeSingleNode).not.toHaveBeenCalled()
-  })
+    expect(executionService.executeSingleNode).not.toHaveBeenCalled();
+  });
 
-  it('should not execute if node is not found', async () => {
+  it("should not execute if node is not found", async () => {
     const mockWorkflow = {
-      id: 'workflow-1',
-      name: 'Test Workflow',
-      description: 'Test workflow description',
-      userId: 'user-1',
+      id: "workflow-1",
+      name: "Test Workflow",
+      description: "Test workflow description",
+      userId: "user-1",
       nodes: [],
       connections: [],
       settings: {},
       active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    }
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
 
     // Set up the store with a workflow that has no nodes
-    useWorkflowStore.getState().setWorkflow(mockWorkflow)
+    useWorkflowStore.getState().setWorkflow(mockWorkflow);
 
     // Execute a non-existent node
-    await useWorkflowStore.getState().executeNode('non-existent-node')
+    await useWorkflowStore.getState().executeNode("non-existent-node");
 
     // Verify the execution service was not called
-    expect(executionService.executeSingleNode).not.toHaveBeenCalled()
-  })
+    expect(executionService.executeSingleNode).not.toHaveBeenCalled();
+  });
 
-  it('should not execute during workflow execution', async () => {
+  it("should not execute during workflow execution", async () => {
     const mockWorkflow = {
-      id: 'workflow-1',
-      name: 'Test Workflow',
-      description: 'Test workflow description',
-      userId: 'user-1',
+      id: "workflow-1",
+      name: "Test Workflow",
+      description: "Test workflow description",
+      userId: "user-1",
       nodes: [
         {
-          id: 'node-1',
-          type: 'manual-trigger',
-          name: 'Manual Trigger',
+          id: "node-1",
+          type: "manual-trigger",
+          name: "Manual Trigger",
           parameters: {},
           position: { x: 100, y: 100 },
           credentials: [],
-          disabled: false
-        }
+          disabled: false,
+        },
       ],
       connections: [],
       settings: {},
       active: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
-    }
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
 
     // Set up the store with a workflow and set execution state to running
-    useWorkflowStore.getState().setWorkflow(mockWorkflow)
-    useWorkflowStore.getState().setExecutionState({ status: 'running' })
+    useWorkflowStore.getState().setWorkflow(mockWorkflow);
+    useWorkflowStore.getState().setExecutionState({ status: "running" });
 
     // Execute the node
-    await useWorkflowStore.getState().executeNode('node-1')
+    await useWorkflowStore.getState().executeNode("node-1");
 
     // Verify the execution service was not called
-    expect(executionService.executeSingleNode).not.toHaveBeenCalled()
-  })
-})
+    expect(executionService.executeSingleNode).not.toHaveBeenCalled();
+  });
+});

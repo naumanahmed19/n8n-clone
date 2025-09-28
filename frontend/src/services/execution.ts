@@ -19,6 +19,11 @@ export interface ExecutionRequest {
 
 export interface ExecutionResponse {
   executionId: string;
+  status?: "completed" | "failed" | "cancelled" | "partial";
+  executedNodes?: string[];
+  failedNodes?: string[];
+  duration?: number;
+  hasFailures?: boolean;
 }
 
 export interface ExecutionProgress {
@@ -68,13 +73,11 @@ export interface SingleNodeExecutionRequest {
 
 export interface SingleNodeExecutionResult {
   executionId: string;
-  nodeId: string;
-  status: "success" | "error";
-  data?: any;
-  startTime: number;
-  endTime: number;
+  status: "completed" | "failed" | "cancelled" | "partial";
+  executedNodes: string[];
+  failedNodes: string[];
   duration: number;
-  error?: string;
+  hasFailures: boolean;
 }
 
 export class ExecutionService {
@@ -205,18 +208,19 @@ export class ExecutionService {
   }
 
   /**
-   * Execute a single node
+   * Execute a single node using the unified executions endpoint
    */
   async executeSingleNode(
     request: SingleNodeExecutionRequest
   ): Promise<SingleNodeExecutionResult> {
     const response = await apiClient.post<SingleNodeExecutionResult>(
-      `/executions/nodes/${request.nodeId}`,
+      `/executions`,
       {
         workflowId: request.workflowId,
+        nodeId: request.nodeId,
         inputData: request.inputData,
         parameters: request.parameters,
-        mode: request.mode, // Include the mode parameter
+        mode: request.mode || "single", // Default to single mode
       }
     );
 

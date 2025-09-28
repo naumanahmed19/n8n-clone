@@ -41,7 +41,7 @@ Execute individual nodes in isolation for testing, debugging, and development pu
 ### Trigger Method
 
 - **UI Action**: Right-click on any node → "Execute Node" context menu
-- **API Endpoint**: `POST /api/executions/nodes/:nodeId`
+- **API Endpoint**: `POST /api/executions` (with `nodeId` parameter and `mode: "single"`)
 - **Frontend Method**: `executeNode(nodeId, inputData, "single")`
 
 ### Execution Scope
