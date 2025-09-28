@@ -3,10 +3,10 @@
  * Provides customizable confirmation dialogs with different severity levels
  */
 
+import { clsx } from 'clsx'
+import { AlertCircle, AlertTriangle, Info, X } from 'lucide-react'
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
-import { clsx } from 'clsx'
 
 export interface ConfirmDialogProps {
   isOpen: boolean
@@ -115,14 +115,19 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black bg-opacity-50"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-description"
+      style={{ zIndex: 99999 }}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div 
+        className="relative z-[100000] bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto pointer-events-auto" 
+        style={{ zIndex: 100000 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4">
           <div className="flex items-start space-x-3">
@@ -179,10 +184,14 @@ export function ConfirmDialog({
         {/* Actions */}
         <div className="flex items-center justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg">
           <button
-            onClick={handleCancel}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCancel();
+            }}
             disabled={loading}
             className={clsx(
-              'px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors',
+              'relative z-[100001] px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors pointer-events-auto',
               loading && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -190,9 +199,16 @@ export function ConfirmDialog({
           </button>
           
           <button
-            onClick={handleConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleConfirm();
+            }}
             disabled={loading || disabled}
-            className={getConfirmButtonClasses()}
+            className={clsx(
+              'relative z-[100001] pointer-events-auto',
+              getConfirmButtonClasses()
+            )}
           >
             {loading ? (
               <div className="flex items-center space-x-2">

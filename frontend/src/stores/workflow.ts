@@ -1331,7 +1331,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
             // Update node execution result
             const endTime = Date.now();
-            const startTime = endTime - result.duration;
+            const startTime = endTime - (result.duration || 0);
             const isSuccess =
               result.status === "completed" && !result.hasFailures;
 
@@ -1372,6 +1372,18 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 nodeError ||
                 (result.hasFailures ? "Node execution failed" : undefined),
             });
+
+            // If node had pinned mock data and execution was successful, unpin the mock data
+            if (node.mockData && node.mockDataPinned && isSuccess) {
+              get().updateNode(nodeId, { mockDataPinned: false });
+
+              get().addExecutionLog({
+                timestamp: new Date().toISOString(),
+                level: "info",
+                nodeId,
+                message: `Mock data unpinned for node: ${node.name} (execution successful)`,
+              });
+            }
 
             // CRITICAL: Update node visual states for single node execution
             // This ensures that success/failed icons persist after single node execution
@@ -2020,14 +2032,39 @@ export const useWorkflowStore = create<WorkflowStore>()(
       },
 
       getNodeExecutionResult: (nodeId: string) => {
-        // First try to get from real-time results (active execution)
+        // First check if the node has pinned mock data that should be used as output
+        // This takes priority over any execution results when explicitly pinned
+        const { workflow } = get();
+        if (workflow) {
+          const node = workflow.nodes.find((n) => n.id === nodeId);
+          if (node && node.mockData && node.mockDataPinned) {
+            // Return mock data as execution result with a neutral status
+            return {
+              nodeId,
+              nodeName: node.name,
+              status: "skipped" as const, // Use "skipped" to indicate this is mock data, not actual execution
+              startTime: Date.now(),
+              endTime: Date.now(),
+              duration: 0,
+              data: node.mockData,
+              error: undefined,
+            };
+          }
+        }
+
+        // Then try to get from real-time results (active execution)
         const realTimeResult = get().realTimeResults.get(nodeId);
         if (realTimeResult) {
           return realTimeResult;
         }
 
         // Fall back to persistent results (previous executions)
-        return get().persistentNodeResults.get(nodeId);
+        const persistentResult = get().persistentNodeResults.get(nodeId);
+        if (persistentResult) {
+          return persistentResult;
+        }
+
+        return undefined;
       },
 
       // Real-time execution updates

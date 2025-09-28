@@ -39,6 +39,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
     isDisabled,
     credentials,
     mockData,
+    mockDataPinned,
     hasUnsavedChanges,
     setValidationErrors,
     setIsExecuting,
@@ -76,7 +77,8 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
         name: nodeName, 
         disabled: isDisabled,
         credentials: Object.values(credentials).filter(Boolean) as string[],
-        mockData
+        mockData,
+        mockDataPinned
       })
       setHasUnsavedChanges(false)
     }
