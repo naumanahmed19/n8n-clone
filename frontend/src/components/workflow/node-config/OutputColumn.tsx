@@ -52,7 +52,9 @@ export function OutputColumn({ node }: OutputColumnProps) {
   }
 
   // Determine what data to show - mock data if pinned and available, otherwise execution result
-  const displayData = mockDataPinned && mockData ? mockData : nodeExecutionResult?.data
+  const displayData = mockDataPinned && mockData 
+    ? mockData 
+    : nodeExecutionResult?.data?.[0]?.['main']?.[0]?.['json']?.['data']
   const isShowingMockData = mockDataPinned && mockData
 
   return (
