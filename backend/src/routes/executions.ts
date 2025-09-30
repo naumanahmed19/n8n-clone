@@ -6,15 +6,27 @@ import { validateParams, validateQuery } from "../middleware/validation";
 import { ExecutionService } from "../services";
 import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import { ApiResponse, ExecutionQuerySchema, IdParamSchema } from "../types/api";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const prisma = new PrismaClient();
 // Use lazy initialization to get services when needed
+let localNodeService: any = null;
+
 const getNodeService = () => {
   if (!global.nodeService) {
-    throw new Error(
-      "NodeService not initialized. Make sure the server is properly started."
-    );
+    logger.warn("Global NodeService not available, creating local instance", {
+      globalNodeService: typeof global.nodeService,
+      globalKeys: Object.keys(global),
+    });
+    
+    // Create a local instance as fallback
+    if (!localNodeService) {
+      const { NodeService } = require("../services/NodeService");
+      localNodeService = new NodeService(prisma);
+      logger.info("Created local NodeService instance as fallback");
+    }
+    return localNodeService;
   }
   return global.nodeService;
 };

@@ -1,7 +1,18 @@
 export interface ApiResponse<T = any> {
-  data: T
+  data?: T
   message?: string
   success: boolean
+  error?: {
+    code?: string
+    message: string
+    stack?: string
+    details?: any
+  }
+  warnings?: Array<{
+    type: string
+    message: string
+    details?: any
+  }>
 }
 
 export interface ApiError {

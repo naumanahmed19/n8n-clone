@@ -521,6 +521,20 @@ function getUserFriendlyMessage(message: string): string {
     return 'Access forbidden. You do not have permission.'
   }
   
+  // Handle workflow-specific "not found" errors
+  if (lowerMessage.includes('node not found in workflow')) {
+    return 'The selected node could not be found in the workflow. Please refresh the workflow or check if the node was deleted.'
+  }
+  
+  if (lowerMessage.includes('workflow not found')) {
+    return 'The workflow could not be found. It may have been deleted or you may not have access to it.'
+  }
+  
+  if (lowerMessage.includes('unknown node type')) {
+    return 'The node type is not recognized or supported. Please check if the required node package is installed.'
+  }
+  
+  // Handle generic "not found" errors (likely HTTP/API related)
   if (lowerMessage.includes('not found')) {
     return 'Resource not found. Please check the URL or configuration.'
   }

@@ -28,7 +28,6 @@ import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 import { CustomEdge } from './CustomEdge'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
-import { ExecutionsHistory } from './ExecutionsHistory'
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 
@@ -392,17 +391,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                 />
             )}
 
-            {/* Executions History Panel */}
-            <ExecutionsHistory
-                workflowId={workflow?.id || ''}
-                isVisible={showExecutionsPanel}
-                onClose={toggleExecutionsPanel}
-                onSelectExecution={(executionId) => {
-                    console.log('Selected execution:', executionId)
-                    // TODO: Load and display execution details
-                    toggleExecutionsPanel()
-                }}
-            />
+      
 
             {/* Add Node Command Dialog */}
             <AddNodeCommandDialog

@@ -23,7 +23,6 @@ import { validateImportFile } from '@/utils/errorHandling'
 import {
   AlertCircle,
   Download,
-  History,
   Loader2,
   MoreHorizontal,
   Redo,
@@ -323,34 +322,7 @@ export function WorkflowToolbar({
           </TooltipContent>
         </Tooltip>
 
-        {/* Executions History Toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={toggleExecutionsPanel}
-              variant={showExecutionsPanel ? "default" : "outline"}
-              size="sm"
-              className={cn(
-                "relative h-7 px-2.5 text-xs",
-                showExecutionsPanel 
-                  ? "bg-purple-600 hover:bg-purple-700 text-white"
-                  : ""
-              )}
-            >
-              <History className="h-3.5 w-3.5 mr-1.5" />
-              Executions
-              {workflowExecutions && workflowExecutions.length > 0 && (
-                <Badge variant="secondary" className="ml-1.5 h-4 min-w-[1rem] text-[10px] px-1">
-                  {workflowExecutions.length > 99 ? '99+' : workflowExecutions.length}
-                </Badge>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{showExecutionsPanel ? "Hide executions history" : "Show executions history"}</p>
-          </TooltipContent>
-        </Tooltip>
-
+   
         {/* Save Button */}
         <Tooltip>
           <TooltipTrigger asChild>

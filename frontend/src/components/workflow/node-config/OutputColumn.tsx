@@ -53,25 +53,47 @@ export function OutputColumn({ node }: OutputColumnProps) {
   // Helper function to safely extract node output data
   const extractNodeOutputData = (nodeExecutionResult: any) => {
     try {
-      // Try the expected n8n format: data[0].main[0].json
+      // Handle the new standardized format from backend
+      if (nodeExecutionResult?.data?.main || nodeExecutionResult?.data?.branches) {
+        const { main, branches, metadata } = nodeExecutionResult.data;
+        
+        // For branching nodes (like IF), return the branches structure for separate display
+        if (metadata?.hasMultipleBranches && branches) {
+          return {
+            type: 'branches',
+            branches: branches,
+            metadata: metadata
+          };
+        }
+        
+        // For regular nodes, extract the JSON data from main
+        if (main && main.length > 0) {
+          // If main contains objects with 'json' property, extract that
+          if (main[0]?.json) {
+            return main[0].json;
+          }
+          // Otherwise return the first main item directly
+          return main[0];
+        }
+      }
+      
+      // Fallback for legacy format handling
       if (nodeExecutionResult?.data?.[0]?.main?.[0]?.json) {
-        return nodeExecutionResult.data[0].main[0].json?.data
+        return nodeExecutionResult.data[0].main[0].json;
       }
       
-      // Fallback: if data is directly the output array
       if (Array.isArray(nodeExecutionResult?.data) && nodeExecutionResult.data.length > 0) {
-        return nodeExecutionResult.data[0]
+        return nodeExecutionResult.data[0];
       }
       
-      // Fallback: if data is directly the object
       if (nodeExecutionResult?.data && typeof nodeExecutionResult.data === 'object') {
-        return nodeExecutionResult.data
+        return nodeExecutionResult.data;
       }
       
-      return null
+      return null;
     } catch (error) {
-      console.warn('Failed to extract node output data:', error)
-      return null
+      console.warn('Failed to extract node output data:', error);
+      return null;
     }
   }
 
@@ -80,6 +102,7 @@ export function OutputColumn({ node }: OutputColumnProps) {
     ? mockData 
     : extractNodeOutputData(nodeExecutionResult)
   const isShowingMockData = mockDataPinned && mockData
+  const isBranchingNode = displayData?.type === 'branches'
 
   return (
     <div className="flex w-full h-full border-l flex-col bg-background">
@@ -108,7 +131,8 @@ export function OutputColumn({ node }: OutputColumnProps) {
               size="sm"
               variant="outline"
               onClick={() => {
-                navigator.clipboard.writeText(JSON.stringify(displayData, null, 2))
+                const copyData = isBranchingNode ? displayData.branches : displayData;
+                navigator.clipboard.writeText(JSON.stringify(copyData, null, 2))
                 toast.success('Copied to clipboard')
               }}
               className="h-7 px-2 text-xs gap-1"
@@ -194,32 +218,87 @@ export function OutputColumn({ node }: OutputColumnProps) {
               )}
 
               {displayData ? (
-                <div className="flex flex-col h-full space-y-4">
-                  <div className="flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <Database className="h-4 w-4" />
-                        <h3 className="text-sm font-medium">
-                          {isShowingMockData ? 'Mock Data Output' : 'Execution Output'}
-                        </h3>
+                isBranchingNode ? (
+                  /* Branching Node Display - Show each branch separately */
+                  <div className="flex flex-col h-full space-y-4">
+                    <div className="flex items-center justify-between flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <Database className="h-4 w-4" />
+                          <h3 className="text-sm font-medium">
+                            Branch Outputs ({displayData.metadata?.nodeType || 'Conditional'})
+                          </h3>
+                        </div>
+                        <Badge variant="default">
+                          {Object.keys(displayData.branches || {}).length} Branches
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant={isShowingMockData ? "secondary" : "default"}
-                        className={isShowingMockData ? "bg-amber-100 text-amber-800" : ""}
-                      >
-                        {isShowingMockData ? 'Mock' : nodeExecutionResult?.status || 'Ready'}
-                      </Badge>
+                    </div>
+
+                    <div className="flex-1 min-h-0 space-y-3">
+                      {Object.entries(displayData.branches || {}).map(([branchName, branchData]) => (
+                        <div key={branchName} className="border rounded-lg">
+                          {/* Branch Header */}
+                          <div className="flex items-center justify-between p-3 bg-muted/50 border-b rounded-t-lg">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${
+                                branchName === 'true' ? 'bg-green-500' : 
+                                branchName === 'false' ? 'bg-red-500' : 'bg-blue-500'
+                              }`} />
+                              <span className="font-medium text-sm capitalize">{branchName} Path</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {Array.isArray(branchData) ? branchData.length : 0} items
+                            </Badge>
+                          </div>
+                          
+                          {/* Branch Content */}
+                          <div className="p-3">
+                            {Array.isArray(branchData) && branchData.length > 0 ? (
+                              <ScrollArea className="h-32 w-full">
+                                <pre className="text-xs font-mono whitespace-pre-wrap break-all">
+                                  {JSON.stringify(branchData, null, 2)}
+                                </pre>
+                              </ScrollArea>
+                            ) : (
+                              <div className="text-xs text-muted-foreground italic text-center py-4">
+                                No data in this branch
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                ) : (
+                  /* Regular Node Display - Single output */
+                  <div className="flex flex-col h-full space-y-4">
+                    <div className="flex items-center justify-between flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <Database className="h-4 w-4" />
+                          <h3 className="text-sm font-medium">
+                            {isShowingMockData ? 'Mock Data Output' : 'Execution Output'}
+                          </h3>
+                        </div>
+                        <Badge 
+                          variant={isShowingMockData ? "secondary" : "default"}
+                          className={isShowingMockData ? "bg-amber-100 text-amber-800" : ""}
+                        >
+                          {isShowingMockData ? 'Mock' : nodeExecutionResult?.status || 'Ready'}
+                        </Badge>
+                      </div>
+                    </div>
 
-                  <div className="rounded-md border bg-muted/30 p-3 flex-1 min-h-0">
-                    <ScrollArea className="h-full w-full">
-                      <pre className="text-xs font-mono whitespace-pre-wrap break-all">
-                        {JSON.stringify(displayData, null, 2)}
-                      </pre>
-                    </ScrollArea>
+                    <div className="rounded-md border bg-muted/30 p-3 flex-1 min-h-0">
+                      <ScrollArea className="h-full w-full">
+                        <pre className="text-xs font-mono whitespace-pre-wrap break-all">
+                          {JSON.stringify(displayData, null, 2)}
+                        </pre>
+                      </ScrollArea>
+                    </div>
                   </div>
-                </div>
+                )
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Database className="h-12 w-12 text-muted-foreground/50 mb-4" />

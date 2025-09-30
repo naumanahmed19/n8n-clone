@@ -169,6 +169,9 @@ interface WorkflowStore extends WorkflowEditorState {
   validateWorkflow: () => { isValid: boolean; errors: string[] };
   validateConnection: (sourceId: string, targetId: string) => boolean;
 
+  // Helper functions
+  gatherInputDataFromConnectedNodes: (nodeId: string) => any;
+
   // Node interaction actions
   setShowPropertyPanel: (show: boolean) => void;
   setPropertyPanelNode: (nodeId: string | null) => void;
@@ -926,6 +929,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
           return;
         }
 
+        // If no input data provided, try to gather from connected input nodes
+        let nodeInputData = inputData;
+        if (!nodeInputData && mode === "single") {
+          console.log("Gathering input data from connected nodes for", nodeId);
+          nodeInputData = get().gatherInputDataFromConnectedNodes(nodeId);
+          console.log("Gathered input data:", nodeInputData);
+        }
+
         const startTime = Date.now();
 
         try {
@@ -1324,7 +1335,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
             const result = await executionService.executeSingleNode({
               workflowId: workflow.id,
               nodeId,
-              inputData: inputData || { main: [[]] },
+              inputData: nodeInputData || { main: [[]] },
               parameters: node.parameters,
               mode,
             });
@@ -2841,6 +2852,126 @@ export const useWorkflowStore = create<WorkflowStore>()(
         };
 
         return !wouldCreateCircle(targetId, sourceId);
+      },
+
+      // Helper function to gather input data from connected nodes
+      gatherInputDataFromConnectedNodes: (nodeId: string) => {
+        const { workflow } = get();
+        if (!workflow) return { main: [[]] };
+
+        // Find all connections where this node is the target
+        const inputConnections = workflow.connections.filter(
+          (conn) => conn.targetNodeId === nodeId
+        );
+
+        if (inputConnections.length === 0) {
+          console.log("No input connections found for node", nodeId);
+          return { main: [[]] };
+        }
+
+        console.log("Found input connections for", nodeId, inputConnections);
+
+        // Gather output data from all connected source nodes
+        const inputData: any = { main: [] };
+
+        for (const connection of inputConnections) {
+          const sourceNodeId = connection.sourceNodeId;
+          
+          // Try to get the latest execution result for the source node
+          const sourceNodeResult = get().getNodeExecutionResult(sourceNodeId);
+          
+          console.log("=== DEBUG: Source node result ===", {
+            sourceNodeId,
+            hasResult: !!sourceNodeResult,
+            status: sourceNodeResult?.status,
+            hasData: !!sourceNodeResult?.data,
+            dataKeys: sourceNodeResult?.data ? Object.keys(sourceNodeResult.data) : [],
+            fullData: sourceNodeResult?.data
+          });
+
+          if (sourceNodeResult && sourceNodeResult.data && sourceNodeResult.status === 'success') {
+            console.log("Found execution data for source node", sourceNodeId, sourceNodeResult.data);
+            
+            // The data structure is from the new standardized format
+            let sourceData;
+            if (sourceNodeResult.data.main) {
+              sourceData = sourceNodeResult.data.main;
+            } else if (Array.isArray(sourceNodeResult.data) && sourceNodeResult.data[0] && sourceNodeResult.data[0].main) {
+              // Fallback for legacy structure
+              sourceData = sourceNodeResult.data[0].main;
+            }
+            
+            console.log("=== DEBUG: Source data ===", {
+              sourceData,
+              isArray: Array.isArray(sourceData),
+              length: Array.isArray(sourceData) ? sourceData.length : 'not array'
+            });
+            
+            if (Array.isArray(sourceData) && sourceData.length > 0) {
+              for (const item of sourceData) {
+                console.log("=== DEBUG: Processing item ===", {
+                  item,
+                  hasJson: !!item?.json,
+                  jsonType: typeof item?.json,
+                  isJsonArray: Array.isArray(item?.json),
+                  jsonKeys: item?.json && typeof item?.json === 'object' && !Array.isArray(item?.json) ? Object.keys(item.json) : []
+                });
+                
+                if (item && item.json !== undefined) {
+                  // If json is an array, expand each item into separate input items
+                  if (Array.isArray(item.json)) {
+                    console.log("=== DEBUG: Expanding json array ===", item.json.length, "items");
+                    for (const arrayItem of item.json) {
+                      inputData.main.push({ json: arrayItem });
+                      console.log("=== DEBUG: Added array item ===", arrayItem);
+                    }
+                  } else if (item.json.data !== undefined) {
+                    // For HTTP responses with data field, extract the data field
+                    console.log("=== DEBUG: Found json.data ===", {
+                      data: item.json.data,
+                      isArray: Array.isArray(item.json.data),
+                      type: typeof item.json.data
+                    });
+                    
+                    if (Array.isArray(item.json.data)) {
+                      console.log("=== DEBUG: Expanding json.data array ===", item.json.data.length, "items");
+                      for (const arrayItem of item.json.data) {
+                        inputData.main.push({ json: arrayItem });
+                        console.log("=== DEBUG: Added data array item ===", arrayItem);
+                      }
+                    } else {
+                      // If data is a single object, use it directly
+                      console.log("=== DEBUG: Using single data object ===", item.json.data);
+                      inputData.main.push({ json: item.json.data });
+                    }
+                  } else {
+                    console.log("=== DEBUG: Using json directly (single object) ===", item.json);
+                    // For single objects, use the json directly
+                    inputData.main.push({ json: item.json });
+                  }
+                } else {
+                  console.log("=== DEBUG: Item has no json property ===", item);
+                }
+              }
+            } else {
+              console.log("=== DEBUG: Source data is empty or not array ===", sourceData);
+            }
+          } else {
+            console.log("No execution data found for source node", sourceNodeId, {
+              hasResult: !!sourceNodeResult,
+              status: sourceNodeResult?.status,
+              hasData: !!sourceNodeResult?.data
+            });
+          }
+        }
+
+        // If we still have empty data, provide at least one empty item array
+        if (inputData.main.length === 0) {
+          inputData.main.push([]);
+        }
+
+        console.log("Final gathered input data:", inputData);
+        return inputData;
       },
 
       // Node interaction actions

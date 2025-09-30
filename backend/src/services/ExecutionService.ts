@@ -1166,26 +1166,74 @@ export class ExecutionService {
         ? workflow.nodes
         : JSON.parse(workflow.nodes as string);
 
+      logger.info(`Searching for node ${nodeId} in workflow ${workflowId}`, {
+        nodeId,
+        workflowId,
+        totalNodes: workflowNodes.length,
+        nodeIds: workflowNodes.map((n: any) => n.id),
+      });
+
       // Find the specific node
       const node = workflowNodes.find((n: any) => n.id === nodeId);
       if (!node) {
+        logger.error(`Node ${nodeId} not found in workflow ${workflowId}`, {
+          nodeId,
+          workflowId,
+          availableNodeIds: workflowNodes.map((n: any) => n.id),
+          totalNodes: workflowNodes.length,
+        });
         return {
           success: false,
           error: {
             message: "Node not found in workflow",
+            stack: `Available nodes: ${workflowNodes.map((n: any) => n.id).join(', ')}`,
             timestamp: new Date(),
+            nodeId: nodeId,
           },
         };
       }
 
       // Check if node can be executed individually (trigger nodes)
-      const nodeTypeInfo = await this.nodeService.getNodeSchema(node.type);
+      logger.info(`Found node ${nodeId}, checking node type schema`, {
+        nodeId,
+        nodeType: node.type,
+        nodeName: node.name || 'unnamed',
+      });
+
+      let nodeTypeInfo;
+      try {
+        nodeTypeInfo = await this.nodeService.getNodeSchema(node.type);
+      } catch (schemaError) {
+        logger.error(`Failed to get node schema for ${node.type}`, {
+          nodeId,
+          nodeType: node.type,
+          nodeName: node.name || 'unnamed',
+          error: schemaError,
+        });
+        return {
+          success: false,
+          error: {
+            message: `Failed to load node type schema: ${schemaError instanceof Error ? schemaError.message : 'Unknown error'}`,
+            stack: schemaError instanceof Error ? schemaError.stack : undefined,
+            timestamp: new Date(),
+            nodeId: nodeId,
+          },
+        };
+      }
+
       if (!nodeTypeInfo) {
+        logger.error(`Node type schema not found for ${node.type}`, {
+          nodeId,
+          nodeType: node.type,
+          nodeName: node.name || 'unnamed',
+        });
         return {
           success: false,
           error: {
             message: `Unknown node type: ${node.type}`,
+            stack: `Node schema not found for type '${node.type}'. This node type may not be registered or available.`,
             timestamp: new Date(),
+            nodeId: nodeId,
           },
         };
       }
@@ -1407,8 +1455,22 @@ export class ExecutionService {
           // Prepare error information if node failed
           let executionError: any = undefined;
           if (!nodeResult.success) {
+            // Extract detailed error information
+            let errorMessage = "Node execution failed";
+            let errorStack: string | undefined;
+
+            if (nodeResult.error) {
+              if (typeof nodeResult.error === 'string') {
+                errorMessage = nodeResult.error;
+              } else if (nodeResult.error && typeof nodeResult.error === 'object') {
+                errorMessage = nodeResult.error.message || errorMessage;
+                errorStack = nodeResult.error.stack;
+              }
+            }
+
             executionError = {
-              message: nodeResult.error || "Node execution failed",
+              message: errorMessage,
+              stack: errorStack,
               timestamp: new Date(),
               nodeId: nodeId,
             };
@@ -1473,6 +1535,7 @@ export class ExecutionService {
             triggerData: inputData || undefined,
             error: {
               message: error instanceof Error ? error.message : "Unknown error",
+              stack: error instanceof Error ? error.stack : undefined,
               nodeId: nodeId,
               timestamp: new Date(),
             },
@@ -1500,7 +1563,9 @@ export class ExecutionService {
         success: false,
         error: {
           message: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
           timestamp: new Date(),
+          nodeId: nodeId,
         },
       };
     }
