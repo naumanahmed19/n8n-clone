@@ -1,5 +1,6 @@
 "use client"
 import { CredentialsList } from "@/components/credential/CredentialsList"
+import { ExecutionsList } from "@/components/execution"
 import { NavUser } from "@/components/nav-user"
 import { NodeTypesList } from "@/components/node/NodeTypesList"
 import { Button } from "@/components/ui/button"
@@ -290,13 +291,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   )}
                   
                   {activeWorkflowItem?.title === "Executions" && (
-                    <div className="p-4">
-                      <div className="text-center text-muted-foreground">
-                        <Activity className="h-8 w-8 mx-auto mb-2" />
-                        <p>No executions yet</p>
-                        <p className="text-xs mt-1">Run your workflow to see execution history</p>
-                      </div>
-                    </div>
+                    <ExecutionsList />
                   )}
                   
                   {activeWorkflowItem?.title === "Settings" && (

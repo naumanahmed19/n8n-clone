@@ -227,6 +227,40 @@ export class ExecutionService {
   }
 
   /**
+   * List executions with optional filtering
+   */
+  async listExecutions(options?: {
+    workflowId?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+    startedAfter?: string;
+    startedBefore?: string;
+  }): Promise<ExecutionDetails[]> {
+    const params = new URLSearchParams();
+
+    if (options?.workflowId) params.append("workflowId", options.workflowId);
+    if (options?.status) params.append("status", options.status);
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.limit) params.append("limit", options.limit.toString());
+    if (options?.startedAfter)
+      params.append("startedAfter", options.startedAfter);
+    if (options?.startedBefore)
+      params.append("startedBefore", options.startedBefore);
+
+    const queryString = params.toString();
+    const url = queryString ? `/executions?${queryString}` : "/executions";
+
+    const response = await apiClient.get<ExecutionDetails[]>(url);
+
+    if (!response.success) {
+      throw new Error("Failed to fetch executions");
+    }
+
+    return response.data || [];
+  }
+
+  /**
    * Prepare trigger data for manual trigger
    */
   prepareTriggerData(customData?: any): any {
