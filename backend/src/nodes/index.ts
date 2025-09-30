@@ -1,5 +1,5 @@
 // Export all core nodes
-export * from './core';
+export * from "./core";
 
 // Export all trigger nodes
-export * from './triggers';
+export * from "./triggers";

@@ -112,11 +112,8 @@ export const HttpRequestNode: NodeDefinition = {
       (this.getNodeParameter("headers") as Record<string, string>) || {};
     const body = this.getNodeParameter("body");
     const timeout = (this.getNodeParameter("timeout") as number) || 30000;
-    const followRedirects = this.getNodeParameter(
-      "followRedirects"
-    ) as boolean;
-    const maxRedirects =
-      (this.getNodeParameter("maxRedirects") as number) || 5;
+    const followRedirects = this.getNodeParameter("followRedirects") as boolean;
+    const maxRedirects = (this.getNodeParameter("maxRedirects") as number) || 5;
 
     if (!url) {
       throw new Error("URL is required");
@@ -187,10 +184,7 @@ export const HttpRequestNode: NodeDefinition = {
       } else {
         requestBody = JSON.stringify(body);
         // Set content-type if not already set
-        if (
-          !parsedHeaders["Content-Type"] &&
-          !parsedHeaders["content-type"]
-        ) {
+        if (!parsedHeaders["Content-Type"] && !parsedHeaders["content-type"]) {
           parsedHeaders["Content-Type"] = "application/json";
         }
       }

@@ -135,9 +135,7 @@ export const IfNode: NodeDefinition = {
 
       // Replace placeholders like {{json.fieldName}}
       return value.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-        console.log(
-          `[IF Node Debug] Trying to resolve placeholder: ${match}`
-        );
+        console.log(`[IF Node Debug] Trying to resolve placeholder: ${match}`);
         console.log(`[IF Node Debug] Path: ${path}`);
 
         const parts = path.split(".");
@@ -165,15 +163,10 @@ export const IfNode: NodeDefinition = {
             result = result[part];
             console.log(`[IF Node Debug] Found ${part}:`, result);
           } else {
-            console.log(
-              `[IF Node Debug] Could not find ${part} in:`,
-              result
-            );
+            console.log(`[IF Node Debug] Could not find ${part} in:`, result);
             console.log(
               `[IF Node Debug] Available keys:`,
-              result && typeof result === "object"
-                ? Object.keys(result)
-                : "N/A"
+              result && typeof result === "object" ? Object.keys(result) : "N/A"
             );
             return match; // Return original if path not found
           }
@@ -256,10 +249,7 @@ export const IfNode: NodeDefinition = {
 
       // Debug: Log available fields in the item
       const availableFields = item ? Object.keys(item) : [];
-      console.log(
-        `[IF Node Debug] Item fields available:`,
-        availableFields
-      );
+      console.log(`[IF Node Debug] Item fields available:`, availableFields);
       console.log(
         `[IF Node Debug] Full item structure:`,
         JSON.stringify(item, null, 2)
