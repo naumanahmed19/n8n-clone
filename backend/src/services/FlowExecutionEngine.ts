@@ -938,15 +938,38 @@ export class FlowExecutionEngine extends EventEmitter {
     for (const connection of incomingConnections) {
       const sourceNodeState = context.nodeStates.get(connection.sourceNodeId);
       if (sourceNodeState && sourceNodeState.outputData) {
-        const outputData = sourceNodeState.outputData.find(
-          (output) => output[connection.sourceOutput]
-        );
-        if (outputData && outputData[connection.sourceOutput]) {
-          const sourceOutput = outputData[connection.sourceOutput];
-          if (Array.isArray(sourceOutput)) {
-            collectedData.push(...sourceOutput);
-          } else {
-            collectedData.push(sourceOutput);
+        // sourceNodeState.outputData is an array of NodeOutputData
+        // Each NodeOutputData can have multiple outputs like { main: [...], secondary: [...] }
+        if (Array.isArray(sourceNodeState.outputData)) {
+          // Find the output object that contains the requested output
+          const outputData = sourceNodeState.outputData.find(
+            (output) => output && output[connection.sourceOutput]
+          );
+          if (outputData && outputData[connection.sourceOutput]) {
+            const sourceOutput = outputData[connection.sourceOutput];
+            if (Array.isArray(sourceOutput)) {
+              collectedData.push(...sourceOutput);
+            } else {
+              collectedData.push(sourceOutput);
+            }
+          }
+        } else {
+          // If outputData is not an array, handle it directly
+          // This might happen if there's inconsistent data structure
+          logger.warn("OutputData is not an array, attempting direct access", {
+            nodeId: connection.sourceNodeId,
+            outputData: sourceNodeState.outputData,
+            expectedOutput: connection.sourceOutput,
+          });
+
+          const directOutput = sourceNodeState.outputData as any;
+          if (directOutput[connection.sourceOutput]) {
+            const sourceOutput = directOutput[connection.sourceOutput];
+            if (Array.isArray(sourceOutput)) {
+              collectedData.push(...sourceOutput);
+            } else {
+              collectedData.push(sourceOutput);
+            }
           }
         }
       }

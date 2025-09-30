@@ -2,7 +2,7 @@
 const path = require("path");
 const {
   CustomNodeUploadHandler,
-} = require("./src/services/CustomNodeUploadHandler");
+} = require("../backend/src/services/CustomNodeUploadHandler");
 
 async function testUploadResponse() {
   try {

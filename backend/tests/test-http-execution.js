@@ -1,3 +1,22 @@
+/**
+ * Test HTTP Node Execution
+ *
+ * This test validates the HTTP request node's functionality within
+ * the workflow execution system. It tests various HTTP operations
+ * and request configurations.
+ *
+ * Test Cases:
+ * - Finding workflows containing HTTP nodes
+ * - Testing different HTTP methods (GET, POST, PUT, DELETE)
+ * - Request header handling and authentication
+ * - Response processing and error handling
+ * - Timeout and retry mechanisms
+ * - URL parameter and body construction
+ *
+ * The test searches for existing workflows with HTTP nodes and
+ * attempts to execute them to validate the HTTP node implementation.
+ */
+
 const { PrismaClient } = require("@prisma/client");
 
 async function testHttpExecution() {

@@ -1,3 +1,21 @@
+/**
+ * Test Custom Node Loading
+ *
+ * This test validates the custom node loading system's ability to discover,
+ * load, and register custom nodes from the file system.
+ *
+ * Test Functions:
+ * - Checks custom-nodes directory structure
+ * - Validates node file existence and accessibility
+ * - Tests dynamic module loading for custom nodes
+ * - Verifies node definition structure and required properties
+ * - Tests node registration process
+ *
+ * The test scans through custom node directories and attempts to
+ * load each node module, ensuring they have valid execute functions
+ * and proper node definitions.
+ */
+
 const { PrismaClient } = require("@prisma/client");
 // For TypeScript modules, we need to compile them first or use a simpler approach
 // Let's test the directory structure manually first

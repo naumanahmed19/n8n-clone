@@ -1,6 +1,6 @@
 const {
   NodeTemplateGenerator,
-} = require("./dist/services/NodeTemplateGenerator");
+} = require("../backend/dist/services/NodeTemplateGenerator");
 const fs = require("fs");
 const path = require("path");
 

@@ -1,3 +1,21 @@
+/**
+ * Test Manual Node Registration
+ *
+ * This test validates the manual registration process for custom nodes.
+ * It specifically tests loading and registering individual node modules
+ * without going through the automatic discovery process.
+ *
+ * Test Process:
+ * 1. Manually loads a specific node file (rupa.node.js)
+ * 2. Validates the node definition structure
+ * 3. Checks for required fields (type, displayName, execute function, etc.)
+ * 4. Verifies the node's properties are properly defined
+ * 5. Tests the node's execute function exists and is callable
+ *
+ * This test helps ensure that custom nodes can be properly integrated
+ * into the system through direct registration.
+ */
+
 // Test manual node registration
 const { PrismaClient } = require("@prisma/client");
 const path = require("path");

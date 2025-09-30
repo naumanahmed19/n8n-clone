@@ -1,3 +1,26 @@
+/**
+ * Test IF Node Functionality
+ *
+ * This comprehensive test suite validates the IF node's conditional logic
+ * and data processing capabilities. It tests various scenarios including:
+ *
+ * Test Cases:
+ * 1. Basic equality conditions with debugging output
+ * 2. Non-existent field handling and graceful fallbacks
+ * 3. Nested object access (e.g., json.user.role)
+ * 4. Multiple placeholders in a single value
+ * 5. Complex item structures with metadata
+ *
+ * The test uses single-node execution mode to verify IF node logic
+ * independently of workflow execution complexity.
+ *
+ * Key Features Tested:
+ * - Placeholder resolution ({{json.fieldName}})
+ * - Various comparison operations (equal, notEqual, etc.)
+ * - Data structure handling and validation
+ * - Error handling for missing fields
+ */
+
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 

@@ -24,6 +24,7 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "node-fetch": "^3.3.2"
   }
 }

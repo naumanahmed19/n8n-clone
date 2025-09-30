@@ -1,3 +1,40 @@
+/**
+ * test-simple-loader.js - Node Loader Testing Implementation
+ *
+ * This test file validates the custom node loading system by implementing
+ * a simplified version of the NodeLoader class and testing its functionality
+ * step by step.
+ *
+ * Test Scenarios:
+ * 1. Directory Structure Validation
+ *    - Tests directory existence checking
+ *    - Validates custom-nodes path resolution
+ *    - Checks package.json detection and parsing
+ *
+ * 2. Package Discovery and Loading
+ *    - Discovers all available custom node packages
+ *    - Reads and validates package.json files
+ *    - Tests package metadata extraction
+ *
+ * 3. Node File Loading
+ *    - Loads individual node files from packages
+ *    - Validates node structure and properties
+ *    - Tests node registration process
+ *
+ * 4. Error Handling and Edge Cases
+ *    - Tests behavior with missing directories
+ *    - Handles invalid package.json files
+ *    - Validates graceful failure scenarios
+ *
+ * Purpose: This file serves as both a test and a reference implementation
+ * for understanding how the node loading system works. It breaks down the
+ * complex NodeLoader into manageable steps that can be tested individually.
+ *
+ * Implementation: Uses a SimpleNodeLoader class that mirrors the main
+ * NodeLoader's functionality but with simplified logic for easier testing
+ * and debugging.
+ */
+
 // Test NodeLoader logic step by step
 const fs = require("fs").promises;
 const path = require("path");

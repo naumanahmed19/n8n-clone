@@ -16,7 +16,7 @@ const testNodeTemplateGenerator = async () => {
     // Import the class (we'll use TypeScript compilation or tsx to run this)
     const {
       NodeTemplateGenerator,
-    } = require("./src/services/NodeTemplateGenerator.ts");
+    } = require("../backend/src/services/NodeTemplateGenerator.ts");
 
     const generator = new NodeTemplateGenerator();
 

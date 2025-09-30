@@ -1,3 +1,21 @@
+/**
+ * Test Rupa Custom Node Execution
+ *
+ * This test validates the execution of the custom "rupa" node,
+ * which appears to be a specific custom node implementation
+ * used for testing custom node functionality.
+ *
+ * Test Scenarios:
+ * - Single node execution for custom "rupa" node
+ * - Parameter handling and configuration
+ * - Input data processing and transformation
+ * - Output format validation
+ * - Error handling for invalid inputs
+ *
+ * The test serves as a regression test for custom node execution
+ * and helps validate the custom node loading and execution system.
+ */
+
 // Test rupa node execution after the fix
 const fetch = require("node-fetch");
 
