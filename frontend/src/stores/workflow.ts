@@ -2894,7 +2894,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           if (
             sourceNodeResult &&
             sourceNodeResult.data &&
-            sourceNodeResult.status === "success"
+            (sourceNodeResult.status === "success" || sourceNodeResult.status === "skipped")
           ) {
             console.log(
               "Found execution data for source node",
@@ -2913,6 +2913,10 @@ export const useWorkflowStore = create<WorkflowStore>()(
             ) {
               // Fallback for legacy structure
               sourceData = sourceNodeResult.data[0].main;
+            } else if (sourceNodeResult.status === "skipped") {
+              // For pinned mock data, the data is stored directly as the JSON payload
+              // We need to wrap it in the proper n8n data structure
+              sourceData = [{ json: sourceNodeResult.data }];
             }
 
             console.log("=== DEBUG: Source data ===", {
