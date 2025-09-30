@@ -2894,7 +2894,8 @@ export const useWorkflowStore = create<WorkflowStore>()(
           if (
             sourceNodeResult &&
             sourceNodeResult.data &&
-            (sourceNodeResult.status === "success" || sourceNodeResult.status === "skipped")
+            (sourceNodeResult.status === "success" ||
+              sourceNodeResult.status === "skipped")
           ) {
             console.log(
               "Found execution data for source node",

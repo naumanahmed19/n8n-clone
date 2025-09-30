@@ -307,7 +307,9 @@ describe("WorkflowStore - Mock Data Flow", () => {
     expect(inputData).toBeDefined();
     expect(inputData.main).toBeDefined();
     expect(inputData.main.length).toBeGreaterThan(0);
-    expect(inputData.main[0]).toEqual({ json: { message: "Hello World", success: true } });
+    expect(inputData.main[0]).toEqual({
+      json: { message: "Hello World", success: true },
+    });
   });
 
   it("should show confirmation dialog when executing single node with pinned mock data", async () => {
@@ -345,7 +347,7 @@ describe("WorkflowStore - Mock Data Flow", () => {
     const node = mockWorkflow.nodes[0];
     expect(node.mockData).toBeDefined();
     expect(node.mockDataPinned).toBe(true);
-    
+
     // This test verifies the setup is correct for confirmation dialog scenario
     // The actual confirmation logic would need integration testing with proper mocks
     expect(true).toBe(true);
