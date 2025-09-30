@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { JsonEditor } from '@/components/ui/json-editor'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import {
@@ -10,8 +10,7 @@ import {
   Database,
   Edit,
   Pin,
-  PinOff,
-  X
+  PinOff
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -92,6 +91,33 @@ export function OutputColumn({ node }: OutputColumnProps) {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Edit Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={openMockDataEditor}
+            className="h-7 px-2 text-xs gap-1"
+          >
+            <Edit className="h-3 w-3" />
+            Edit
+          </Button>
+
+          {/* Copy Button */}
+          {displayData && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(displayData, null, 2))
+                toast.success('Copied to clipboard')
+              }}
+              className="h-7 px-2 text-xs gap-1"
+            >
+              <Copy className="h-3 w-3" />
+              Copy
+            </Button>
+          )}
+
           {/* Pin Mock Data Toggle */}
           {mockData && (
             <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-background border">
@@ -111,17 +137,7 @@ export function OutputColumn({ node }: OutputColumnProps) {
               </div>
             </div>
           )}
-          
-          {/* Edit Mock Data Button */}
-          <Button
-            onClick={openMockDataEditor}
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-1"
-          >
-            <Edit className="h-3 w-3" />
-            <span className="text-xs">Edit Mock</span>
-          </Button>
+       
         </div>
       </div>
       
@@ -130,35 +146,18 @@ export function OutputColumn({ node }: OutputColumnProps) {
         {mockDataEditor.isOpen ? (
           <div className="h-full flex flex-col bg-card">
             {/* Editor Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-muted/20">
-              <div className="flex items-center gap-2">
-                <Edit className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Mock Data Editor</h3>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={closeMockDataEditor}
-                className="h-7 w-7 p-0 hover:bg-muted"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Editor Description */}
-            <div className="px-4 py-2 bg-muted/10 border-b">
-              <p className="text-xs text-muted-foreground">
-                Define JSON data to use as output. When pinned, this overrides execution results.
-              </p>
-            </div>
-            
+         
+          
             {/* Editor Content */}
-            <div className="flex-1 p-4 flex flex-col min-h-0">
-              <Textarea
+            <div className="flex-1  flex flex-col min-h-0">
+              <JsonEditor
                 value={mockDataEditor.content}
-                onChange={(e) => updateMockDataContent(e.target.value)}
+                onValueChange={updateMockDataContent}
                 placeholder='{\n  "message": "Hello World",\n  "data": {\n    "success": true\n  }\n}'
-                className="font-mono text-sm flex-1 resize-none border-muted-foreground/20 focus:border-primary"
+   
+
+                className="flex-1"
+                required
               />
             </div>
             
@@ -187,6 +186,13 @@ export function OutputColumn({ node }: OutputColumnProps) {
           /* Main Output Display - Only shown when editor is closed */
           <ScrollArea className="h-full">
             <div className="p-4 h-full flex flex-col space-y-4">
+              {/* Pin Message at Top */}
+              {isShowingMockData && (
+                <div className="flex items-center justify-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 flex-shrink-0">
+                  <span>💡 This mock data is currently pinned and will be used for connected nodes</span>
+                </div>
+              )}
+
               {displayData ? (
                 <div className="flex flex-col h-full space-y-4">
                   <div className="flex items-center justify-between flex-shrink-0">
@@ -204,19 +210,6 @@ export function OutputColumn({ node }: OutputColumnProps) {
                         {isShowingMockData ? 'Mock' : nodeExecutionResult?.status || 'Ready'}
                       </Badge>
                     </div>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(displayData, null, 2))
-                        toast.success('Copied to clipboard')
-                      }}
-                      className="h-7 px-2 text-xs gap-1"
-                    >
-                      <Copy className="h-3 w-3" />
-                      Copy
-                    </Button>
                   </div>
 
                   <div className="rounded-md border bg-muted/30 p-3 flex-1 min-h-0">
@@ -226,20 +219,6 @@ export function OutputColumn({ node }: OutputColumnProps) {
                       </pre>
                     </ScrollArea>
                   </div>
-                  
-                  {isShowingMockData && (
-                    <div className="flex items-center justify-between text-xs text-muted-foreground flex-shrink-0">
-                      <span>💡 This mock data is currently pinned and will be used for connected nodes</span>
-                      <Button
-                        onClick={openMockDataEditor}
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-2 text-xs"
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
