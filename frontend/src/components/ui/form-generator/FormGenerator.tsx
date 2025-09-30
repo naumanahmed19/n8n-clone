@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { FieldRenderer } from './FieldRenderer'
 import { FieldValidator } from './FieldValidator'
 import { FieldVisibilityManager } from './FieldVisibilityManager'
@@ -22,8 +22,10 @@ export function FormGenerator({
   // Combine external and internal errors, with external taking precedence
   const allErrors = { ...internalErrors, ...externalErrors }
 
-  // Get visible fields based on current values
-  const visibleFields = FieldVisibilityManager.getVisibleFields(fields, values)
+  // Get visible fields based on current values - memoized to prevent infinite re-renders
+  const visibleFields = useMemo(() => {
+    return FieldVisibilityManager.getVisibleFields(fields, values)
+  }, [fields, values])
 
   // Handle field value changes
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -43,25 +45,25 @@ export function FormGenerator({
     if (dependentFields.length > 0) {
       // Small delay to ensure state has updated
       setTimeout(() => {
-        const newErrors = { ...internalErrors }
-        let hasChanges = false
+        setInternalErrors(prev => {
+          const newErrors = { ...prev }
+          let hasChanges = false
 
-        dependentFields.forEach(depField => {
-          const currentValue = values[depField.name]
-          const error = FieldValidator.validateField(depField, currentValue)
-          
-          if (error && !newErrors[depField.name]) {
-            newErrors[depField.name] = error
-            hasChanges = true
-          } else if (!error && newErrors[depField.name]) {
-            delete newErrors[depField.name]
-            hasChanges = true
-          }
+          dependentFields.forEach(depField => {
+            const currentValue = values[depField.name]
+            const error = FieldValidator.validateField(depField, currentValue)
+            
+            if (error && !newErrors[depField.name]) {
+              newErrors[depField.name] = error
+              hasChanges = true
+            } else if (!error && newErrors[depField.name]) {
+              delete newErrors[depField.name]
+              hasChanges = true
+            }
+          })
+
+          return hasChanges ? newErrors : prev
         })
-
-        if (hasChanges) {
-          setInternalErrors(newErrors)
-        }
       }, 0)
     }
   }
@@ -85,9 +87,22 @@ export function FormGenerator({
 
   // Validate all visible fields when they change
   useEffect(() => {
+    // Only validate if there are no external errors to avoid conflicts
     if (!externalErrors || Object.keys(externalErrors).length === 0) {
       const errors = FieldValidator.validateForm(visibleFields, values)
-      setInternalErrors(errors)
+      setInternalErrors(prev => {
+        // Only update if errors have actually changed
+        const prevKeys = Object.keys(prev).sort()
+        const newKeys = Object.keys(errors).sort()
+        
+        if (prevKeys.length !== newKeys.length || 
+            !prevKeys.every((key, index) => key === newKeys[index]) ||
+            !Object.keys(errors).every(key => prev[key] === errors[key])) {
+          return errors
+        }
+        
+        return prev
+      })
     }
   }, [visibleFields, values, externalErrors])
 
