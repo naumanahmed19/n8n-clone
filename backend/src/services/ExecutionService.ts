@@ -241,18 +241,30 @@ export class ExecutionService {
         triggerData
       );
 
-      // Collect error information from failed nodes
+      // Collect error information from failed nodes with enhanced details
       let executionError: any = undefined;
       if (flowResult.failedNodes.length > 0) {
         const failedNodeErrors: string[] = [];
+        const detailedErrors: any[] = [];
 
         for (const [nodeId, nodeResult] of flowResult.nodeResults) {
           if (nodeResult.status === "failed" && nodeResult.error) {
-            const errorMessage =
-              nodeResult.error instanceof Error
-                ? nodeResult.error.message
-                : String(nodeResult.error);
+            let errorMessage: string;
+            let errorDetails: any;
+
+            if (typeof nodeResult.error === 'object' && nodeResult.error !== null) {
+              errorMessage = nodeResult.error.message || String(nodeResult.error);
+              errorDetails = nodeResult.error;
+            } else {
+              errorMessage = String(nodeResult.error);
+              errorDetails = { message: errorMessage };
+            }
+
             failedNodeErrors.push(`Node ${nodeId}: ${errorMessage}`);
+            detailedErrors.push({
+              nodeId,
+              error: errorDetails,
+            });
           }
         }
 
@@ -263,7 +275,18 @@ export class ExecutionService {
               : `${flowResult.failedNodes.length} node(s) failed`,
           timestamp: new Date(),
           failedNodes: flowResult.failedNodes,
+          detailedErrors, // Include detailed error information for each failed node
         };
+
+        // Log detailed error information for debugging
+        logger.error("Workflow execution completed with errors", {
+          executionId: flowResult.executionId,
+          workflowId,
+          userId,
+          failedNodeCount: flowResult.failedNodes.length,
+          failedNodes: flowResult.failedNodes,
+          detailedErrors,
+        });
       }
 
       return {
@@ -998,12 +1021,6 @@ export class ExecutionService {
 
     this.flowExecutionEngine.on("nodeExecuted", (nodeEventData) => {
       logger.info("Flow node executed event received:", nodeEventData);
-      console.log("=== NODE EXECUTED EVENT ===", {
-        executionId: nodeEventData.executionId,
-        nodeId: nodeEventData.nodeId,
-        status: nodeEventData.status,
-        error: nodeEventData.result?.error,
-      });
 
       // Broadcast node execution updates for flow
       if (global.socketService) {
@@ -1019,14 +1036,6 @@ export class ExecutionService {
           nodeId: nodeEventData.nodeId,
           eventType,
           status: nodeEventData.status,
-        });
-
-        console.log("=== BROADCASTING WEBSOCKET EVENT ===", {
-          executionId: nodeEventData.executionId,
-          type: eventType,
-          nodeId: nodeEventData.nodeId,
-          status: nodeEventData.status,
-          error: nodeEventData.result?.error,
         });
 
         global.socketService.broadcastExecutionEvent(
@@ -1442,7 +1451,7 @@ export class ExecutionService {
               startedAt: new Date(startTime),
               finishedAt: new Date(endTime),
               inputData: nodeInputData || {},
-              outputData: nodeResult.data || {},
+              outputData: nodeResult.data ? { main: nodeResult.data.main } : {},
               error: nodeResult.success
                 ? undefined
                 : nodeResult.error
@@ -1609,7 +1618,7 @@ export class ExecutionService {
           executionStatus = ExecutionStatus.ERROR;
       }
 
-      // Create main execution record
+      // Create main execution record with enhanced error details
       const execution = await this.prisma.execution.create({
         data: {
           id: flowResult.executionId,
@@ -1624,6 +1633,15 @@ export class ExecutionService {
                   message: "Flow execution failed",
                   failedNodes: flowResult.failedNodes,
                   executionPath: flowResult.executionPath,
+                  // Collect detailed error information from failed nodes
+                  nodeErrors: Array.from(flowResult.nodeResults.entries())
+                    .filter(([_, result]) => result.status === "failed" && result.error)
+                    .map(([nodeId, result]) => ({
+                      nodeId,
+                      error: typeof result.error === 'object' && result.error !== null
+                        ? result.error
+                        : { message: String(result.error) },
+                    })),
                 }
               : undefined,
         },
@@ -1655,8 +1673,12 @@ export class ExecutionService {
             startedAt: new Date(),
             finishedAt: new Date(Date.now() + nodeResult.duration),
             inputData: {}, // TODO: Add actual input data
-            outputData: nodeResult.data || undefined,
-            error: nodeResult.error || undefined,
+            outputData: nodeResult.data && nodeResult.data.length > 0 ? nodeResult.data[0] : undefined,
+            error: nodeResult.error ? (
+              typeof nodeResult.error === 'object' && nodeResult.error !== null
+                ? nodeResult.error
+                : { message: String(nodeResult.error) }
+            ) : undefined,
           },
         });
       }

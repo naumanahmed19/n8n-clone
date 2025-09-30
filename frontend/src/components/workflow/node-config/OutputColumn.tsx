@@ -32,7 +32,7 @@ export function OutputColumn({ node }: OutputColumnProps) {
   } = useNodeConfigDialogStore()
 
   const nodeExecutionResult = getNodeExecutionResult(node.id)
-
+  
   const handleMockDataSave = () => {
     try {
       const parsed = JSON.parse(mockDataEditor.content)
@@ -50,44 +50,96 @@ export function OutputColumn({ node }: OutputColumnProps) {
     toast.success('Mock data cleared')
   }
 
-  // Helper function to safely extract node output data
+  // Helper function to safely extract node output data from standardized format
   const extractNodeOutputData = (nodeExecutionResult: any) => {
     try {
-      // Handle the new standardized format from backend
-      if (nodeExecutionResult?.data?.main || nodeExecutionResult?.data?.branches) {
-        const { main, branches, metadata } = nodeExecutionResult.data;
-        
-        // For branching nodes (like IF), return the branches structure for separate display
-        if (metadata?.hasMultipleBranches && branches) {
+      if (!nodeExecutionResult?.data) {
+        return null;
+      }
+
+      const { data } = nodeExecutionResult;
+      
+      // Handle direct standardized format: {main: [...], branches?: {...}, metadata: {...}}
+      if (data.metadata) {
+        // For branching nodes, return the full structure for branch display
+        if (data.metadata.hasMultipleBranches && data.branches) {
           return {
             type: 'branches',
-            branches: branches,
-            metadata: metadata
+            branches: data.branches,
+            metadata: data.metadata
           };
         }
         
-        // For regular nodes, extract the JSON data from main
-        if (main && main.length > 0) {
-          // If main contains objects with 'json' property, extract that
-          if (main[0]?.json) {
-            return main[0].json;
+        // For regular nodes, extract the first item's json data if it exists
+        if (data.main && data.main.length > 0 && data.main[0]?.json) {
+          const jsonData = data.main[0].json;
+          
+          // Special handling for HTTP nodes - extract only the 'data' property
+          if (data.metadata.nodeType === 'http-request' && jsonData.data !== undefined) {
+            return jsonData.data;
           }
-          // Otherwise return the first main item directly
-          return main[0];
+          
+          return jsonData;
+        }
+        
+        // If no json property, return the whole item
+        if (data.main && data.main.length > 0) {
+          return data.main[0];
         }
       }
       
-      // Fallback for legacy format handling
-      if (nodeExecutionResult?.data?.[0]?.main?.[0]?.json) {
-        return nodeExecutionResult.data[0].main[0].json;
+      // Handle case where data itself is the main array (e.g., from outputData field)
+      if (data.main && Array.isArray(data.main)) {
+        if (data.main.length > 0) {
+          // If the items have a json property, extract it
+          if (data.main[0]?.json) {
+            const jsonData = data.main[0].json;
+            
+            // Special handling for HTTP nodes - extract only the 'data' property
+            if (jsonData.data !== undefined && 
+                (jsonData.status !== undefined || jsonData.headers !== undefined || jsonData.ok !== undefined)) {
+              return jsonData.data;
+            }
+            
+            return jsonData;
+          }
+          // Otherwise return the raw item
+          return data.main[0];
+        }
       }
       
-      if (Array.isArray(nodeExecutionResult?.data) && nodeExecutionResult.data.length > 0) {
-        return nodeExecutionResult.data[0];
+      // Fallback: if data is an array directly
+      if (Array.isArray(data) && data.length > 0) {
+        // Check for nested structure like [{main: [...]}]
+        if (data[0]?.main?.[0]?.json) {
+          const jsonData = data[0].main[0].json;
+          
+          // Special handling for HTTP nodes - extract only the 'data' property
+          if (jsonData.data !== undefined && 
+              (jsonData.status !== undefined || jsonData.headers !== undefined || jsonData.ok !== undefined)) {
+            return jsonData.data;
+          }
+          
+          return jsonData;
+        }
+        // Return first item if it exists
+        return data[0];
       }
       
-      if (nodeExecutionResult?.data && typeof nodeExecutionResult.data === 'object') {
-        return nodeExecutionResult.data;
+      // If data is an object and not an array, return it directly
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        // Skip metadata-only objects
+        if (Object.keys(data).length === 1 && data.metadata) {
+          return null;
+        }
+        
+        // Special handling for HTTP response objects - extract only the 'data' property
+        if (data.data !== undefined && 
+            (data.status !== undefined || data.headers !== undefined || data.ok !== undefined)) {
+          return data.data;
+        }
+        
+        return data;
       }
       
       return null;

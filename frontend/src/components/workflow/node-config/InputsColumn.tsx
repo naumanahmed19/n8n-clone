@@ -380,7 +380,15 @@ function getRelevantData(executionData: any): any {
     
     // If the first item has a 'json' property, use that (common n8n pattern)
     if (firstItem && typeof firstItem === 'object' && firstItem.json) {
-      return firstItem.json
+      const jsonData = firstItem.json;
+      
+      // Special handling for HTTP responses - extract only the 'data' property
+      if (jsonData.data !== undefined && 
+          (jsonData.status !== undefined || jsonData.headers !== undefined || jsonData.ok !== undefined)) {
+        return jsonData.data;
+      }
+      
+      return jsonData;
     }
     
     // If the first item has a 'main' property with data
@@ -393,12 +401,27 @@ function getRelevantData(executionData: any): any {
   
   // If it's an object with 'json' property
   if (executionData && typeof executionData === 'object' && executionData.json) {
-    return executionData.json
+    const jsonData = executionData.json;
+    
+    // Special handling for HTTP responses - extract only the 'data' property
+    if (jsonData.data !== undefined && 
+        (jsonData.status !== undefined || jsonData.headers !== undefined || jsonData.ok !== undefined)) {
+      return jsonData.data;
+    }
+    
+    return jsonData;
   }
   
   // If it's an object with 'main' property
   if (executionData && typeof executionData === 'object' && executionData.main) {
     return getRelevantData(executionData.main)
+  }
+  
+  // Special handling for direct HTTP response objects - extract only the 'data' property
+  if (executionData && typeof executionData === 'object' && 
+      executionData.data !== undefined && 
+      (executionData.status !== undefined || executionData.headers !== undefined || executionData.ok !== undefined)) {
+    return executionData.data;
   }
   
   // Return as-is if we can't find a better structure

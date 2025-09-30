@@ -19,6 +19,7 @@ import {
   WorkflowHistoryEntry,
   WorkflowNode,
 } from "@/types";
+import { gatherStandardizedInputData } from "@/utils/dataStandardization";
 import {
   validateImportFile as validateImportFileUtil,
   validateTitle as validateTitleUtil,
@@ -2857,7 +2858,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
       // Helper function to gather input data from connected nodes
       gatherInputDataFromConnectedNodes: (nodeId: string) => {
         const { workflow } = get();
-        if (!workflow) return { main: [[]] };
+        if (!workflow) return { main: [] };
+
+        // Use the standardized helper function for cleaner, condition-free data gathering
+        return gatherStandardizedInputData(
+          nodeId,
+          workflow.connections,
+          get().getNodeExecutionResult
+        );
 
         // Find all connections where this node is the target
         const inputConnections = workflow.connections.filter(
@@ -3010,13 +3018,68 @@ export const useWorkflowStore = create<WorkflowStore>()(
           }
         }
 
-        // If we still have empty data, provide at least one empty item array
+        // If we still have empty data, provide empty array
         if (inputData.main.length === 0) {
-          inputData.main.push([]);
+          inputData.main = [];
         }
 
         console.log("Final gathered input data:", inputData);
         return inputData;
+      },
+
+      // Universal helper to extract items from any standardized output format
+      extractItemsFromStandardizedOutput: (data: any): Array<{ json: any }> => {
+        const items: Array<{ json: any }> = [];
+
+        // Handle standardized format: {main: [...], metadata: {...}}
+        if (data.main && Array.isArray(data.main)) {
+          for (const item of data.main) {
+            items.push(...get().normalizeToItemArray(item));
+          }
+        }
+        // Fallback for legacy format: [{main: [...]}]
+        else if (Array.isArray(data) && data[0]?.main) {
+          for (const item of data[0].main) {
+            items.push(...get().normalizeToItemArray(item));
+          }
+        }
+        // Direct array fallback
+        else if (Array.isArray(data)) {
+          for (const item of data) {
+            items.push(...get().normalizeToItemArray(item));
+          }
+        }
+
+        return items;
+      },
+
+      // Universal helper to normalize any data structure to [{json: item}, ...] format
+      normalizeToItemArray: (item: any): Array<{ json: any }> => {
+        // Already in correct format: {json: data}
+        if (item && typeof item === "object" && "json" in item) {
+          // If json contains an array, expand it
+          if (Array.isArray(item.json)) {
+            return item.json.map((arrayItem: any) => ({ json: arrayItem }));
+          }
+          // If json.data contains an array, expand it
+          else if (item.json.data && Array.isArray(item.json.data)) {
+            return item.json.data.map((arrayItem: any) => ({
+              json: arrayItem,
+            }));
+          }
+          // Single item
+          else {
+            return [{ json: item.json.data || item.json }];
+          }
+        }
+        // Direct object - wrap it
+        else if (item && typeof item === "object") {
+          return [{ json: item }];
+        }
+        // Invalid item
+        else {
+          return [];
+        }
       },
 
       // Node interaction actions

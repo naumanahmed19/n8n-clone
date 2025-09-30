@@ -688,22 +688,44 @@ export class FlowExecutionEngine extends EventEmitter {
           result,
         });
       } catch (error) {
-        logger.error("Node execution failed with exception", {
+        // Enhanced error logging with full context
+        const errorDetails = {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : typeof error,
+          stack: error instanceof Error ? error.stack : undefined,
           nodeId,
-          error,
+          nodeType: workflow.nodes.find((n) => n.id === nodeId)?.type,
+          executionId: context.executionId,
+          timestamp: new Date().toISOString(),
+        };
+
+        logger.error("Node execution failed with exception", {
+          error: errorDetails,
+          nodeId,
           executionId: context.executionId,
         });
+
         nodeState.status = FlowNodeStatus.FAILED;
-        nodeState.error = error;
+        nodeState.error = errorDetails; // Store detailed error in node state
         failedNodes.push(nodeId);
 
         const result: NodeExecutionResult = {
           nodeId,
           status: FlowNodeStatus.FAILED,
-          error,
+          error: errorDetails, // Pass detailed error in result
           duration: 0,
         };
         nodeResults.set(nodeId, result);
+
+        // Log execution failure with details
+        const nodeName =
+          workflow.nodes.find((n) => n.id === nodeId)?.name || "Unknown Node";
+        this.executionHistoryService.addExecutionLog(
+          context.executionId,
+          "error",
+          `Node execution failed: ${nodeName} - ${errorDetails.message}`,
+          nodeId
+        );
 
         // Emit nodeExecuted event for failed nodes too
         this.emit("nodeExecuted", {
@@ -785,7 +807,8 @@ export class FlowExecutionEngine extends EventEmitter {
         throw new Error(nodeResult.error?.message || "Node execution failed");
       }
 
-      const outputData = nodeResult.data || [];
+      // Convert StandardizedNodeOutput to NodeOutputData format
+      const outputData: NodeOutputData[] = nodeResult.data ? [{ main: nodeResult.data.main }] : [];
 
       const result: NodeExecutionResult = {
         nodeId,
