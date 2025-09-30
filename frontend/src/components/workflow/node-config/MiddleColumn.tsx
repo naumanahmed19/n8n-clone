@@ -1,24 +1,34 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-    AlertCircle,
-    Database,
-    FileText,
-    Info,
-    Loader2,
-    Play,
-    Settings
+  AlertCircle,
+  Database,
+  FileText,
+  Info,
+  Loader2,
+  MoreVertical,
+  Play,
+  Settings,
+  ToggleLeft,
+  ToggleRight,
+  Trash2
 } from 'lucide-react'
 import { ConfigTab } from './tabs/ConfigTab'
 import { DocsTab } from './tabs/DocsTab'
@@ -129,30 +139,10 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
               <span className="text-xs">Run Node</span>
             </Button>
             
-            {/* Enable Node Toggle */}
-            <HoverCard>
-              <HoverCardTrigger asChild>
-                <div>
-                  <Switch
-                    checked={!isDisabled}
-                    onCheckedChange={(checked) => updateDisabled(!checked)}
-                    className="scale-75"
-                  />
-                </div>
-              </HoverCardTrigger>
-              <HoverCardContent className="w-48 p-2">
-                <div className="text-xs">
-                  <p className="font-medium">{isDisabled ? 'Node Disabled' : 'Node Enabled'}</p>
-                  <p className="text-gray-500 mt-1">
-                    {isDisabled 
-                      ? 'This node will be skipped during execution'
-                      : 'This node will execute normally'
-                    }
-                  </p>
-                </div>
-              </HoverCardContent>
-            </HoverCard>
+            {/* Node Status Badge */}
             {nodeExecutionResult && getNodeStatusBadge(nodeExecutionResult.status)}
+            
+            {/* Info Hover Card */}
             <HoverCard>
               <HoverCardTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -177,6 +167,36 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
                 </div>
               </HoverCardContent>
             </HoverCard>
+            
+            {/* More Actions Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  onClick={() => updateDisabled(!isDisabled)}
+                  className="flex items-center space-x-2"
+                >
+                  {isDisabled ? (
+                    <ToggleRight className="w-4 h-4" />
+                  ) : (
+                    <ToggleLeft className="w-4 h-4" />
+                  )}
+                  <span>{isDisabled ? 'Enable Node' : 'Disable Node'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={onDelete}
+                  className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Node</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -219,7 +239,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
 
         <div className="flex-1 overflow-hidden">
           <TabsContent value="config" className="h-full mt-0">
-            <ConfigTab node={node} nodeType={nodeType} onDelete={onDelete} />
+            <ConfigTab node={node} nodeType={nodeType} />
           </TabsContent>
 
           <TabsContent value="test" className="h-full mt-0">

@@ -1,25 +1,21 @@
 import { CredentialSelector } from '@/components/credential/CredentialSelector'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { createField, FormGenerator } from '@/components/ui/form-generator'
-import { Separator } from '@/components/ui/separator'
 import { useCredentialStore, useNodeConfigDialogStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
     AlertCircle,
-    CheckCircle,
-    Trash2
+    CheckCircle
 } from 'lucide-react'
 import { useEffect } from 'react'
 
 interface ConfigTabProps {
   node: WorkflowNode
   nodeType: NodeType
-  onDelete: () => void
 }
 
-export function ConfigTab({ node, nodeType, onDelete }: ConfigTabProps) {
+export function ConfigTab({ node, nodeType }: ConfigTabProps) {
   const { fetchCredentials, fetchCredentialTypes } = useCredentialStore()
   const {
     parameters,
@@ -140,19 +136,6 @@ export function ConfigTab({ node, nodeType, onDelete }: ConfigTabProps) {
             </CardContent>
           </Card>
         )}
-
-        {/* Delete Node */}
-        <Separator />
-        <div>
-          <Button
-            onClick={onDelete}
-            variant="destructive"
-            className="w-full"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete Node
-          </Button>
-        </div>
       </div>
     </div>
   )
