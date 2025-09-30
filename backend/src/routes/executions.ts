@@ -19,7 +19,7 @@ const getNodeService = () => {
       globalNodeService: typeof global.nodeService,
       globalKeys: Object.keys(global),
     });
-    
+
     // Create a local instance as fallback
     if (!localNodeService) {
       const { NodeService } = require("../services/NodeService");

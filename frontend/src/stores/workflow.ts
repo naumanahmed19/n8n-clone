@@ -2876,37 +2876,53 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         for (const connection of inputConnections) {
           const sourceNodeId = connection.sourceNodeId;
-          
+
           // Try to get the latest execution result for the source node
           const sourceNodeResult = get().getNodeExecutionResult(sourceNodeId);
-          
+
           console.log("=== DEBUG: Source node result ===", {
             sourceNodeId,
             hasResult: !!sourceNodeResult,
             status: sourceNodeResult?.status,
             hasData: !!sourceNodeResult?.data,
-            dataKeys: sourceNodeResult?.data ? Object.keys(sourceNodeResult.data) : [],
-            fullData: sourceNodeResult?.data
+            dataKeys: sourceNodeResult?.data
+              ? Object.keys(sourceNodeResult.data)
+              : [],
+            fullData: sourceNodeResult?.data,
           });
 
-          if (sourceNodeResult && sourceNodeResult.data && sourceNodeResult.status === 'success') {
-            console.log("Found execution data for source node", sourceNodeId, sourceNodeResult.data);
-            
+          if (
+            sourceNodeResult &&
+            sourceNodeResult.data &&
+            sourceNodeResult.status === "success"
+          ) {
+            console.log(
+              "Found execution data for source node",
+              sourceNodeId,
+              sourceNodeResult.data
+            );
+
             // The data structure is from the new standardized format
             let sourceData;
             if (sourceNodeResult.data.main) {
               sourceData = sourceNodeResult.data.main;
-            } else if (Array.isArray(sourceNodeResult.data) && sourceNodeResult.data[0] && sourceNodeResult.data[0].main) {
+            } else if (
+              Array.isArray(sourceNodeResult.data) &&
+              sourceNodeResult.data[0] &&
+              sourceNodeResult.data[0].main
+            ) {
               // Fallback for legacy structure
               sourceData = sourceNodeResult.data[0].main;
             }
-            
+
             console.log("=== DEBUG: Source data ===", {
               sourceData,
               isArray: Array.isArray(sourceData),
-              length: Array.isArray(sourceData) ? sourceData.length : 'not array'
+              length: Array.isArray(sourceData)
+                ? sourceData.length
+                : "not array",
             });
-            
+
             if (Array.isArray(sourceData) && sourceData.length > 0) {
               for (const item of sourceData) {
                 console.log("=== DEBUG: Processing item ===", {
@@ -2914,13 +2930,22 @@ export const useWorkflowStore = create<WorkflowStore>()(
                   hasJson: !!item?.json,
                   jsonType: typeof item?.json,
                   isJsonArray: Array.isArray(item?.json),
-                  jsonKeys: item?.json && typeof item?.json === 'object' && !Array.isArray(item?.json) ? Object.keys(item.json) : []
+                  jsonKeys:
+                    item?.json &&
+                    typeof item?.json === "object" &&
+                    !Array.isArray(item?.json)
+                      ? Object.keys(item.json)
+                      : [],
                 });
-                
+
                 if (item && item.json !== undefined) {
                   // If json is an array, expand each item into separate input items
                   if (Array.isArray(item.json)) {
-                    console.log("=== DEBUG: Expanding json array ===", item.json.length, "items");
+                    console.log(
+                      "=== DEBUG: Expanding json array ===",
+                      item.json.length,
+                      "items"
+                    );
                     for (const arrayItem of item.json) {
                       inputData.main.push({ json: arrayItem });
                       console.log("=== DEBUG: Added array item ===", arrayItem);
@@ -2930,22 +2955,35 @@ export const useWorkflowStore = create<WorkflowStore>()(
                     console.log("=== DEBUG: Found json.data ===", {
                       data: item.json.data,
                       isArray: Array.isArray(item.json.data),
-                      type: typeof item.json.data
+                      type: typeof item.json.data,
                     });
-                    
+
                     if (Array.isArray(item.json.data)) {
-                      console.log("=== DEBUG: Expanding json.data array ===", item.json.data.length, "items");
+                      console.log(
+                        "=== DEBUG: Expanding json.data array ===",
+                        item.json.data.length,
+                        "items"
+                      );
                       for (const arrayItem of item.json.data) {
                         inputData.main.push({ json: arrayItem });
-                        console.log("=== DEBUG: Added data array item ===", arrayItem);
+                        console.log(
+                          "=== DEBUG: Added data array item ===",
+                          arrayItem
+                        );
                       }
                     } else {
                       // If data is a single object, use it directly
-                      console.log("=== DEBUG: Using single data object ===", item.json.data);
+                      console.log(
+                        "=== DEBUG: Using single data object ===",
+                        item.json.data
+                      );
                       inputData.main.push({ json: item.json.data });
                     }
                   } else {
-                    console.log("=== DEBUG: Using json directly (single object) ===", item.json);
+                    console.log(
+                      "=== DEBUG: Using json directly (single object) ===",
+                      item.json
+                    );
                     // For single objects, use the json directly
                     inputData.main.push({ json: item.json });
                   }
@@ -2954,14 +2992,21 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 }
               }
             } else {
-              console.log("=== DEBUG: Source data is empty or not array ===", sourceData);
+              console.log(
+                "=== DEBUG: Source data is empty or not array ===",
+                sourceData
+              );
             }
           } else {
-            console.log("No execution data found for source node", sourceNodeId, {
-              hasResult: !!sourceNodeResult,
-              status: sourceNodeResult?.status,
-              hasData: !!sourceNodeResult?.data
-            });
+            console.log(
+              "No execution data found for source node",
+              sourceNodeId,
+              {
+                hasResult: !!sourceNodeResult,
+                status: sourceNodeResult?.status,
+                hasData: !!sourceNodeResult?.data,
+              }
+            );
           }
         }
 

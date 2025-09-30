@@ -1186,7 +1186,9 @@ export class ExecutionService {
           success: false,
           error: {
             message: "Node not found in workflow",
-            stack: `Available nodes: ${workflowNodes.map((n: any) => n.id).join(', ')}`,
+            stack: `Available nodes: ${workflowNodes
+              .map((n: any) => n.id)
+              .join(", ")}`,
             timestamp: new Date(),
             nodeId: nodeId,
           },
@@ -1197,7 +1199,7 @@ export class ExecutionService {
       logger.info(`Found node ${nodeId}, checking node type schema`, {
         nodeId,
         nodeType: node.type,
-        nodeName: node.name || 'unnamed',
+        nodeName: node.name || "unnamed",
       });
 
       let nodeTypeInfo;
@@ -1207,13 +1209,17 @@ export class ExecutionService {
         logger.error(`Failed to get node schema for ${node.type}`, {
           nodeId,
           nodeType: node.type,
-          nodeName: node.name || 'unnamed',
+          nodeName: node.name || "unnamed",
           error: schemaError,
         });
         return {
           success: false,
           error: {
-            message: `Failed to load node type schema: ${schemaError instanceof Error ? schemaError.message : 'Unknown error'}`,
+            message: `Failed to load node type schema: ${
+              schemaError instanceof Error
+                ? schemaError.message
+                : "Unknown error"
+            }`,
             stack: schemaError instanceof Error ? schemaError.stack : undefined,
             timestamp: new Date(),
             nodeId: nodeId,
@@ -1225,7 +1231,7 @@ export class ExecutionService {
         logger.error(`Node type schema not found for ${node.type}`, {
           nodeId,
           nodeType: node.type,
-          nodeName: node.name || 'unnamed',
+          nodeName: node.name || "unnamed",
         });
         return {
           success: false,
@@ -1460,9 +1466,12 @@ export class ExecutionService {
             let errorStack: string | undefined;
 
             if (nodeResult.error) {
-              if (typeof nodeResult.error === 'string') {
+              if (typeof nodeResult.error === "string") {
                 errorMessage = nodeResult.error;
-              } else if (nodeResult.error && typeof nodeResult.error === 'object') {
+              } else if (
+                nodeResult.error &&
+                typeof nodeResult.error === "object"
+              ) {
                 errorMessage = nodeResult.error.message || errorMessage;
                 errorStack = nodeResult.error.stack;
               }

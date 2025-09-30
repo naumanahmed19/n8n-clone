@@ -39,16 +39,19 @@ export class NodeService {
    * Standardize node output data format for consistent frontend handling
    * All nodes should return data in this format for uniform processing
    */
-  private standardizeNodeOutput(nodeType: string, outputs: NodeOutputData[]): StandardizedNodeOutput {
+  private standardizeNodeOutput(
+    nodeType: string,
+    outputs: NodeOutputData[]
+  ): StandardizedNodeOutput {
     // Handle special branching nodes (like IF nodes)
-    if (nodeType === 'if' && outputs.length > 1) {
+    if (nodeType === "if" && outputs.length > 1) {
       const branches: Record<string, any[]> = {};
       let mainOutput: any[] = [];
-      
+
       // Extract branch data from IF node format: [{true: [...]}, {false: [...]}]
-      outputs.forEach(output => {
-        Object.keys(output).forEach(branchName => {
-          if (branchName !== 'main') {
+      outputs.forEach((output) => {
+        Object.keys(output).forEach((branchName) => {
+          if (branchName !== "main") {
             branches[branchName] = output[branchName] || [];
             // Also add to main output for backward compatibility
             mainOutput = mainOutput.concat(output[branchName] || []);
@@ -62,14 +65,14 @@ export class NodeService {
         metadata: {
           nodeType,
           outputCount: outputs.length,
-          hasMultipleBranches: true
-        }
+          hasMultipleBranches: true,
+        },
       };
     }
 
     // Handle standard nodes with main output: [{main: [{json: data}]}]
     const mainOutput: any[] = [];
-    outputs.forEach(output => {
+    outputs.forEach((output) => {
       if (output.main) {
         mainOutput.push(...output.main);
       }
@@ -80,8 +83,8 @@ export class NodeService {
       metadata: {
         nodeType,
         outputCount: outputs.length,
-        hasMultipleBranches: false
-      }
+        hasMultipleBranches: false,
+      },
     };
   }
 
@@ -393,7 +396,7 @@ export class NodeService {
 
       // Standardize the output format for consistent frontend handling
       const standardizedOutput = this.standardizeNodeOutput(
-        nodeType, 
+        nodeType,
         outputValidation.sanitizedData as NodeOutputData[]
       );
 
@@ -1200,11 +1203,17 @@ export class NodeService {
         console.log("inputData:", JSON.stringify(inputData, null, 2));
         console.log("inputData.main:", inputData.main);
         console.log("typeof inputData.main:", typeof inputData.main);
-        console.log("Array.isArray(inputData.main):", Array.isArray(inputData.main));
+        console.log(
+          "Array.isArray(inputData.main):",
+          Array.isArray(inputData.main)
+        );
         if (inputData.main && inputData.main.length > 0) {
           console.log("inputData.main[0]:", inputData.main[0]);
           console.log("typeof inputData.main[0]:", typeof inputData.main[0]);
-          console.log("Array.isArray(inputData.main[0]):", Array.isArray(inputData.main[0]));
+          console.log(
+            "Array.isArray(inputData.main[0]):",
+            Array.isArray(inputData.main[0])
+          );
         }
 
         const value1 = this.getNodeParameter("value1") as string;
@@ -1213,24 +1222,33 @@ export class NodeService {
 
         // inputData.main is the array of items to process
         let items = inputData.main || [];
-        console.log("Raw items from inputData.main:", JSON.stringify(items, null, 2));
-        
+        console.log(
+          "Raw items from inputData.main:",
+          JSON.stringify(items, null, 2)
+        );
+
         // Handle different input structures
         if (items.length === 1 && items[0] && Array.isArray(items[0])) {
           // If items is wrapped in an extra array layer: [[{json: {...}}, {json: {...}}]]
           items = items[0];
-          console.log("Unwrapped items from nested array:", JSON.stringify(items, null, 2));
+          console.log(
+            "Unwrapped items from nested array:",
+            JSON.stringify(items, null, 2)
+          );
         }
-        
+
         // Extract actual data objects from the json wrappers if needed
         const processedItems = items.map((item: any) => {
-          if (item && typeof item === 'object' && 'json' in item) {
+          if (item && typeof item === "object" && "json" in item) {
             return item.json; // Extract the actual data from {json: {...}}
           }
           return item; // Use item directly if it's already the data object
         });
-        
-        console.log("Final processed items for IF evaluation:", JSON.stringify(processedItems, null, 2));
+
+        console.log(
+          "Final processed items for IF evaluation:",
+          JSON.stringify(processedItems, null, 2)
+        );
         console.log("Number of items to process:", processedItems.length);
         const trueItems: any[] = [];
         const falseItems: any[] = [];
@@ -1254,9 +1272,11 @@ export class NodeService {
 
             // Skip 'json' prefix if it exists, since we already extracted the json data
             let startIndex = 0;
-            if (parts[0] === 'json') {
+            if (parts[0] === "json") {
               startIndex = 1;
-              console.log(`[IF Node Debug] Skipping 'json' prefix, starting from: ${parts[1]}`);
+              console.log(
+                `[IF Node Debug] Skipping 'json' prefix, starting from: ${parts[1]}`
+              );
             }
 
             for (let i = startIndex; i < parts.length; i++) {
@@ -1355,7 +1375,7 @@ export class NodeService {
 
         for (const item of processedItems) {
           // Ensure item exists and has the expected structure
-          if (!item || typeof item !== 'object') {
+          if (!item || typeof item !== "object") {
             console.log(`[IF Node Debug] Skipping invalid item:`, item);
             continue;
           }
@@ -1417,11 +1437,16 @@ export class NodeService {
         // Always return both outputs - the workflow execution engine will handle empty branches
         const result: NodeOutputData[] = [
           { true: trueItems },
-          { false: falseItems }
+          { false: falseItems },
         ];
-        
-        console.log(`[IF Node Debug] Returning both outputs - true: ${trueItems.length} items, false: ${falseItems.length} items`);
-        console.log(`[IF Node Debug] Complete result structure:`, JSON.stringify(result, null, 2));
+
+        console.log(
+          `[IF Node Debug] Returning both outputs - true: ${trueItems.length} items, false: ${falseItems.length} items`
+        );
+        console.log(
+          `[IF Node Debug] Complete result structure:`,
+          JSON.stringify(result, null, 2)
+        );
         console.log(`[IF Node Debug] Result array length:`, result.length);
         console.log(`[IF Node Debug] Result[0] keys:`, Object.keys(result[0]));
         console.log(`[IF Node Debug] Result[1] keys:`, Object.keys(result[1]));

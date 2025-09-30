@@ -223,28 +223,32 @@ export class ExecutionService {
       // Extract detailed error information from response
       let errorMessage = "Failed to execute single node";
       let stackTrace: string | undefined;
-      
+
       if (response.warnings && response.warnings.length > 0) {
         // Check for detailed error in warnings
-        const nodeFailure = response.warnings.find((w: any) => w.type === "NODE_FAILURES");
+        const nodeFailure = response.warnings.find(
+          (w: any) => w.type === "NODE_FAILURES"
+        );
         if (nodeFailure && nodeFailure.details) {
-          errorMessage = nodeFailure.details.message || nodeFailure.message || errorMessage;
+          errorMessage =
+            nodeFailure.details.message || nodeFailure.message || errorMessage;
           stackTrace = nodeFailure.details.stack;
         }
       } else if (response.error) {
         // Check for error directly in response
-        errorMessage = typeof response.error === 'string' 
-          ? response.error 
-          : response.error.message || errorMessage;
+        errorMessage =
+          typeof response.error === "string"
+            ? response.error
+            : response.error.message || errorMessage;
         stackTrace = response.error.stack;
       }
-      
+
       // Create detailed error message
       let fullErrorMessage = errorMessage;
-      if (stackTrace && process.env.NODE_ENV === 'development') {
-        fullErrorMessage += '\n\nStack trace:\n' + stackTrace;
+      if (stackTrace && process.env.NODE_ENV === "development") {
+        fullErrorMessage += "\n\nStack trace:\n" + stackTrace;
       }
-      
+
       throw new Error(fullErrorMessage);
     }
 
