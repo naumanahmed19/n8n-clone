@@ -1,26 +1,42 @@
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { Plus, X } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import {
     BaseEdge,
     EdgeLabelRenderer,
     EdgeProps,
-    getBezierPath,
     useReactFlow,
 } from 'reactflow'
+
+// Fast custom step path calculation (simpler than getSmoothStepPath)
+function getSimpleStepPath(
+    sourceX: number,
+    sourceY: number,
+    targetX: number,
+    targetY: number
+): [string, number, number] {
+    const midX = (sourceX + targetX) / 2
+    
+    // Simple two-segment path for better performance
+    const path = `M ${sourceX},${sourceY} L ${midX},${sourceY} L ${midX},${targetY} L ${targetX},${targetY}`
+    
+    // Center label position
+    const labelX = midX
+    const labelY = (sourceY + targetY) / 2
+    
+    return [path, labelX, labelY]
+}
 
 interface CustomEdgeData {
     label?: string
 }
 
-export function CustomEdge({
+function CustomEdgeComponent({
     id,
     sourceX,
     sourceY,
     targetX,
     targetY,
-    sourcePosition,
-    targetPosition,
     style = {},
     markerEnd,
     data,
@@ -36,18 +52,12 @@ export function CustomEdge({
     // Check if this edge is from a branching node (has a branch label)
     const isBranchEdge = branchLabel && branchLabel !== 'main'
 
-    // For branch nodes, add a 30px straight extension before the curve
-    const extensionLength = isBranchEdge ? 30 : 0
-    const adjustedSourceX = sourceX + extensionLength
-
-    const [edgePath, labelX, labelY] = getBezierPath({
-        sourceX: adjustedSourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
-    })
+    // Memoize path calculation for better performance during dragging
+    // Using custom simple step path for maximum performance
+    const [edgePath, labelX, labelY] = useMemo(() => 
+        getSimpleStepPath(sourceX, sourceY, targetX, targetY), 
+        [sourceX, sourceY, targetX, targetY]
+    )
 
     const onEdgeRemove = useCallback((event: React.MouseEvent) => {
         event.stopPropagation()
@@ -100,20 +110,6 @@ export function CustomEdge({
 
     return (
         <>
-            {/* Straight extension line for branch edges */}
-            {isBranchEdge && extensionLength > 0 && (
-                <path
-                    d={`M ${sourceX},${sourceY} L ${adjustedSourceX},${sourceY}`}
-                    style={{
-                        ...style,
-                        strokeWidth: isHovered ? 3 : 2,
-                        stroke: isHovered ? '#3b82f6' : (style.stroke || '#b1b1b7'),
-                        transition: 'all 0.2s ease',
-                    }}
-                    fill="none"
-                />
-            )}
-            
             <BaseEdge 
                 path={edgePath} 
                 markerEnd={markerEnd} 
@@ -195,3 +191,6 @@ export function CustomEdge({
         </>
     )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const CustomEdge = memo(CustomEdgeComponent)

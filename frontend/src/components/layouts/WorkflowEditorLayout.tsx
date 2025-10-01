@@ -21,8 +21,7 @@ export function WorkflowEditorLayout() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  // Debug: Log when component renders
-  console.log('🔄 WorkflowEditorLayout render - ID:', id, 'Path:', location.pathname)
+
   const { 
     workflow, 
     setWorkflow, 

@@ -38,6 +38,7 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes: EdgeTypes = {
     default: CustomEdge,
+    smoothstep: CustomEdge,
 }
 
 // Error Boundary Component
@@ -272,6 +273,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             target: conn.targetNodeId,
             sourceHandle: conn.sourceOutput,
             targetHandle: conn.targetInput,
+            type: 'smoothstep',
             data: {
                 label: conn.sourceOutput !== 'main' ? conn.sourceOutput : undefined
             }
@@ -347,9 +349,18 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                                 onSelectionChange={handleSelectionChange}
                                                 onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                                                 nodeTypes={nodeTypes}
-                                                edgeTypes={edgeTypes}
+                                             
                                                 fitView
                                                 attributionPosition="bottom-left"
+                                                // Performance optimizations
+                                                edgeUpdaterRadius={10}
+                                                connectionRadius={20}
+                                                minZoom={0.1}
+                                                maxZoom={1}
+                                                defaultEdgeOptions={{
+                                                    type: 'smoothstep',
+                                                    animated: false,
+                                                }}
                                             >
                                                 {showControls && <Controls />}
                                                 {showMinimap && <MiniMap />}
