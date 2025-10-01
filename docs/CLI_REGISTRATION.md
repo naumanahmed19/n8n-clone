@@ -7,6 +7,7 @@ The `CustomTemplateNode` has been successfully registered via CLI!
 ## Registration Summary
 
 **Total Nodes Registered:** 9
+
 - ✅ HTTP Request (http-request)
 - ✅ JSON (json)
 - ✅ Set (set)
@@ -20,31 +21,37 @@ The `CustomTemplateNode` has been successfully registered via CLI!
 ## CLI Commands
 
 ### Register All Built-in Nodes
+
 ```bash
 npm run nodes:register
 ```
 
 ### List All Registered Nodes
+
 ```bash
 npm run node-cli list
 ```
 
 ### Validate a Node Package
+
 ```bash
 npm run node-cli validate <path-to-node>
 ```
 
 ### Test a Node
+
 ```bash
 npm run node-cli test <path-to-node> --input data.json --params '{"param":"value"}'
 ```
 
 ### Install a Custom Node Package
+
 ```bash
 npm run node-cli install <path-to-package>
 ```
 
 ### Uninstall a Node Package
+
 ```bash
 npm run node-cli uninstall <package-name>
 ```
@@ -52,16 +59,21 @@ npm run node-cli uninstall <package-name>
 ## What Changed
 
 1. **Added Export** (`backend/src/nodes/examples/index.ts`)
+
    ```typescript
    export { CustomTemplateNode } from "./CustomTemplate.node";
    ```
 
 2. **Updated Registration Script** (`backend/src/scripts/register-nodes.ts`)
+
    ```typescript
-   const { DynamicPropertiesNode, CustomTemplateNode } = await import("../nodes/examples");
+   const { DynamicPropertiesNode, CustomTemplateNode } = await import(
+     "../nodes/examples"
+   );
    ```
 
 3. **Updated Node Service** (`backend/src/services/NodeService.ts`)
+
    - Added `CustomTemplateNode` to built-in nodes
    - Added `"custom"` to valid property types
 
@@ -88,27 +100,33 @@ npm run node-cli uninstall <package-name>
 ## Verify Registration
 
 ### Check in Database
+
 ```bash
 npm run db:studio
 ```
+
 Then navigate to the `NodeType` table to see `custom-template-example`.
 
 ### API Endpoint
+
 ```bash
 curl http://localhost:3000/api/nodes
 ```
 
 ### Frontend
+
 The node should now appear in the node palette in the frontend under "Transform" category.
 
 ## Development Workflow
 
 1. **Make changes to your node**
+
    ```bash
    # Edit: backend/src/nodes/examples/CustomTemplate.node.ts
    ```
 
 2. **Re-register the node**
+
    ```bash
    npm run nodes:register
    ```
@@ -121,10 +139,12 @@ The node should now appear in the node palette in the frontend under "Transform"
 ## Next Steps
 
 1. **Frontend Integration**
+
    - Implement the custom components in the frontend
    - Register components in `frontend/src/components/custom-fields/`
 
 2. **Testing**
+
    - Create unit tests for the custom template node
    - Test with different input data
 
@@ -135,6 +155,7 @@ The node should now appear in the node palette in the frontend under "Transform"
 ## Troubleshooting
 
 ### Node not showing in list?
+
 ```bash
 # Re-run registration
 npm run nodes:register
@@ -144,11 +165,13 @@ npm run db:studio
 ```
 
 ### Validation errors?
+
 - Make sure all property types are valid
 - Check that `type: "custom"` is used correctly
 - Verify `component` and `componentProps` are properly defined
 
 ### Can't execute node?
+
 - Check the execute function implementation
 - Verify input/output format
 - Check console logs for errors

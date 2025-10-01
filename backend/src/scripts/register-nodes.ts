@@ -15,7 +15,8 @@ async function registerBuiltInNodes() {
     console.log("🔄 Registering built-in nodes...\n");
 
     // Import all nodes
-    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } = await import("../nodes/examples");
+    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } =
+      await import("../nodes/examples");
     const { HttpRequestNode, JsonNode, SetNode, IfNode } = await import(
       "../nodes/core"
     );

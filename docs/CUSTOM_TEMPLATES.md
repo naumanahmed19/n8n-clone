@@ -233,7 +233,7 @@ export const MyCustomNode: NodeDefinition = {
   },
   inputs: ["main"],
   outputs: ["main"],
-  
+
   properties: [
     // Standard property
     {
@@ -246,7 +246,7 @@ export const MyCustomNode: NodeDefinition = {
       ],
       default: "simple",
     },
-    
+
     // Custom template - shown conditionally
     {
       displayName: "Custom Configuration",
@@ -270,13 +270,13 @@ export const MyCustomNode: NodeDefinition = {
       },
     },
   ],
-  
+
   execute: async function (inputData) {
     const mode = this.getNodeParameter("mode") as string;
     const customConfig = this.getNodeParameter("customConfig") as any;
-    
+
     // Your execution logic here
-    
+
     return [{ main: [] }];
   },
 };
@@ -288,15 +288,15 @@ On the frontend, you need to register corresponding components:
 
 ```typescript
 // frontend/src/components/custom-fields/index.ts
-import JsonEditor from './JsonEditor.vue';
-import CodeEditor from './CodeEditor.vue';
-import QueryBuilder from './QueryBuilder.vue';
+import JsonEditor from "./JsonEditor.vue";
+import CodeEditor from "./CodeEditor.vue";
+import QueryBuilder from "./QueryBuilder.vue";
 // ... other components
 
 export const customComponents = {
-  'JsonEditor': JsonEditor,
-  'CodeEditor': CodeEditor,
-  'QueryBuilder': QueryBuilder,
+  JsonEditor: JsonEditor,
+  CodeEditor: CodeEditor,
+  QueryBuilder: QueryBuilder,
   // ... register all custom components
 };
 ```
@@ -321,11 +321,13 @@ export const customComponents = {
 ## Standard vs Custom
 
 Use **Standard Properties** when:
+
 - Simple text, number, or boolean inputs
 - Dropdown selections from fixed options
 - Basic form validation is sufficient
 
 Use **Custom Templates** when:
+
 - Complex data structures (JSON, nested objects)
 - Rich text or code editing
 - Visual builders or wizards

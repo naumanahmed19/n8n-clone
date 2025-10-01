@@ -111,7 +111,10 @@ export interface RepeatingFieldProps {
   allowDuplicate?: boolean;
   allowDelete?: boolean;
   defaultItemValues?: Record<string, any>;
-  itemHeaderRenderer?: (item: RepeatingFieldItem, index: number) => React.ReactNode;
+  itemHeaderRenderer?: (
+    item: RepeatingFieldItem,
+    index: number
+  ) => React.ReactNode;
   errors?: Record<string, Record<string, string>>;
   disabled?: boolean;
   className?: string;

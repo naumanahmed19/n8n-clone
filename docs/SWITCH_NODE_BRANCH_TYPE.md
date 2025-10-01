@@ -9,12 +9,14 @@ The Switch node is now properly recognized as a **branch-type node** like the IF
 ### NodeService.ts - Branch Detection
 
 **Before:**
+
 ```typescript
 // Handle special branching nodes (like IF nodes)
 if (nodeType === "if" && outputs.length > 1) {
 ```
 
 **After:**
+
 ```typescript
 // Handle special branching nodes (like IF and Switch nodes)
 if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
@@ -23,9 +25,12 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 ## How Branch Nodes Work
 
 ### Standard Node Output:
+
 ```json
 {
-  "main": [/* all items */],
+  "main": [
+    /* all items */
+  ],
   "metadata": {
     "hasMultipleBranches": false
   }
@@ -33,13 +38,22 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 ```
 
 ### Branch Node Output:
+
 ```json
 {
-  "main": [/* all items combined */],
+  "main": [
+    /* all items combined */
+  ],
   "branches": {
-    "Success": [/* items for success output */],
-    "Error": [/* items for error output */],
-    "Pending": [/* items for pending output */]
+    "Success": [
+      /* items for success output */
+    ],
+    "Error": [
+      /* items for error output */
+    ],
+    "Pending": [
+      /* items for pending output */
+    ]
   },
   "metadata": {
     "hasMultipleBranches": true,
@@ -51,12 +65,14 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 ## Branch vs Standard Nodes
 
 ### Branch Nodes (IF, Switch):
+
 - Multiple named outputs
 - Items routed to specific branches
 - Each branch can connect to different downstream nodes
 - Returns: `[{outputName1: items}, {outputName2: items}, ...]`
 
 ### Standard Nodes (HTTP, JSON, Set):
+
 - Single output (or sequential outputs)
 - All items go through same path
 - Returns: `[{main: items}]`
@@ -64,23 +80,21 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 ## Switch Node Output Format
 
 ### Execute Function Returns:
+
 ```typescript
 // Array of outputs, each with a named key
 [
-  { "Success": [{ json: item1 }] },
-  { "Error": [{ json: item2 }] },
-  { "Pending": [{ json: item3 }] }
-]
+  { Success: [{ json: item1 }] },
+  { Error: [{ json: item2 }] },
+  { Pending: [{ json: item3 }] },
+];
 ```
 
 ### NodeService Transforms To:
+
 ```json
 {
-  "main": [
-    { "json": "item1" },
-    { "json": "item2" },
-    { "json": "item3" }
-  ],
+  "main": [{ "json": "item1" }, { "json": "item2" }, { "json": "item3" }],
   "branches": {
     "Success": [{ "json": "item1" }],
     "Error": [{ "json": "item2" }],
@@ -109,10 +123,16 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 2. **Check execution output** - should see:
    ```json
    {
-     "main": [/* all items */],
+     "main": [
+       /* all items */
+     ],
      "branches": {
-       "outputName1": [/* specific items */],
-       "outputName2": [/* specific items */]
+       "outputName1": [
+         /* specific items */
+       ],
+       "outputName2": [
+         /* specific items */
+       ]
      },
      "metadata": {
        "hasMultipleBranches": true
@@ -128,10 +148,12 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 ### Files Modified:
 
 1. **Switch.node.ts**
+
    - Returns: `[{outputName: items}, ...]`
    - Uses output names as keys (not "main")
 
 2. **NodeService.ts**
+
    - Detects "switch" as branch node
    - Extracts branch data
    - Creates standardized output with branches
@@ -143,22 +165,21 @@ if ((nodeType === "if" || nodeType === "switch") && outputs.length > 1) {
 ## Comparison with IF Node
 
 ### IF Node:
+
 ```typescript
-outputs: ["true", "false"]  // Static 2 outputs
-return [
-  { true: trueItems },
-  { false: falseItems }
-]
+outputs: ["true", "false"]; // Static 2 outputs
+return [{ true: trueItems }, { false: falseItems }];
 ```
 
 ### Switch Node:
+
 ```typescript
-outputs: ["main"]  // Base output, actual outputs dynamic
+outputs: ["main"]; // Base output, actual outputs dynamic
 return [
   { [output1Name]: items1 },
   { [output2Name]: items2 },
-  { [output3Name]: items3 }
-]
+  { [output3Name]: items3 },
+];
 ```
 
 ## Workflow Example

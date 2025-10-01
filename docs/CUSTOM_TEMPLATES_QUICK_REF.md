@@ -11,19 +11,21 @@ properties: [
   {
     displayName: "Your Custom Field",
     name: "yourField",
-    type: "custom",                    // ← Use 'custom' type
-    component: "YourComponentName",    // ← Component identifier
-    componentProps: {                  // ← Pass any template config
+    type: "custom", // ← Use 'custom' type
+    component: "YourComponentName", // ← Component identifier
+    componentProps: {
+      // ← Pass any template config
       template: "your-template-type",
       // ... any props your component needs
     },
-  }
-]
+  },
+];
 ```
 
 ## Common Custom Templates
 
 ### 1. JSON Editor
+
 ```typescript
 {
   type: "custom",
@@ -36,6 +38,7 @@ properties: [
 ```
 
 ### 2. Code Editor
+
 ```typescript
 {
   type: "custom",
@@ -49,6 +52,7 @@ properties: [
 ```
 
 ### 3. Query Builder
+
 ```typescript
 {
   type: "custom",
@@ -61,6 +65,7 @@ properties: [
 ```
 
 ### 4. Field Mapper
+
 ```typescript
 {
   type: "custom",
@@ -74,6 +79,7 @@ properties: [
 ```
 
 ### 5. Rich Text Editor
+
 ```typescript
 {
   type: "custom",
@@ -86,6 +92,7 @@ properties: [
 ```
 
 ### 6. Table Editor
+
 ```typescript
 {
   type: "custom",
@@ -98,6 +105,7 @@ properties: [
 ```
 
 ### 7. Multi-Step Wizard
+
 ```typescript
 {
   type: "custom",
@@ -122,7 +130,7 @@ properties: [
     type: "options",  // ← Standard type
     options: [...]
   },
-  
+
   // Custom template
   {
     displayName: "Config",
@@ -153,6 +161,7 @@ Show custom templates based on other fields:
 ## Full Example
 
 See these files for complete examples:
+
 - `backend/src/nodes/examples/DynamicProperties.node.ts` - Basic example with custom templates
 - `backend/src/nodes/examples/CustomTemplate.node.ts` - Comprehensive examples of all template types
 - `docs/CUSTOM_TEMPLATES.md` - Full documentation
@@ -169,6 +178,7 @@ See these files for complete examples:
 ## When to Use
 
 **Use Custom Templates when you need:**
+
 - JSON/code editors
 - Visual builders
 - Drag-and-drop interfaces
@@ -178,6 +188,7 @@ See these files for complete examples:
 - Custom validation logic
 
 **Use Standard Properties when you need:**
+
 - Simple text inputs
 - Number inputs
 - Dropdowns

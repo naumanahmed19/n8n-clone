@@ -37,13 +37,13 @@ export const JsonNode: NodeDefinition = {
     try {
       const parsedData =
         typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
-      
+
       // If parsed data is an array, create separate items for each element
       if (Array.isArray(parsedData)) {
-        const items = parsedData.map(item => ({ json: item }));
+        const items = parsedData.map((item) => ({ json: item }));
         return [{ main: items }];
       }
-      
+
       // Otherwise, wrap single object in an item
       return [{ main: [{ json: parsedData }] }];
     } catch (error) {

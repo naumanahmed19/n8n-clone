@@ -16,11 +16,13 @@ A fully-featured, reusable **RepeatingField** component that allows users to dyn
 ## 📦 What's Included
 
 ### 1. **RepeatingField Component** ✅
+
 `frontend/src/components/ui/form-generator/RepeatingField.tsx`
 
 Features:
+
 - ✅ Add/Remove items
-- ✅ Drag & drop reordering  
+- ✅ Drag & drop reordering
 - ✅ Duplicate items
 - ✅ Collapsible sections
 - ✅ Min/Max limits
@@ -29,47 +31,54 @@ Features:
 - ✅ Default values
 
 ### 2. **Type Definitions** ✅
+
 `frontend/src/components/ui/form-generator/types.ts`
 
 ```typescript
 export interface RepeatingFieldItem {
-  id: string
-  values: Record<string, any>
+  id: string;
+  values: Record<string, any>;
 }
 
 export interface RepeatingFieldProps {
-  displayName: string
-  fields: FormFieldConfig[]
-  value: RepeatingFieldItem[]
-  onChange: (value: RepeatingFieldItem[]) => void
-  minItems?: number
-  maxItems?: number
+  displayName: string;
+  fields: FormFieldConfig[];
+  value: RepeatingFieldItem[];
+  onChange: (value: RepeatingFieldItem[]) => void;
+  minItems?: number;
+  maxItems?: number;
   // ... and 12 more props
 }
 ```
 
 ### 3. **Example Usage** ✅
+
 `frontend/src/components/ui/form-generator/examples/RepeatingFieldExample.tsx`
 
 Includes 4 complete examples:
+
 1. Switch Node Outputs
 2. HTTP Headers
 3. API Parameters
 4. Routing Rules
 
 ### 4. **Backend Node Example** ✅
+
 `backend/src/nodes/examples/Switch.node.ts`
 
 A complete Switch node implementation showing:
+
 - Multiple output configuration
 - Condition evaluation
 - Routing logic
 - Integration with repeating fields
 
 ### 5. **Documentation** ✅
+
 `docs/REPEATING_FIELD.md`
 
 Complete guide with:
+
 - Installation
 - Basic & advanced usage
 - Props API
@@ -82,26 +91,26 @@ Complete guide with:
 ### Basic Usage
 
 ```tsx
-import { RepeatingField, createField } from '@/components/ui/form-generator'
-import { useState } from 'react'
+import { RepeatingField, createField } from "@/components/ui/form-generator";
+import { useState } from "react";
 
 function MyComponent() {
-  const [items, setItems] = useState<RepeatingFieldItem[]>([])
+  const [items, setItems] = useState<RepeatingFieldItem[]>([]);
 
   return (
     <RepeatingField
       displayName="Output"
       fields={[
         createField({
-          name: 'name',
-          displayName: 'Name',
-          type: 'string',
+          name: "name",
+          displayName: "Name",
+          type: "string",
           required: true,
         }),
         createField({
-          name: 'value',
-          displayName: 'Value',
-          type: 'string',
+          name: "value",
+          displayName: "Value",
+          type: "string",
           required: true,
         }),
       ]}
@@ -109,7 +118,7 @@ function MyComponent() {
       onChange={setItems}
       addButtonText="Add Output"
     />
-  )
+  );
 }
 ```
 
@@ -149,21 +158,27 @@ function MyComponent() {
 ## 🎨 Features Demo
 
 ### Add/Remove
+
 Users click "Add" button to create new items, click trash icon to delete
 
 ### Drag & Drop
+
 Grab the handle (☰) and drag to reorder items
 
 ### Duplicate
+
 Click copy icon to duplicate an item with all its values
 
 ### Collapse/Expand
+
 Click ▼/▲ to collapse/expand individual items
 
 ### Validation
+
 Pass errors object to show validation messages per field
 
 ### Custom Headers
+
 Use `itemHeaderRenderer` to show meaningful summaries
 
 ## 📁 Files Created
@@ -197,7 +212,7 @@ Use `itemHeaderRenderer` to show meaningful summaries
 ```typescript
 execute: async function (inputData) {
   const outputs = this.getNodeParameter("outputs") as any[]
-  
+
   outputs.forEach((output) => {
     // Use output.name, output.condition, output.value
   })
@@ -207,47 +222,57 @@ execute: async function (inputData) {
 ## 💡 Use Cases
 
 ### 1. Switch Node
+
 Add multiple conditional branches
 
 ### 2. HTTP Request Node
+
 Configure headers, query params, form data
 
 ### 3. Database Query
+
 Multiple WHERE conditions
 
 ### 4. API Integration
+
 Multiple endpoints or operations
 
 ### 5. Form Builder
+
 Repeating field groups
 
 ### 6. Data Transformation
+
 Multiple mapping rules
 
 ### 7. Webhook Configuration
+
 Multiple webhook URLs
 
 ### 8. Validation Rules
+
 Multiple validation conditions
 
 ### 9. Email Templates
+
 Multiple recipients or attachments
 
 ### 10. Environment Config
+
 Multiple environment variables
 
 ## 🎯 Key Props
 
-| Prop | Purpose | Example |
-|------|---------|---------|
-| `fields` | Define what fields each item has | Name, Value, Type |
-| `value` | Current items array | State from useState |
-| `onChange` | Update handler | setState function |
-| `minItems` | Minimum required | 1 (require at least one) |
-| `maxItems` | Maximum allowed | 10 (prevent too many) |
-| `itemHeaderRenderer` | Custom header | Show summary info |
-| `collapsedByDefault` | Start collapsed | Good for long forms |
-| `defaultItemValues` | Pre-fill new items | Type: 'string' |
+| Prop                 | Purpose                          | Example                  |
+| -------------------- | -------------------------------- | ------------------------ |
+| `fields`             | Define what fields each item has | Name, Value, Type        |
+| `value`              | Current items array              | State from useState      |
+| `onChange`           | Update handler                   | setState function        |
+| `minItems`           | Minimum required                 | 1 (require at least one) |
+| `maxItems`           | Maximum allowed                  | 10 (prevent too many)    |
+| `itemHeaderRenderer` | Custom header                    | Show summary info        |
+| `collapsedByDefault` | Start collapsed                  | Good for long forms      |
+| `defaultItemValues`  | Pre-fill new items               | Type: 'string'           |
 
 ## ✨ What Makes It Great
 
@@ -265,7 +290,7 @@ Multiple environment variables
 The component is production-ready and fully integrated. You can use it anywhere in your application by importing:
 
 ```typescript
-import { RepeatingField } from '@/components/ui/form-generator'
+import { RepeatingField } from "@/components/ui/form-generator";
 ```
 
 ---
@@ -273,6 +298,7 @@ import { RepeatingField } from '@/components/ui/form-generator'
 **Status:** ✅ Complete and Ready for Production
 
 **Next Steps:**
+
 1. Test the component in your UI
 2. Use it in Switch node or HTTP node
 3. Customize styling if needed

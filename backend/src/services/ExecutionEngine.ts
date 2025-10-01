@@ -728,7 +728,7 @@ export class ExecutionEngine extends EventEmitter {
 
       for (const connection of incomingConnections) {
         const sourceOutput = context.nodeOutputs.get(connection.sourceNodeId);
-        
+
         if (sourceOutput) {
           // sourceOutput is a StandardizedNodeOutput object, not an array
           const outputItems = (sourceOutput as any).main || [];

@@ -6,12 +6,12 @@ import {
 
 /**
  * Example node demonstrating custom template usage in form configurations
- * 
+ *
  * This shows the ACTUAL supported input types in the frontend:
- * 1. Standard types: string, number, boolean, options, multiOptions, json, dateTime, 
+ * 1. Standard types: string, number, boolean, options, multiOptions, json, dateTime,
  *    textarea, password, email, url, switch
  * 2. Custom type: For custom components with customComponent prop
- * 
+ *
  * Note: For custom components, the backend specifies type: "custom" and passes
  * component/componentProps. The frontend then needs to implement the custom component.
  */
@@ -40,7 +40,7 @@ export const CustomTemplateNode: NodeDefinition = {
     // ============================================
     // Backend: string, number, boolean, options, multiOptions, json, dateTime, collection, custom
     // Frontend extends these with: textarea, password, email, url, switch (handled automatically)
-    
+
     // String input (Frontend can render as: text, textarea, password, email, url)
     {
       displayName: "Text Input",
@@ -117,9 +117,21 @@ export const CustomTemplateNode: NodeDefinition = {
       default: [],
       description: "Select multiple options",
       options: [
-        { name: "Feature A", value: "featureA", description: "Enable feature A" },
-        { name: "Feature B", value: "featureB", description: "Enable feature B" },
-        { name: "Feature C", value: "featureC", description: "Enable feature C" },
+        {
+          name: "Feature A",
+          value: "featureA",
+          description: "Enable feature A",
+        },
+        {
+          name: "Feature B",
+          value: "featureB",
+          description: "Enable feature B",
+        },
+        {
+          name: "Feature C",
+          value: "featureC",
+          description: "Enable feature C",
+        },
       ],
     },
 
@@ -146,7 +158,7 @@ export const CustomTemplateNode: NodeDefinition = {
     // ============================================
     // CONDITIONAL DISPLAY EXAMPLES
     // ============================================
-    
+
     // Transform-specific options (shown when operationType = "transform")
     {
       displayName: "Transform Method",
@@ -244,7 +256,7 @@ export const CustomTemplateNode: NodeDefinition = {
     // ============================================
     // Note: Custom types work but require frontend implementation
     // The frontend FormGenerator supports customComponent prop
-    
+
     {
       displayName: "Custom Code Editor",
       name: "customCode",
@@ -267,7 +279,8 @@ export const CustomTemplateNode: NodeDefinition = {
       type: "custom",
       required: false,
       default: {},
-      description: "Custom JSON editor with validation (requires custom component in frontend)",
+      description:
+        "Custom JSON editor with validation (requires custom component in frontend)",
       component: "JsonSchemaEditor", // Frontend component identifier
       componentProps: {
         schema: {
@@ -323,7 +336,9 @@ export const CustomTemplateNode: NodeDefinition = {
     switch (operationType) {
       case "transform": {
         const fieldName = this.getNodeParameter("fieldName") as string;
-        const transformMethod = this.getNodeParameter("transformMethod") as string;
+        const transformMethod = this.getNodeParameter(
+          "transformMethod"
+        ) as string;
 
         resultItems = processedItems.map((item: any) => {
           const newItem = { ...item };
@@ -346,7 +361,7 @@ export const CustomTemplateNode: NodeDefinition = {
                 break;
             }
           }
-          
+
           // Add metadata
           newItem._processedWith = {
             textInput,
@@ -354,14 +369,16 @@ export const CustomTemplateNode: NodeDefinition = {
             enableFeature,
             jsonConfig,
           };
-          
+
           return { json: newItem };
         });
         break;
       }
 
       case "filter": {
-        const filterCondition = this.getNodeParameter("filterCondition") as string;
+        const filterCondition = this.getNodeParameter(
+          "filterCondition"
+        ) as string;
         const filterValue = this.getNodeParameter("filterValue") as string;
 
         resultItems = processedItems
@@ -387,7 +404,9 @@ export const CustomTemplateNode: NodeDefinition = {
       }
 
       case "aggregate": {
-        const aggregateMethod = this.getNodeParameter("aggregateMethod") as string;
+        const aggregateMethod = this.getNodeParameter(
+          "aggregateMethod"
+        ) as string;
 
         let result: any;
 
@@ -411,7 +430,8 @@ export const CustomTemplateNode: NodeDefinition = {
               case "average":
                 result =
                   allNumbers.length > 0
-                    ? allNumbers.reduce((acc, val) => acc + val, 0) / allNumbers.length
+                    ? allNumbers.reduce((acc, val) => acc + val, 0) /
+                      allNumbers.length
                     : 0;
                 break;
               case "min":

@@ -11,23 +11,26 @@
 ### Output Format (Following IF Node Pattern)
 
 **Before:**
+
 ```typescript
 result.push({
-  main: routedOutputs[i] || []
+  main: routedOutputs[i] || [],
 });
 ```
 
 **After:**
+
 ```typescript
 const outputName = outputs[i].outputName || `output${i}`;
 result.push({
-  [outputName]: outputItems  // Use output name as key
+  [outputName]: outputItems, // Use output name as key
 });
 ```
 
 ### Added Comprehensive Logging
 
 Now you'll see in the backend console:
+
 ```
 === SWITCH NODE EXECUTION START ===
 inputData: {...}
@@ -63,22 +66,17 @@ Output 1 (Error): 1 items
 **Output 3: "Pending"**
 
 **Result:**
+
 ```json
 [
   {
-    "Success": [
-      { "json": { "status": "success", "id": 1 } }
-    ]
+    "Success": [{ "json": { "status": "success", "id": 1 } }]
   },
   {
-    "Error": [
-      { "json": { "status": "error", "id": 2 } }
-    ]
+    "Error": [{ "json": { "status": "error", "id": 2 } }]
   },
   {
-    "Pending": [
-      { "json": { "status": "pending", "id": 3 } }
-    ]
+    "Pending": [{ "json": { "status": "pending", "id": 3 } }]
   }
 ]
 ```
@@ -94,19 +92,25 @@ Output 1 (Error): 1 items
 ## Common Issues & Solutions
 
 ### Issue: Empty outputs
+
 **Check logs for:**
+
 - `Raw items: []` → Input is empty
 - `Processed items: []` → Data extraction failed
 - `No outputs configured` → Need to add outputs in config
 
 ### Issue: Wrong routing
+
 **Check logs for:**
+
 - Item field value vs expected value
 - Condition type (equals, contains, etc.)
 - Match/No match indicators
 
 ### Issue: All items discarded
+
 **Check logs for:**
+
 - `Discarding item (fallback is "none")` → Change fallback setting
 - No match indicators for all outputs → Check conditions
 
@@ -114,12 +118,14 @@ Output 1 (Error): 1 items
 
 1. **Add Manual Trigger** → Switch Node
 2. **Configure Switch** with test outputs:
+
    - Output Name: "High"
    - Field: "priority"
    - Condition: "Greater Than"
    - Value: "5"
 
 3. **Execute with test data:**
+
 ```json
 [
   { "priority": 8, "task": "Fix bug" },
@@ -129,12 +135,11 @@ Output 1 (Error): 1 items
 
 4. **Check Backend Console** for logs
 5. **Check Execution Output** - should see:
+
 ```json
 [
   {
-    "High": [
-      { "json": { "priority": 8, "task": "Fix bug" } }
-    ]
+    "High": [{ "json": { "priority": 8, "task": "Fix bug" } }]
   }
 ]
 ```

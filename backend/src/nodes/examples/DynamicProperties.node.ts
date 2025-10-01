@@ -2,16 +2,15 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-  NodeProperty,
 } from "../../types/node.types";
 
 /**
  * Example node demonstrating both standard properties and custom template components
- * 
+ *
  * Properties can be:
  * 1. Standard form fields (string, number, options, etc.)
  * 2. Custom components with custom templates (type: "custom")
- * 
+ *
  * Custom components allow you to pass custom templates/components for complex UI
  */
 export const DynamicPropertiesNode: NodeDefinition = {
@@ -116,7 +115,8 @@ export const DynamicPropertiesNode: NodeDefinition = {
         language: "javascript",
         height: "300px",
         template: "code-editor",
-        placeholder: "// Write your custom transformation code here\nreturn item;",
+        placeholder:
+          "// Write your custom transformation code here\nreturn item;",
       },
     },
     // Transform-specific properties

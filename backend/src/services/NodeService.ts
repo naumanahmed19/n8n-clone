@@ -53,7 +53,7 @@ export class NodeService {
     // Detect if this is a branching node by checking if outputs have named branches (not just "main")
     const hasMultipleBranches = outputs.some((output) => {
       const keys = Object.keys(output);
-      return keys.some(key => key !== "main");
+      return keys.some((key) => key !== "main");
     });
 
     // Handle branching nodes (IF, Switch, or any future branch-type nodes)
@@ -688,7 +688,8 @@ export class NodeService {
     );
 
     // Import example nodes
-    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } = await import("../nodes/examples");
+    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } =
+      await import("../nodes/examples");
 
     const builtInNodes = [
       HttpRequestNode,

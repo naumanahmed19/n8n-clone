@@ -17,16 +17,19 @@ The Switch node's execute function now properly routes data to multiple outputs 
 Add outputs with conditions. For example:
 
 **Output 1: "High Priority"**
+
 - Field: `priority`
 - Condition: `Greater Than`
 - Value: `5`
 
 **Output 2: "Medium Priority"**
+
 - Field: `priority`
 - Condition: `Greater Than`
 - Value: `2`
 
 **Output 3: "Low Priority"**
+
 - Field: `priority`
 - Condition: `Less or Equal`
 - Value: `2`
@@ -34,6 +37,7 @@ Add outputs with conditions. For example:
 ### Step 2: Provide Test Data
 
 Input data example:
+
 ```json
 [
   { "priority": 8, "task": "Critical bug" },
@@ -46,6 +50,7 @@ Input data example:
 ### Step 3: Expected Output
 
 **Output 1 (High Priority)** - Items where priority > 5:
+
 ```json
 [
   { "priority": 8, "task": "Critical bug" },
@@ -54,22 +59,21 @@ Input data example:
 ```
 
 **Output 2 (Medium Priority)** - Items where priority > 2:
+
 ```json
-[
-  { "priority": 4, "task": "Feature request" }
-]
+[{ "priority": 4, "task": "Feature request" }]
 ```
 
 **Output 3 (Low Priority)** - Items where priority <= 2:
+
 ```json
-[
-  { "priority": 1, "task": "Documentation" }
-]
+[{ "priority": 1, "task": "Documentation" }]
 ```
 
 ## Execution Output Format
 
 You should now see:
+
 ```json
 {
   "success": true,
@@ -81,14 +85,10 @@ You should now see:
       ]
     },
     {
-      "main": [
-        { "json": { "priority": 4, "task": "Feature request" } }
-      ]
+      "main": [{ "json": { "priority": 4, "task": "Feature request" } }]
     },
     {
-      "main": [
-        { "json": { "priority": 1, "task": "Documentation" } }
-      ]
+      "main": [{ "json": { "priority": 1, "task": "Documentation" } }]
     }
   ]
 }
@@ -130,6 +130,7 @@ Manual Trigger → Switch → [Multiple outputs]
 ## Testing Different Scenarios
 
 ### Scenario 1: Status-based routing
+
 ```
 Field: status
 Conditions:
@@ -139,6 +140,7 @@ Conditions:
 ```
 
 ### Scenario 2: Range-based routing
+
 ```
 Field: amount
 Conditions:
@@ -148,6 +150,7 @@ Conditions:
 ```
 
 ### Scenario 3: String matching
+
 ```
 Field: email
 Conditions:
@@ -166,14 +169,17 @@ Conditions:
 ## Common Issues
 
 ### Issue: Empty outputs
+
 - **Cause**: Field name doesn't match input data
 - **Fix**: Check field names are exactly as in your data
 
 ### Issue: All items go to one output
+
 - **Cause**: First condition matches everything
 - **Fix**: Reorder outputs to check more specific conditions first
 
 ### Issue: Items getting dropped
+
 - **Cause**: Fallback set to "None" and no conditions match
 - **Fix**: Set fallback to "Last Output" or adjust conditions
 

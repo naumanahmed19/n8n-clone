@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Trash2, GripVertical, Copy } from 'lucide-react'
+import { Copy, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { FormFieldConfig } from './types'
 import { FieldRenderer } from './FieldRenderer'
+import { FormFieldConfig } from './types'
 
 export interface RepeatingFieldItem {
   id: string

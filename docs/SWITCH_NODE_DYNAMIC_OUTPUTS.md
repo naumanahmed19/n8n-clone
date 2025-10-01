@@ -7,13 +7,14 @@ The Switch node now displays multiple output pins dynamically based on how many 
 ### Changes Made
 
 **File: `WorkflowEditor.tsx`**
+
 ```typescript
 // Before: Static outputs from node type
 outputs: nodeTypeDefinition?.outputs || [],
 
 // After: Dynamic outputs for Switch node
 outputs: node.type === 'switch' && node.parameters?.outputs
-    ? (node.parameters.outputs as any[]).map((output: any, index: number) => 
+    ? (node.parameters.outputs as any[]).map((output: any, index: number) =>
         output.outputName || `Output ${index + 1}`
       )
     : nodeTypeDefinition?.outputs || [],
@@ -28,6 +29,7 @@ outputs: node.type === 'switch' && node.parameters?.outputs
 ### Example
 
 **Config:**
+
 ```
 Outputs:
   1. Output Name: "Success" → Field: status → Condition: equals → Value: "success"
@@ -37,8 +39,9 @@ Outputs:
 
 **Result:**
 The Switch node will show 3 output pins:
+
 - ✅ Success
-- ✅ Error  
+- ✅ Error
 - ✅ Pending
 
 ## How to Use

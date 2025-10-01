@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RepeatingField, RepeatingFieldItem } from '@/components/ui/form-generator'
-import { createField } from '@/components/ui/form-generator'
+import { createField, RepeatingField, RepeatingFieldItem } from '@/components/ui/form-generator'
 import { useState } from 'react'
 
 /**

@@ -14,6 +14,7 @@ The Switch node wasn't showing the "Add Output" button because the frontend wasn
 ## How It Works Now
 
 ### Backend (Switch.node.ts)
+
 ```typescript
 {
   displayName: "Outputs",
@@ -39,6 +40,7 @@ The Switch node wasn't showing the "Add Output" button because the frontend wasn
 
 1. **ConfigTab** receives node properties from API
 2. Converts them to `FormFieldConfig` with ALL properties preserved:
+
    - `typeOptions` → for multipleValues detection
    - `component` → for component identifier
    - `componentProps.fields` → for nested field definitions
@@ -46,9 +48,11 @@ The Switch node wasn't showing the "Add Output" button because the frontend wasn
 3. **FormGenerator** renders each field using **FieldRenderer**
 
 4. **FieldRenderer** detects:
+
    ```typescript
    if (field.type === 'collection' && field.typeOptions?.multipleValues)
    ```
+
    And renders **RepeatingField** component
 
 5. **RepeatingField** displays:
@@ -86,6 +90,7 @@ When you open the Switch node configuration:
 ## Why It Works Now
 
 **Before:**
+
 - ConfigTab only passed basic properties (name, type, displayName, etc.)
 - `typeOptions`, `component`, `componentProps` were **lost** during conversion
 - FieldRenderer received incomplete data
@@ -93,6 +98,7 @@ When you open the Switch node configuration:
 - No RepeatingField rendered
 
 **After:**
+
 - ConfigTab passes ALL properties from backend
 - FieldRenderer receives complete `typeOptions` and `componentProps`
 - Properly detects: `type === 'collection' && typeOptions.multipleValues === true`

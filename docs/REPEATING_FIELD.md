@@ -20,7 +20,7 @@ The `RepeatingField` component is a generic, reusable form component that allows
 The component is already installed in your form-generator package:
 
 ```typescript
-import { RepeatingField } from '@/components/ui/form-generator'
+import { RepeatingField } from "@/components/ui/form-generator";
 ```
 
 ## 🚀 Basic Usage
@@ -28,26 +28,26 @@ import { RepeatingField } from '@/components/ui/form-generator'
 ### Example 1: HTTP Headers
 
 ```tsx
-import { RepeatingField, createField } from '@/components/ui/form-generator'
-import { useState } from 'react'
+import { RepeatingField, createField } from "@/components/ui/form-generator";
+import { useState } from "react";
 
 function HttpHeadersExample() {
-  const [headers, setHeaders] = useState<RepeatingFieldItem[]>([])
+  const [headers, setHeaders] = useState<RepeatingFieldItem[]>([]);
 
   return (
     <RepeatingField
       displayName="Header"
       fields={[
         createField({
-          name: 'key',
-          displayName: 'Header Name',
-          type: 'string',
+          name: "key",
+          displayName: "Header Name",
+          type: "string",
           required: true,
         }),
         createField({
-          name: 'value',
-          displayName: 'Header Value',
-          type: 'string',
+          name: "value",
+          displayName: "Header Value",
+          type: "string",
           required: true,
         }),
       ]}
@@ -55,43 +55,43 @@ function HttpHeadersExample() {
       onChange={setHeaders}
       addButtonText="Add Header"
     />
-  )
+  );
 }
 ```
 
 ### Example 2: Switch Node Outputs
 
 ```tsx
-import { RepeatingField, createField } from '@/components/ui/form-generator'
+import { RepeatingField, createField } from "@/components/ui/form-generator";
 
 function SwitchNodeExample() {
-  const [outputs, setOutputs] = useState<RepeatingFieldItem[]>([])
+  const [outputs, setOutputs] = useState<RepeatingFieldItem[]>([]);
 
   return (
     <RepeatingField
       displayName="Output"
       fields={[
         createField({
-          name: 'outputName',
-          displayName: 'Output Name',
-          type: 'string',
+          name: "outputName",
+          displayName: "Output Name",
+          type: "string",
           required: true,
         }),
         createField({
-          name: 'condition',
-          displayName: 'Condition',
-          type: 'options',
+          name: "condition",
+          displayName: "Condition",
+          type: "options",
           required: true,
           options: [
-            { name: 'Equals', value: 'equals' },
-            { name: 'Contains', value: 'contains' },
-            { name: 'Greater Than', value: 'greaterThan' },
+            { name: "Equals", value: "equals" },
+            { name: "Contains", value: "contains" },
+            { name: "Greater Than", value: "greaterThan" },
           ],
         }),
         createField({
-          name: 'value',
-          displayName: 'Value',
-          type: 'string',
+          name: "value",
+          displayName: "Value",
+          type: "string",
           required: true,
         }),
       ]}
@@ -101,12 +101,10 @@ function SwitchNodeExample() {
       maxItems={10}
       addButtonText="Add Output"
       itemHeaderRenderer={(item, index) => (
-        <span>
-          {item.values.outputName || `Output ${index + 1}`}
-        </span>
+        <span>{item.values.outputName || `Output ${index + 1}`}</span>
       )}
     />
-  )
+  );
 }
 ```
 
@@ -114,30 +112,30 @@ function SwitchNodeExample() {
 
 ### Required Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `displayName` | `string` | Display name for the repeating field group |
-| `fields` | `FormFieldConfig[]` | Field configurations for each item |
-| `value` | `RepeatingFieldItem[]` | Current values array |
-| `onChange` | `(value: RepeatingFieldItem[]) => void` | Change handler |
+| Prop          | Type                                    | Description                                |
+| ------------- | --------------------------------------- | ------------------------------------------ |
+| `displayName` | `string`                                | Display name for the repeating field group |
+| `fields`      | `FormFieldConfig[]`                     | Field configurations for each item         |
+| `value`       | `RepeatingFieldItem[]`                  | Current values array                       |
+| `onChange`    | `(value: RepeatingFieldItem[]) => void` | Change handler                             |
 
 ### Optional Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `minItems` | `number` | `0` | Minimum number of items |
-| `maxItems` | `number` | `undefined` | Maximum number of items |
-| `addButtonText` | `string` | `'Add Item'` | Text for the add button |
-| `allowReorder` | `boolean` | `true` | Enable drag & drop reordering |
-| `allowDuplicate` | `boolean` | `true` | Show duplicate button |
-| `allowDelete` | `boolean` | `true` | Show delete button |
-| `defaultItemValues` | `Record<string, any>` | `{}` | Default values for new items |
-| `itemHeaderRenderer` | `(item, index) => ReactNode` | `null` | Custom header renderer |
-| `errors` | `Record<string, Record<string, string>>` | `{}` | Validation errors |
-| `disabled` | `boolean` | `false` | Disable all interactions |
-| `className` | `string` | `''` | Custom CSS class |
-| `showItemNumbers` | `boolean` | `true` | Show item numbers in headers |
-| `collapsedByDefault` | `boolean` | `false` | Start items collapsed |
+| Prop                 | Type                                     | Default      | Description                   |
+| -------------------- | ---------------------------------------- | ------------ | ----------------------------- |
+| `minItems`           | `number`                                 | `0`          | Minimum number of items       |
+| `maxItems`           | `number`                                 | `undefined`  | Maximum number of items       |
+| `addButtonText`      | `string`                                 | `'Add Item'` | Text for the add button       |
+| `allowReorder`       | `boolean`                                | `true`       | Enable drag & drop reordering |
+| `allowDuplicate`     | `boolean`                                | `true`       | Show duplicate button         |
+| `allowDelete`        | `boolean`                                | `true`       | Show delete button            |
+| `defaultItemValues`  | `Record<string, any>`                    | `{}`         | Default values for new items  |
+| `itemHeaderRenderer` | `(item, index) => ReactNode`             | `null`       | Custom header renderer        |
+| `errors`             | `Record<string, Record<string, string>>` | `{}`         | Validation errors             |
+| `disabled`           | `boolean`                                | `false`      | Disable all interactions      |
+| `className`          | `string`                                 | `''`         | Custom CSS class              |
+| `showItemNumbers`    | `boolean`                                | `true`       | Show item numbers in headers  |
+| `collapsedByDefault` | `boolean`                                | `false`      | Start items collapsed         |
 
 ## 🎨 Advanced Examples
 
@@ -172,22 +170,22 @@ const [errors, setErrors] = useState<Record<string, Record<string, string>>>({})
 // Validate items
 const validateItems = (items: RepeatingFieldItem[]) => {
   const newErrors: Record<string, Record<string, string>> = {}
-  
+
   items.forEach((item) => {
     const itemErrors: Record<string, string> = {}
-    
+
     if (!item.values.name) {
       itemErrors.name = 'Name is required'
     }
     if (!item.values.value) {
       itemErrors.value = 'Value is required'
     }
-    
+
     if (Object.keys(itemErrors).length > 0) {
       newErrors[item.id] = itemErrors
     }
   })
-  
+
   setErrors(newErrors)
   return Object.keys(newErrors).length === 0
 }
@@ -241,38 +239,49 @@ const validateItems = (items: RepeatingFieldItem[]) => {
 ## 🔧 Use Cases
 
 ### 1. **Switch Node Outputs**
+
 Add multiple conditional outputs with custom rules
 
 ### 2. **HTTP Headers**
+
 Key-value pairs for API requests
 
 ### 3. **Query Parameters**
+
 Dynamic URL parameters
 
 ### 4. **Form Fields**
+
 Build dynamic forms with repeating field groups
 
 ### 5. **Routing Rules**
+
 Define multiple routes with conditions
 
 ### 6. **API Endpoints**
+
 Configure multiple API endpoints
 
 ### 7. **Environment Variables**
+
 Manage multiple environment configurations
 
 ### 8. **Validation Rules**
+
 Add multiple validation conditions
 
 ### 9. **Webhook Subscriptions**
+
 Configure multiple webhook endpoints
 
 ### 10. **Data Transformations**
+
 Define multiple transformation rules
 
 ## 💡 Tips & Best Practices
 
 ### 1. Use Custom Headers for Better UX
+
 ```tsx
 itemHeaderRenderer={(item, index) => (
   <div>
@@ -285,41 +294,44 @@ itemHeaderRenderer={(item, index) => (
 ```
 
 ### 2. Provide Default Values
+
 ```tsx
 <RepeatingField
   defaultItemValues={{
-    type: 'string',
+    type: "string",
     required: false,
-    default: '',
+    default: "",
   }}
   {...otherProps}
 />
 ```
 
 ### 3. Use Validation
+
 Always validate items before submission:
+
 ```tsx
 const handleSubmit = () => {
   if (validateItems(items)) {
     // Submit
   }
-}
+};
 ```
 
 ### 4. Collapse Long Lists
+
 For items with many fields, use collapsed by default:
+
 ```tsx
-<RepeatingField
-  collapsedByDefault={true}
-  {...otherProps}
-/>
+<RepeatingField collapsedByDefault={true} {...otherProps} />
 ```
 
 ### 5. Set Reasonable Limits
+
 ```tsx
 <RepeatingField
-  minItems={1}    // Require at least one
-  maxItems={50}   // Prevent performance issues
+  minItems={1} // Require at least one
+  maxItems={50} // Prevent performance issues
   {...otherProps}
 />
 ```
@@ -347,14 +359,14 @@ export const SwitchNode: NodeDefinition = {
     },
   ],
   execute: async function (inputData) {
-    const outputs = this.getNodeParameter("outputs") as any[]
-    
+    const outputs = this.getNodeParameter("outputs") as any[];
+
     // Process outputs
     outputs.forEach((output) => {
       // Use output.field, output.condition, output.value
-    })
+    });
   },
-}
+};
 ```
 
 ## 📚 Related Components
@@ -366,16 +378,21 @@ export const SwitchNode: NodeDefinition = {
 ## 🐛 Troubleshooting
 
 ### Items not updating
+
 Make sure you're passing a new array reference:
+
 ```tsx
 onChange={(newItems) => setItems([...newItems])}
 ```
 
 ### Drag & drop not working
+
 Ensure `allowReorder={true}` and items aren't disabled
 
 ### Validation not showing
+
 Check that errors object matches the structure:
+
 ```tsx
 {
   [itemId]: {
@@ -394,6 +411,7 @@ Check that errors object matches the structure:
 ## ✅ Summary
 
 The `RepeatingField` component provides a complete solution for dynamic form sections with:
+
 - Easy integration
 - Flexible configuration
 - Rich features (drag & drop, duplicate, collapse)
