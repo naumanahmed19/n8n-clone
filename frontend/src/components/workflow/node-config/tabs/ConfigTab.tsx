@@ -53,6 +53,9 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
       placeholder: property.placeholder,
       options: property.options,
       displayOptions: property.displayOptions,
+      typeOptions: property.typeOptions, // For collection with multipleValues
+      component: property.component, // For custom components
+      componentProps: property.componentProps, // For nested fields in collection
     })
   ) || []
 

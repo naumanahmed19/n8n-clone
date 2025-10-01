@@ -6,8 +6,13 @@ import {
 } from "../../types/node.types";
 
 /**
- * Example node demonstrating dynamic properties using a properties() function
- * This allows properties to be generated dynamically based on context or other factors
+ * Example node demonstrating both standard properties and custom template components
+ * 
+ * Properties can be:
+ * 1. Standard form fields (string, number, options, etc.)
+ * 2. Custom components with custom templates (type: "custom")
+ * 
+ * Custom components allow you to pass custom templates/components for complex UI
  */
 export const DynamicPropertiesNode: NodeDefinition = {
   type: "dynamic-properties-example",
@@ -27,187 +32,223 @@ export const DynamicPropertiesNode: NodeDefinition = {
   inputs: ["main"],
   outputs: ["main"],
 
-  // Properties defined as a function that returns NodeProperty[]
-  // This allows for dynamic property generation based on context
-  properties: function (): NodeProperty[] {
-    // You can add logic here to generate properties dynamically
-    // For example, based on user's organization, available resources, etc.
-
-    const baseProperties: NodeProperty[] = [
-      {
-        displayName: "Operation Type",
-        name: "operationType",
-        type: "options",
-        required: true,
-        default: "transform",
-        description: "Choose the type of operation to perform",
-        options: [
-          {
-            name: "Transform",
-            value: "transform",
-            description: "Transform the data",
+  // Properties defined as a complete static template
+  // Mix standard form fields with custom components
+  properties: [
+    // Example 1: Custom Component - Advanced Configuration Template
+    {
+      displayName: "Advanced Configuration",
+      name: "advancedConfig",
+      type: "custom", // Use 'custom' type for custom components
+      required: false,
+      default: {},
+      description: "Custom configuration template for advanced settings",
+      component: "AdvancedConfigEditor", // Your custom component identifier
+      componentProps: {
+        // Pass any props your custom component needs
+        template: "json-editor",
+        enableCodeCompletion: true,
+        defaultSchema: {
+          type: "object",
+          properties: {
+            timeout: { type: "number" },
+            retries: { type: "number" },
           },
-          {
-            name: "Filter",
-            value: "filter",
-            description: "Filter the data based on conditions",
-          },
-          {
-            name: "Aggregate",
-            value: "aggregate",
-            description: "Aggregate data using various methods",
-          },
-        ],
+        },
       },
-    ];
-
-    // Add conditional properties based on operation type
+    },
+    // Example 2: Custom Component - Visual Query Builder
+    {
+      displayName: "Query Builder",
+      name: "queryBuilder",
+      type: "custom",
+      required: false,
+      default: null,
+      description: "Visual query builder template",
+      component: "VisualQueryBuilder",
+      componentProps: {
+        template: "query-builder",
+        allowedOperators: ["equals", "contains", "greaterThan", "lessThan"],
+        fields: ["name", "email", "age", "status"],
+      },
+    },
+    // Standard property: Base properties
+    {
+      displayName: "Operation Type",
+      name: "operationType",
+      type: "options",
+      required: true,
+      default: "transform",
+      description: "Choose the type of operation to perform",
+      options: [
+        {
+          name: "Transform",
+          value: "transform",
+          description: "Transform the data",
+        },
+        {
+          name: "Filter",
+          value: "filter",
+          description: "Filter the data based on conditions",
+        },
+        {
+          name: "Aggregate",
+          value: "aggregate",
+          description: "Aggregate data using various methods",
+        },
+      ],
+    },
+    // Example 3: Custom Component - Conditional on operation type
+    {
+      displayName: "Custom Transform Template",
+      name: "customTransformTemplate",
+      type: "custom",
+      required: false,
+      default: "",
+      description: "Use a custom template for complex transformations",
+      component: "CodeEditor",
+      displayOptions: {
+        show: {
+          operationType: ["transform"],
+        },
+      },
+      componentProps: {
+        language: "javascript",
+        height: "300px",
+        template: "code-editor",
+        placeholder: "// Write your custom transformation code here\nreturn item;",
+      },
+    },
     // Transform-specific properties
-    const transformProperties: NodeProperty[] = [
-      {
-        displayName: "Field Name",
-        name: "fieldName",
-        type: "string",
-        required: false,
-        default: "",
-        description: "The field name to transform",
-        displayOptions: {
-          show: {
-            operationType: ["transform"],
-          },
+    {
+      displayName: "Field Name",
+      name: "fieldName",
+      type: "string",
+      required: false,
+      default: "",
+      description: "The field name to transform",
+      displayOptions: {
+        show: {
+          operationType: ["transform"],
         },
       },
-      {
-        displayName: "Transform Action",
-        name: "transformAction",
-        type: "options",
-        required: false,
-        default: "uppercase",
-        description: "The transformation to apply",
-        displayOptions: {
-          show: {
-            operationType: ["transform"],
-          },
+    },
+    {
+      displayName: "Transform Action",
+      name: "transformAction",
+      type: "options",
+      required: false,
+      default: "uppercase",
+      description: "The transformation to apply",
+      displayOptions: {
+        show: {
+          operationType: ["transform"],
         },
-        options: [
-          {
-            name: "Uppercase",
-            value: "uppercase",
-            description: "Convert to uppercase",
-          },
-          {
-            name: "Lowercase",
-            value: "lowercase",
-            description: "Convert to lowercase",
-          },
-          {
-            name: "Capitalize",
-            value: "capitalize",
-            description: "Capitalize first letter",
-          },
-          {
-            name: "Reverse",
-            value: "reverse",
-            description: "Reverse the string",
-          },
-        ],
       },
-    ];
-
+      options: [
+        {
+          name: "Uppercase",
+          value: "uppercase",
+          description: "Convert to uppercase",
+        },
+        {
+          name: "Lowercase",
+          value: "lowercase",
+          description: "Convert to lowercase",
+        },
+        {
+          name: "Capitalize",
+          value: "capitalize",
+          description: "Capitalize first letter",
+        },
+        {
+          name: "Reverse",
+          value: "reverse",
+          description: "Reverse the string",
+        },
+      ],
+    },
     // Filter-specific properties
-    const filterProperties: NodeProperty[] = [
-      {
-        displayName: "Filter Field",
-        name: "filterField",
-        type: "string",
-        required: false,
-        default: "",
-        description: "The field to filter by",
-        displayOptions: {
-          show: {
-            operationType: ["filter"],
-          },
+    {
+      displayName: "Filter Field",
+      name: "filterField",
+      type: "string",
+      required: false,
+      default: "",
+      description: "The field to filter by",
+      displayOptions: {
+        show: {
+          operationType: ["filter"],
         },
       },
-      {
-        displayName: "Filter Condition",
-        name: "filterCondition",
-        type: "options",
-        required: false,
-        default: "contains",
-        description: "The condition to apply",
-        displayOptions: {
-          show: {
-            operationType: ["filter"],
-          },
-        },
-        options: [
-          { name: "Contains", value: "contains" },
-          { name: "Equals", value: "equals" },
-          { name: "Starts With", value: "startsWith" },
-          { name: "Ends With", value: "endsWith" },
-        ],
-      },
-      {
-        displayName: "Filter Value",
-        name: "filterValue",
-        type: "string",
-        required: true,
-        default: "",
-        description: "The value to filter by",
-        displayOptions: {
-          show: {
-            operationType: ["filter"],
-          },
+    },
+    {
+      displayName: "Filter Condition",
+      name: "filterCondition",
+      type: "options",
+      required: false,
+      default: "contains",
+      description: "The condition to apply",
+      displayOptions: {
+        show: {
+          operationType: ["filter"],
         },
       },
-    ];
-
+      options: [
+        { name: "Contains", value: "contains" },
+        { name: "Equals", value: "equals" },
+        { name: "Starts With", value: "startsWith" },
+        { name: "Ends With", value: "endsWith" },
+      ],
+    },
+    {
+      displayName: "Filter Value",
+      name: "filterValue",
+      type: "string",
+      required: true,
+      default: "",
+      description: "The value to filter by",
+      displayOptions: {
+        show: {
+          operationType: ["filter"],
+        },
+      },
+    },
     // Aggregate-specific properties
-    const aggregateProperties: NodeProperty[] = [
-      {
-        displayName: "Aggregate Field",
-        name: "aggregateField",
-        type: "string",
-        required: false,
-        default: "",
-        description: "The field to aggregate",
-        displayOptions: {
-          show: {
-            operationType: ["aggregate"],
-          },
+    {
+      displayName: "Aggregate Field",
+      name: "aggregateField",
+      type: "string",
+      required: false,
+      default: "",
+      description: "The field to aggregate",
+      displayOptions: {
+        show: {
+          operationType: ["aggregate"],
         },
       },
-      {
-        displayName: "Aggregate Method",
-        name: "aggregateMethod",
-        type: "options",
-        required: false,
-        default: "sum",
-        description: "The aggregation method to use",
-        displayOptions: {
-          show: {
-            operationType: ["aggregate"],
-          },
+    },
+    {
+      displayName: "Aggregate Method",
+      name: "aggregateMethod",
+      type: "options",
+      required: false,
+      default: "sum",
+      description: "The aggregation method to use",
+      displayOptions: {
+        show: {
+          operationType: ["aggregate"],
         },
-        options: [
-          { name: "Sum", value: "sum" },
-          { name: "Average", value: "average" },
-          { name: "Count", value: "count" },
-          { name: "Min", value: "min" },
-          { name: "Max", value: "max" },
-        ],
       },
-    ];
-
-    // Combine all properties
-    return [
-      ...baseProperties,
-      ...transformProperties,
-      ...filterProperties,
-      ...aggregateProperties,
-    ];
-  },
+      options: [
+        { name: "Sum", value: "sum" },
+        { name: "Average", value: "average" },
+        { name: "Count", value: "count" },
+        { name: "Min", value: "min" },
+        { name: "Max", value: "max" },
+      ],
+    },
+  ],
 
   execute: async function (
     inputData: NodeInputData

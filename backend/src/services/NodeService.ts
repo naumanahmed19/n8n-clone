@@ -50,12 +50,18 @@ export class NodeService {
     nodeType: string,
     outputs: NodeOutputData[]
   ): StandardizedNodeOutput {
-    // Handle special branching nodes (like IF nodes)
-    if (nodeType === "if" && outputs.length > 1) {
+    // Detect if this is a branching node by checking if outputs have named branches (not just "main")
+    const hasMultipleBranches = outputs.some((output) => {
+      const keys = Object.keys(output);
+      return keys.some(key => key !== "main");
+    });
+
+    // Handle branching nodes (IF, Switch, or any future branch-type nodes)
+    if (hasMultipleBranches) {
       const branches: Record<string, any[]> = {};
       let mainOutput: any[] = [];
 
-      // Extract branch data from IF node format: [{true: [...]}, {false: [...]}]
+      // Extract branch data from node format: [{branchName1: [...]}, {branchName2: [...]}]
       outputs.forEach((output) => {
         Object.keys(output).forEach((branchName) => {
           if (branchName !== "main") {
@@ -571,6 +577,7 @@ export class NodeService {
       "json",
       "dateTime",
       "collection",
+      "custom", // Support for custom components
     ];
     if (!validTypes.includes(property.type)) {
       errors.push({
@@ -681,7 +688,7 @@ export class NodeService {
     );
 
     // Import example nodes
-    const { DynamicPropertiesNode } = await import("../nodes/examples");
+    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } = await import("../nodes/examples");
 
     const builtInNodes = [
       HttpRequestNode,
@@ -692,6 +699,8 @@ export class NodeService {
       ScheduleTriggerNode,
       ManualTriggerNode,
       DynamicPropertiesNode,
+      CustomTemplateNode,
+      SwitchNode,
     ];
 
     for (const nodeDefinition of builtInNodes) {

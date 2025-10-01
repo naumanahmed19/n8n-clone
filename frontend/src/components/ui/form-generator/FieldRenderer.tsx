@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays } from 'lucide-react'
 import { FormFieldRendererProps } from './types'
+import { RepeatingField } from './RepeatingField'
 
 export function FieldRenderer({
   field,
@@ -39,6 +40,31 @@ export function FieldRenderer({
       error,
       disabled,
     })
+  }
+
+  // Collection type with multipleValues - use RepeatingField
+  if (field.type === 'collection' && field.typeOptions?.multipleValues) {
+    // Get nested fields from componentProps
+    const nestedFields = field.componentProps?.fields || []
+    const buttonText = field.typeOptions?.multipleValueButtonText || 'Add Item'
+    
+    return (
+      <RepeatingField
+        displayName={field.displayName}
+        fields={nestedFields}
+        value={Array.isArray(value) ? value : []}
+        onChange={handleChange}
+        addButtonText={buttonText}
+        disabled={disabled}
+        minItems={field.validation?.min}
+        maxItems={field.validation?.max}
+        itemHeaderRenderer={(item, index) => {
+          // Try to show meaningful header from outputName or first field
+          const displayValue = item.values?.outputName || item.values?.name || `Item ${index + 1}`
+          return <span>{displayValue}</span>
+        }}
+      />
+    )
   }
 
   switch (field.type) {

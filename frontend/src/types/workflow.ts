@@ -144,6 +144,7 @@ export interface NodeProperty {
     | "multiOptions"
     | "json"
     | "dateTime"
+    | "collection"
     | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
@@ -154,9 +155,13 @@ export interface NodeProperty {
     show?: Record<string, any[]>;
     hide?: Record<string, any[]>;
   };
+  typeOptions?: {
+    multipleValues?: boolean;
+    multipleValueButtonText?: string;
+  };
   // New: Custom component configuration
   component?: string; // Component identifier/name to be registered
-  componentProps?: Record<string, any>; // Additional props to pass to custom component
+  componentProps?: Record<string, any>; // Additional props to pass to custom component (e.g., nested fields for collection)
 }
 
 export interface WorkflowEditorState {

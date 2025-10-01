@@ -3,6 +3,7 @@ export { FieldValidator } from "./FieldValidator";
 export { FieldVisibilityManager } from "./FieldVisibilityManager";
 export { FormGenerator } from "./FormGenerator";
 export { PropertyField } from "./PropertyField";
+export { RepeatingField } from "./RepeatingField";
 export * from "./types";
 
 // Utility function to create field configurations

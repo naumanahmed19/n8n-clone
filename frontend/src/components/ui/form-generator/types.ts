@@ -17,6 +17,7 @@ export interface FormFieldConfig {
     | "multiOptions"
     | "json"
     | "dateTime"
+    | "collection"
     | "textarea"
     | "password"
     | "email"
@@ -31,6 +32,15 @@ export interface FormFieldConfig {
   displayOptions?: {
     show?: Record<string, any[]>;
     hide?: Record<string, any[]>;
+  };
+  typeOptions?: {
+    multipleValues?: boolean;
+    multipleValueButtonText?: string;
+  };
+  component?: string; // Component name for custom rendering
+  componentProps?: {
+    fields?: FormFieldConfig[]; // Nested fields for collection type
+    [key: string]: any;
   };
   validation?: {
     min?: number;
@@ -82,4 +92,29 @@ export interface FormFieldRendererProps {
   disabled?: boolean;
   allValues: Record<string, any>;
   allFields: FormFieldConfig[];
+}
+
+export interface RepeatingFieldItem {
+  id: string;
+  values: Record<string, any>;
+}
+
+export interface RepeatingFieldProps {
+  displayName: string;
+  fields: FormFieldConfig[];
+  value: RepeatingFieldItem[];
+  onChange: (value: RepeatingFieldItem[]) => void;
+  minItems?: number;
+  maxItems?: number;
+  addButtonText?: string;
+  allowReorder?: boolean;
+  allowDuplicate?: boolean;
+  allowDelete?: boolean;
+  defaultItemValues?: Record<string, any>;
+  itemHeaderRenderer?: (item: RepeatingFieldItem, index: number) => React.ReactNode;
+  errors?: Record<string, Record<string, string>>;
+  disabled?: boolean;
+  className?: string;
+  showItemNumbers?: boolean;
+  collapsedByDefault?: boolean;
 }

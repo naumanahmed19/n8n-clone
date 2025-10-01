@@ -242,7 +242,12 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     status: nodeStatus,
                     // Add inputs/outputs information from node type definition
                     inputs: nodeTypeDefinition?.inputs || [],
-                    outputs: nodeTypeDefinition?.outputs || [],
+                    // Dynamic outputs for Switch node based on configured outputs
+                    outputs: node.type === 'switch' && node.parameters?.outputs
+                        ? (node.parameters.outputs as any[]).map((output: any, index: number) => 
+                            output.outputName || `Output ${index + 1}`
+                          )
+                        : nodeTypeDefinition?.outputs || [],
                     // Add position and style information
                     position: node.position,
                     dimensions: { width: 64, height: 64 }, // Default dimensions for now
