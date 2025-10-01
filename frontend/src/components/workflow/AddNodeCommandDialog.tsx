@@ -1,16 +1,15 @@
 import { Badge } from '@/components/ui/badge'
 import {
-      CommandDialog,
-      CommandEmpty,
-      CommandGroup,
-      CommandInput,
-      CommandItem,
-      CommandList,
-      CommandSeparator,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
-import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { useCallback, useMemo } from 'react'
 import { useReactFlow } from 'reactflow'
 
@@ -58,9 +57,25 @@ export function AddNodeCommandDialog({
     let nodePosition = { x: 300, y: 300 }
     
     if (position) {
-      nodePosition = position
+      // If position is provided (e.g., from output connector click), use it
+      // Convert screen coordinates to flow coordinates
+      if (reactFlowInstance) {
+        nodePosition = reactFlowInstance.screenToFlowPosition(position)
+      } else {
+        nodePosition = position
+      }
+    } else if (insertionContext && reactFlowInstance) {
+      // If we have insertion context, position relative to the source node
+      const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+      if (sourceNode) {
+        // Position the new node 200px to the right of the source node
+        nodePosition = {
+          x: sourceNode.position.x + 200,
+          y: sourceNode.position.y
+        }
+      }
     } else if (reactFlowInstance) {
-      // Get center of viewport
+      // Get center of viewport as fallback
       nodePosition = reactFlowInstance.project({
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
@@ -93,7 +108,7 @@ export function AddNodeCommandDialog({
     // Add the node first
     addNode(newNode)
 
-    // If we have insertion context, create connections to wire the new node between existing nodes
+    // If we have insertion context, create connections
     if (insertionContext) {
       // Create connection from source node to new node
       const sourceConnection: WorkflowConnection = {
@@ -104,18 +119,20 @@ export function AddNodeCommandDialog({
         targetInput: 'main',
       }
 
-      // Create connection from new node to target node
-      const targetConnection: WorkflowConnection = {
-        id: `${newNode.id}-${insertionContext.targetNodeId}-${Date.now() + 1}`,
-        sourceNodeId: newNode.id,
-        sourceOutput: 'main',
-        targetNodeId: insertionContext.targetNodeId,
-        targetInput: insertionContext.targetInput || 'main',
-      }
-
-      // Add both connections
       addConnection(sourceConnection)
-      addConnection(targetConnection)
+
+      // If there's a target node specified, wire the new node to it
+      if (insertionContext.targetNodeId) {
+        const targetConnection: WorkflowConnection = {
+          id: `${newNode.id}-${insertionContext.targetNodeId}-${Date.now() + 1}`,
+          sourceNodeId: newNode.id,
+          sourceOutput: 'main',
+          targetNodeId: insertionContext.targetNodeId,
+          targetInput: insertionContext.targetInput || 'main',
+        }
+
+        addConnection(targetConnection)
+      }
     }
 
     onOpenChange(false)

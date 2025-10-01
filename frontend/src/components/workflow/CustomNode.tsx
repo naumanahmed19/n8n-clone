@@ -5,6 +5,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { useAddNodeDialogStore } from '@/stores/addNodeDialog'
 import { useWorkflowStore } from '@/stores/workflow'
 import { NodeExecutionStatus } from '@/types/execution'
 import { createNodeExecutionError, logExecutionError } from '@/utils/errorHandling'
@@ -15,7 +16,7 @@ import {
   shouldShowExecuteButton
 } from '@/utils/nodeTypeClassification'
 import { clsx } from 'clsx'
-import { AlertCircle, CheckCircle, Copy, Loader2, Pause, Play, Settings, Trash2 } from 'lucide-react'
+import { AlertCircle, CheckCircle, Copy, Loader2, Pause, Play, Plus, Settings, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Handle, NodeProps, NodeToolbar, Position } from 'reactflow'
 import { DisableToggleToolbarButton } from './DisableToggleToolbarButton'
@@ -65,6 +66,9 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   const getNodeExecutionResult = useWorkflowStore(state => state.getNodeExecutionResult)
   const getNodeVisualState = useWorkflowStore(state => state.getNodeVisualState)
   
+  // Get add node dialog store
+  const { openDialog } = useAddNodeDialogStore()
+  
   // Local state for node execution feedback
   const [nodeExecutionState, setNodeExecutionState] = useState<{
     isExecuting: boolean
@@ -77,6 +81,9 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     hasError: false,
     hasSuccess: false
   })
+
+  // Local state for tracking which output connector is hovered
+  const [hoveredOutput, setHoveredOutput] = useState<string | null>(null)
 
   // Get real-time execution result for this node - extract specific values to prevent infinite re-renders
   const nodeExecutionResult = getNodeExecutionResult(id)
@@ -242,6 +249,28 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     if (window.confirm('Are you sure you want to delete this node?')) {
       removeNode(id)
     }
+  }
+
+  // Handler for output connector click
+  const handleOutputClick = (event: React.MouseEvent<HTMLDivElement>, outputHandle: string) => {
+    // Prevent the event from propagating to avoid triggering connection mode
+    event.preventDefault()
+    event.stopPropagation()
+    
+    // Get the position of the click relative to the viewport
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const position = {
+      x: rect.right + 10, // Position to the right of the connector
+      y: rect.top + rect.height / 2 // Center vertically with the connector
+    }
+    
+    // Open the add node dialog with insertion context
+    openDialog(position, {
+      sourceNodeId: id,
+      targetNodeId: '', // Will be set when a node is selected
+      sourceOutput: outputHandle,
+      targetInput: 'main' // Default input
+    })
   }
 
   const getStatusIcon = () => {
@@ -442,24 +471,52 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
                     ? '50%' 
                     : `${((index + 1) / (totalOutputs + 1)) * 100}%`
                   
+                  const isHovered = hoveredOutput === output
+                  
                   return (
-                    <Handle
+                    <div
                       key={`output-${output}-${index}`}
-                      id={output}
-                      type="source"
-                      position={Position.Right}
+                      className="absolute"
                       style={{
                         top,
+                        right: '-6px',
                         transform: 'translateY(-50%)',
-                        right: '-6px'
                       }}
-                      className={clsx(
-                        "w-3 h-3 border-2 border-white",
-                        // Make trigger node handles more rounded
-                        isTriggr ? "rounded-full" : "",
-                        data.disabled ? "!bg-gray-300" : "!bg-gray-400"
+                      onMouseEnter={() => setHoveredOutput(output)}
+                      onMouseLeave={() => setHoveredOutput(null)}
+                    >
+                      <Handle
+                        id={output}
+                        type="source"
+                        position={Position.Right}
+                        style={{
+                          position: 'relative',
+                          top: 0,
+                          left: 0,
+                          right: 'auto',
+                          transform: 'none',
+                        }}
+                        className={clsx(
+                          "w-3 h-3 border-2 border-white cursor-pointer transition-all duration-200",
+                          // Make trigger node handles more rounded
+                          isTriggr ? "rounded-full" : "",
+                          data.disabled ? "!bg-gray-300" : "!bg-gray-400 hover:!bg-primary hover:scale-125"
+                        )}
+                        onClick={(event) => handleOutputClick(event, output)}
+                      />
+                      
+                      {/* Plus icon on hover */}
+                      {isHovered && !data.disabled && (
+                        <div 
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                          style={{ zIndex: 10 }}
+                        >
+                          <div className="bg-primary rounded-full p-0.5 shadow-lg animate-in fade-in zoom-in duration-150">
+                            <Plus className="w-3 h-3 text-primary-foreground" strokeWidth={3} />
+                          </div>
+                        </div>
                       )}
-                    />
+                    </div>
                   )
                 })}
               </>
