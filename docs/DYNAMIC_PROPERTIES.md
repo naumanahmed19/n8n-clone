@@ -13,8 +13,8 @@ properties: [
     name: "fieldName",
     type: "string",
     // ... other properties
-  }
-]
+  },
+];
 ```
 
 Now, properties can also be defined as a **function** that returns an array of properties:
@@ -47,7 +47,7 @@ properties: function(): NodeProperty[] {
 ```typescript
 export interface NodeDefinition {
   // ... other properties
-  properties: NodeProperty[] | (() => NodeProperty[]);  // Now accepts both static and dynamic
+  properties: NodeProperty[] | (() => NodeProperty[]); // Now accepts both static and dynamic
   // ... other properties
 }
 ```
@@ -58,12 +58,12 @@ export interface NodeDefinition {
 export interface NodePropertyOption {
   name: string;
   value: any;
-  description?: string;  // Now supports descriptions on options
+  description?: string; // Now supports descriptions on options
 }
 
 export interface NodeProperty {
   // ... other properties
-  options?: NodePropertyOption[];  // Updated to use the new interface
+  options?: NodePropertyOption[]; // Updated to use the new interface
   // ... other properties
 }
 ```
@@ -77,8 +77,8 @@ export const DynamicPropertiesNode: NodeDefinition = {
   type: "dynamic-properties-example",
   displayName: "Dynamic Properties Example",
   // ... other node configuration
-  
-  properties: function(): NodeProperty[] {
+
+  properties: function (): NodeProperty[] {
     const baseProperties: NodeProperty[] = [
       {
         displayName: "Operation Type",
@@ -87,9 +87,17 @@ export const DynamicPropertiesNode: NodeDefinition = {
         required: true,
         default: "transform",
         options: [
-          { name: "Transform", value: "transform", description: "Transform the data" },
+          {
+            name: "Transform",
+            value: "transform",
+            description: "Transform the data",
+          },
           { name: "Filter", value: "filter", description: "Filter the data" },
-          { name: "Aggregate", value: "aggregate", description: "Aggregate data" },
+          {
+            name: "Aggregate",
+            value: "aggregate",
+            description: "Aggregate data",
+          },
         ],
       },
     ];
@@ -125,8 +133,10 @@ export const DynamicPropertiesNode: NodeDefinition = {
       ...aggregateProperties,
     ];
   },
-  
-  execute: async function (inputData: NodeInputData): Promise<NodeOutputData[]> {
+
+  execute: async function (
+    inputData: NodeInputData
+  ): Promise<NodeOutputData[]> {
     // ... execution logic
   },
 };
@@ -139,7 +149,7 @@ export const DynamicPropertiesNode: NodeDefinition = {
 ```typescript
 properties: function(): NodeProperty[] {
   const userOrg = this.getCredentials('organizationId');
-  
+
   if (userOrg === 'enterprise') {
     return [
       // ... enterprise properties
@@ -157,7 +167,7 @@ properties: function(): NodeProperty[] {
 ```typescript
 properties: function(): NodeProperty[] {
   const availableAPIs = this.getAvailableAPIs();
-  
+
   return [
     {
       displayName: "API Selection",
@@ -179,12 +189,12 @@ properties: function(): NodeProperty[] {
 properties: function(): NodeProperty[] {
   const baseProps = [...];
   const advancedProps = [...];
-  
+
   // Only include advanced properties if feature flag is enabled
   if (this.featureFlags.advancedMode) {
     return [...baseProps, ...advancedProps];
   }
-  
+
   return baseProps;
 }
 ```
@@ -207,6 +217,7 @@ private resolveProperties(
 ```
 
 This method is called in:
+
 - `registerNode()` - Before saving to database
 - `getNodeSchema()` - When retrieving node schema
 - `getNodeTypes()` - When listing all node types
@@ -215,11 +226,13 @@ This method is called in:
 ### Database Storage
 
 When a node is registered:
+
 1. If properties is a function, it's executed to get the resolved properties array
 2. The resolved array is stored in the database
 3. The original node definition (with the function) remains in the in-memory registry
 
 This ensures:
+
 - Database always contains concrete properties
 - Runtime can regenerate properties dynamically
 - Backward compatibility with existing nodes
@@ -227,6 +240,7 @@ This ensures:
 ## Frontend Compatibility
 
 The frontend automatically works with dynamic properties because:
+
 1. The `getNodeSchema()` API always returns resolved properties
 2. The frontend receives `NodeProperty[]` arrays as always
 3. No frontend changes are required
@@ -236,14 +250,16 @@ The frontend automatically works with dynamic properties because:
 ### Converting Static Properties to Dynamic
 
 Before:
+
 ```typescript
 properties: [
   { displayName: "Name", name: "name", type: "string" },
-  { displayName: "Value", name: "value", type: "number" }
-]
+  { displayName: "Value", name: "value", type: "number" },
+];
 ```
 
 After:
+
 ```typescript
 properties: function(): NodeProperty[] {
   return [
@@ -266,17 +282,18 @@ properties: function(): NodeProperty[] {
 To test a node with dynamic properties:
 
 ```typescript
-describe('DynamicPropertiesNode', () => {
-  it('should generate properties correctly', () => {
+describe("DynamicPropertiesNode", () => {
+  it("should generate properties correctly", () => {
     const node = DynamicPropertiesNode;
-    
+
     // Resolve properties
-    const properties = typeof node.properties === 'function' 
-      ? node.properties() 
-      : node.properties;
-    
+    const properties =
+      typeof node.properties === "function"
+        ? node.properties()
+        : node.properties;
+
     expect(properties).toHaveLength(expectedLength);
-    expect(properties[0].name).toBe('expectedName');
+    expect(properties[0].name).toBe("expectedName");
   });
 });
 ```
@@ -292,6 +309,7 @@ describe('DynamicPropertiesNode', () => {
 ## Future Enhancements
 
 Potential future improvements:
+
 1. Context-aware property generation (pass execution context)
 2. Async property generation (for fetching from external sources)
 3. Property caching and invalidation strategies
@@ -300,6 +318,7 @@ Potential future improvements:
 ## Summary
 
 The dynamic properties feature provides:
+
 - **Flexibility**: Generate properties based on any logic
 - **Simplicity**: Clean function-based API
 - **Compatibility**: Works with all existing code

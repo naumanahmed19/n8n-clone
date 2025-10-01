@@ -117,7 +117,9 @@ export class NodeService {
       });
 
       // Resolve properties before saving to database
-      const resolvedProperties = this.resolveProperties(nodeDefinition.properties);
+      const resolvedProperties = this.resolveProperties(
+        nodeDefinition.properties
+      );
 
       if (existingNode) {
         // Update existing node
@@ -508,7 +510,8 @@ export class NodeService {
     ) {
       errors.push({
         property: "properties",
-        message: "Properties must be an array or a function that returns an array",
+        message:
+          "Properties must be an array or a function that returns an array",
       });
     }
 

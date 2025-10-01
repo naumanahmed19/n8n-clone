@@ -45,13 +45,13 @@ export interface NodeProperty {
     show?: Record<string, any[]>;
     hide?: Record<string, any[]>;
   };
-  // New: Custom component configuration
-  component?: string; // Component identifier/name
-  componentProps?: Record<string, any>; // Additional props for custom component
-}  typeOptions?: {
+  typeOptions?: {
     multipleValues?: boolean;
     multipleValueButtonText?: string;
   };
+  // New: Custom component configuration
+  component?: string; // Component identifier/name
+  componentProps?: Record<string, any>; // Additional props for custom component
 }
 
 export interface CredentialDefinition {

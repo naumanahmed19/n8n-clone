@@ -1,11 +1,13 @@
-import { DynamicPropertiesNode } from "../DynamicProperties.node";
 import { NodeProperty } from "../../../types/node.types";
+import { DynamicPropertiesNode } from "../DynamicProperties.node";
 
 describe("DynamicPropertiesNode", () => {
   describe("Node Definition", () => {
     it("should have correct basic properties", () => {
       expect(DynamicPropertiesNode.type).toBe("dynamic-properties-example");
-      expect(DynamicPropertiesNode.displayName).toBe("Dynamic Properties Example");
+      expect(DynamicPropertiesNode.displayName).toBe(
+        "Dynamic Properties Example"
+      );
       expect(DynamicPropertiesNode.name).toBe("dynamicPropertiesExample");
       expect(DynamicPropertiesNode.version).toBe(1);
       expect(DynamicPropertiesNode.group).toContain("transform");

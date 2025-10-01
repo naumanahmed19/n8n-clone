@@ -1145,13 +1145,16 @@ export class ExecutionService {
         // Use passed workflow data (for unsaved workflows)
         workflowNodes = workflowData.nodes;
         workflowName = "Unsaved Workflow";
-        
-        logger.info(`Using passed workflow data with ${workflowNodes.length} nodes`, {
-          nodeId,
-          workflowId,
-          totalNodes: workflowNodes.length,
-          nodeIds: workflowNodes.map((n: any) => n.id),
-        });
+
+        logger.info(
+          `Using passed workflow data with ${workflowNodes.length} nodes`,
+          {
+            nodeId,
+            workflowId,
+            totalNodes: workflowNodes.length,
+            nodeIds: workflowNodes.map((n: any) => n.id),
+          }
+        );
       } else {
         // Load workflow from database (existing behavior)
         const workflow = await this.prisma.workflow.findFirst({

@@ -1331,16 +1331,18 @@ export const useWorkflowStore = create<WorkflowStore>()(
             }
           } else {
             console.log("Executing single node:", nodeId, node.parameters);
-            
+
             // Get node type definition to filter parameters
             const { workflowService } = await import("@/services/workflow");
             const { NodeValidator } = await import("@/utils/nodeValidation");
-            
+
             let filteredParameters = node.parameters;
             try {
               const nodeTypes = await workflowService.getNodeTypes();
-              const nodeTypeDefinition = nodeTypes.find(nt => nt.type === node.type);
-              
+              const nodeTypeDefinition = nodeTypes.find(
+                (nt) => nt.type === node.type
+              );
+
               if (nodeTypeDefinition && nodeTypeDefinition.properties) {
                 // Filter parameters to only include visible fields
                 filteredParameters = NodeValidator.filterVisibleParameters(
@@ -1353,7 +1355,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               console.warn("Failed to filter parameters, using all:", error);
               // Continue with unfiltered parameters if filtering fails
             }
-            
+
             // For single mode, use the single node execution endpoint
             const result = await executionService.executeSingleNode({
               workflowId: workflow.id,

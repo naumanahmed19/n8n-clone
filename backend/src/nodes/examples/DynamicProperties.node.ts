@@ -26,13 +26,13 @@ export const DynamicPropertiesNode: NodeDefinition = {
   },
   inputs: ["main"],
   outputs: ["main"],
-  
+
   // Properties defined as a function that returns NodeProperty[]
   // This allows for dynamic property generation based on context
-  properties: function(): NodeProperty[] {
+  properties: function (): NodeProperty[] {
     // You can add logic here to generate properties dynamically
     // For example, based on user's organization, available resources, etc.
-    
+
     const baseProperties: NodeProperty[] = [
       {
         displayName: "Operation Type",
@@ -293,7 +293,9 @@ export const DynamicPropertiesNode: NodeDefinition = {
       }
 
       case "aggregate": {
-        const aggregateField = this.getNodeParameter("aggregateField") as string;
+        const aggregateField = this.getNodeParameter(
+          "aggregateField"
+        ) as string;
         const aggregateMethod = this.getNodeParameter(
           "aggregateMethod"
         ) as string;

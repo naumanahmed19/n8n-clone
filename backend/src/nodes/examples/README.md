@@ -17,6 +17,7 @@ Instead of defining properties as a static array, this node defines properties a
 ### Dynamic Properties
 
 The properties are generated dynamically based on the selected operation type:
+
 - Base properties are always shown
 - Transform-specific properties only appear when "Transform" is selected
 - Filter-specific properties only appear when "Filter" is selected
@@ -30,12 +31,12 @@ The properties are generated dynamically based on the selected operation type:
 properties: function(): NodeProperty[] {
   // Generate base properties
   const baseProperties = [...];
-  
+
   // Generate conditional properties
   const transformProperties = [...];
   const filterProperties = [...];
   const aggregateProperties = [...];
-  
+
   // Combine and return
   return [
     ...baseProperties,
@@ -66,6 +67,7 @@ properties: function(): NodeProperty[] {
 ```
 
 Input:
+
 ```json
 [
   { "name": "john", "age": 30 },
@@ -74,6 +76,7 @@ Input:
 ```
 
 Output:
+
 ```json
 [
   { "name": "JOHN", "age": 30 },
@@ -93,6 +96,7 @@ Output:
 ```
 
 Input:
+
 ```json
 [
   { "name": "john", "age": 30 },
@@ -101,10 +105,9 @@ Input:
 ```
 
 Output:
+
 ```json
-[
-  { "name": "john", "age": 30 }
-]
+[{ "name": "john", "age": 30 }]
 ```
 
 ### Aggregate Example
@@ -118,6 +121,7 @@ Output:
 ```
 
 Input:
+
 ```json
 [
   { "item": "A", "price": 10 },
@@ -127,6 +131,7 @@ Input:
 ```
 
 Output:
+
 ```json
 [
   {
