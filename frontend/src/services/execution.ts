@@ -69,6 +69,11 @@ export interface SingleNodeExecutionRequest {
   inputData?: any;
   parameters?: Record<string, any>;
   mode?: "single" | "workflow";
+  workflowData?: {
+    nodes?: any[];
+    connections?: any[];
+    settings?: any;
+  };
 }
 
 // Note: SingleNodeExecutionResult is now identical to ExecutionResponse
@@ -216,6 +221,7 @@ export class ExecutionService {
         inputData: request.inputData,
         parameters: request.parameters,
         mode: request.mode || "single", // Default to single mode
+        workflowData: request.workflowData, // Pass workflow data if provided
       }
     );
 

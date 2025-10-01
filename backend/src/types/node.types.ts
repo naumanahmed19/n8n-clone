@@ -11,11 +11,17 @@ export interface NodeDefinition {
   inputs: string[];
   outputs: string[];
   credentials?: CredentialDefinition[];
-  properties: NodeProperty[];
+  properties: NodeProperty[] | (() => NodeProperty[]); // Support both static and dynamic properties
   execute: NodeExecuteFunction;
   hooks?: NodeHooks;
   icon?: string;
   color?: string;
+}
+
+export interface NodePropertyOption {
+  name: string;
+  value: any;
+  description?: string;
 }
 
 export interface NodeProperty {
@@ -29,16 +35,20 @@ export interface NodeProperty {
     | "multiOptions"
     | "json"
     | "dateTime"
-    | "collection";
+    | "collection"
+    | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
   description?: string;
-  options?: Array<{ name: string; value: any }>;
+  options?: NodePropertyOption[];
   displayOptions?: {
     show?: Record<string, any[]>;
     hide?: Record<string, any[]>;
   };
-  typeOptions?: {
+  // New: Custom component configuration
+  component?: string; // Component identifier/name
+  componentProps?: Record<string, any>; // Additional props for custom component
+}  typeOptions?: {
     multipleValues?: boolean;
     multipleValueButtonText?: string;
   };

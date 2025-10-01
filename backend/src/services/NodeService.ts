@@ -31,6 +31,18 @@ export class NodeService {
   }
 
   /**
+   * Helper to resolve properties - handles both static arrays and dynamic functions
+   */
+  private resolveProperties(
+    properties: NodeProperty[] | (() => NodeProperty[])
+  ): NodeProperty[] {
+    if (typeof properties === "function") {
+      return properties();
+    }
+    return properties;
+  }
+
+  /**
    * Standardize node output data format for consistent frontend handling
    * All nodes should return data in this format for uniform processing
    */
@@ -104,6 +116,9 @@ export class NodeService {
         where: { type: nodeDefinition.type },
       });
 
+      // Resolve properties before saving to database
+      const resolvedProperties = this.resolveProperties(nodeDefinition.properties);
+
       if (existingNode) {
         // Update existing node
         await this.prisma.nodeType.update({
@@ -117,7 +132,7 @@ export class NodeService {
             defaults: nodeDefinition.defaults as any,
             inputs: nodeDefinition.inputs,
             outputs: nodeDefinition.outputs,
-            properties: nodeDefinition.properties as any,
+            properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
             active: true,
@@ -136,7 +151,7 @@ export class NodeService {
             defaults: nodeDefinition.defaults as any,
             inputs: nodeDefinition.inputs,
             outputs: nodeDefinition.outputs,
-            properties: nodeDefinition.properties as any,
+            properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
             active: true,
@@ -209,7 +224,7 @@ export class NodeService {
           defaults: nodeDefinition.defaults || {},
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs,
-          properties: nodeDefinition.properties || [],
+          properties: this.resolveProperties(nodeDefinition.properties || []),
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
         });
@@ -291,7 +306,7 @@ export class NodeService {
           defaults: nodeDefinition.defaults || {},
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs,
-          properties: nodeDefinition.properties || [],
+          properties: this.resolveProperties(nodeDefinition.properties || []),
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
         };
@@ -485,10 +500,15 @@ export class NodeService {
       errors.push({ property: "outputs", message: "Outputs must be an array" });
     }
 
-    if (!Array.isArray(definition.properties)) {
+    // Validate properties - can be an array or a function
+    if (
+      !definition.properties ||
+      (!Array.isArray(definition.properties) &&
+        typeof definition.properties !== "function")
+    ) {
       errors.push({
         property: "properties",
-        message: "Properties must be an array",
+        message: "Properties must be an array or a function that returns an array",
       });
     }
 
@@ -499,9 +519,10 @@ export class NodeService {
       });
     }
 
-    // Validate properties
-    if (Array.isArray(definition.properties)) {
-      definition.properties.forEach((prop, index) => {
+    // Validate properties - resolve them first if they're a function
+    const resolvedProperties = this.resolveProperties(definition.properties);
+    if (Array.isArray(resolvedProperties)) {
+      resolvedProperties.forEach((prop, index) => {
         const validation = this.validateNodeProperty(prop);
         if (!validation.valid) {
           validation.errors.forEach((error) => {
@@ -656,6 +677,9 @@ export class NodeService {
       "../nodes/core"
     );
 
+    // Import example nodes
+    const { DynamicPropertiesNode } = await import("../nodes/examples");
+
     const builtInNodes = [
       HttpRequestNode,
       JsonNode,
@@ -664,6 +688,7 @@ export class NodeService {
       WebhookTriggerNode,
       ScheduleTriggerNode,
       ManualTriggerNode,
+      DynamicPropertiesNode,
     ];
 
     for (const nodeDefinition of builtInNodes) {

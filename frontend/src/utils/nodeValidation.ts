@@ -24,8 +24,13 @@ export class NodeValidator {
       })
     }
 
-    // Validate each property
+    // Validate each property (only if it's visible based on displayOptions)
     properties.forEach(property => {
+      // Check if property should be visible
+      if (!this.isPropertyVisible(property, node.parameters)) {
+        return // Skip validation for hidden properties
+      }
+
       const value = node.parameters[property.name]
       const fieldErrors = this.validateProperty(property, value)
       errors.push(...fieldErrors)
@@ -35,6 +40,70 @@ export class NodeValidator {
       isValid: errors.length === 0,
       errors
     }
+  }
+
+  /**
+   * Filter parameters to only include visible fields based on displayOptions
+   * This removes hidden fields before sending to backend
+   */
+  static filterVisibleParameters(
+    parameters: Record<string, any>,
+    properties: NodeProperty[]
+  ): Record<string, any> {
+    const filtered: Record<string, any> = {}
+
+    properties.forEach(property => {
+      // Only include parameters for visible properties
+      if (this.isPropertyVisible(property, parameters)) {
+        const value = parameters[property.name]
+        // Only include if the parameter exists and is not undefined
+        if (value !== undefined) {
+          filtered[property.name] = value
+        }
+      }
+    })
+
+    return filtered
+  }
+
+  /**
+   * Check if a property should be visible based on displayOptions
+   */
+  private static isPropertyVisible(property: NodeProperty, parameters: Record<string, any>): boolean {
+    const displayOptions = property.displayOptions
+
+    // If no displayOptions, property is always visible
+    if (!displayOptions) {
+      return true
+    }
+
+    // Check "show" conditions - ALL must match for property to be visible
+    if (displayOptions.show) {
+      const showConditionsMet = Object.entries(displayOptions.show).every(([fieldName, expectedValues]) => {
+        const currentValue = parameters[fieldName]
+        // expectedValues is an array of acceptable values
+        return Array.isArray(expectedValues) && expectedValues.includes(currentValue)
+      })
+
+      if (!showConditionsMet) {
+        return false
+      }
+    }
+
+    // Check "hide" conditions - if ANY match, property should be hidden
+    if (displayOptions.hide) {
+      const hideConditionsMet = Object.entries(displayOptions.hide).some(([fieldName, expectedValues]) => {
+        const currentValue = parameters[fieldName]
+        // expectedValues is an array of values that would hide this property
+        return Array.isArray(expectedValues) && expectedValues.includes(currentValue)
+      })
+
+      if (hideConditionsMet) {
+        return false
+      }
+    }
+
+    return true
   }
 
   static validateProperty(property: NodeProperty, value: any): ValidationError[] {

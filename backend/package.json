@@ -17,6 +17,7 @@
     "db:seed": "tsx src/scripts/seed.ts",
     "db:studio": "prisma studio",
     "node-cli": "tsx src/cli/node-cli.ts",
+    "nodes:register": "tsx src/scripts/register-nodes.ts",
     "compose:up": "docker-compose up -d",
     "compose:down": "docker-compose down",
     "compose:logs": "docker-compose logs -f"

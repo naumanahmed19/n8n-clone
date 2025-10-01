@@ -1129,42 +1129,61 @@ export class ExecutionService {
     userId: string,
     inputData?: any,
     parameters?: Record<string, any>,
-    mode: "single" | "workflow" = "single"
+    mode: "single" | "workflow" = "single",
+    workflowData?: { nodes?: any[]; connections?: any[]; settings?: any } // Optional workflow data
   ): Promise<ExecutionResult> {
     try {
       logger.info(
         `Starting single node execution: ${nodeId} in workflow ${workflowId} for user ${userId}`
       );
 
-      // Verify workflow belongs to user
-      const workflow = await this.prisma.workflow.findFirst({
-        where: {
-          id: workflowId,
-          userId,
-        },
-      });
+      let workflowNodes: any[];
+      let workflowName: string;
 
-      if (!workflow) {
-        logger.error(`Workflow ${workflowId} not found for user ${userId}`);
-        return {
-          success: false,
-          error: {
-            message: "Workflow not found",
-            timestamp: new Date(),
+      // Use passed workflow data if available, otherwise load from database
+      if (workflowData && workflowData.nodes) {
+        // Use passed workflow data (for unsaved workflows)
+        workflowNodes = workflowData.nodes;
+        workflowName = "Unsaved Workflow";
+        
+        logger.info(`Using passed workflow data with ${workflowNodes.length} nodes`, {
+          nodeId,
+          workflowId,
+          totalNodes: workflowNodes.length,
+          nodeIds: workflowNodes.map((n: any) => n.id),
+        });
+      } else {
+        // Load workflow from database (existing behavior)
+        const workflow = await this.prisma.workflow.findFirst({
+          where: {
+            id: workflowId,
+            userId,
           },
-        };
+        });
+
+        if (!workflow) {
+          logger.error(`Workflow ${workflowId} not found for user ${userId}`);
+          return {
+            success: false,
+            error: {
+              message: "Workflow not found",
+              timestamp: new Date(),
+            },
+          };
+        }
+
+        logger.info(`Found workflow ${workflowId} for user ${userId}`, {
+          workflowName: workflow.name,
+          workflowId: workflow.id,
+          userId: workflow.userId,
+        });
+
+        // Parse nodes from JSON
+        workflowNodes = Array.isArray(workflow.nodes)
+          ? workflow.nodes
+          : JSON.parse(workflow.nodes as string);
+        workflowName = workflow.name;
       }
-
-      logger.info(`Found workflow ${workflowId} for user ${userId}`, {
-        workflowName: workflow.name,
-        workflowId: workflow.id,
-        userId: workflow.userId,
-      });
-
-      // Parse nodes from JSON
-      const workflowNodes = Array.isArray(workflow.nodes)
-        ? workflow.nodes
-        : JSON.parse(workflow.nodes as string);
 
       logger.info(`Searching for node ${nodeId} in workflow ${workflowId}`, {
         nodeId,
@@ -1280,24 +1299,61 @@ export class ExecutionService {
 
       try {
         if (mode === "workflow") {
-          // Parse workflow data to match Workflow interface
-          const parsedWorkflow: Workflow = {
-            ...workflow,
-            description: workflow.description || undefined,
-            nodes: Array.isArray(workflow.nodes)
-              ? workflow.nodes
-              : JSON.parse(workflow.nodes as string),
-            connections: Array.isArray(workflow.connections)
-              ? workflow.connections
-              : JSON.parse(workflow.connections as string),
-            triggers: Array.isArray(workflow.triggers)
-              ? workflow.triggers
-              : JSON.parse(workflow.triggers as string),
-            settings:
-              typeof workflow.settings === "object"
-                ? workflow.settings
-                : JSON.parse(workflow.settings as string),
-          };
+          // For workflow mode, we need the full workflow data
+          let parsedWorkflow: Workflow;
+
+          if (workflowData && workflowData.nodes) {
+            // Use passed workflow data
+            parsedWorkflow = {
+              id: workflowId,
+              userId,
+              name: workflowName,
+              description: undefined,
+              nodes: workflowData.nodes,
+              connections: workflowData.connections || [],
+              settings: workflowData.settings || {},
+              triggers: [],
+              active: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          } else {
+            // Load from database
+            const workflow = await this.prisma.workflow.findFirst({
+              where: {
+                id: workflowId,
+                userId,
+              },
+            });
+
+            if (!workflow) {
+              return {
+                success: false,
+                error: {
+                  message: "Workflow not found",
+                  timestamp: new Date(),
+                },
+              };
+            }
+
+            parsedWorkflow = {
+              ...workflow,
+              description: workflow.description || undefined,
+              nodes: Array.isArray(workflow.nodes)
+                ? workflow.nodes
+                : JSON.parse(workflow.nodes as string),
+              connections: Array.isArray(workflow.connections)
+                ? workflow.connections
+                : JSON.parse(workflow.connections as string),
+              triggers: Array.isArray(workflow.triggers)
+                ? workflow.triggers
+                : JSON.parse(workflow.triggers as string),
+              settings:
+                typeof workflow.settings === "object"
+                  ? workflow.settings
+                  : JSON.parse(workflow.settings as string),
+            };
+          }
 
           // Workflow execution mode: execute entire workflow from trigger node
           const flowResult = await this.flowExecutionEngine.executeFromNode(

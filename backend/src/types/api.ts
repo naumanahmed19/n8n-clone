@@ -19,7 +19,7 @@ export const PaginationQuerySchema = z.object({
   limit: z
     .string()
     .optional()
-    .transform((val) => (val ? parseInt(val, 10) : 10)),
+    .transform((val) => (val ? parseInt(val, 10) : 50)),
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });

@@ -85,7 +85,8 @@ router.post(
         req.user!.id,
         inputData,
         parameters,
-        mode
+        mode,
+        workflowData // Pass the optional workflow data
       );
     } else {
       // Handle regular workflow execution

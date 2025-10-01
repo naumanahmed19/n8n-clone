@@ -143,7 +143,8 @@ export interface NodeProperty {
     | "options"
     | "multiOptions"
     | "json"
-    | "dateTime";
+    | "dateTime"
+    | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
   description?: string;
@@ -153,6 +154,9 @@ export interface NodeProperty {
     show?: Record<string, any[]>;
     hide?: Record<string, any[]>;
   };
+  // New: Custom component configuration
+  component?: string; // Component identifier/name to be registered
+  componentProps?: Record<string, any>; // Additional props to pass to custom component
 }
 
 export interface WorkflowEditorState {

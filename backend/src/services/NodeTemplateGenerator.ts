@@ -14,6 +14,7 @@ export interface NodeTemplateOptions {
   includeCredentials?: boolean;
   includeTests?: boolean;
   typescript?: boolean;
+  useDynamicProperties?: boolean; // New option for dynamic properties
 }
 
 export interface TemplateGenerationResult {
