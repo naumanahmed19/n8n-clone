@@ -266,7 +266,10 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             source: conn.sourceNodeId,
             target: conn.targetNodeId,
             sourceHandle: conn.sourceOutput,
-            targetHandle: conn.targetInput
+            targetHandle: conn.targetInput,
+            data: {
+                label: conn.sourceOutput !== 'main' ? conn.sourceOutput : undefined
+            }
         }))
 
         setNodes(reactFlowNodes)

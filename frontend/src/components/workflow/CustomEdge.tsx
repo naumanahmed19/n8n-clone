@@ -9,6 +9,10 @@ import {
     useReactFlow,
 } from 'reactflow'
 
+interface CustomEdgeData {
+    label?: string
+}
+
 export function CustomEdge({
     id,
     sourceX,
@@ -19,14 +23,25 @@ export function CustomEdge({
     targetPosition,
     style = {},
     markerEnd,
-}: EdgeProps) {
+    data,
+}: EdgeProps<CustomEdgeData>) {
     const { getNode, setEdges } = useReactFlow()
     const { removeConnection, workflow } = useWorkflowStore()
     const { openDialog } = useAddNodeDialogStore()
     const [isHovered, setIsHovered] = useState(false)
 
+    // Get the branch label from edge data (for branch nodes like IF)
+    const branchLabel = data?.label
+    
+    // Check if this edge is from a branching node (has a branch label)
+    const isBranchEdge = branchLabel && branchLabel !== 'main'
+
+    // For branch nodes, add a 30px straight extension before the curve
+    const extensionLength = isBranchEdge ? 30 : 0
+    const adjustedSourceX = sourceX + extensionLength
+
     const [edgePath, labelX, labelY] = getBezierPath({
-        sourceX,
+        sourceX: adjustedSourceX,
         sourceY,
         sourcePosition,
         targetX,
@@ -85,6 +100,20 @@ export function CustomEdge({
 
     return (
         <>
+            {/* Straight extension line for branch edges */}
+            {isBranchEdge && extensionLength > 0 && (
+                <path
+                    d={`M ${sourceX},${sourceY} L ${adjustedSourceX},${sourceY}`}
+                    style={{
+                        ...style,
+                        strokeWidth: isHovered ? 3 : 2,
+                        stroke: isHovered ? '#3b82f6' : (style.stroke || '#b1b1b7'),
+                        transition: 'all 0.2s ease',
+                    }}
+                    fill="none"
+                />
+            )}
+            
             <BaseEdge 
                 path={edgePath} 
                 markerEnd={markerEnd} 
@@ -96,6 +125,28 @@ export function CustomEdge({
                 }} 
             />
             <EdgeLabelRenderer>
+                {/* Branch label at the output end of source node (always visible) */}
+                {isBranchEdge && branchLabel && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            transform: `translate(-50%, -50%) translate(${sourceX + 15}px,${sourceY}px)`,
+                            fontSize: 7,
+                            pointerEvents: 'none',
+                            zIndex: 999,
+                        }}
+                        className="nodrag nopan"
+                    >
+                        <div 
+                            className="px-0.5 py-0 rounded text-[7px] font-normal capitalize bg-white border border-gray-300 text-gray-600 shadow-sm nodrag nopan"
+                            style={{ lineHeight: '1.2' }}
+                        >
+                            {branchLabel}
+                        </div>
+                    </div>
+                )}
+                
+                {/* Hover controls at the center of edge */}
                 <div
                     style={{
                         position: 'absolute',
