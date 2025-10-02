@@ -1,22 +1,22 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { ApiResponse, ApiError, RequestConfig } from '@/types'
-import { env } from '@/config/env'
+import { env } from "@/config/env";
+import { ApiError, ApiResponse, RequestConfig } from "@/types";
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
 class ApiClient {
-  private client: AxiosInstance
-  private token: string | null = null
+  private client: AxiosInstance;
+  private token: string | null = null;
 
   constructor(baseURL: string = env.API_BASE_URL) {
     this.client = axios.create({
       baseURL,
       timeout: 10000,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-    })
+    });
 
-    this.setupInterceptors()
-    this.loadTokenFromStorage()
+    this.setupInterceptors();
+    this.loadTokenFromStorage();
   }
 
   private setupInterceptors() {
@@ -24,12 +24,12 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         if (this.token) {
-          config.headers.Authorization = `Bearer ${this.token}`
+          config.headers.Authorization = `Bearer ${this.token}`;
         }
-        return config
+        return config;
       },
       (error) => Promise.reject(error)
-    )
+    );
 
     // Response interceptor to handle errors
     this.client.interceptors.response.use(
@@ -37,76 +37,109 @@ class ApiClient {
       (error) => {
         if (error.response?.status === 401) {
           // Clear token but don't redirect here - let the auth store handle it
-          this.clearToken()
+          this.clearToken();
         }
-        return Promise.reject(this.formatError(error))
+        return Promise.reject(this.formatError(error));
       }
-    )
+    );
   }
 
   private loadTokenFromStorage() {
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem("auth_token");
     if (token) {
-      this.setToken(token)
+      this.setToken(token);
     }
   }
 
   private formatError(error: any): ApiError {
     if (error.response) {
       return {
-        message: error.response.data?.message || 'An error occurred',
+        message: error.response.data?.message || "An error occurred",
         code: error.response.data?.code,
         status: error.response.status,
-      }
+      };
     } else if (error.request) {
       return {
-        message: 'Network error - please check your connection',
-        code: 'NETWORK_ERROR',
-      }
+        message: "Network error - please check your connection",
+        code: "NETWORK_ERROR",
+      };
     } else {
       return {
-        message: error.message || 'An unexpected error occurred',
-        code: 'UNKNOWN_ERROR',
-      }
+        message: error.message || "An unexpected error occurred",
+        code: "UNKNOWN_ERROR",
+      };
     }
   }
 
   setToken(token: string) {
-    this.token = token
-    localStorage.setItem('auth_token', token)
+    this.token = token;
+    localStorage.setItem("auth_token", token);
   }
 
   clearToken() {
-    this.token = null
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('refresh_token')
+    this.token = null;
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("refresh_token");
   }
 
-  async get<T = any>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.get(url, config as AxiosRequestConfig)
-    return response.data
+  async get<T = any>(
+    url: string,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.client.get(url, config as AxiosRequestConfig);
+    return response.data;
   }
 
-  async post<T = any>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.post(url, data, config as AxiosRequestConfig)
-    return response.data
+  async post<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.client.post(
+      url,
+      data,
+      config as AxiosRequestConfig
+    );
+    return response.data;
   }
 
-  async put<T = any>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.put(url, data, config as AxiosRequestConfig)
-    return response.data
+  async put<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.client.put(
+      url,
+      data,
+      config as AxiosRequestConfig
+    );
+    return response.data;
   }
 
-  async delete<T = any>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.delete(url, config as AxiosRequestConfig)
-    return response.data
+  async delete<T = any>(
+    url: string,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.client.delete(
+      url,
+      config as AxiosRequestConfig
+    );
+    return response.data;
   }
 
-  async patch<T = any>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.client.patch(url, data, config as AxiosRequestConfig)
-    return response.data
+  async patch<T = any>(
+    url: string,
+    data?: any,
+    config?: RequestConfig
+  ): Promise<ApiResponse<T>> {
+    const response = await this.client.patch(
+      url,
+      data,
+      config as AxiosRequestConfig
+    );
+    return response.data;
   }
 }
 
-export const apiClient = new ApiClient()
-export default apiClient
+export const apiClient = new ApiClient();
+export default apiClient;

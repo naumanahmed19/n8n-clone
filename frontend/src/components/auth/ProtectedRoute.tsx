@@ -1,7 +1,7 @@
+import { useAuthStore } from '@/stores'
+import { Loader2 } from 'lucide-react'
 import React, { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
-import { useAuthStore } from '@/stores'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
