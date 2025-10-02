@@ -36,8 +36,8 @@ class ApiClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
+          // Clear token but don't redirect here - let the auth store handle it
           this.clearToken()
-          window.location.href = '/login'
         }
         return Promise.reject(this.formatError(error))
       }

@@ -12,19 +12,24 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
 }) => {
-  const { isAuthenticated, isLoading, getCurrentUser, token, loginAsGuest } = useAuthStore()
+  const { isAuthenticated, isLoading, getCurrentUser, token } = useAuthStore()
   const location = useLocation()
+  const [hasTriedAuth, setHasTriedAuth] = React.useState(false)
 
   useEffect(() => {
-    // If we have a token but no user info, try to get current user
-    if (token && token !== 'guest-token' && !isAuthenticated && !isLoading) {
-      getCurrentUser()
+    // If we have a token but no user info, try to get current user (only once)
+    if (token && token !== 'guest-token' && !isAuthenticated && !isLoading && !hasTriedAuth) {
+      setHasTriedAuth(true)
+      getCurrentUser().catch(() => {
+        // getCurrentUser will handle clearing the token/state on failure
+        setHasTriedAuth(false)
+      })
     }
     // Remove automatic guest login - users must explicitly choose guest mode
-  }, [token, isAuthenticated, isLoading, getCurrentUser])
+  }, [token, isAuthenticated, isLoading, getCurrentUser, hasTriedAuth])
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  if (isLoading || (token && !isAuthenticated && hasTriedAuth)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

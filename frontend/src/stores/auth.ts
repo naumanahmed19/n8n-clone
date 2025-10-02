@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthStore>()(
             id: 'guest',
             email: 'guest@example.com',
             name: 'Guest User',
-            role: 'user' as const,
+            role: 'USER' as const,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
@@ -145,6 +145,8 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           })
         } catch (error: any) {
+          // Clear token from localStorage and apiClient when getCurrentUser fails
+          localStorage.removeItem('auth_token')
           set({
             user: null,
             token: null,
@@ -152,6 +154,7 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: error.message || 'Failed to get user info',
           })
+          throw error
         }
       },
 
