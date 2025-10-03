@@ -326,9 +326,9 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     if (nodeVisualState && nodeVisualState.status !== NodeExecutionStatus.IDLE) {
       switch (nodeVisualState.status) {
         case NodeExecutionStatus.QUEUED:
-          return 'bg-yellow-50 border-yellow-300 animate-pulse'
+          return 'bg-yellow-50 border-yellow-300'
         case NodeExecutionStatus.RUNNING:
-          return 'bg-blue-50 border-blue-300 animate-pulse'
+          return 'bg-blue-50 border-blue-300'
         case NodeExecutionStatus.COMPLETED:
           return 'bg-green-50 border-green-300'
         case NodeExecutionStatus.FAILED:
@@ -344,7 +344,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     
     // Fallback to real-time execution state over data.status
     if (nodeExecutionState.isExecuting) {
-      return 'bg-blue-50 border-blue-300 animate-pulse'
+      return 'bg-blue-50 border-blue-300'
     }
     if (nodeExecutionState.hasSuccess) {
       return 'bg-green-50 border-green-300'
