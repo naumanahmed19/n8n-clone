@@ -1,8 +1,8 @@
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
   DialogDescription,
+  DialogTitle,
   VisuallyHidden,
 } from '@/components/ui/dialog'
 import {
