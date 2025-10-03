@@ -25,7 +25,6 @@ import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { WorkflowCanvas } from './WorkflowCanvas'
-import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {
     transformWorkflowEdgesToReactFlow,
@@ -60,19 +59,11 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     } = useWorkflowOperations()
 
     const {
-        reactFlowWrapper,
         setReactFlowInstance: setReactFlowInstanceFromHook,
         nodes,
         edges,
         setNodes,
         setEdges,
-        handleSelectionChange,
-        handleNodesChange,
-        handleEdgesChange,
-        handleConnect,
-        handleDragOver,
-        handleDrop,
-        handleNodeDoubleClick,
     } = useReactFlowInteractions()
 
     const {
@@ -161,26 +152,16 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                     defaultSize={100 - executionPanelSize} 
                                     minSize={30}
                                 >
-                                    <WorkflowCanvasContextMenu>
-                                        <WorkflowCanvas
-                                            nodes={nodes}
-                                            edges={edges}
-                                            nodeTypes={nodeTypes}
-                                            reactFlowWrapper={reactFlowWrapper}
-                                            showControls={showControls}
-                                            showMinimap={showMinimap}
-                                            showBackground={showBackground}
-                                            backgroundVariant={backgroundVariant}
-                                            onNodesChange={handleNodesChange}
-                                            onEdgesChange={handleEdgesChange}
-                                            onConnect={handleConnect}
-                                            onInit={handleReactFlowInit}
-                                            onDrop={handleDrop}
-                                            onDragOver={handleDragOver}
-                                            onSelectionChange={handleSelectionChange}
-                                            onNodeDoubleClick={handleNodeDoubleClick}
-                                        />
-                                    </WorkflowCanvasContextMenu>
+                                    <WorkflowCanvas
+                                        nodes={nodes}
+                                        edges={edges}
+                                        nodeTypes={nodeTypes}
+                                        showControls={showControls}
+                                        showMinimap={showMinimap}
+                                        showBackground={showBackground}
+                                        backgroundVariant={backgroundVariant}
+                                        onInit={handleReactFlowInit}
+                                    />
                                 </ResizablePanel>
 
                                 {/* Execution Panel */}

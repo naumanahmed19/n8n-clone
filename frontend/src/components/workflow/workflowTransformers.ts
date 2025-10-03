@@ -26,7 +26,7 @@ type NodeExecutionResult = {
 };
 
 type ExecutionState = {
-  status: "idle" | "running" | "success" | "error" | "cancelled";
+  status: "idle" | "running" | "success" | "error" | "cancelled" | "paused";
   executionId?: string;
 };
 
