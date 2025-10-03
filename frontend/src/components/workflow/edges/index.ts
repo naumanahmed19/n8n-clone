@@ -1,2 +1,3 @@
-export { EdgeButton } from './EdgeButton';
-export { CustomEdge } from './CustomEdge';
+export { CustomEdge } from "./CustomEdge";
+export { EdgeButton } from "./EdgeButton";
+export { WorkflowEdge } from "./workflow-edge";

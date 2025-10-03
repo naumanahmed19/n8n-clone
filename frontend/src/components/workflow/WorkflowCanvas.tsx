@@ -1,11 +1,11 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
 import ReactFlow, { Background, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
-import { CustomEdge } from './edges'
+import { WorkflowEdge } from './edges'
 
 const edgeTypes: EdgeTypes = {
-    default: CustomEdge,
-    smoothstep: CustomEdge,
+    default: WorkflowEdge,
+    smoothstep: WorkflowEdge,
 }
 
 interface WorkflowCanvasProps {
