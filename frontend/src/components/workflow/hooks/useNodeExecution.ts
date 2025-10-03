@@ -121,8 +121,6 @@ export function useNodeExecution(nodeId: string, nodeType: string) {
     executionResultEndTime,
     nodeId,
     nodeType,
-    nodeVisualState,
-    nodeExecutionResult,
   ]);
 
   const handleExecuteNode = async (nodeId: string, nodeType: string) => {
