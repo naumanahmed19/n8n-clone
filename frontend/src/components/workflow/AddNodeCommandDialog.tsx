@@ -26,7 +26,7 @@ export function AddNodeCommandDialog({
   nodeTypes,
   position,
 }: AddNodeCommandDialogProps) {
-  const { addNode, addConnection, removeConnection, workflow } = useWorkflowStore()
+  const { addNode, addConnection, removeConnection, workflow, updateNode } = useWorkflowStore()
   const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
 
@@ -56,23 +56,82 @@ export function AddNodeCommandDialog({
     // Calculate position where to add the node
     let nodePosition = { x: 300, y: 300 }
     
-    if (position) {
+    if (insertionContext && reactFlowInstance) {
+      // When inserting between nodes, create space with proper gaps
+      const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+      const targetNode = reactFlowInstance.getNode(insertionContext.targetNodeId)
+      
+      if (sourceNode && targetNode) {
+        // Assume standard node width of ~200px (can adjust based on your node sizes)
+        const nodeWidth = 200
+        const gap = 50
+        
+        // Calculate the vector from source to target
+        const deltaX = targetNode.position.x - sourceNode.position.x
+        const deltaY = targetNode.position.y - sourceNode.position.y
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        
+        // Calculate direction vector (normalized)
+        const directionX = deltaX / distance
+        const directionY = deltaY / distance
+        
+        // Position new node: source node + its width + gap
+        const distanceFromSource = nodeWidth + gap
+        nodePosition = {
+          x: sourceNode.position.x + directionX * distanceFromSource,
+          y: sourceNode.position.y + directionY * distanceFromSource
+        }
+        
+        // Calculate minimum distance needed: source width + gap + new node width + gap
+        const minDistanceNeeded = nodeWidth + gap + nodeWidth + gap
+        
+        // If current distance is less than needed, shift target node and all downstream nodes
+        if (distance < minDistanceNeeded) {
+          const additionalSpace = minDistanceNeeded - distance
+          const shiftX = directionX * additionalSpace
+          const shiftY = directionY * additionalSpace
+          
+          // Helper function to recursively shift nodes
+          const shiftNodeAndDownstream = (nodeId: string, visited = new Set<string>()) => {
+            if (visited.has(nodeId)) return
+            visited.add(nodeId)
+            
+            const node = reactFlowInstance.getNode(nodeId)
+            if (!node) return
+            
+            // Shift this node
+            updateNode(nodeId, {
+              position: {
+                x: node.position.x + shiftX,
+                y: node.position.y + shiftY
+              }
+            })
+            
+            // Find all connections where this node is the source and shift their targets
+            workflow?.connections.forEach(conn => {
+              if (conn.sourceNodeId === nodeId) {
+                shiftNodeAndDownstream(conn.targetNodeId, visited)
+              }
+            })
+          }
+          
+          // Start shifting from the target node
+          shiftNodeAndDownstream(insertionContext.targetNodeId)
+        }
+      } else if (sourceNode) {
+        // Fallback: position to the right of source node
+        nodePosition = {
+          x: sourceNode.position.x + 300,
+          y: sourceNode.position.y
+        }
+      }
+    } else if (position) {
       // If position is provided (e.g., from output connector click), use it
       // Convert screen coordinates to flow coordinates
       if (reactFlowInstance) {
         nodePosition = reactFlowInstance.screenToFlowPosition(position)
       } else {
         nodePosition = position
-      }
-    } else if (insertionContext && reactFlowInstance) {
-      // If we have insertion context, position relative to the source node
-      const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
-      if (sourceNode) {
-        // Position the new node 200px to the right of the source node
-        nodePosition = {
-          x: sourceNode.position.x + 200,
-          y: sourceNode.position.y
-        }
       }
     } else if (reactFlowInstance) {
       // Get center of viewport as fallback
@@ -149,7 +208,7 @@ export function AddNodeCommandDialog({
     }
 
     onOpenChange(false)
-  }, [addNode, addConnection, removeConnection, workflow, onOpenChange, position, reactFlowInstance, insertionContext])
+  }, [addNode, addConnection, removeConnection, updateNode, workflow, onOpenChange, position, reactFlowInstance, insertionContext])
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
