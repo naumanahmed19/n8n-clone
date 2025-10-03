@@ -55,13 +55,21 @@ global.nodeLoader = nodeLoader;
 global.nodeService = nodeService;
 global.prisma = prisma;
 
-// Initialize custom node system
-async function initializeCustomNodes() {
+// Initialize node systems
+async function initializeNodeSystems() {
   try {
+    // First, ensure built-in nodes are loaded
+    console.log("⏳ Initializing built-in nodes...");
+    await nodeService.waitForInitialization();
+    console.log("✅ Built-in nodes initialized");
+
+    // Then, load custom nodes
+    console.log("⏳ Initializing custom node system...");
     await nodeLoader.initialize();
     console.log("✅ Custom node system initialized");
   } catch (error) {
-    console.error("❌ Failed to initialize custom node system:", error);
+    console.error("❌ Failed to initialize node systems:", error);
+    throw error;
   }
 }
 
@@ -159,8 +167,8 @@ httpServer.listen(PORT, async () => {
   console.log(`   - Webhooks: http://localhost:${PORT}/api/triggers/webhooks`);
   console.log(`   - Custom Nodes: http://localhost:${PORT}/api/custom-nodes`);
 
-  // Initialize custom node system after server starts
-  await initializeCustomNodes();
+  // Initialize node systems after server starts
+  await initializeNodeSystems();
 });
 
 // Graceful shutdown

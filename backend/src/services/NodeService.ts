@@ -23,11 +23,19 @@ export class NodeService {
   private prisma: PrismaClient;
   private nodeRegistry = new Map<string, NodeDefinition>();
   private secureExecutionService: SecureExecutionService;
+  private initializationPromise: Promise<void>;
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
     this.secureExecutionService = new SecureExecutionService(prisma);
-    this.initializeBuiltInNodes();
+    this.initializationPromise = this.initializeBuiltInNodes();
+  }
+
+  /**
+   * Wait for built-in nodes to be initialized
+   */
+  async waitForInitialization(): Promise<void> {
+    await this.initializationPromise;
   }
 
   /**
