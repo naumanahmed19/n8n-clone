@@ -19,7 +19,7 @@ import {
     useReactFlowInteractions,
     useWorkflowOperations,
 } from '@/hooks/workflow'
-import { useAddNodeDialogStore, useWorkflowStore, useReactFlowUIStore, useWorkflowToolbarStore } from '@/stores'
+import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'
 import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'

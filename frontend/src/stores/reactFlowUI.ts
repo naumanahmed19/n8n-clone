@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { ReactFlowInstance } from 'reactflow';
+import { ReactFlowInstance } from "reactflow";
+import { create } from "zustand";
 
 interface ReactFlowUIState {
   // ReactFlow instance
@@ -10,7 +10,7 @@ interface ReactFlowUIState {
   showMinimap: boolean;
   showBackground: boolean;
   showControls: boolean;
-  backgroundVariant: 'dots' | 'lines' | 'cross';
+  backgroundVariant: "dots" | "lines" | "cross";
 
   // Execution panel state
   showExecutionPanel: boolean;
@@ -20,14 +20,16 @@ interface ReactFlowUIState {
   toggleMinimap: () => void;
   toggleBackground: () => void;
   toggleControls: () => void;
-  changeBackgroundVariant: (variant: 'dots' | 'lines' | 'cross' | 'none') => void;
+  changeBackgroundVariant: (
+    variant: "dots" | "lines" | "cross" | "none"
+  ) => void;
   toggleExecutionPanel: () => void;
 
   // Setters
   setShowMinimap: (show: boolean) => void;
   setShowBackground: (show: boolean) => void;
   setShowControls: (show: boolean) => void;
-  setBackgroundVariant: (variant: 'dots' | 'lines' | 'cross') => void;
+  setBackgroundVariant: (variant: "dots" | "lines" | "cross") => void;
   setExecutionPanelSize: (size: number) => void;
 
   // ReactFlow controls
@@ -43,7 +45,7 @@ export const useReactFlowUIStore = create<ReactFlowUIState>((set, get) => ({
   showMinimap: true,
   showBackground: true,
   showControls: true,
-  backgroundVariant: 'dots',
+  backgroundVariant: "dots",
   showExecutionPanel: false,
   executionPanelSize: 4,
 
@@ -52,11 +54,12 @@ export const useReactFlowUIStore = create<ReactFlowUIState>((set, get) => ({
 
   // Toggle functions
   toggleMinimap: () => set((state) => ({ showMinimap: !state.showMinimap })),
-  toggleBackground: () => set((state) => ({ showBackground: !state.showBackground })),
+  toggleBackground: () =>
+    set((state) => ({ showBackground: !state.showBackground })),
   toggleControls: () => set((state) => ({ showControls: !state.showControls })),
-  
+
   changeBackgroundVariant: (variant) => {
-    if (variant === 'none') {
+    if (variant === "none") {
       set({ showBackground: false });
     } else {
       set({ showBackground: true, backgroundVariant: variant });

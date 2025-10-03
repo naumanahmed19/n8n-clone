@@ -1,41 +1,41 @@
 import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuSub,
-    ContextMenuSubContent,
-    ContextMenuSubTrigger,
-    ContextMenuTrigger,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import { useWorkflowOperations } from '@/hooks/workflow';
+import { useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores';
 import {
-    CheckCircle,
-    Download,
-    Eye,
-    EyeOff,
-    FileText,
-    Grid,
-    Grid3X3,
-    Hash,
-    History,
-    Map,
-    Maximize,
-    Palette,
-    Play,
-    Plus,
-    Power,
-    PowerOff,
-    Redo,
-    Save,
-    Settings,
-    Undo,
-    Upload,
-    ZoomIn,
-    ZoomOut
+  CheckCircle,
+  Download,
+  Eye,
+  EyeOff,
+  FileText,
+  Grid,
+  Grid3X3,
+  Hash,
+  History,
+  Map,
+  Maximize,
+  Palette,
+  Play,
+  Plus,
+  Power,
+  PowerOff,
+  Redo,
+  Save,
+  Settings,
+  Undo,
+  Upload,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import React from 'react';
-import { useWorkflowStore, useReactFlowUIStore, useWorkflowToolbarStore } from '@/stores';
-import { useWorkflowOperations } from '@/hooks/workflow';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode

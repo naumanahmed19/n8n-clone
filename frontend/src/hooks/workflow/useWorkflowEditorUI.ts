@@ -1,9 +1,9 @@
-import { useWorkflowToolbarStore, useReactFlowUIStore } from "@/stores";
+import { useReactFlowUIStore, useWorkflowToolbarStore } from "@/stores";
 
 /**
  * Custom hook for managing UI state in the workflow editor
  * Handles panel visibility, sizes, ReactFlow view settings, and other UI state
- * 
+ *
  * NOTE: This hook now uses Zustand stores instead of local state
  * to ensure state is shared across components
  */
