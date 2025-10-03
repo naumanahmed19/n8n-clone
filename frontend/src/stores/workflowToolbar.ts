@@ -36,6 +36,7 @@ interface WorkflowToolbarStore {
 
   // UI state
   showExecutionsPanel: boolean;
+  showNodePalette: boolean;
   isSaving: boolean;
 
   // Workflow activation state
@@ -59,6 +60,7 @@ interface WorkflowToolbarStore {
 
   // Actions - UI state
   toggleExecutionsPanel: () => void;
+  toggleNodePalette: () => void;
   setSaving: (saving: boolean) => void;
 
   // Actions - Workflow activation
@@ -96,6 +98,7 @@ export const useWorkflowToolbarStore = create<WorkflowToolbarStore>()(
 
       // UI state
       showExecutionsPanel: false,
+      showNodePalette: false,
       isSaving: false,
 
       // Workflow activation state
@@ -222,6 +225,10 @@ export const useWorkflowToolbarStore = create<WorkflowToolbarStore>()(
       // UI state actions
       toggleExecutionsPanel: () => {
         set((state) => ({ showExecutionsPanel: !state.showExecutionsPanel }));
+      },
+
+      toggleNodePalette: () => {
+        set((state) => ({ showNodePalette: !state.showNodePalette }));
       },
 
       setSaving: (saving: boolean) => {

@@ -34,87 +34,61 @@ import {
     ZoomOut
 } from 'lucide-react';
 import React from 'react';
+import { useWorkflowStore, useReactFlowUIStore, useWorkflowToolbarStore } from '@/stores';
+import { useWorkflowOperations } from '@/hooks/workflow';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode
-  // Save and undo/redo
-  canUndo: boolean
-  canRedo: boolean
-  onUndo: () => void
-  onRedo: () => void
-  onSave: () => void
-  isSaving: boolean
-  isDirty: boolean
-  
-  // Workflow execution
-  isWorkflowActive: boolean
-  onToggleWorkflowActive: () => void
-  
-  // Panels
-  showExecutionPanel: boolean
-  onToggleExecutionPanel: () => void
-  showExecutionsPanel: boolean
-  onToggleExecutionsPanel: () => void
-  showNodePalette: boolean
-  onToggleNodePalette: () => void
-  
-  // Import/Export
-  onExport: () => void
-  onImport: (file: File) => void
-  isExporting: boolean
-  isImporting: boolean
-  
-  // Validation
-  onValidate: () => void
-  
-  // ReactFlow specific
-  showMinimap: boolean
-  onToggleMinimap: () => void
-  showBackground: boolean
-  onToggleBackground: () => void
-  showControls: boolean
-  onToggleControls: () => void
-  onFitView: () => void
-  onZoomIn: () => void
-  onZoomOut: () => void
-  onZoomToFit: () => void
-  onChangeBackgroundVariant: (variant: 'dots' | 'lines' | 'cross' | 'none') => void
 }
 
 export function WorkflowCanvasContextMenu({
-  children,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-  onSave,
-  isSaving,
-  isDirty,
-  isWorkflowActive,
-  onToggleWorkflowActive,
-  showExecutionPanel,
-  onToggleExecutionPanel,
-  showExecutionsPanel,
-  onToggleExecutionsPanel,
-  showNodePalette,
-  onToggleNodePalette,
-  onExport,
-  onImport,
-  isExporting,
-  isImporting,
-  onValidate,
-  showMinimap,
-  onToggleMinimap,
-  showBackground,
-  onToggleBackground,
-  showControls,
-  onToggleControls,
-  onFitView,
-  onZoomIn,
-  onZoomOut,
-  onZoomToFit,
-  onChangeBackgroundVariant
+  children
 }: WorkflowCanvasContextMenuProps) {
+  // Use stores directly instead of hooks with local state
+  const {
+    workflow,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    toggleWorkflowActive,
+  } = useWorkflowStore()
+
+  const {
+    saveWorkflow,
+    validateAndShowResult,
+    handleExport,
+    handleImport,
+    isExporting,
+    isImporting,
+    hasUnsavedChanges,
+  } = useWorkflowOperations()
+
+  // ReactFlow UI state from store
+  const {
+    showMinimap,
+    showBackground,
+    showControls,
+    showExecutionPanel,
+    toggleMinimap,
+    toggleBackground,
+    toggleControls,
+    changeBackgroundVariant,
+    toggleExecutionPanel,
+    zoomIn,
+    zoomOut,
+    fitView,
+    zoomToFit,
+  } = useReactFlowUIStore()
+
+  // Toolbar state from store
+  const {
+    showNodePalette,
+    showExecutionsPanel,
+    toggleNodePalette,
+    toggleExecutionsPanel,
+  } = useWorkflowToolbarStore()
+
   const handleImportClick = () => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -122,7 +96,7 @@ export function WorkflowCanvasContextMenu({
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0]
       if (file) {
-        onImport(file)
+        handleImport(file)
       }
     }
     input.click()
@@ -136,12 +110,12 @@ export function WorkflowCanvasContextMenu({
       <ContextMenuContent className="w-56">
         {/* File Operations */}
         <ContextMenuItem
-          onClick={onSave}
-          disabled={isSaving || (!isDirty)}
+          onClick={saveWorkflow}
+          disabled={!hasUnsavedChanges}
           className="cursor-pointer"
         >
           <Save className="mr-2 h-4 w-4" />
-          {isSaving ? 'Saving...' : 'Save Workflow'}
+          Save Workflow
         </ContextMenuItem>
         
         {/* Import/Export */}
@@ -152,7 +126,7 @@ export function WorkflowCanvasContextMenu({
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
             <ContextMenuItem
-              onClick={onExport}
+              onClick={handleExport}
               disabled={isExporting}
               className="cursor-pointer"
             >
@@ -174,16 +148,16 @@ export function WorkflowCanvasContextMenu({
 
         {/* Edit Operations */}
         <ContextMenuItem
-          onClick={onUndo}
-          disabled={!canUndo}
+          onClick={undo}
+          disabled={!canUndo()}
           className="cursor-pointer"
         >
           <Undo className="mr-2 h-4 w-4" />
           Undo
         </ContextMenuItem>
         <ContextMenuItem
-          onClick={onRedo}
-          disabled={!canRedo}
+          onClick={redo}
+          disabled={!canRedo()}
           className="cursor-pointer"
         >
           <Redo className="mr-2 h-4 w-4" />
@@ -194,10 +168,10 @@ export function WorkflowCanvasContextMenu({
 
         {/* Workflow Control */}
         <ContextMenuItem
-          onClick={onToggleWorkflowActive}
+          onClick={toggleWorkflowActive}
           className="cursor-pointer"
         >
-          {isWorkflowActive ? (
+          {workflow?.active ? (
             <>
               <PowerOff className="mr-2 h-4 w-4" />
               Deactivate Workflow
@@ -211,7 +185,7 @@ export function WorkflowCanvasContextMenu({
         </ContextMenuItem>
 
         <ContextMenuItem
-          onClick={onValidate}
+          onClick={validateAndShowResult}
           className="cursor-pointer"
         >
           <CheckCircle className="mr-2 h-4 w-4" />
@@ -228,21 +202,21 @@ export function WorkflowCanvasContextMenu({
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
             <ContextMenuItem
-              onClick={onToggleExecutionPanel}
+              onClick={toggleExecutionPanel}
               className="cursor-pointer"
             >
               <Play className="mr-2 h-4 w-4" />
               {showExecutionPanel ? 'Hide' : 'Show'} Execution Panel
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onToggleExecutionsPanel}
+              onClick={toggleExecutionsPanel}
               className="cursor-pointer"
             >
               <History className="mr-2 h-4 w-4" />
               {showExecutionsPanel ? 'Hide' : 'Show'} Executions History
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onToggleNodePalette}
+              onClick={toggleNodePalette}
               className="cursor-pointer"
             >
               <Palette className="mr-2 h-4 w-4" />
@@ -259,21 +233,21 @@ export function WorkflowCanvasContextMenu({
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-52">
             <ContextMenuItem
-              onClick={onToggleMinimap}
+              onClick={toggleMinimap}
               className="cursor-pointer"
             >
               {showMinimap ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
               {showMinimap ? 'Hide' : 'Show'} Minimap
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onToggleBackground}
+              onClick={toggleBackground}
               className="cursor-pointer"
             >
               <Grid3X3 className="mr-2 h-4 w-4" />
               {showBackground ? 'Hide' : 'Show'} Grid Background
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onToggleControls}
+              onClick={toggleControls}
               className="cursor-pointer"
             >
               <Settings className="mr-2 h-4 w-4" />
@@ -281,28 +255,28 @@ export function WorkflowCanvasContextMenu({
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
-              onClick={onZoomIn}
+              onClick={zoomIn}
               className="cursor-pointer"
             >
               <ZoomIn className="mr-2 h-4 w-4" />
               Zoom In
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onZoomOut}
+              onClick={zoomOut}
               className="cursor-pointer"
             >
               <ZoomOut className="mr-2 h-4 w-4" />
               Zoom Out
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onFitView}
+              onClick={fitView}
               className="cursor-pointer"
             >
               <Maximize className="mr-2 h-4 w-4" />
               Fit to View
             </ContextMenuItem>
             <ContextMenuItem
-              onClick={onZoomToFit}
+              onClick={zoomToFit}
               className="cursor-pointer"
             >
               <Map className="mr-2 h-4 w-4" />
@@ -315,19 +289,19 @@ export function WorkflowCanvasContextMenu({
                 Background Pattern
               </ContextMenuSubTrigger>
               <ContextMenuSubContent>
-                <ContextMenuItem onClick={() => onChangeBackgroundVariant?.('dots')}>
+                <ContextMenuItem onClick={() => changeBackgroundVariant('dots')}>
                   <Grid className="mr-2 h-4 w-4" />
                   Dots Pattern
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => onChangeBackgroundVariant?.('lines')}>
+                <ContextMenuItem onClick={() => changeBackgroundVariant('lines')}>
                   <Hash className="mr-2 h-4 w-4" />
                   Lines Pattern
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => onChangeBackgroundVariant?.('cross')}>
+                <ContextMenuItem onClick={() => changeBackgroundVariant('cross')}>
                   <Plus className="mr-2 h-4 w-4" />
                   Cross Pattern
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => onChangeBackgroundVariant?.('none')}>
+                <ContextMenuItem onClick={() => changeBackgroundVariant('none')}>
                   <EyeOff className="mr-2 h-4 w-4" />
                   No Pattern
                 </ContextMenuItem>

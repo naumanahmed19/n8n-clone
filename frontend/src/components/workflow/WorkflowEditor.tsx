@@ -1,11 +1,10 @@
-import { Component, ErrorInfo, ReactNode, useEffect } from 'react'
+import { Component, ErrorInfo, ReactNode, useCallback, useEffect } from 'react'
 import ReactFlow, {
     Background,
     Controls,
-    EdgeTypes,
     MiniMap,
     NodeTypes,
-    ReactFlowProvider,
+    ReactFlowProvider
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -18,14 +17,13 @@ import {
     useExecutionControls,
     useKeyboardShortcuts,
     useReactFlowInteractions,
-    useWorkflowEditorUI,
     useWorkflowOperations,
 } from '@/hooks/workflow'
-import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
+import { useAddNodeDialogStore, useWorkflowStore, useReactFlowUIStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'
 import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
-import { CustomEdge } from './CustomEdge'
+
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
@@ -34,11 +32,6 @@ import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
-}
-
-const edgeTypes: EdgeTypes = {
-    default: CustomEdge,
-    smoothstep: CustomEdge,
 }
 
 // Error Boundary Component
@@ -115,9 +108,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         propertyPanelNodeId,
         undo,
         redo,
-        canUndo,
-        canRedo,
-        toggleWorkflowActive,
         closeNodeProperties,
     } = useWorkflowStore()
 
@@ -127,17 +117,11 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     // Use custom hooks for better organization
     const {
         saveWorkflow,
-        validateAndShowResult,
-        handleExport,
-        handleImport,
-        isExporting,
-        isImporting,
-        hasUnsavedChanges,
     } = useWorkflowOperations()
 
     const {
         reactFlowWrapper,
-        setReactFlowInstance,
+        setReactFlowInstance: setReactFlowInstanceFromHook,
         nodes,
         edges,
         setNodes,
@@ -149,10 +133,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         handleDragOver,
         handleDrop,
         handleNodeDoubleClick,
-        handleZoomIn,
-        handleZoomOut,
-        handleFitView,
-        handleZoomToFit,
     } = useReactFlowInteractions()
 
     const {
@@ -167,22 +147,25 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     } = useExecutionControls()
 
     const {
-        showNodePalette,
-        showExecutionsPanel,
         showExecutionPanel,
-        toggleNodePalette,
-        toggleExecutionsPanel,
-        handleToggleExecutionPanel,
+        toggleExecutionPanel,
         executionPanelSize,
         showMinimap,
         showBackground,
         showControls,
         backgroundVariant,
-        handleToggleMinimap,
-        handleToggleBackground,
-        handleToggleControls,
-        handleChangeBackgroundVariant,
-    } = useWorkflowEditorUI()
+        setReactFlowInstance,
+    } = useReactFlowUIStore()
+
+    const {
+        showNodePalette,
+    } = useWorkflowToolbarStore()
+
+    // Sync ReactFlow instance to both hook and store
+    const handleReactFlowInit = useCallback((instance: any) => {
+        setReactFlowInstanceFromHook(instance)
+        setReactFlowInstance(instance)
+    }, [setReactFlowInstanceFromHook, setReactFlowInstance])
 
     // Keyboard shortcuts
     useKeyboardShortcuts({
@@ -304,59 +287,26 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                     minSize={30}
                                 >
                                     <div className="h-full " ref={reactFlowWrapper}>
-                                        <WorkflowCanvasContextMenu
-                                            canUndo={canUndo()}
-                                            canRedo={canRedo()}
-                                            onUndo={undo}
-                                            onRedo={redo}
-                                            onSave={saveWorkflow}
-                                            isSaving={false}
-                                            isDirty={hasUnsavedChanges}
-                                            isWorkflowActive={workflow?.active || false}
-                                            onToggleWorkflowActive={toggleWorkflowActive}
-                                            showExecutionPanel={showExecutionPanel}
-                                            onToggleExecutionPanel={handleToggleExecutionPanel}
-                                            showExecutionsPanel={showExecutionsPanel}
-                                            onToggleExecutionsPanel={toggleExecutionsPanel}
-                                            showNodePalette={showNodePalette}
-                                            onToggleNodePalette={toggleNodePalette}
-                                            onExport={handleExport}
-                                            onImport={handleImport}
-                                            isExporting={isExporting}
-                                            isImporting={isImporting}
-                                            onValidate={validateAndShowResult}
-                                            showMinimap={showMinimap}
-                                            onToggleMinimap={handleToggleMinimap}
-                                            showBackground={showBackground}
-                                            onToggleBackground={handleToggleBackground}
-                                            showControls={showControls}
-                                            onToggleControls={handleToggleControls}
-                                            onFitView={handleFitView}
-                                            onZoomIn={handleZoomIn}
-                                            onZoomOut={handleZoomOut}
-                                            onZoomToFit={handleZoomToFit}
-                                            onChangeBackgroundVariant={handleChangeBackgroundVariant}
-                                        >
+                                        <WorkflowCanvasContextMenu>
                                             <ReactFlow
                                                 nodes={nodes}
                                                 edges={edges}
                                                 onNodesChange={handleNodesChange}
                                                 onEdgesChange={handleEdgesChange}
                                                 onConnect={handleConnect}
-                                                onInit={setReactFlowInstance}
+                                                onInit={handleReactFlowInit}
                                                 onDrop={handleDrop}
                                                 onDragOver={handleDragOver}
                                                 onSelectionChange={handleSelectionChange}
                                                 onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                                                 nodeTypes={nodeTypes}
-                                             
+                                          
                                                 fitView
                                                 attributionPosition="bottom-left"
                                                 // Performance optimizations
                                                 edgeUpdaterRadius={10}
                                                 connectionRadius={20}
-                                                minZoom={0.1}
-                                                maxZoom={1}
+                                       
                                                 defaultEdgeOptions={{
                                                     type: 'smoothstep',
                                                     animated: false,
@@ -387,7 +337,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             flowExecutionStatus={executionState.executionId ? getFlowStatus(executionState.executionId) : null}
                                             executionMetrics={executionState.executionId ? getExecutionMetrics(executionState.executionId) : null}
                                             isExpanded={showExecutionPanel}
-                                            onToggle={handleToggleExecutionPanel}
+                                            onToggle={toggleExecutionPanel}
                                             onClearLogs={clearLogs}
                                         />
                                     </ResizablePanel>
