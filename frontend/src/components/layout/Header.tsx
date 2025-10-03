@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import {
-  LogOut,
-  Settings,
-  User,
-  Workflow,
-  Activity,
-  Key,
-  Bell,
-  Search,
-  Menu,
-  X,
-  ChevronDown,
-  Package
-} from 'lucide-react'
-import { useAuthStore } from '@/stores'
 import { APP_NAME } from '@/config/env'
+import { useAuthStore } from '@/stores'
+import {
+    Activity,
+    Bell,
+    ChevronDown,
+    Key,
+    LogOut,
+    Menu,
+    Package,
+    Search,
+    Settings,
+    User,
+    Workflow,
+    X
+} from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 export const Header: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuthStore()
@@ -85,7 +85,7 @@ export const Header: React.FC = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-1">
-              <Link to="/workflows" className={navLinkClass('/workflows')}>
+              <Link to="/workspace" className={navLinkClass('/workspace')}>
                 <Workflow className="w-4 h-4" />
                 <span>Workflows</span>
               </Link>
@@ -217,8 +217,8 @@ export const Header: React.FC = () => {
           {/* Mobile Navigation Links */}
           <nav className="px-4 py-2 space-y-1">
             <Link
-              to="/workflows"
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${isActiveRoute('/workflows')
+              to="/workspace"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${isActiveRoute('/workspace')
                   ? 'text-primary-600 bg-primary-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}

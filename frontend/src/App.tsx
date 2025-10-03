@@ -37,6 +37,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* Workflow landing page route - without ID shows landing page */}
+          <Route
+            path="/workflows"
+            element={
+              <ProtectedRoute>
+                <WorkflowEditorLayout />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Main application routes with layout */}
           <Route
@@ -48,7 +58,7 @@ function App() {
             }
           >
             <Route index element={<Navigate to="/workflows" replace />} />
-            <Route path="workflows" element={<WorkspacePage />} />
+            <Route path="workspace" element={<WorkspacePage />} />
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />
