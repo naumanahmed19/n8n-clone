@@ -24,12 +24,12 @@ import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
+import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
-import { WorkflowCanvas } from './WorkflowCanvas'
 import {
-    transformWorkflowNodesToReactFlow,
     transformWorkflowEdgesToReactFlow,
+    transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
 
 

@@ -1,4 +1,4 @@
-import ReactFlow, { Background, Controls, MiniMap, Node, Edge, NodeTypes } from 'reactflow'
+import ReactFlow, { Background, Controls, Edge, MiniMap, Node, NodeTypes } from 'reactflow'
 
 interface WorkflowCanvasProps {
     nodes: Node[]
