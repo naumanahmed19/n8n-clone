@@ -1,6 +1,12 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
-import ReactFlow, { Background, Controls, Edge, MiniMap, Node, NodeTypes } from 'reactflow'
+import ReactFlow, { Background, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
+import { CustomEdge } from './edges'
+
+const edgeTypes: EdgeTypes = {
+    default: CustomEdge,
+    smoothstep: CustomEdge,
+}
 
 interface WorkflowCanvasProps {
     nodes: Node[]
@@ -49,6 +55,7 @@ export function WorkflowCanvas({
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
                     fitView
                     attributionPosition="bottom-left"
                     edgeUpdaterRadius={10}

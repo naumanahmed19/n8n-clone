@@ -26,7 +26,7 @@ export function AddNodeCommandDialog({
   nodeTypes,
   position,
 }: AddNodeCommandDialogProps) {
-  const { addNode, addConnection } = useWorkflowStore()
+  const { addNode, addConnection, removeConnection, workflow } = useWorkflowStore()
   const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
 
@@ -110,6 +110,19 @@ export function AddNodeCommandDialog({
 
     // If we have insertion context, create connections
     if (insertionContext) {
+      // First, find and remove the existing connection between source and target
+      const existingConnection = workflow?.connections.find(
+        conn =>
+          conn.sourceNodeId === insertionContext.sourceNodeId &&
+          conn.targetNodeId === insertionContext.targetNodeId &&
+          (conn.sourceOutput === insertionContext.sourceOutput || (!conn.sourceOutput && !insertionContext.sourceOutput)) &&
+          (conn.targetInput === insertionContext.targetInput || (!conn.targetInput && !insertionContext.targetInput))
+      )
+
+      if (existingConnection) {
+        removeConnection(existingConnection.id)
+      }
+
       // Create connection from source node to new node
       const sourceConnection: WorkflowConnection = {
         id: `${insertionContext.sourceNodeId}-${newNode.id}-${Date.now()}`,
@@ -136,7 +149,7 @@ export function AddNodeCommandDialog({
     }
 
     onOpenChange(false)
-  }, [addNode, addConnection, onOpenChange, position, reactFlowInstance, insertionContext])
+  }, [addNode, addConnection, removeConnection, workflow, onOpenChange, position, reactFlowInstance, insertionContext])
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
