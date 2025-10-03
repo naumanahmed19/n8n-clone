@@ -101,21 +101,15 @@ export function WorkflowToolbar({
     clearImportExportErrors,
     
     // UI state
-    showExecutionsPanel,
     isSaving,
-    toggleExecutionsPanel,
     setSaving,
-    
-    // Workflow activation state
-    isWorkflowActive,
-    toggleWorkflowActive,
-    
-    // Execution state (display only)
-    workflowExecutions,
     
     // Error handling
     handleError
   } = useWorkflowToolbarStore()
+  
+  // Get workflow activation state directly from workflow
+  const isWorkflowActive = workflow?.active ?? false
 
   // Helper functions
   const handleImportClick = async () => {
@@ -300,7 +294,12 @@ export function WorkflowToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={toggleWorkflowActive}
+              onClick={() => {
+                if (workflow) {
+                  updateWorkflow({ active: !isWorkflowActive })
+                  setDirty(true)
+                }
+              }}
               variant={isWorkflowActive ? "default" : "secondary"}
               size="sm"
               className={cn(
