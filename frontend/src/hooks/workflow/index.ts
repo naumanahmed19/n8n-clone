@@ -38,6 +38,7 @@
  */
 
 export { useExecutionControls } from "./useExecutionControls";
+export { useExecutionPanelData } from "./useExecutionPanelData";
 export { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 export { useReactFlowInteractions } from "./useReactFlowInteractions";
 export { useWorkflowEditorUI } from "./useWorkflowEditorUI";

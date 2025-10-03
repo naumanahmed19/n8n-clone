@@ -1,8 +1,5 @@
 import { useCallback, useEffect } from 'react'
-import ReactFlow, {
-    Background,
-    Controls,
-    MiniMap,
+import {
     NodeTypes,
     ReactFlowProvider
 } from 'reactflow'
@@ -15,13 +12,13 @@ import {
 } from '@/components/ui/resizable'
 import {
     useExecutionControls,
+    useExecutionPanelData,
     useKeyboardShortcuts,
     useReactFlowInteractions,
     useWorkflowOperations,
 } from '@/hooks/workflow'
 import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'
-import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 
 import { CustomNode } from './CustomNode'
@@ -29,6 +26,11 @@ import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
+import { WorkflowCanvas } from './WorkflowCanvas'
+import {
+    transformWorkflowNodesToReactFlow,
+    transformWorkflowEdgesToReactFlow,
+} from './workflowTransformers'
 
 
 const nodeTypes: NodeTypes = {
@@ -99,6 +101,13 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         showNodePalette,
     } = useWorkflowToolbarStore()
 
+    // Execution panel data
+    const { flowExecutionStatus, executionMetrics } = useExecutionPanelData({
+        executionId: executionState.executionId,
+        getFlowStatus,
+        getExecutionMetrics,
+    })
+
     // Sync ReactFlow instance to both hook and store
     const handleReactFlowInit = useCallback((instance: any) => {
         setReactFlowInstanceFromHook(instance)
@@ -118,91 +127,19 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     useEffect(() => {
         if (!workflow) return
 
-        const reactFlowNodes = workflow.nodes.map(node => {
-            // Get real-time execution result for this node
-            const nodeResult = getNodeResult(node.id)
-            
-            // Determine node status based on execution state and real-time results
-            let nodeStatus: 'idle' | 'running' | 'success' | 'error' | 'skipped' = 'idle'
-            
-            if (executionState.status === 'running') {
-                if (nodeResult) {
-                    // Use real-time result status
-                    if (nodeResult.status === 'success') nodeStatus = 'success'
-                    else if (nodeResult.status === 'error') nodeStatus = 'error'
-                    else if (nodeResult.status === 'skipped') nodeStatus = 'skipped'
-                    else nodeStatus = 'running'
-                } else {
-                    // Node hasn't started yet or no real-time data
-                    nodeStatus = 'idle'
-                }
-            } else if (executionState.status === 'success' || executionState.status === 'error' || executionState.status === 'cancelled') {
-                // Execution completed, use final results
-                if (nodeResult) {
-                    nodeStatus = nodeResult.status
-                } else if (lastExecutionResult) {
-                    // Fallback to last execution result
-                    const lastNodeResult = lastExecutionResult.nodeResults.find(nr => nr.nodeId === node.id)
-                    if (lastNodeResult) {
-                        nodeStatus = lastNodeResult.status
-                    }
-                }
-            }
+        const reactFlowNodes = transformWorkflowNodesToReactFlow(
+            workflow.nodes,
+            availableNodeTypes,
+            executionState,
+            getNodeResult,
+            lastExecutionResult
+        )
 
-            // Find the corresponding node type definition to get inputs/outputs info
-            const nodeTypeDefinition = availableNodeTypes.find(nt => nt.type === node.type)
-            
-            return {
-                id: node.id,
-                type: 'custom',
-                position: node.position,
-                data: {
-                    label: node.name,
-                    nodeType: node.type,
-                    parameters: node.parameters,
-                    disabled: node.disabled,
-                    status: nodeStatus,
-                    // Add inputs/outputs information from node type definition
-                    inputs: nodeTypeDefinition?.inputs || [],
-                    // Dynamic outputs for Switch node based on configured outputs
-                    outputs: node.type === 'switch' && node.parameters?.outputs
-                        ? (node.parameters.outputs as any[]).map((output: any, index: number) => 
-                            output.outputName || `Output ${index + 1}`
-                          )
-                        : nodeTypeDefinition?.outputs || [],
-                    // Add position and style information
-                    position: node.position,
-                    dimensions: { width: 64, height: 64 }, // Default dimensions for now
-                    customStyle: {
-                        backgroundColor: nodeTypeDefinition?.color || '#666',
-                        borderColor: undefined, // Will be handled by CSS based on selection state
-                        borderWidth: 2,
-                        borderRadius: isTriggerNode(node.type) ? 32 : 8, // Rounded for triggers
-                        shape: isTriggerNode(node.type) ? 'trigger' : 'rectangle',
-                        opacity: node.disabled ? 0.5 : 1.0
-                    },
-                    // Add execution result data for display
-                    executionResult: nodeResult,
-                    lastExecutionData: lastExecutionResult?.nodeResults.find(nr => nr.nodeId === node.id)
-                }
-            }
-        })
-
-        const reactFlowEdges = workflow.connections.map(conn => ({
-            id: conn.id,
-            source: conn.sourceNodeId,
-            target: conn.targetNodeId,
-            sourceHandle: conn.sourceOutput,
-            targetHandle: conn.targetInput,
-            type: 'smoothstep',
-            data: {
-                label: conn.sourceOutput !== 'main' ? conn.sourceOutput : undefined
-            }
-        }))
+        const reactFlowEdges = transformWorkflowEdgesToReactFlow(workflow.connections)
 
         setNodes(reactFlowNodes)
         setEdges(reactFlowEdges)
-    }, [workflow, executionState, realTimeResults, lastExecutionResult, getNodeResult, setNodes, setEdges])
+    }, [workflow, executionState, realTimeResults, lastExecutionResult, getNodeResult, availableNodeTypes, setNodes, setEdges])
 
     // Get selected node data for config panel
     const selectedNode = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
@@ -224,38 +161,26 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                     defaultSize={100 - executionPanelSize} 
                                     minSize={30}
                                 >
-                                    <div className="h-full " ref={reactFlowWrapper}>
-                                        <WorkflowCanvasContextMenu>
-                                            <ReactFlow
-                                                nodes={nodes}
-                                                edges={edges}
-                                                onNodesChange={handleNodesChange}
-                                                onEdgesChange={handleEdgesChange}
-                                                onConnect={handleConnect}
-                                                onInit={handleReactFlowInit}
-                                                onDrop={handleDrop}
-                                                onDragOver={handleDragOver}
-                                                onSelectionChange={handleSelectionChange}
-                                                onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
-                                                nodeTypes={nodeTypes}
-                                          
-                                                fitView
-                                                attributionPosition="bottom-left"
-                                                // Performance optimizations
-                                                edgeUpdaterRadius={10}
-                                                connectionRadius={20}
-                                       
-                                                defaultEdgeOptions={{
-                                                    type: 'smoothstep',
-                                                    animated: false,
-                                                }}
-                                            >
-                                                {showControls && <Controls />}
-                                                {showMinimap && <MiniMap />}
-                                                {showBackground && <Background variant={backgroundVariant as any} gap={12} size={1} />}
-                                            </ReactFlow>
-                                        </WorkflowCanvasContextMenu>
-                                    </div>
+                                    <WorkflowCanvasContextMenu>
+                                        <WorkflowCanvas
+                                            nodes={nodes}
+                                            edges={edges}
+                                            nodeTypes={nodeTypes}
+                                            reactFlowWrapper={reactFlowWrapper}
+                                            showControls={showControls}
+                                            showMinimap={showMinimap}
+                                            showBackground={showBackground}
+                                            backgroundVariant={backgroundVariant}
+                                            onNodesChange={handleNodesChange}
+                                            onEdgesChange={handleEdgesChange}
+                                            onConnect={handleConnect}
+                                            onInit={handleReactFlowInit}
+                                            onDrop={handleDrop}
+                                            onDragOver={handleDragOver}
+                                            onSelectionChange={handleSelectionChange}
+                                            onNodeDoubleClick={handleNodeDoubleClick}
+                                        />
+                                    </WorkflowCanvasContextMenu>
                                 </ResizablePanel>
 
                                 {/* Execution Panel */}
@@ -272,8 +197,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                             lastExecutionResult={lastExecutionResult}
                                             executionLogs={executionLogs}
                                             realTimeResults={realTimeResults}
-                                            flowExecutionStatus={executionState.executionId ? getFlowStatus(executionState.executionId) : null}
-                                            executionMetrics={executionState.executionId ? getExecutionMetrics(executionState.executionId) : null}
+                                            flowExecutionStatus={flowExecutionStatus}
+                                            executionMetrics={executionMetrics}
                                             isExpanded={showExecutionPanel}
                                             onToggle={toggleExecutionPanel}
                                             onClearLogs={clearLogs}
