@@ -62,9 +62,9 @@ export function AddNodeCommandDialog({
       const targetNode = reactFlowInstance.getNode(insertionContext.targetNodeId)
       
       if (sourceNode && targetNode) {
-        // Assume standard node width of ~200px (can adjust based on your node sizes)
-        const nodeWidth = 200
-        const gap = 50
+        // Assume standard node width (adjust based on your node sizes)
+        const nodeWidth = 150
+        const gap = 25
         
         // Calculate the vector from source to target
         const deltaX = targetNode.position.x - sourceNode.position.x
