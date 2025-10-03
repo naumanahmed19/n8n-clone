@@ -161,6 +161,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                         showBackground={showBackground}
                                         backgroundVariant={backgroundVariant}
                                         onInit={handleReactFlowInit}
+                                        isExecuting={executionState.status === 'running'}
                                     />
                                 </ResizablePanel>
 

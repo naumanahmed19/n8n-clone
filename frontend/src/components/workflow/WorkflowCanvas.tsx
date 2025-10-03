@@ -17,6 +17,7 @@ interface WorkflowCanvasProps {
     showBackground: boolean
     backgroundVariant: string
     onInit: (instance: any) => void
+    isExecuting?: boolean
 }
 
 export function WorkflowCanvas({
@@ -28,6 +29,7 @@ export function WorkflowCanvas({
     showBackground,
     backgroundVariant,
     onInit,
+    isExecuting = false,
 }: WorkflowCanvasProps) {
     const {
         reactFlowWrapper,
@@ -62,7 +64,7 @@ export function WorkflowCanvas({
                     connectionRadius={20}
                     defaultEdgeOptions={{
                         type: 'smoothstep',
-                        animated: false,
+                        animated: isExecuting,
                     }}
                 >
                     {showControls && <Controls />}
