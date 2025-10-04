@@ -1,1 +1,1 @@
-export { WorkflowSelector, TriggerSelector } from './WorkflowTriggerSelectors'
+export { TriggerSelector, WorkflowSelector } from "./WorkflowTriggerSelectors";

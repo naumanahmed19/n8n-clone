@@ -1,13 +1,13 @@
 import { Button } from '@/components/ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
 import { workflowService } from '@/services/workflow'
-import { WorkflowOption, TriggerOption } from '@/types/workflow'
+import { TriggerOption, WorkflowOption } from '@/types/workflow'
 import { RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

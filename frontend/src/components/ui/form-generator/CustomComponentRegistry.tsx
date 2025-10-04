@@ -1,5 +1,5 @@
-import { WorkflowTriggerComponents } from '@/components/workflow/nodes/WorkflowTrigger/WorkflowTriggerComponents'
 import { CustomFieldProps } from '@/components/ui/form-generator/types'
+import { WorkflowTriggerComponents } from '@/components/workflow/nodes/WorkflowTrigger/WorkflowTriggerComponents'
 
 // Global component registry for custom node components
 const componentRegistry: Record<string, (props: CustomFieldProps) => React.ReactNode> = {

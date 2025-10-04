@@ -34,7 +34,7 @@ export class WorkflowService {
       return [];
     }
 
-    return triggers.map(trigger => ({
+    return triggers.map((trigger) => ({
       ...trigger,
       // Set active to true if not explicitly set
       active: trigger.active !== undefined ? trigger.active : true,
@@ -60,11 +60,13 @@ export class WorkflowService {
         const triggers = workflow.triggers as any[];
         if (Array.isArray(triggers) && triggers.length > 0) {
           // Check if any trigger is missing the active property
-          const needsUpdate = triggers.some(trigger => trigger.active === undefined);
-          
+          const needsUpdate = triggers.some(
+            (trigger) => trigger.active === undefined
+          );
+
           if (needsUpdate) {
             const normalizedTriggers = this.normalizeTriggers(triggers);
-            
+
             await this.prisma.workflow.update({
               where: { id: workflow.id },
               data: {
@@ -72,7 +74,7 @@ export class WorkflowService {
                 updatedAt: new Date(),
               },
             });
-            
+
             updatedCount++;
           }
         }
@@ -177,7 +179,9 @@ export class WorkflowService {
       }
 
       // Normalize triggers if they are being updated
-      const normalizedTriggers = data.triggers ? this.normalizeTriggers(data.triggers) : undefined;
+      const normalizedTriggers = data.triggers
+        ? this.normalizeTriggers(data.triggers)
+        : undefined;
 
       const workflow = await this.prisma.workflow.update({
         where: { id },

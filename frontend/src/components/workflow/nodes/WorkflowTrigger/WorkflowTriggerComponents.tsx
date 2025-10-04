@@ -1,5 +1,5 @@
-import { WorkflowSelector, TriggerSelector } from '@/components/workflow/nodes/WorkflowTrigger'
 import { CustomFieldProps } from '@/components/ui/form-generator/types'
+import { TriggerSelector, WorkflowSelector } from '@/components/workflow/nodes/WorkflowTrigger'
 
 // Adapter for WorkflowSelector
 export function WorkflowSelectorAdapter({ value, onChange, error, disabled }: CustomFieldProps) {

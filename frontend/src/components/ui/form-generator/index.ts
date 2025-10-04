@@ -1,3 +1,4 @@
+export * from "./CustomComponentRegistry";
 export { FieldRenderer } from "./FieldRenderer";
 export { FieldValidator } from "./FieldValidator";
 export { FieldVisibilityManager } from "./FieldVisibilityManager";
@@ -5,7 +6,6 @@ export { FormGenerator } from "./FormGenerator";
 export { PropertyField } from "./PropertyField";
 export { RepeatingField } from "./RepeatingField";
 export * from "./types";
-export * from "./CustomComponentRegistry";
 
 // Utility function to create field configurations
 export function createField(

@@ -47,7 +47,7 @@ router.get(
     // Get workflows with triggers field included
     const workflows = await prisma.workflow.findMany({
       where: { userId: req.user!.id },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
       take: 100,
       select: {
         id: true,
@@ -55,7 +55,7 @@ router.get(
         description: true,
         active: true,
         triggers: true,
-      }
+      },
     });
 
     // Filter workflows that have active triggers and format for node options
@@ -75,7 +75,8 @@ router.get(
             id: trigger.id,
             type: trigger.type,
             nodeId: trigger.nodeId,
-            description: trigger.settings?.description || `${trigger.type} trigger`,
+            description:
+              trigger.settings?.description || `${trigger.type} trigger`,
           })),
       }));
 
