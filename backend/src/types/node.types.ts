@@ -16,6 +16,7 @@ export interface NodeDefinition {
   hooks?: NodeHooks;
   icon?: string;
   color?: string;
+  outputComponent?: string; // Optional custom output component identifier
 }
 
 export interface NodePropertyOption {

@@ -151,6 +151,7 @@ export class NodeService {
             properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
+            outputComponent: nodeDefinition.outputComponent, // Save custom output component
             // Preserve existing active status instead of overriding to true
             active: existingNode.active,
           },
@@ -171,6 +172,7 @@ export class NodeService {
             properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
+            outputComponent: nodeDefinition.outputComponent, // Save custom output component
             active: true,
           },
         });

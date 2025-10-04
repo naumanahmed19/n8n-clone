@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { Pause, ImageIcon } from 'lucide-react'
+import { ImageIcon, Pause } from 'lucide-react'
 import { useState } from 'react'
 
 interface NodeContentProps {

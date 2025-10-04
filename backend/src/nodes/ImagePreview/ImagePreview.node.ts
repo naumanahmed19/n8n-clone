@@ -6,7 +6,7 @@ import {
 
 /**
  * Image Preview Node
- * 
+ *
  * Displays an image preview from a URL input.
  * Supports custom component rendering for real-time preview in the configuration dialog.
  */
@@ -19,6 +19,7 @@ export const ImagePreviewNode: NodeDefinition = {
   description: "Display and preview images from URL with real-time rendering",
   icon: "fa:image",
   color: "#FF6B6B",
+  outputComponent: "ImagePreviewOutput", // Custom output renderer
   defaults: {
     imageUrl: "",
     altText: "",
@@ -84,15 +85,18 @@ export const ImagePreviewNode: NodeDefinition = {
     const imageUrl = this.getNodeParameter("imageUrl") as string;
     const altText = this.getNodeParameter("altText") as string;
     const displayInOutput = this.getNodeParameter("displayInOutput") as boolean;
-    
+
     // Get dimensions from frontend (if available)
     let imageDimensions: any = {};
     try {
-      const dimensionsParam = this.getNodeParameter("imageDimensions") as string;
+      const dimensionsParam = this.getNodeParameter(
+        "imageDimensions"
+      ) as string;
       if (dimensionsParam && dimensionsParam !== "{}") {
-        imageDimensions = typeof dimensionsParam === 'string' 
-          ? JSON.parse(dimensionsParam) 
-          : dimensionsParam;
+        imageDimensions =
+          typeof dimensionsParam === "string"
+            ? JSON.parse(dimensionsParam)
+            : dimensionsParam;
       }
     } catch (error) {
       // Ignore parsing errors, dimensions are optional
@@ -105,18 +109,22 @@ export const ImagePreviewNode: NodeDefinition = {
     // Validate URL format
     try {
       const url = new URL(imageUrl);
-      
+
       // Check if protocol is http or https
       if (!["http:", "https:"].includes(url.protocol)) {
         throw new Error("Image URL must use HTTP or HTTPS protocol");
       }
     } catch (error) {
-      throw new Error(`Invalid image URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Invalid image URL: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
 
     // Try to fetch image metadata
     let imageMetadata: any = {};
-    
+
     if (displayInOutput) {
       try {
         const fetch = (await import("node-fetch")).default;
@@ -138,7 +146,7 @@ export const ImagePreviewNode: NodeDefinition = {
           if (response.ok) {
             const contentType = response.headers.get("content-type") || "";
             const contentLength = response.headers.get("content-length");
-            
+
             // Validate it's an image
             if (!contentType.startsWith("image/")) {
               this.logger.warn("URL does not point to an image", {
@@ -157,9 +165,10 @@ export const ImagePreviewNode: NodeDefinition = {
               valid: contentType.startsWith("image/"),
               width: imageDimensions.width || null,
               height: imageDimensions.height || null,
-              dimensions: imageDimensions.width && imageDimensions.height
-                ? `${imageDimensions.width}px × ${imageDimensions.height}px`
-                : null,
+              dimensions:
+                imageDimensions.width && imageDimensions.height
+                  ? `${imageDimensions.width}px × ${imageDimensions.height}px`
+                  : null,
             };
           } else {
             this.logger.warn("Failed to fetch image metadata", {
@@ -170,7 +179,10 @@ export const ImagePreviewNode: NodeDefinition = {
         } catch (fetchError) {
           clearTimeout(timeoutId);
           this.logger.warn("Error fetching image metadata", {
-            error: fetchError instanceof Error ? fetchError.message : "Unknown error",
+            error:
+              fetchError instanceof Error
+                ? fetchError.message
+                : "Unknown error",
             url: imageUrl,
           });
         }
@@ -203,10 +215,10 @@ export const ImagePreviewNode: NodeDefinition = {
  */
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
-  
+
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 }

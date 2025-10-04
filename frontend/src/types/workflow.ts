@@ -122,6 +122,7 @@ export interface NodeType {
   outputs: string[];
   icon?: string;
   color?: string;
+  outputComponent?: string; // Optional custom output component identifier
   properties: NodeProperty[];
   credentials?: CredentialDefinition[];
   active?: boolean; // Added for activation/deactivation functionality

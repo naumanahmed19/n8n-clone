@@ -1,41 +1,41 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
 } from '@/components/ui/tabs'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import { getNodeExecutionCapability } from '@/utils/nodeTypeClassification'
 import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronRight,
-  Code,
-  FolderOpen,
-  GitBranch,
-  Info,
-  Settings,
-  Table,
-  Zap
+    ArrowLeft,
+    ChevronDown,
+    ChevronRight,
+    Code,
+    FolderOpen,
+    GitBranch,
+    Info,
+    Settings,
+    Table,
+    Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
