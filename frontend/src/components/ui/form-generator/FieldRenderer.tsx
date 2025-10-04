@@ -20,6 +20,8 @@ export function FieldRenderer({
   onChange,
   onBlur,
   disabled,
+  allValues,
+  allFields,
 }: FormFieldRendererProps) {
   const handleChange = (newValue: any) => {
     onChange(newValue)
@@ -39,6 +41,8 @@ export function FieldRenderer({
       field,
       error,
       disabled,
+      allValues,
+      allFields,
     })
   }
 

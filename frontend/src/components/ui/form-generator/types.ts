@@ -63,6 +63,8 @@ export interface CustomFieldProps {
   field: FormFieldConfig;
   error?: string;
   disabled?: boolean;
+  allValues?: Record<string, any>;
+  allFields?: FormFieldConfig[];
 }
 
 export interface FormGeneratorProps {

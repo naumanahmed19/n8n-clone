@@ -26,8 +26,74 @@ export class WorkflowService {
     this.prisma = prisma;
   }
 
+  /**
+   * Normalize triggers to ensure they have the active property set
+   */
+  private normalizeTriggers(triggers: any[]): any[] {
+    if (!Array.isArray(triggers)) {
+      return [];
+    }
+
+    return triggers.map(trigger => ({
+      ...trigger,
+      // Set active to true if not explicitly set
+      active: trigger.active !== undefined ? trigger.active : true,
+    }));
+  }
+
+  /**
+   * Migrate existing workflows to ensure triggers have active property
+   */
+  async migrateTriggersActiveProperty(): Promise<{ updated: number }> {
+    try {
+      // Get all workflows
+      const workflows = await this.prisma.workflow.findMany({
+        select: {
+          id: true,
+          triggers: true,
+        },
+      });
+
+      let updatedCount = 0;
+
+      for (const workflow of workflows) {
+        const triggers = workflow.triggers as any[];
+        if (Array.isArray(triggers) && triggers.length > 0) {
+          // Check if any trigger is missing the active property
+          const needsUpdate = triggers.some(trigger => trigger.active === undefined);
+          
+          if (needsUpdate) {
+            const normalizedTriggers = this.normalizeTriggers(triggers);
+            
+            await this.prisma.workflow.update({
+              where: { id: workflow.id },
+              data: {
+                triggers: normalizedTriggers,
+                updatedAt: new Date(),
+              },
+            });
+            
+            updatedCount++;
+          }
+        }
+      }
+
+      return { updated: updatedCount };
+    } catch (error) {
+      console.error("Error migrating triggers active property:", error);
+      throw new AppError(
+        "Failed to migrate triggers",
+        500,
+        "TRIGGER_MIGRATION_ERROR"
+      );
+    }
+  }
+
   async createWorkflow(userId: string, data: CreateWorkflowRequest) {
     try {
+      // Normalize triggers to ensure they have active property
+      const normalizedTriggers = this.normalizeTriggers(data.triggers || []);
+
       const workflow = await this.prisma.workflow.create({
         data: {
           name: data.name,
@@ -37,7 +103,7 @@ export class WorkflowService {
           userId,
           nodes: data.nodes,
           connections: data.connections,
-          triggers: data.triggers,
+          triggers: normalizedTriggers,
           settings: data.settings,
           active: data.active,
         },
@@ -110,6 +176,9 @@ export class WorkflowService {
         }
       }
 
+      // Normalize triggers if they are being updated
+      const normalizedTriggers = data.triggers ? this.normalizeTriggers(data.triggers) : undefined;
+
       const workflow = await this.prisma.workflow.update({
         where: { id },
         data: {
@@ -121,7 +190,7 @@ export class WorkflowService {
           ...(data.tags !== undefined && { tags: data.tags }),
           ...(data.nodes && { nodes: data.nodes }),
           ...(data.connections && { connections: data.connections }),
-          ...(data.triggers && { triggers: data.triggers }),
+          ...(normalizedTriggers && { triggers: normalizedTriggers }),
           ...(data.settings && { settings: data.settings }),
           ...(data.active !== undefined && { active: data.active }),
           updatedAt: new Date(),

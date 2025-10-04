@@ -12,3 +12,4 @@ export { WorkflowExecuteButton } from "./WorkflowExecuteButton";
 export { WorkflowLandingPage } from "./WorkflowLandingPage";
 export { WorkflowSettingsModal } from "./WorkflowSettingsModal";
 export { WorkflowToolbar } from "./WorkflowToolbar";
+export * from "./nodes/WorkflowTrigger";

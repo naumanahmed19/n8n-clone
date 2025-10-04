@@ -12,3 +12,4 @@ export * from "./ScheduleTrigger";
 export * from "./Set";
 export * from "./Switch";
 export * from "./WebhookTrigger";
+export * from "./WorkflowTrigger";

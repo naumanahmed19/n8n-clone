@@ -1,6 +1,6 @@
 import { CredentialSelector } from '@/components/credential/CredentialSelector'
 import { Card, CardContent } from '@/components/ui/card'
-import { createField, FormGenerator } from '@/components/ui/form-generator'
+import { createField, FormGenerator, getCustomComponent } from '@/components/ui/form-generator'
 import { useCredentialStore, useNodeConfigDialogStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
@@ -42,8 +42,8 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
   }, [node.id, nodeName, parameters, credentials, nodeType.properties, setValidationErrors])
 
   // Convert all node properties to FormFieldConfig for use with FormGenerator
-  const formFields = nodeType.properties?.map(property => 
-    createField({
+  const formFields = nodeType.properties?.map(property => {
+    const fieldConfig = createField({
       name: property.name,
       displayName: property.displayName,
       type: property.type as any,
@@ -57,7 +57,17 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
       component: property.component, // For custom components
       componentProps: property.componentProps, // For nested fields in collection
     })
-  ) || []
+
+    // If this is a custom component, set the customComponent function
+    if (property.type === 'custom' && property.component) {
+      const customComponent = getCustomComponent(property.component)
+      if (customComponent) {
+        fieldConfig.customComponent = customComponent
+      }
+    }
+
+    return fieldConfig
+  }) || []
 
   // Get validation errors in the format expected by FormGenerator
   const formErrors = validationErrors.reduce((acc, error) => {

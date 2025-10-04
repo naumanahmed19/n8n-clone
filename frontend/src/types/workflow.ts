@@ -240,3 +240,20 @@ export interface NodeExecutionResult {
   data?: any;
   error?: string;
 }
+
+// Types for WorkflowTrigger node
+export interface TriggerOption {
+  id: string;
+  type: "webhook" | "schedule" | "manual";
+  nodeId: string;
+  description?: string;
+  settings?: Record<string, any>;
+}
+
+export interface WorkflowOption {
+  id: string;
+  name: string;
+  description?: string;
+  active: boolean;
+  triggers: TriggerOption[];
+}
