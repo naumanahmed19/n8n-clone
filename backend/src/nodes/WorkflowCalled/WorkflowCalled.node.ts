@@ -34,7 +34,8 @@ export const WorkflowCalledNode: NodeDefinition = {
       type: "boolean",
       required: false,
       default: true,
-      description: "Whether to pass through data received from the calling workflow",
+      description:
+        "Whether to pass through data received from the calling workflow",
     },
   ],
   execute: async function (
@@ -46,17 +47,19 @@ export const WorkflowCalledNode: NodeDefinition = {
     this.logger.info("WorkflowCalled trigger starting execution", {
       description,
       passthrough,
-      inputData: inputData ? {
-        main: inputData.main?.length || 0,
-        hasContent: !!inputData.main?.[0]?.[0],
-        content: inputData.main?.[0]?.[0]
-      } : null,
+      inputData: inputData
+        ? {
+            main: inputData.main?.length || 0,
+            hasContent: !!inputData.main?.[0]?.[0],
+            content: inputData.main?.[0]?.[0],
+          }
+        : null,
     });
 
     // Get trigger data from the execution context
     // The WorkflowTrigger passes data through the execution's triggerData
     let receivedData: any = {};
-    
+
     // Check input data for trigger data
     if (inputData?.main?.[0]?.[0]?.json) {
       receivedData = inputData.main[0][0].json;
@@ -66,7 +69,8 @@ export const WorkflowCalledNode: NodeDefinition = {
       triggeredAt: new Date().toISOString(),
       triggerType: "workflow-called",
       description: description || "Workflow called by external source",
-      message: "This workflow was triggered by another workflow or external call",
+      message:
+        "This workflow was triggered by another workflow or external call",
     };
 
     // Include the received data if passthrough is enabled
@@ -80,7 +84,7 @@ export const WorkflowCalledNode: NodeDefinition = {
     if (Object.keys(receivedData).length === 0) {
       output.workflowCallInfo = {
         calledAt: new Date().toISOString(),
-        triggerSource: "workflow-called"
+        triggerSource: "workflow-called",
       };
     }
 
@@ -99,7 +103,7 @@ export const WorkflowCalledNode: NodeDefinition = {
       hasReceivedData: Object.keys(receivedData).length > 0,
       receivedDataKeys: Object.keys(receivedData),
       outputKeys: Object.keys(output),
-      result: result
+      result: result,
     });
 
     return result;

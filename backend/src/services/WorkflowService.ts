@@ -35,15 +35,15 @@ export class WorkflowService {
     }
 
     const triggerNodeTypes: Record<string, string> = {
-      'manual-trigger': 'manual',
-      'webhook-trigger': 'webhook', 
-      'schedule-trigger': 'schedule',
-      'workflow-called': 'workflow-called'
+      "manual-trigger": "manual",
+      "webhook-trigger": "webhook",
+      "schedule-trigger": "schedule",
+      "workflow-called": "workflow-called",
     };
 
     return nodes
-      .filter(node => node.type && triggerNodeTypes[node.type])
-      .map(node => {
+      .filter((node) => node.type && triggerNodeTypes[node.type])
+      .map((node) => {
         const triggerType = triggerNodeTypes[node.type];
         return {
           id: `trigger-${node.id}`,
@@ -51,9 +51,10 @@ export class WorkflowService {
           nodeId: node.id,
           active: !node.disabled, // Active if node is not disabled
           settings: {
-            description: node.parameters?.description || `${triggerType} trigger`,
-            ...node.parameters
-          }
+            description:
+              node.parameters?.description || `${triggerType} trigger`,
+            ...node.parameters,
+          },
         };
       });
   }

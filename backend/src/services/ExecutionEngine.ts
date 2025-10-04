@@ -548,12 +548,15 @@ export class ExecutionEngine extends EventEmitter {
 
       // Enhanced error handling for workflow-called triggers
       if (node && node.type === "workflow-called") {
-        logger.error(`Workflow-called trigger node ${nodeId} execution failed`, {
-          executionId,
-          error: error instanceof Error ? error.message : "Unknown error",
-          triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
-          nodeParameters: Object.keys(node.parameters || {}),
-        });
+        logger.error(
+          `Workflow-called trigger node ${nodeId} execution failed`,
+          {
+            executionId,
+            error: error instanceof Error ? error.message : "Unknown error",
+            triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
+            nodeParameters: Object.keys(node.parameters || {}),
+          }
+        );
       }
 
       await this.handleNodeExecutionError(
@@ -743,10 +746,13 @@ export class ExecutionEngine extends EventEmitter {
         const triggerInput = context.triggerData || {};
 
         // Log trigger data for debugging
-        logger.debug(`Preparing workflow-called trigger input data for node ${nodeId}`, {
-          triggerDataKeys: Object.keys(triggerInput),
-          triggerDataSize: JSON.stringify(triggerInput).length,
-        });
+        logger.debug(
+          `Preparing workflow-called trigger input data for node ${nodeId}`,
+          {
+            triggerDataKeys: Object.keys(triggerInput),
+            triggerDataSize: JSON.stringify(triggerInput).length,
+          }
+        );
 
         inputData.main = [[{ json: triggerInput }]];
       } else {
@@ -1024,9 +1030,12 @@ export class ExecutionEngine extends EventEmitter {
     const triggerNodes = nodes.filter(
       (node) =>
         node.type.includes("trigger") ||
-        ["manual-trigger", "webhook-trigger", "schedule-trigger", "workflow-called"].includes(
-          node.type
-        )
+        [
+          "manual-trigger",
+          "webhook-trigger",
+          "schedule-trigger",
+          "workflow-called",
+        ].includes(node.type)
     );
 
     if (triggerNodes.length === 0) {

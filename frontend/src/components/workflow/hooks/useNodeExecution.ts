@@ -138,7 +138,12 @@ export function useNodeExecution(nodeId: string, nodeType: string) {
     }));
 
     try {
-      const triggerNodeTypes = ["manual-trigger", "webhook-trigger", "schedule-trigger", "workflow-called"];
+      const triggerNodeTypes = [
+        "manual-trigger",
+        "webhook-trigger",
+        "schedule-trigger",
+        "workflow-called",
+      ];
       const mode = triggerNodeTypes.includes(nodeType) ? "workflow" : "single";
 
       await executeNode(nodeId, undefined, mode);
