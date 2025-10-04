@@ -1,6 +1,9 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
+  VisuallyHidden,
 } from '@/components/ui/dialog'
 import {
   ResizableHandle,
@@ -123,6 +126,12 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-[95vw] w-[95vw] h-[85vh] p-0 gap-0">
+        <VisuallyHidden>
+          <DialogTitle>{nodeName || node.type} Configuration</DialogTitle>
+          <DialogDescription>
+            Configure the properties, inputs, and outputs for this node
+          </DialogDescription>
+        </VisuallyHidden>
         <div className="flex-1 flex overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="flex-1">
             {/* Left Column - Inputs */}

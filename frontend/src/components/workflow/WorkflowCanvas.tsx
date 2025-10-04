@@ -1,6 +1,12 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
-import ReactFlow, { Background, Controls, Edge, MiniMap, Node, NodeTypes } from 'reactflow'
+import ReactFlow, { Background, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
+import { WorkflowEdge } from './edges'
+
+const edgeTypes: EdgeTypes = {
+    default: WorkflowEdge,
+    smoothstep: WorkflowEdge,
+}
 
 interface WorkflowCanvasProps {
     nodes: Node[]
@@ -11,6 +17,7 @@ interface WorkflowCanvasProps {
     showBackground: boolean
     backgroundVariant: string
     onInit: (instance: any) => void
+    isExecuting?: boolean
 }
 
 export function WorkflowCanvas({
@@ -22,6 +29,7 @@ export function WorkflowCanvas({
     showBackground,
     backgroundVariant,
     onInit,
+    isExecuting = false,
 }: WorkflowCanvasProps) {
     const {
         reactFlowWrapper,
@@ -49,13 +57,14 @@ export function WorkflowCanvas({
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
                     fitView
                     attributionPosition="bottom-left"
                     edgeUpdaterRadius={10}
                     connectionRadius={20}
                     defaultEdgeOptions={{
                         type: 'smoothstep',
-                        animated: false,
+                        animated: isExecuting,
                     }}
                 >
                     {showControls && <Controls />}

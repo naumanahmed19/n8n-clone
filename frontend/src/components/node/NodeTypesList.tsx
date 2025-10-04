@@ -7,26 +7,26 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
-import { useNodeTypes } from '@/hooks/useNodeTypes'
 import { globalToastManager } from '@/hooks/useToast'
 import { nodeTypeService } from '@/services/nodeType'
+import { useNodeTypes } from '@/stores'
 import { NodeType } from '@/types'
 import {
-    ChevronDown,
-    ChevronRight,
-    Clock,
-    Code,
-    Command,
-    Database,
-    FolderOpen,
-    Globe,
-    GripVertical,
-    Play,
-    Power,
-    PowerOff,
-    Settings,
-    Trash2,
-    Zap
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Code,
+  Command,
+  Database,
+  FolderOpen,
+  Globe,
+  GripVertical,
+  Play,
+  Power,
+  PowerOff,
+  Settings,
+  Trash2,
+  Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -78,9 +78,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
   const { 
     nodeTypesData: nodeTypesFromContext,
     setNodeTypesData,
-    isNodeTypesLoaded,
     setIsNodeTypesLoaded,
-    nodeTypesError: error,
     setNodeTypesError: setError,
     setHeaderSlot
   } = useSidebarContext()
@@ -88,32 +86,45 @@ export function NodeTypesList({}: NodeTypesListProps) {
   // Search term for nodes
   const [searchTerm, setSearchTerm] = useState("")
   
-  const { nodeTypes, isLoading, error: hookError, refetch } = useNodeTypes()
+  const { 
+    nodeTypes, 
+    isLoading, 
+    error: storeError, 
+    fetchNodeTypes, 
+    refetchNodeTypes
+  } = useNodeTypes()
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<string>('available')
   const [processingNode, setProcessingNode] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [nodeToDelete, setNodeToDelete] = useState<NodeType | null>(null)
 
-  // Update context when hook data changes
+  // Initialize store on mount
   useEffect(() => {
-    if (nodeTypes.length > 0 && !isNodeTypesLoaded) {
+    if (nodeTypes.length === 0 && !isLoading) {
+      fetchNodeTypes()
+    }
+  }, [nodeTypes.length, isLoading, fetchNodeTypes])
+
+  // Update context when store data changes
+  useEffect(() => {
+    if (nodeTypes.length > 0) {
       setNodeTypesData(nodeTypes)
       setIsNodeTypesLoaded(true)
     }
-  }, [nodeTypes, setNodeTypesData, isNodeTypesLoaded, setIsNodeTypesLoaded])
+  }, [nodeTypes, setNodeTypesData, setIsNodeTypesLoaded])
 
   // Update error state
   useEffect(() => {
-    setError(hookError)
-  }, [hookError, setError])
+    setError(storeError)
+  }, [storeError, setError])
 
   // Use data from context if available, otherwise use hook data
   const activeNodeTypes = nodeTypesFromContext.length > 0 ? nodeTypesFromContext : nodeTypes
 
   // Callback to refresh nodes after upload
   const handleUploadSuccess = () => {
-    refetch()
+    refetchNodeTypes()
     setActiveTab('available')
   }
 
@@ -250,7 +261,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
       );
       
       // Refresh the list
-      await refetch();
+      await refetchNodeTypes();
       
     } catch (error: any) {
       console.error('Failed to delete node:', error);
@@ -301,13 +312,13 @@ export function NodeTypesList({}: NodeTypesListProps) {
     try {
       await nodeTypeService.updateNodeTypeStatus(nodeType.type, newStatus);
       
+      // Refresh the list immediately after successful update
+      await refetchNodeTypes();
+      
       globalToastManager.showSuccess(
         `Node ${newStatus ? 'Enabled' : 'Disabled'}`,
         { message: `${nodeType.displayName} is now ${newStatus ? 'active' : 'inactive'}` }
       );
-      
-      // Refresh the list
-      refetch();
       
     } catch (error: any) {
       console.error('Failed to toggle node status:', error);
@@ -354,9 +365,12 @@ export function NodeTypesList({}: NodeTypesListProps) {
               {group.nodeTypes.map((nodeType) => {
                 const IconComponent = getNodeIcon(nodeType)
                 
+                
                 const nodeElement = (
                   <div
-                    className="bg-white hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors"
+                    className={`bg-white hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors ${
+                      (nodeType as ExtendedNodeType).active === false ? 'opacity-50 bg-muted/30' : ''
+                    }`}
                     style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                     draggable
 
@@ -384,7 +398,15 @@ export function NodeTypesList({}: NodeTypesListProps) {
                       <IconComponent className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0 overflow-hidden">
-                      <div className="font-medium truncate">{nodeType.displayName}</div>
+                      <div className="font-medium truncate flex items-center gap-2">
+                        {nodeType.displayName}
+                        {(nodeType as ExtendedNodeType).active === false && (
+                          <Badge variant="outline" className="text-xs h-4 px-1">
+                            <PowerOff className="h-2 w-2 mr-1" />
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
                       {nodeType.description && (
                         <div 
                           className="text-xs text-muted-foreground overflow-hidden leading-relaxed mt-1"
@@ -415,14 +437,14 @@ export function NodeTypesList({}: NodeTypesListProps) {
                 
                 // Wrap with context menu
                 return (
-                  <ContextMenu key={nodeType.type}>
+                  <ContextMenu key={`${nodeType.type}-${(nodeType as ExtendedNodeType).active}`}>
                     <ContextMenuTrigger className="block w-full">
                       {nodeElement}
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
                       <ContextMenuItem
                         onClick={() => handleToggleNodeStatus(nodeType)}
-                        disabled={processingNode === nodeType.type || !isDeletable}
+                        disabled={processingNode === nodeType.type}
                       >
                         {(nodeType as ExtendedNodeType).active !== false ? (
                           <>
@@ -483,16 +505,16 @@ export function NodeTypesList({}: NodeTypesListProps) {
               ))}
             </div>
           </div>
-        ) : error ? (
+        ) : storeError ? (
           <div className="p-4">
             <div className="text-center text-muted-foreground">
               <Command className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm">{error}</p>
+              <p className="text-sm">{storeError}</p>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="mt-2"
-                onClick={refetch}
+                onClick={refetchNodeTypes}
               >
                 Try Again
               </Button>

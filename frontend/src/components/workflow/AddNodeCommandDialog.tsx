@@ -8,33 +8,41 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
-import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
+import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useReactFlow } from 'reactflow'
 
 interface AddNodeCommandDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  nodeTypes: NodeType[]
   position?: { x: number; y: number }
 }
 
 export function AddNodeCommandDialog({
   open,
   onOpenChange,
-  nodeTypes,
   position,
 }: AddNodeCommandDialogProps) {
-  const { addNode, addConnection } = useWorkflowStore()
+  const { addNode, addConnection, removeConnection, workflow, updateNode } = useWorkflowStore()
   const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
+  
+  // Get only active node types from the store
+  const { activeNodeTypes, fetchNodeTypes } = useNodeTypes()
+  
+  // Initialize store if needed
+  useEffect(() => {
+    if (activeNodeTypes.length === 0) {
+      fetchNodeTypes()
+    }
+  }, [activeNodeTypes.length, fetchNodeTypes])
 
-  // Group nodes by category
+  // Group nodes by category - only active nodes will be shown
   const groupedNodes = useMemo(() => {
     const groups = new Map<string, NodeType[]>()
     
-    nodeTypes.forEach(node => {
+    activeNodeTypes.forEach(node => {
       node.group.forEach(group => {
         if (!groups.has(group)) {
           groups.set(group, [])
@@ -50,29 +58,88 @@ export function AddNodeCommandDialog({
         name: groupName,
         nodes: nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
       }))
-  }, [nodeTypes])
+  }, [activeNodeTypes])
 
   const handleSelectNode = useCallback((nodeType: NodeType) => {
     // Calculate position where to add the node
     let nodePosition = { x: 300, y: 300 }
     
-    if (position) {
+    if (insertionContext && reactFlowInstance) {
+      // When inserting between nodes, create space with proper gaps
+      const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+      const targetNode = reactFlowInstance.getNode(insertionContext.targetNodeId)
+      
+      if (sourceNode && targetNode) {
+        // Assume standard node width (adjust based on your node sizes)
+        const nodeWidth = 150
+        const gap = 25
+        
+        // Calculate the vector from source to target
+        const deltaX = targetNode.position.x - sourceNode.position.x
+        const deltaY = targetNode.position.y - sourceNode.position.y
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+        
+        // Calculate direction vector (normalized)
+        const directionX = deltaX / distance
+        const directionY = deltaY / distance
+        
+        // Position new node: source node + its width + gap
+        const distanceFromSource = nodeWidth + gap
+        nodePosition = {
+          x: sourceNode.position.x + directionX * distanceFromSource,
+          y: sourceNode.position.y + directionY * distanceFromSource
+        }
+        
+        // Calculate minimum distance needed: source width + gap + new node width + gap
+        const minDistanceNeeded = nodeWidth + gap + nodeWidth + gap
+        
+        // If current distance is less than needed, shift target node and all downstream nodes
+        if (distance < minDistanceNeeded) {
+          const additionalSpace = minDistanceNeeded - distance
+          const shiftX = directionX * additionalSpace
+          const shiftY = directionY * additionalSpace
+          
+          // Helper function to recursively shift nodes
+          const shiftNodeAndDownstream = (nodeId: string, visited = new Set<string>()) => {
+            if (visited.has(nodeId)) return
+            visited.add(nodeId)
+            
+            const node = reactFlowInstance.getNode(nodeId)
+            if (!node) return
+            
+            // Shift this node
+            updateNode(nodeId, {
+              position: {
+                x: node.position.x + shiftX,
+                y: node.position.y + shiftY
+              }
+            })
+            
+            // Find all connections where this node is the source and shift their targets
+            workflow?.connections.forEach(conn => {
+              if (conn.sourceNodeId === nodeId) {
+                shiftNodeAndDownstream(conn.targetNodeId, visited)
+              }
+            })
+          }
+          
+          // Start shifting from the target node
+          shiftNodeAndDownstream(insertionContext.targetNodeId)
+        }
+      } else if (sourceNode) {
+        // Fallback: position to the right of source node
+        nodePosition = {
+          x: sourceNode.position.x + 300,
+          y: sourceNode.position.y
+        }
+      }
+    } else if (position) {
       // If position is provided (e.g., from output connector click), use it
       // Convert screen coordinates to flow coordinates
       if (reactFlowInstance) {
         nodePosition = reactFlowInstance.screenToFlowPosition(position)
       } else {
         nodePosition = position
-      }
-    } else if (insertionContext && reactFlowInstance) {
-      // If we have insertion context, position relative to the source node
-      const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
-      if (sourceNode) {
-        // Position the new node 200px to the right of the source node
-        nodePosition = {
-          x: sourceNode.position.x + 200,
-          y: sourceNode.position.y
-        }
       }
     } else if (reactFlowInstance) {
       // Get center of viewport as fallback
@@ -110,6 +177,19 @@ export function AddNodeCommandDialog({
 
     // If we have insertion context, create connections
     if (insertionContext) {
+      // First, find and remove the existing connection between source and target
+      const existingConnection = workflow?.connections.find(
+        conn =>
+          conn.sourceNodeId === insertionContext.sourceNodeId &&
+          conn.targetNodeId === insertionContext.targetNodeId &&
+          (conn.sourceOutput === insertionContext.sourceOutput || (!conn.sourceOutput && !insertionContext.sourceOutput)) &&
+          (conn.targetInput === insertionContext.targetInput || (!conn.targetInput && !insertionContext.targetInput))
+      )
+
+      if (existingConnection) {
+        removeConnection(existingConnection.id)
+      }
+
       // Create connection from source node to new node
       const sourceConnection: WorkflowConnection = {
         id: `${insertionContext.sourceNodeId}-${newNode.id}-${Date.now()}`,
@@ -136,7 +216,7 @@ export function AddNodeCommandDialog({
     }
 
     onOpenChange(false)
-  }, [addNode, addConnection, onOpenChange, position, reactFlowInstance, insertionContext])
+  }, [addNode, addConnection, removeConnection, updateNode, workflow, onOpenChange, position, reactFlowInstance, insertionContext])
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>

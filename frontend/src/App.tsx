@@ -1,5 +1,6 @@
 import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
 import { Toaster } from '@/components/ui/sonner'
+
 import { SidebarContextProvider } from '@/contexts'
 import { CredentialsPage, CustomNodesPage, ExecutionsPage, LoginPage, RegisterPage, WorkspacePage } from '@/pages'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
@@ -62,6 +63,7 @@ function App() {
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />
+          
           </Route>
 
           {/* Catch all route */}

@@ -1,15 +1,15 @@
 import { useWorkflowStore } from "@/stores";
 import { NodeType, WorkflowConnection, WorkflowNode } from "@/types";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import {
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
   OnSelectionChangeParams,
-  ReactFlowInstance,
   addEdge,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from "reactflow";
 
 /**
@@ -32,8 +32,10 @@ export function useReactFlowInteractions() {
   } = useWorkflowStore();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
+
+  // Use the useReactFlow hook to get the ReactFlow instance directly
+  const reactFlowInstance = useReactFlow();
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -222,7 +224,6 @@ export function useReactFlowInteractions() {
     // Refs and instances
     reactFlowWrapper,
     reactFlowInstance,
-    setReactFlowInstance,
 
     // Node and edge state
     nodes,

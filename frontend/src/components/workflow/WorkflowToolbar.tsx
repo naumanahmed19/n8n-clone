@@ -3,37 +3,38 @@ import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { validateImportFile } from '@/utils/errorHandling'
 import {
-  AlertCircle,
-  Download,
-  Loader2,
-  MoreHorizontal,
-  Redo,
-  Save,
-  Settings,
-  Terminal,
-  Undo,
-  Upload
+    AlertCircle,
+    Download,
+    Loader2,
+    MoreHorizontal,
+    Redo,
+    Save,
+    Settings,
+    Terminal,
+    Undo,
+    Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
+import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
@@ -101,21 +102,15 @@ export function WorkflowToolbar({
     clearImportExportErrors,
     
     // UI state
-    showExecutionsPanel,
     isSaving,
-    toggleExecutionsPanel,
     setSaving,
-    
-    // Workflow activation state
-    isWorkflowActive,
-    toggleWorkflowActive,
-    
-    // Execution state (display only)
-    workflowExecutions,
     
     // Error handling
     handleError
   } = useWorkflowToolbarStore()
+  
+  // Get workflow activation state directly from workflow
+  const isWorkflowActive = workflow?.active ?? false
 
   // Helper functions
   const handleImportClick = async () => {
@@ -198,6 +193,28 @@ export function WorkflowToolbar({
     }
   }
 
+  const handleExecuteWorkflow = async (triggerNodeId?: string) => {
+    if (!workflow) return
+    
+    try {
+      // If workflow is not saved (has unsaved changes), save it first
+      if (isDirty || mainTitleDirty) {
+        await handleSave()
+        // Wait a moment for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+      
+      // Execute the workflow using the workflow store's executeNode method
+      const { executeNode } = useWorkflowStore.getState()
+      await executeNode(triggerNodeId || workflow.nodes.find(n => 
+        n.type.includes('trigger') || 
+        ['manual-trigger', 'webhook-trigger', 'schedule-trigger'].includes(n.type)
+      )?.id || '', undefined, 'workflow')
+    } catch (error) {
+      console.error('Failed to execute workflow:', error)
+    }
+  }
+
   return (
     <TooltipProvider>
       <ConfirmDialog />
@@ -271,8 +288,14 @@ export function WorkflowToolbar({
 
       </div>
 
-      {/* Center section - Command Palette */}
-      <div className="flex items-center justify-center">
+      {/* Center section - Command Palette and Execute Button */}
+      <div className="flex items-center justify-center space-x-2">
+          {/* Execute Button */}
+          <WorkflowExecuteButton 
+            onExecute={handleExecuteWorkflow}
+            disabled={isSaving}
+          />
+          
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -300,7 +323,12 @@ export function WorkflowToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={toggleWorkflowActive}
+              onClick={() => {
+                if (workflow) {
+                  updateWorkflow({ active: !isWorkflowActive })
+                  setDirty(true)
+                }
+              }}
               variant={isWorkflowActive ? "default" : "secondary"}
               size="sm"
               className={cn(

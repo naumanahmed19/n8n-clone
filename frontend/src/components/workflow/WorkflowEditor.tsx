@@ -59,7 +59,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     } = useWorkflowOperations()
 
     const {
-        setReactFlowInstance: setReactFlowInstanceFromHook,
         nodes,
         edges,
         setNodes,
@@ -99,11 +98,10 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         getExecutionMetrics,
     })
 
-    // Sync ReactFlow instance to both hook and store
+    // Sync ReactFlow instance to store (hook gets it automatically via useReactFlow)
     const handleReactFlowInit = useCallback((instance: any) => {
-        setReactFlowInstanceFromHook(instance)
         setReactFlowInstance(instance)
-    }, [setReactFlowInstanceFromHook, setReactFlowInstance])
+    }, [setReactFlowInstance])
 
     // Keyboard shortcuts
     useKeyboardShortcuts({
@@ -161,6 +159,7 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                         showBackground={showBackground}
                                         backgroundVariant={backgroundVariant}
                                         onInit={handleReactFlowInit}
+                                        isExecuting={executionState.status === 'running'}
                                     />
                                 </ResizablePanel>
 
@@ -210,7 +209,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             <AddNodeCommandDialog
                 open={showAddNodeDialog}
                 onOpenChange={closeDialog}
-                nodeTypes={availableNodeTypes}
                 position={position}
             />
         </div>

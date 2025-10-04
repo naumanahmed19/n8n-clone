@@ -1,0 +1,9 @@
+{
+  "name": "test-uploaded-node",
+  "version": "1.0.0",
+  "description": "A test node for upload functionality",
+  "main": "TestUpload.node.js",
+  "n8n": {
+    "nodes": ["TestUpload.node.js"]
+  }
+}

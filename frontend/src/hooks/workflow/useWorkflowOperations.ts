@@ -1,5 +1,6 @@
 import { workflowService } from "@/services";
 import { useAuthStore, useWorkflowStore } from "@/stores";
+import { extractTriggersFromNodes } from "@/utils/triggerUtils";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -36,14 +37,17 @@ export function useWorkflowOperations() {
 
       if (workflow.id === "new") {
         // Create new workflow
+        const triggers = extractTriggersFromNodes(workflow.nodes);
+
         const workflowData = {
           name: workflowTitle || workflow.name,
           description: workflow.description,
           nodes: workflow.nodes,
           connections: workflow.connections,
+          triggers: triggers,
           settings: workflow.settings,
           active: workflow.active,
-          category: workflow.category,
+          category: workflow.category || undefined,
           tags: workflow.tags,
         };
 
@@ -62,14 +66,17 @@ export function useWorkflowOperations() {
         toast.success("Workflow created successfully");
       } else {
         // Update existing workflow
+        const triggers = extractTriggersFromNodes(workflow.nodes);
+
         const workflowData = {
           name: workflowTitle || workflow.name,
           description: workflow.description,
           nodes: workflow.nodes,
           connections: workflow.connections,
+          triggers: triggers,
           settings: workflow.settings,
           active: workflow.active,
-          category: workflow.category,
+          category: workflow.category || undefined,
           tags: workflow.tags,
         };
 

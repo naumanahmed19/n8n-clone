@@ -28,7 +28,10 @@ export const PaginationQuerySchema = z.object({
 export const CreateWorkflowSchema = z.object({
   name: z.string().min(1, "Workflow name is required").max(255),
   description: z.string().optional(),
-  category: z.string().optional(),
+  category: z
+    .string()
+    .nullish()
+    .transform((val) => val || undefined),
   tags: z.array(z.string()).default([]),
   nodes: z
     .array(

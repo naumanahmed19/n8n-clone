@@ -1,4 +1,7 @@
 // Global state storage for counter instances
+
+const { config } = require("dotenv");
+
 // In a real implementation, this might be stored in a database or Redis
 const globalCounterState = new Map();
 
@@ -8,7 +11,8 @@ const CounterNode = {
   name: "counter",
   group: ["transform"],
   version: 1,
-  description: "A counter node that maintains state and increments a number when executed",
+  description:
+    "A counter node that maintains state and increments a number when executed",
   icon: "fa:calculator",
   color: "#4CAF50",
   defaults: {
@@ -65,9 +69,11 @@ const CounterNode = {
       name: "counterId",
       type: "string",
       default: "default",
-      description: "Unique identifier for this counter instance (allows multiple independent counters)",
+      description:
+        "Unique identifier for this counter instance (allows multiple independent counters)",
     },
   ],
+
   execute: async function (inputData) {
     console.log("=== COUNTER NODE EXECUTION START ===");
     console.log("Node type:", this.type || "counter");
@@ -86,7 +92,7 @@ const CounterNode = {
     console.log("Number of input items:", items.length);
 
     // Get or initialize counter state
-    const stateKey = `${this.name || 'counter'}_${counterId}`;
+    const stateKey = `${this.name || "counter"}_${counterId}`;
     if (!globalCounterState.has(stateKey)) {
       globalCounterState.set(stateKey, {
         count: initialValue,
@@ -98,7 +104,7 @@ const CounterNode = {
 
     const counterState = globalCounterState.get(stateKey);
     const previousCount = counterState.count;
-    
+
     console.log("Current counter state:", counterState);
 
     let resultItems;
@@ -112,7 +118,7 @@ const CounterNode = {
           ...counterState,
           lastUpdated: timestamp,
         });
-        
+
         resultItems = [
           {
             count: counterState.count,
@@ -140,7 +146,10 @@ const CounterNode = {
             initialValue: counterState.initialValue,
           },
         ];
-        console.log("Get current result:", JSON.stringify(resultItems, null, 2));
+        console.log(
+          "Get current result:",
+          JSON.stringify(resultItems, null, 2)
+        );
         break;
 
       case "reset":
@@ -151,7 +160,7 @@ const CounterNode = {
           ...counterState,
           lastUpdated: timestamp,
         });
-        
+
         resultItems = [
           {
             count: counterState.count,
@@ -181,7 +190,7 @@ const CounterNode = {
       JSON.stringify(resultItems, null, 2)
     );
     console.log("=== COUNTER NODE EXECUTION END ===");
-    
+
     return resultItems;
   },
 };

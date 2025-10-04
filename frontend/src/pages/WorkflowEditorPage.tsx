@@ -81,6 +81,8 @@ export function WorkflowEditorPage() {
             callerPolicy: 'workflowsFromSameOwner'
           },
           active: true, // New workflows should be active by default
+          category: undefined, // Explicitly set to undefined instead of leaving it unset
+          tags: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -105,6 +107,8 @@ export function WorkflowEditorPage() {
             callerPolicy: 'workflowsFromSameOwner'
           },
           active: true, // New workflows should be active by default
+          category: undefined, // Explicitly set to undefined instead of leaving it unset
+          tags: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }

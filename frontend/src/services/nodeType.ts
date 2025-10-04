@@ -27,7 +27,7 @@ export interface UploadResult {
 }
 
 export class NodeTypeService {
-  private baseUrl = "/nodes";
+  private baseUrl = "/node-types";
 
   /**
    * Get all node types from NodeService (live node definitions)
@@ -103,7 +103,7 @@ export class NodeTypeService {
         active,
       }
     );
-    return response.data.data;
+    return response.data;
   }
 }
 

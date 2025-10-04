@@ -124,6 +124,10 @@ export interface NodeType {
   color?: string;
   properties: NodeProperty[];
   credentials?: CredentialDefinition[];
+  active?: boolean; // Added for activation/deactivation functionality
+  id?: string; // Optional database ID for custom nodes
+  createdAt?: string; // Optional timestamp for custom nodes
+  updatedAt?: string; // Optional timestamp for custom nodes
 }
 
 export interface CredentialDefinition {

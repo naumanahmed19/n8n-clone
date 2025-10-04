@@ -1,7 +1,8 @@
 /* Node execution animations */
 
 @keyframes node-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -27,7 +28,8 @@
 }
 
 @keyframes node-error-shake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   25% {
@@ -50,18 +52,22 @@
 /* Node state classes */
 .node-running {
   animation: node-pulse 2s ease-in-out infinite;
+  border-color: rgb(59, 130, 246) !important;
 }
 
 .node-queued {
   animation: node-pulse 3s ease-in-out infinite;
+  border-color: rgb(245, 158, 11) !important;
 }
 
 .node-success {
   animation: node-success-flash 1s ease-in-out;
+  border-color: rgb(34, 197, 94) !important;
 }
 
 .node-error {
   animation: node-error-shake 0.5s ease-in-out;
+  border-color: rgb(239, 68, 68) !important;
 }
 
 /* Progress bar animations */
@@ -98,19 +104,65 @@
   color: rgba(0, 0, 0, 0.8);
 }
 
-/* Node border glow effects */
+/* Node border glow effects with animation */
+@keyframes glow-pulse-running {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3),
+      0 0 8px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5),
+      0 0 16px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes glow-pulse-queued {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3),
+      0 0 8px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5),
+      0 0 16px rgba(245, 158, 11, 0.4);
+  }
+}
+
+@keyframes glow-pulse-success {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3), 0 0 8px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5),
+      0 0 12px rgba(34, 197, 94, 0.3);
+  }
+}
+
+@keyframes glow-pulse-error {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3), 0 0 8px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5),
+      0 0 12px rgba(239, 68, 68, 0.3);
+  }
+}
+
 .node-glow-running {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  animation: glow-pulse-running 2s ease-in-out infinite;
 }
 
 .node-glow-success {
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+  animation: glow-pulse-success 1s ease-in-out;
 }
 
 .node-glow-error {
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+  animation: glow-pulse-error 0.5s ease-in-out 3;
 }
 
 .node-glow-queued {
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+  animation: glow-pulse-queued 3s ease-in-out infinite;
 }
