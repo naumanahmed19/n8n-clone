@@ -65,6 +65,7 @@ export interface CustomFieldProps {
   disabled?: boolean;
   allValues?: Record<string, any>;
   allFields?: FormFieldConfig[];
+  onFieldUpdate?: (fieldName: string, value: any) => void; // Update other fields
 }
 
 export interface FormGeneratorProps {
@@ -94,6 +95,7 @@ export interface FormFieldRendererProps {
   disabled?: boolean;
   allValues: Record<string, any>;
   allFields: FormFieldConfig[];
+  onFieldChange?: (fieldName: string, value: any) => void; // For updating other fields
 }
 
 export interface RepeatingFieldItem {

@@ -109,6 +109,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
               disabled={data.disabled}
               isTrigger={isTrigger}
               statusIcon={statusIcon}
+              imageUrl={data.parameters?.imageUrl as string}
             />
 
             {/* Node Toolbar */}

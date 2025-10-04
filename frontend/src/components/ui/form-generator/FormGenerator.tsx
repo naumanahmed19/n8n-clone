@@ -126,6 +126,7 @@ export function FormGenerator({
                 disabled={disabled}
                 allValues={values}
                 allFields={fields}
+                onFieldChange={handleFieldChange}
               />
             </div>
             <FormFieldDescription field={field} />

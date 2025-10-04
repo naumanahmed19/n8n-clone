@@ -40,6 +40,7 @@ export interface NodeProperty {
   required?: boolean;
   default?: any;
   description?: string;
+  placeholder?: string; // Placeholder text for input fields
   options?: NodePropertyOption[];
   displayOptions?: {
     show?: Record<string, any[]>;

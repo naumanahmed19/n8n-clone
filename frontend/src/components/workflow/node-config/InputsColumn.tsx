@@ -432,10 +432,18 @@ export function InputsColumn({ node }: InputsColumnProps) {
   const [activeTab, setActiveTab] = useState<'schema' | 'json' | 'table'>('schema')
 
   // Get connected input nodes - these are nodes that feed data into current node
-  const inputConnections = workflow?.connections.filter(conn => conn.targetNodeId === node.id) || []
-  const inputNodes = inputConnections.map(conn => 
-    workflow?.nodes.find(n => n.id === conn.sourceNodeId)
-  ).filter(Boolean) as WorkflowNode[]
+  // Memoize to prevent recreating arrays on every render
+  const inputConnections = useMemo(() => 
+    workflow?.connections.filter(conn => conn.targetNodeId === node.id) || [],
+    [workflow?.connections, node.id]
+  )
+  
+  const inputNodes = useMemo(() => 
+    inputConnections.map(conn => 
+      workflow?.nodes.find(n => n.id === conn.sourceNodeId)
+    ).filter(Boolean) as WorkflowNode[],
+    [inputConnections, workflow?.nodes]
+  )
 
   // Create node items with connections
   const nodeItems = useMemo(() => {
@@ -456,7 +464,8 @@ export function InputsColumn({ node }: InputsColumnProps) {
     if (Object.keys(initialExpanded).length > 0) {
       setExpandedCategories(prev => ({ ...prev, ...initialExpanded }))
     }
-  }, [nodeItems, expandedCategories])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeItems]) // Only depend on nodeItems, not expandedCategories to prevent infinite loop
 
   const getNodeStatusBadge = (status?: string) => {
     switch (status) {

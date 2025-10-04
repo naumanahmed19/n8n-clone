@@ -1,9 +1,11 @@
 import { CustomFieldProps } from '@/components/ui/form-generator/types'
 import { WorkflowTriggerComponents } from '@/components/workflow/nodes/WorkflowTrigger/WorkflowTriggerComponents'
+import { ImagePreview } from '@/components/ui/form-generator/custom-fields/ImagePreview'
 
 // Global component registry for custom node components
 const componentRegistry: Record<string, (props: CustomFieldProps) => React.ReactNode> = {
   ...WorkflowTriggerComponents,
+  ImagePreview,
 }
 
 // Function to get a custom component by name
