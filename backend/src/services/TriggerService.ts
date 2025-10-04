@@ -654,7 +654,7 @@ export class TriggerService {
       );
       const triggers = (workflow.triggers as any[]) || [];
       const trigger = triggers.find(
-        (t) => t.id === triggerId && t.type === "manual"
+        (t) => t.id === triggerId && ["manual", "workflow-called"].includes(t.type)
       );
 
       if (!trigger) {

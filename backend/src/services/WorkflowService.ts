@@ -27,6 +27,38 @@ export class WorkflowService {
   }
 
   /**
+   * Extract triggers from trigger nodes in the workflow
+   */
+  private extractTriggersFromNodes(nodes: any[]): any[] {
+    if (!Array.isArray(nodes)) {
+      return [];
+    }
+
+    const triggerNodeTypes: Record<string, string> = {
+      'manual-trigger': 'manual',
+      'webhook-trigger': 'webhook', 
+      'schedule-trigger': 'schedule',
+      'workflow-called': 'workflow-called'
+    };
+
+    return nodes
+      .filter(node => node.type && triggerNodeTypes[node.type])
+      .map(node => {
+        const triggerType = triggerNodeTypes[node.type];
+        return {
+          id: `trigger-${node.id}`,
+          type: triggerType,
+          nodeId: node.id,
+          active: !node.disabled, // Active if node is not disabled
+          settings: {
+            description: node.parameters?.description || `${triggerType} trigger`,
+            ...node.parameters
+          }
+        };
+      });
+  }
+
+  /**
    * Normalize triggers to ensure they have the active property set
    */
   private normalizeTriggers(triggers: any[]): any[] {
@@ -93,8 +125,14 @@ export class WorkflowService {
 
   async createWorkflow(userId: string, data: CreateWorkflowRequest) {
     try {
+      // Extract triggers from nodes if triggers array is empty or not provided
+      let triggersToSave = data.triggers || [];
+      if (data.nodes && triggersToSave.length === 0) {
+        triggersToSave = this.extractTriggersFromNodes(data.nodes);
+      }
+
       // Normalize triggers to ensure they have active property
-      const normalizedTriggers = this.normalizeTriggers(data.triggers || []);
+      const normalizedTriggers = this.normalizeTriggers(triggersToSave);
 
       const workflow = await this.prisma.workflow.create({
         data: {
@@ -158,10 +196,16 @@ export class WorkflowService {
 
       // Validate workflow data if nodes or connections are being updated
       if (data.nodes || data.connections) {
+        // Extract triggers from nodes if triggers array is empty or not provided
+        let triggersToValidate = data.triggers;
+        if (data.nodes && (!data.triggers || data.triggers.length === 0)) {
+          triggersToValidate = this.extractTriggersFromNodes(data.nodes);
+        }
+
         const workflowData = {
           nodes: data.nodes,
           connections: data.connections,
-          triggers: data.triggers,
+          triggers: triggersToValidate,
           settings: data.settings,
         };
 
@@ -178,9 +222,15 @@ export class WorkflowService {
         }
       }
 
+      // Extract triggers from nodes if triggers array is empty or not provided
+      let triggersToSave = data.triggers;
+      if (data.nodes && (!data.triggers || data.triggers.length === 0)) {
+        triggersToSave = this.extractTriggersFromNodes(data.nodes);
+      }
+
       // Normalize triggers if they are being updated
-      const normalizedTriggers = data.triggers
-        ? this.normalizeTriggers(data.triggers)
+      const normalizedTriggers = triggersToSave
+        ? this.normalizeTriggers(triggersToSave)
         : undefined;
 
       const workflow = await this.prisma.workflow.update({

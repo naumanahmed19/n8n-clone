@@ -32,6 +32,13 @@ const NODE_TYPE_REGISTRY: Record<string, NodeTypeMetadata> = {
     canExecuteIndividually: true,
     canBeDisabled: true
   },
+  'workflow-called': {
+    type: 'workflow-called',
+    group: ['trigger'],
+    executionCapability: 'trigger',
+    canExecuteIndividually: true,
+    canBeDisabled: true
+  },
   'webhook': {
     type: 'webhook',
     group: ['trigger'],
@@ -57,6 +64,13 @@ const NODE_TYPE_REGISTRY: Record<string, NodeTypeMetadata> = {
   },
   'Schedule Trigger': {
     type: 'Schedule Trigger',
+    group: ['trigger'],
+    executionCapability: 'trigger',
+    canExecuteIndividually: true,
+    canBeDisabled: true
+  },
+  'Called by Workflow': {
+    type: 'Called by Workflow',
     group: ['trigger'],
     executionCapability: 'trigger',
     canExecuteIndividually: true,

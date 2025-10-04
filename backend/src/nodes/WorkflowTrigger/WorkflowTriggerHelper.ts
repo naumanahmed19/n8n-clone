@@ -19,7 +19,11 @@ export class WorkflowTriggerHelper {
   ): Promise<any> {
     try {
       // Validate the workflow and trigger combination
-      const validation = await this.validateWorkflowTrigger(workflowId, triggerId, userId);
+      const validation = await this.validateWorkflowTrigger(
+        workflowId,
+        triggerId,
+        userId
+      );
       if (!validation.valid) {
         throw new Error(validation.error);
       }
@@ -31,7 +35,7 @@ export class WorkflowTriggerHelper {
       const executionResult = await this.callExecutionAPI(
         workflowId,
         triggerData,
-        triggerId,
+        trigger.nodeId, // Use the actual node ID, not the trigger ID
         userId
       );
 
@@ -77,7 +81,10 @@ export class WorkflowTriggerHelper {
         triggerId,
         status: completionResult.status,
         result: {
-          message: completionResult.status === "completed" ? "Workflow executed successfully" : "Workflow execution finished",
+          message:
+            completionResult.status === "completed"
+              ? "Workflow executed successfully"
+              : "Workflow execution finished",
           data: triggerData,
           workflow: {
             id: workflow.id,
@@ -105,7 +112,7 @@ export class WorkflowTriggerHelper {
   private static async callExecutionAPI(
     workflowId: string,
     triggerData: any,
-    triggerNodeId: string,
+    triggerNodeId: string, // This is the actual node ID from the trigger.nodeId
     userId: string
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
@@ -113,12 +120,17 @@ export class WorkflowTriggerHelper {
       // instead of making an HTTP request
       const { ExecutionService } = require("../../services/ExecutionService");
       const { NodeService } = require("../../services/NodeService");
-      const ExecutionHistoryService = require("../../services/ExecutionHistoryService").default;
-      
+      const ExecutionHistoryService =
+        require("../../services/ExecutionHistoryService").default;
+
       // Create service instances
       const nodeService = new NodeService(this.prisma);
       const executionHistoryService = new ExecutionHistoryService(this.prisma);
-      const executionService = new ExecutionService(this.prisma, nodeService, executionHistoryService);
+      const executionService = new ExecutionService(
+        this.prisma,
+        nodeService,
+        executionHistoryService
+      );
 
       // Execute the workflow
       const result = await executionService.executeWorkflow(
@@ -129,9 +141,12 @@ export class WorkflowTriggerHelper {
         triggerNodeId
       );
 
+      // The ExecutionService already returns { success, data: { executionId, ... }, error }
+      // So we can return it directly
       return {
-        success: true,
-        data: result.data || result,
+        success: result.success,
+        data: result.data,
+        error: result.error?.message || undefined,
       };
     } catch (error) {
       console.error("Error calling execution API:", error);
@@ -192,8 +207,9 @@ export class WorkflowTriggerHelper {
 
         // Check if execution is completed
         if (execution.status === "SUCCESS") {
-          const executionTime = execution.finishedAt 
-            ? new Date(execution.finishedAt).getTime() - new Date(execution.startedAt).getTime()
+          const executionTime = execution.finishedAt
+            ? new Date(execution.finishedAt).getTime() -
+              new Date(execution.startedAt).getTime()
             : Date.now() - new Date(execution.startedAt).getTime();
 
           return {
@@ -212,7 +228,9 @@ export class WorkflowTriggerHelper {
         if (execution.status === "ERROR") {
           return {
             status: "error",
-            error: execution.error ? JSON.stringify(execution.error) : "Execution failed",
+            error: execution.error
+              ? JSON.stringify(execution.error)
+              : "Execution failed",
             executionDetails: {
               status: execution.status,
               startedAt: execution.startedAt,
@@ -237,11 +255,11 @@ export class WorkflowTriggerHelper {
         }
 
         // Still running, wait before next poll
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
       } catch (error) {
         console.error("Error polling execution status:", error);
         // Continue polling on error
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
       }
     }
 

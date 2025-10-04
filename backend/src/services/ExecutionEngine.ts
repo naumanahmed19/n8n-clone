@@ -469,6 +469,15 @@ export class ExecutionEngine extends EventEmitter {
         });
       }
 
+      // For workflow-called triggers, add additional context
+      if (node.type === "workflow-called") {
+        logger.info(`Executing workflow-called trigger node ${nodeId}`, {
+          executionId,
+          triggerDataSize: JSON.stringify(context.triggerData || {}).length,
+          nodeParameters: Object.keys(node.parameters || {}),
+        });
+      }
+
       const result = await this.nodeService.executeNode(
         node.type,
         node.parameters,
@@ -530,6 +539,16 @@ export class ExecutionEngine extends EventEmitter {
       // Enhanced error handling for manual triggers
       if (node && node.type === "manual-trigger") {
         logger.error(`Manual trigger node ${nodeId} execution failed`, {
+          executionId,
+          error: error instanceof Error ? error.message : "Unknown error",
+          triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
+          nodeParameters: Object.keys(node.parameters || {}),
+        });
+      }
+
+      // Enhanced error handling for workflow-called triggers
+      if (node && node.type === "workflow-called") {
+        logger.error(`Workflow-called trigger node ${nodeId} execution failed`, {
           executionId,
           error: error instanceof Error ? error.message : "Unknown error",
           triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
@@ -713,6 +732,18 @@ export class ExecutionEngine extends EventEmitter {
 
         // Log trigger data for debugging
         logger.debug(`Preparing manual trigger input data for node ${nodeId}`, {
+          triggerDataKeys: Object.keys(triggerInput),
+          triggerDataSize: JSON.stringify(triggerInput).length,
+        });
+
+        inputData.main = [[{ json: triggerInput }]];
+      } else if (node && node.type === "workflow-called") {
+        // For workflow-called triggers, pass the trigger data as the first item
+        // Similar to manual triggers but specifically for workflow-to-workflow calls
+        const triggerInput = context.triggerData || {};
+
+        // Log trigger data for debugging
+        logger.debug(`Preparing workflow-called trigger input data for node ${nodeId}`, {
           triggerDataKeys: Object.keys(triggerInput),
           triggerDataSize: JSON.stringify(triggerInput).length,
         });
@@ -993,7 +1024,7 @@ export class ExecutionEngine extends EventEmitter {
     const triggerNodes = nodes.filter(
       (node) =>
         node.type.includes("trigger") ||
-        ["manual-trigger", "webhook-trigger", "schedule-trigger"].includes(
+        ["manual-trigger", "webhook-trigger", "schedule-trigger", "workflow-called"].includes(
           node.type
         )
     );
@@ -1010,6 +1041,8 @@ export class ExecutionEngine extends EventEmitter {
       return "webhook";
     } else if (firstTrigger.type === "schedule-trigger") {
       return "schedule";
+    } else if (firstTrigger.type === "workflow-called") {
+      return "workflow-called";
     }
 
     return firstTrigger.type;

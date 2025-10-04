@@ -44,6 +44,7 @@ describe('nodeTypeClassification', () => {
       expect(canNodeExecuteIndividually('manual-trigger')).toBe(true)
       expect(canNodeExecuteIndividually('webhook-trigger')).toBe(true)
       expect(canNodeExecuteIndividually('schedule-trigger')).toBe(true)
+      expect(canNodeExecuteIndividually('workflow-called')).toBe(true)
       expect(canNodeExecuteIndividually('webhook')).toBe(true)
     })
 
@@ -104,6 +105,7 @@ describe('nodeTypeClassification', () => {
     it('returns correct capability for trigger nodes (backend types)', () => {
       expect(getNodeExecutionCapability('manual-trigger')).toBe('trigger')
       expect(getNodeExecutionCapability('webhook-trigger')).toBe('trigger')
+      expect(getNodeExecutionCapability('workflow-called')).toBe('trigger')
       expect(getNodeExecutionCapability('webhook')).toBe('trigger')
     })
 

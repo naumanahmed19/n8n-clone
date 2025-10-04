@@ -158,7 +158,7 @@ export class ExecutionService {
       // Find trigger nodes or determine starting point
       const triggerNodes = workflowNodes.filter(
         (node: any) =>
-          node.type.includes("trigger") || node.type === "manual-trigger"
+          node.type.includes("trigger") || ["manual-trigger", "workflow-called"].includes(node.type)
       );
 
       let flowResult: FlowExecutionResult;
@@ -1267,7 +1267,7 @@ export class ExecutionService {
       }
 
       // Handle execution based on mode
-      const triggerNodeTypes = ["manual-trigger", "webhook-trigger"];
+      const triggerNodeTypes = ["manual-trigger", "webhook-trigger", "workflow-called"];
       const isTriggerNode = triggerNodeTypes.includes(node.type);
 
       if (mode === "workflow" && !isTriggerNode) {

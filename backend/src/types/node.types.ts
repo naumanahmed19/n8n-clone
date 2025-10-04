@@ -185,6 +185,7 @@ export enum BuiltInNodeTypes {
   WEBHOOK_TRIGGER = "webhook-trigger",
   SCHEDULE_TRIGGER = "schedule-trigger",
   MANUAL_TRIGGER = "manual-trigger",
+  WORKFLOW_CALLED = "workflow-called",
 }
 
 export interface NodeTypeInfo {

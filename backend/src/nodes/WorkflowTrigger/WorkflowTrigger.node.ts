@@ -137,7 +137,7 @@ export const WorkflowTriggerNode: NodeDefinition = {
       );
 
       // Get the current user ID from the node context - for now use a default
-      const userId = 'cmfvhw53s0000y3hsjr5yfsyc'; // TODO: Get from actual user context
+      const userId = "cmfvhw53s0000y3hsjr5yfsyc"; // TODO: Get from actual user context
 
       // Use WorkflowTriggerHelper to execute the workflow
       const result = await WorkflowTriggerHelper.executeWorkflow(

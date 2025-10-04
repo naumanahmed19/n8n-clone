@@ -214,7 +214,7 @@ export function validateWorkflowStructure(workflow: any): { valid: boolean; erro
 
   // Check if workflow has at least one trigger or manual start node
   const hasTrigger = workflow.triggers.length > 0 || 
-    workflow.nodes.some((node: any) => node.type === 'manual-trigger')
+    workflow.nodes.some((node: any) => ['manual-trigger', 'workflow-called'].includes(node.type))
 
   if (!hasTrigger) {
     errors.push('Workflow must have at least one trigger or manual start node')
