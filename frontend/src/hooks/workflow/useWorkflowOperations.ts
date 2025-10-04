@@ -43,7 +43,7 @@ export function useWorkflowOperations() {
           connections: workflow.connections,
           settings: workflow.settings,
           active: workflow.active,
-          category: workflow.category,
+          category: workflow.category || undefined,
           tags: workflow.tags,
         };
 
@@ -69,7 +69,7 @@ export function useWorkflowOperations() {
           connections: workflow.connections,
           settings: workflow.settings,
           active: workflow.active,
-          category: workflow.category,
+          category: workflow.category || undefined,
           tags: workflow.tags,
         };
 
