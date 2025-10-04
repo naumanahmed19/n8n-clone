@@ -1,26 +1,26 @@
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger
 } from '@/components/ui/tooltip'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types/workflow'
-import { 
-  ChevronDown, 
-  Loader2, 
-  Play, 
-  Zap,
-  Clock,
-  Globe,
-  Hand
+import {
+    ChevronDown,
+    Clock,
+    Globe,
+    Hand,
+    Loader2,
+    Play,
+    Zap
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
