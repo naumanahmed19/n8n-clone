@@ -159,7 +159,10 @@ router.patch("/:type", async (req: Request, res: Response) => {
       },
     });
 
-    logger.info("Node type updated successfully", { type, active: nodeType.active });
+    logger.info("Node type updated successfully", {
+      type,
+      active: nodeType.active,
+    });
 
     res.json({
       success: true,

@@ -4,9 +4,9 @@
  * Provides commands to create, list, and manage nodes in the new structure
  */
 
+import { PrismaClient } from "@prisma/client";
 import * as fs from "fs";
 import * as path from "path";
-import { PrismaClient } from "@prisma/client";
 import { NodeService } from "../services/NodeService";
 import { NodeDiscovery } from "../utils/NodeDiscovery";
 
@@ -145,7 +145,9 @@ export const ${nodeName}Node: NodeDefinition = {
       const totalNodes = Object.values(nodesByDir).flat().length;
 
       console.log(`📊 Discovery Summary:`);
-      console.log(`   📁 Directories scanned: ${Object.keys(nodesByDir).length}`);
+      console.log(
+        `   📁 Directories scanned: ${Object.keys(nodesByDir).length}`
+      );
       console.log(`   📦 Nodes discovered: ${totalNodes}`);
       console.log("");
 
@@ -196,7 +198,9 @@ export const ${nodeName}Node: NodeDefinition = {
       console.log(`\n📊 Validation Summary:`);
       console.log(`   ✅ Valid: ${valid}`);
       console.log(`   ❌ Invalid: ${invalid}`);
-      console.log(`   📁 Total: ${directories.filter((d) => d.isDirectory()).length}`);
+      console.log(
+        `   📁 Total: ${directories.filter((d) => d.isDirectory()).length}`
+      );
     } catch (error) {
       console.error("❌ Error validating structure:", error);
     }
@@ -272,11 +276,11 @@ export const ${nodeName}Node: NodeDefinition = {
           description: true,
         },
         orderBy: [
-          { active: 'desc' }, // Active nodes first
-          { displayName: 'asc' }, // Then alphabetical
+          { active: "desc" }, // Active nodes first
+          { displayName: "asc" }, // Then alphabetical
         ],
       });
-      
+
       if (nodes.length === 0) {
         console.log("📭 No nodes found");
         return;
@@ -285,14 +289,14 @@ export const ${nodeName}Node: NodeDefinition = {
       console.log("📊 Node Status Report");
       console.log("=".repeat(80));
 
-      const activeNodes = nodes.filter(node => node.active);
-      const inactiveNodes = nodes.filter(node => !node.active);
+      const activeNodes = nodes.filter((node) => node.active);
+      const inactiveNodes = nodes.filter((node) => !node.active);
 
       console.log(`\n🟢 Active Nodes (${activeNodes.length}):`);
       if (activeNodes.length > 0) {
-        activeNodes.forEach(node => {
+        activeNodes.forEach((node) => {
           console.log(`  ✅ ${node.displayName} (${node.type})`);
-          console.log(`     ${node.description || 'No description'}`);
+          console.log(`     ${node.description || "No description"}`);
           console.log("");
         });
       } else {
@@ -301,16 +305,18 @@ export const ${nodeName}Node: NodeDefinition = {
 
       console.log(`\n🔴 Inactive Nodes (${inactiveNodes.length}):`);
       if (inactiveNodes.length > 0) {
-        inactiveNodes.forEach(node => {
+        inactiveNodes.forEach((node) => {
           console.log(`  ❌ ${node.displayName} (${node.type})`);
-          console.log(`     ${node.description || 'No description'}`);
+          console.log(`     ${node.description || "No description"}`);
           console.log("");
         });
       } else {
         console.log("  No inactive nodes");
       }
 
-      console.log(`\n📈 Summary: ${activeNodes.length} active, ${inactiveNodes.length} inactive, ${nodes.length} total`);
+      console.log(
+        `\n📈 Summary: ${activeNodes.length} active, ${inactiveNodes.length} inactive, ${nodes.length} total`
+      );
     } catch (error) {
       console.error("❌ Error getting node status:", error);
       process.exit(1);
@@ -321,8 +327,8 @@ export const ${nodeName}Node: NodeDefinition = {
     try {
       const nodeService = await this.getNodeService();
       const allNodes = await nodeService.getNodesWithStatus();
-      const nodeTypes = allNodes.map(node => node.type);
-      
+      const nodeTypes = allNodes.map((node) => node.type);
+
       if (nodeTypes.length === 0) {
         console.log("📭 No nodes found to activate");
         return;
@@ -345,8 +351,8 @@ export const ${nodeName}Node: NodeDefinition = {
     try {
       const nodeService = await this.getNodeService();
       const allNodes = await nodeService.getNodesWithStatus();
-      const nodeTypes = allNodes.map(node => node.type);
-      
+      const nodeTypes = allNodes.map((node) => node.type);
+
       if (nodeTypes.length === 0) {
         console.log("📭 No nodes found to deactivate");
         return;
@@ -365,7 +371,10 @@ export const ${nodeName}Node: NodeDefinition = {
     }
   }
 
-  private async validateSingleNode(dirName: string, dirPath: string): Promise<boolean> {
+  private async validateSingleNode(
+    dirName: string,
+    dirPath: string
+  ): Promise<boolean> {
     try {
       const files = await fs.promises.readdir(dirPath);
 
@@ -391,14 +400,24 @@ export const ${nodeName}Node: NodeDefinition = {
   showHelp(): void {
     console.log("📦 Node Management CLI\n");
     console.log("📝 Available commands:");
-    console.log("  npm run nodes:list              - List all registered nodes");
-    console.log("  npm run nodes:create <name>     - Create a new node template");
-    console.log("  npm run nodes:discover          - Discover and register all nodes");
+    console.log(
+      "  npm run nodes:list              - List all registered nodes"
+    );
+    console.log(
+      "  npm run nodes:create <name>     - Create a new node template"
+    );
+    console.log(
+      "  npm run nodes:discover          - Discover and register all nodes"
+    );
     console.log("  npm run nodes:validate <name>   - Validate a specific node");
-    console.log("  npm run nodes:register          - Register all discovered nodes");
+    console.log(
+      "  npm run nodes:register          - Register all discovered nodes"
+    );
     console.log("  npm run nodes:activate <name>   - Activate a node");
     console.log("  npm run nodes:deactivate <name> - Deactivate a node");
-    console.log("  npm run nodes:status            - Show nodes with activation status");
+    console.log(
+      "  npm run nodes:status            - Show nodes with activation status"
+    );
     console.log("  npm run nodes:activate-all      - Activate all nodes");
     console.log("  npm run nodes:deactivate-all    - Deactivate all nodes");
     console.log("");

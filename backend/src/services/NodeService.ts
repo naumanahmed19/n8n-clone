@@ -690,7 +690,11 @@ export class NodeService {
     try {
       await this.registerBuiltInNodes();
     } catch (error) {
-      throw new Error(`Failed to register discovered nodes: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(
+        `Failed to register discovered nodes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }
 
@@ -715,7 +719,9 @@ export class NodeService {
   /**
    * Activate a node type
    */
-  async activateNode(nodeType: string): Promise<{ success: boolean; message: string }> {
+  async activateNode(
+    nodeType: string
+  ): Promise<{ success: boolean; message: string }> {
     try {
       const existingNode = await this.prisma.nodeType.findUnique({
         where: { type: nodeType },
@@ -749,7 +755,9 @@ export class NodeService {
       logger.error("Failed to activate node type", { error, nodeType });
       return {
         success: false,
-        message: `Failed to activate node type: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Failed to activate node type: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       };
     }
   }
@@ -757,7 +765,9 @@ export class NodeService {
   /**
    * Deactivate a node type
    */
-  async deactivateNode(nodeType: string): Promise<{ success: boolean; message: string }> {
+  async deactivateNode(
+    nodeType: string
+  ): Promise<{ success: boolean; message: string }> {
     try {
       const existingNode = await this.prisma.nodeType.findUnique({
         where: { type: nodeType },
@@ -791,7 +801,9 @@ export class NodeService {
       logger.error("Failed to deactivate node type", { error, nodeType });
       return {
         success: false,
-        message: `Failed to deactivate node type: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Failed to deactivate node type: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       };
     }
   }
@@ -799,12 +811,14 @@ export class NodeService {
   /**
    * Get all active node types
    */
-  async getActiveNodes(): Promise<Array<{
-    type: string;
-    displayName: string;
-    group: string[];
-    description: string;
-  }>> {
+  async getActiveNodes(): Promise<
+    Array<{
+      type: string;
+      displayName: string;
+      group: string[];
+      description: string;
+    }>
+  > {
     try {
       const nodes = await this.prisma.nodeType.findMany({
         where: { active: true },
@@ -814,7 +828,7 @@ export class NodeService {
           group: true,
           description: true,
         },
-        orderBy: { displayName: 'asc' },
+        orderBy: { displayName: "asc" },
       });
 
       return nodes;
@@ -827,13 +841,15 @@ export class NodeService {
   /**
    * Get all node types with their activation status
    */
-  async getNodesWithStatus(): Promise<Array<{
-    type: string;
-    displayName: string;
-    active: boolean;
-    group: string[];
-    description: string;
-  }>> {
+  async getNodesWithStatus(): Promise<
+    Array<{
+      type: string;
+      displayName: string;
+      active: boolean;
+      group: string[];
+      description: string;
+    }>
+  > {
     try {
       const nodes = await this.prisma.nodeType.findMany({
         select: {
@@ -844,8 +860,8 @@ export class NodeService {
           description: true,
         },
         orderBy: [
-          { active: 'desc' }, // Active nodes first
-          { displayName: 'asc' }, // Then alphabetical
+          { active: "desc" }, // Active nodes first
+          { displayName: "asc" }, // Then alphabetical
         ],
       });
 
@@ -875,7 +891,10 @@ export class NodeService {
       });
 
       const action = active ? "activated" : "deactivated";
-      logger.info(`Bulk ${action} node types`, { nodeTypes, count: result.count });
+      logger.info(`Bulk ${action} node types`, {
+        nodeTypes,
+        count: result.count,
+      });
 
       return {
         success: true,
@@ -883,10 +902,16 @@ export class NodeService {
         updated: result.count,
       };
     } catch (error) {
-      logger.error("Failed to bulk update node status", { error, nodeTypes, active });
+      logger.error("Failed to bulk update node status", {
+        error,
+        nodeTypes,
+        active,
+      });
       return {
         success: false,
-        message: `Failed to update node status: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Failed to update node status: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
         updated: 0,
       };
     }

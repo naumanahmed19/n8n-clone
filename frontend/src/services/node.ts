@@ -71,7 +71,7 @@ export class NodeService {
       description: string;
       examples: any[];
       properties: any[];
-    }>(`/nodes/${nodeType}/docs`);
+    }>(`/node-types/${nodeType}/docs`);
 
     return response.data || { description: "", examples: [], properties: [] };
   }

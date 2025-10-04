@@ -12,21 +12,21 @@ import { globalToastManager } from '@/hooks/useToast'
 import { nodeTypeService } from '@/services/nodeType'
 import { NodeType } from '@/types'
 import {
-    ChevronDown,
-    ChevronRight,
-    Clock,
-    Code,
-    Command,
-    Database,
-    FolderOpen,
-    Globe,
-    GripVertical,
-    Play,
-    Power,
-    PowerOff,
-    Settings,
-    Trash2,
-    Zap
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Code,
+  Command,
+  Database,
+  FolderOpen,
+  Globe,
+  GripVertical,
+  Play,
+  Power,
+  PowerOff,
+  Settings,
+  Trash2,
+  Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 

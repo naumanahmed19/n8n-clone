@@ -20,7 +20,7 @@ export function useNodeTypes(): UseNodeTypesReturn {
       setError(null);
 
       const response = await nodeService.getNodeTypes();
-      console.log('Fetched node types:', response.length, 'nodes');
+      console.log("Fetched node types:", response.length, "nodes");
       setNodeTypes(response);
     } catch (err) {
       console.error("Failed to fetch node types:", err);
