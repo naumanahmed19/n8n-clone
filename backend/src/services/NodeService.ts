@@ -687,10 +687,10 @@ export class NodeService {
    */
   private async registerBuiltInNodes(): Promise<void> {
     const { nodeDiscovery } = await import("../utils/NodeDiscovery");
-    
+
     try {
       const nodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
-      
+
       for (const nodeDefinition of nodeDefinitions) {
         await this.registerNode(nodeDefinition);
       }

@@ -17,19 +17,19 @@ async function registerAllDiscoveredNodes() {
 
     // Auto-discover all nodes
     const nodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
-    
+
     if (nodeDefinitions.length === 0) {
       console.log("⚠️  No nodes discovered in the nodes directory");
       return;
     }
 
     console.log(`📦 Discovered ${nodeDefinitions.length} node(s):\n`);
-    
+
     // List discovered nodes
     nodeDefinitions.forEach((node, index) => {
       console.log(`   ${index + 1}. ${node.displayName} (${node.type})`);
     });
-    
+
     console.log("\n🔄 Registering nodes...\n");
 
     let registered = 0;
@@ -57,17 +57,16 @@ async function registerAllDiscoveredNodes() {
     console.log(`   Registered: ${registered}`);
     console.log(`   Failed: ${failed}`);
     console.log(`   Total: ${nodeDefinitions.length}`);
-    
+
     // Show nodes grouped by directory
     console.log(`\n📁 Nodes by directory:`);
     const nodesByDir = await nodeDiscovery.getNodesByDirectory();
     for (const [dirName, nodes] of Object.entries(nodesByDir)) {
       console.log(`   ${dirName}/`);
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         console.log(`     └─ ${node.displayName}`);
       });
     }
-    
   } catch (error) {
     console.error("❌ Fatal error:", error);
     process.exit(1);

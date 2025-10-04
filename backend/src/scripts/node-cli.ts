@@ -6,7 +6,6 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { nodeDiscovery } from "../utils/NodeDiscovery";
 
 const NODES_DIR = path.join(__dirname, "..", "nodes");
 
@@ -34,23 +33,23 @@ async function main() {
 
 async function listNodes() {
   console.log("📋 Available nodes:\n");
-  
+
   try {
     // Create discovery instance with correct path
     const { NodeDiscovery } = await import("../utils/NodeDiscovery");
     const discovery = new NodeDiscovery(NODES_DIR);
     const nodesByDir = await discovery.getNodesByDirectory();
-    
+
     if (Object.keys(nodesByDir).length === 0) {
       console.log("   No nodes found");
       return;
     }
-    
+
     for (const [dirName, nodes] of Object.entries(nodesByDir)) {
       console.log(`📁 ${dirName}/`);
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         console.log(`   └─ ${node.displayName} (${node.type})`);
-        console.log(`      └─ ${node.description || 'No description'}`);
+        console.log(`      └─ ${node.description || "No description"}`);
       });
       console.log();
     }
@@ -67,7 +66,7 @@ async function createNode(nodeName: string) {
   }
 
   const nodeDir = path.join(NODES_DIR, nodeName);
-  
+
   if (fs.existsSync(nodeDir)) {
     console.error(`❌ Node directory ${nodeName} already exists`);
     return;
@@ -76,7 +75,7 @@ async function createNode(nodeName: string) {
   try {
     // Create directory
     await fs.promises.mkdir(nodeDir, { recursive: true });
-    
+
     // Create node file
     const nodeFileContent = `import {
   BuiltInNodeTypes,
@@ -122,12 +121,12 @@ export const ${nodeName}Node: NodeDefinition = {
 
     const nodeFilePath = path.join(nodeDir, `${nodeName}.node.ts`);
     await fs.promises.writeFile(nodeFilePath, nodeFileContent);
-    
+
     // Create index file
     const indexContent = `export { ${nodeName}Node } from "./${nodeName}.node";`;
     const indexPath = path.join(nodeDir, "index.ts");
     await fs.promises.writeFile(indexPath, indexContent);
-    
+
     console.log(`✅ Created node: ${nodeName}`);
     console.log(`   📁 Directory: ${nodeDir}`);
     console.log(`   📄 Node file: ${nodeFilePath}`);
@@ -136,7 +135,6 @@ export const ${nodeName}Node: NodeDefinition = {
     console.log("🔧 Next steps:");
     console.log("   1. Edit the node implementation");
     console.log("   2. Run 'npm run nodes:register' to register the node");
-    
   } catch (error) {
     console.error(`❌ Error creating node ${nodeName}:`, error);
   }
@@ -144,23 +142,22 @@ export const ${nodeName}Node: NodeDefinition = {
 
 async function discoverNodes() {
   console.log("🔍 Discovering nodes...\n");
-  
+
   try {
     // Create discovery instance with correct path
     const { NodeDiscovery } = await import("../utils/NodeDiscovery");
     const discovery = new NodeDiscovery(NODES_DIR);
-    
+
     const directories = await discovery.discoverNodeDirectories();
     const nodeInfos = await discovery.loadAllNodes();
-    
+
     console.log(`📁 Found ${directories.length} node directories:`);
-    directories.forEach(dir => console.log(`   - ${dir}`));
-    
+    directories.forEach((dir) => console.log(`   - ${dir}`));
+
     console.log(`\n📦 Loaded ${nodeInfos.length} node definitions:`);
-    nodeInfos.forEach(info => {
+    nodeInfos.forEach((info) => {
       console.log(`   - ${info.definition.displayName} (from ${info.name}/)`);
     });
-    
   } catch (error) {
     console.error("❌ Error discovering nodes:", error);
   }
@@ -168,45 +165,47 @@ async function discoverNodes() {
 
 async function validateNodeStructure() {
   console.log("🔍 Validating node structure...\n");
-  
+
   try {
     // Create discovery instance with correct path
     const { NodeDiscovery } = await import("../utils/NodeDiscovery");
     const discovery = new NodeDiscovery(NODES_DIR);
-    
+
     const directories = await discovery.discoverNodeDirectories();
     let valid = 0;
     let invalid = 0;
-    
+
     for (const dir of directories) {
       const dirPath = path.join(NODES_DIR, dir);
       const isValid = await validateSingleNode(dir, dirPath);
-      
+
       if (isValid) {
         valid++;
       } else {
         invalid++;
       }
     }
-    
+
     console.log(`\n📊 Validation Summary:`);
     console.log(`   ✅ Valid: ${valid}`);
     console.log(`   ❌ Invalid: ${invalid}`);
     console.log(`   📁 Total: ${directories.length}`);
-    
   } catch (error) {
     console.error("❌ Error validating structure:", error);
   }
 }
 
-async function validateSingleNode(dirName: string, dirPath: string): Promise<boolean> {
+async function validateSingleNode(
+  dirName: string,
+  dirPath: string
+): Promise<boolean> {
   try {
     const files = await fs.promises.readdir(dirPath);
-    
+
     // Check for required files
     const hasIndex = files.includes("index.ts");
-    const hasNodeFile = files.some(file => file.endsWith(".node.ts"));
-    
+    const hasNodeFile = files.some((file) => file.endsWith(".node.ts"));
+
     if (hasIndex && hasNodeFile) {
       console.log(`✅ ${dirName} - Valid structure`);
       return true;
@@ -216,7 +215,6 @@ async function validateSingleNode(dirName: string, dirPath: string): Promise<boo
       if (!hasNodeFile) console.log(`   - Missing .node.ts file`);
       return false;
     }
-    
   } catch (error) {
     console.log(`❌ ${dirName} - Error accessing directory: ${error}`);
     return false;
@@ -239,7 +237,7 @@ function showHelp() {
 }
 
 // Run the CLI
-main().catch(error => {
+main().catch((error) => {
   console.error("❌ CLI Error:", error);
   process.exit(1);
 });

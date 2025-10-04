@@ -5,6 +5,7 @@ This directory contains all the individual node implementations for the n8n-clon
 ## Structure
 
 Each node folder must contain:
+
 - `index.ts` - Exports the node definition
 - `[NodeName].node.ts` - Contains the node implementation
 
@@ -25,6 +26,7 @@ nodes/
 ## Available Nodes
 
 ### Core Nodes
+
 - **HttpRequest** - Make HTTP requests to any URL
 - **If** - Route data based on conditional logic
 - **Json** - Compose a JSON object
@@ -32,33 +34,39 @@ nodes/
 - **Switch** - Route data to different outputs based on conditions
 
 ### Trigger Nodes
+
 - **WebhookTrigger** - Triggers workflow execution when a webhook is called
 - **ScheduleTrigger** - Triggers workflow execution on a schedule using cron expressions
 - **ManualTrigger** - Triggers workflow execution manually when requested by the user
 
 ### Example Nodes
+
 - **CustomTemplate** - Example node showing how to use custom templates in form configuration
 - **DynamicProperties** - Example node showing how properties can be defined as a function for dynamic generation
 
 ## CLI Commands
 
 ### List all nodes
+
 ```bash
 npm run nodes:list
 ```
 
 ### Create a new node
+
 ```bash
 npm run nodes:create <NodeName>
 ```
 
 ### Discover and validate nodes
+
 ```bash
 npm run nodes:discover
 npm run nodes:validate
 ```
 
 ### Register all nodes
+
 ```bash
 npm run nodes:register
 ```
@@ -66,11 +74,13 @@ npm run nodes:register
 ## Creating a New Node
 
 ### Option 1: Using CLI (Recommended)
+
 ```bash
 npm run nodes:create MyNewNode
 ```
 
 This automatically creates:
+
 - `MyNewNode/` directory
 - `MyNewNode.node.ts` with boilerplate code
 - `index.ts` with proper export
@@ -80,6 +90,7 @@ This automatically creates:
 1. Create a new directory: `nodes/MyNewNode/`
 
 2. Create `MyNewNode.node.ts`:
+
 ```typescript
 import {
   BuiltInNodeTypes,
@@ -124,11 +135,13 @@ export const MyNewNodeNode: NodeDefinition = {
 ```
 
 3. Create `index.ts`:
+
 ```typescript
 export { MyNewNodeNode } from "./MyNewNode.node";
 ```
 
 4. Register the node:
+
 ```bash
 npm run nodes:register
 ```
@@ -148,19 +161,19 @@ Each node must export a `NodeDefinition` object with these required properties:
 
 ```typescript
 interface NodeDefinition {
-  type: string;           // Unique identifier for the node type
-  displayName: string;    // Human-readable name shown in UI
-  name: string;          // Internal name (camelCase)
-  group: string[];       // Categories for grouping nodes
-  version: number;       // Node version for compatibility
-  description: string;   // Description shown in UI
-  icon: string;         // Icon identifier (e.g., "fa:gear")
-  color: string;        // Hex color for the node
-  defaults: object;     // Default values for properties
-  inputs: string[];     // Input connection types
-  outputs: string[];    // Output connection types
+  type: string; // Unique identifier for the node type
+  displayName: string; // Human-readable name shown in UI
+  name: string; // Internal name (camelCase)
+  group: string[]; // Categories for grouping nodes
+  version: number; // Node version for compatibility
+  description: string; // Description shown in UI
+  icon: string; // Icon identifier (e.g., "fa:gear")
+  color: string; // Hex color for the node
+  defaults: object; // Default values for properties
+  inputs: string[]; // Input connection types
+  outputs: string[]; // Output connection types
   properties: PropertyDefinition[]; // Configuration properties
-  execute: Function;    // Main execution function
+  execute: Function; // Main execution function
 }
 ```
 
@@ -175,16 +188,19 @@ interface NodeDefinition {
 ## Troubleshooting
 
 ### Node not discovered
+
 - Check folder contains both `index.ts` and `.node.ts` file
 - Verify exports in `index.ts` are correct
 - Run `npm run nodes:validate` to check structure
 
 ### Registration fails
+
 - Ensure node definition follows the correct interface
 - Check all required properties are present
 - Review console output for specific error messages
 
 ### Import errors
+
 - Verify file paths in imports are correct
 - Check TypeScript compilation succeeds
 - Look for circular dependencies
@@ -192,6 +208,7 @@ interface NodeDefinition {
 ## File Structure Requirements
 
 ✅ **Valid structure:**
+
 ```
 MyNode/
 ├── index.ts              # Required: exports the node
@@ -199,6 +216,7 @@ MyNode/
 ```
 
 ❌ **Invalid structures:**
+
 ```
 MyNode/
 └── MyNode.node.ts        # Missing index.ts

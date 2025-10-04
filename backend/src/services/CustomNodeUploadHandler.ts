@@ -138,13 +138,15 @@ export class CustomNodeUploadHandler {
               nodeDefinition,
               extractDir
             );
-            
+
             if (success) {
               // Save to database
               const savedNode = await this.saveNodeType(nodeDefinition);
               processedNodes.push(savedNode);
             } else {
-              errors.push(`Failed to extract ${nodeDefinition.displayName} to nodes folder`);
+              errors.push(
+                `Failed to extract ${nodeDefinition.displayName} to nodes folder`
+              );
             }
           }
         } catch (error) {
@@ -295,49 +297,53 @@ export class CustomNodeUploadHandler {
   ): Promise<boolean> {
     try {
       // Generate folder name from node display name
-      const folderName = this.generateFolderNameFromDisplayName(nodeDefinition.displayName);
+      const folderName = this.generateFolderNameFromDisplayName(
+        nodeDefinition.displayName
+      );
       const nodeFolder = path.join(this.nodesPath, folderName);
-      
+
       // Ensure the folder doesn't already exist or remove it
       try {
         await fs.rm(nodeFolder, { recursive: true, force: true });
       } catch (error) {
         // Ignore if folder doesn't exist
       }
-      
+
       // Create node folder
       await this.ensureDirectory(nodeFolder);
-      
+
       // Determine file extension and name (prefer .ts for TypeScript compatibility)
       const originalExt = path.extname(nodeFilePath);
-      const useTypeScript = originalExt === '.js' || originalExt === '.ts';
-      const targetExt = useTypeScript ? '.ts' : originalExt;
+      const useTypeScript = originalExt === ".js" || originalExt === ".ts";
+      const targetExt = useTypeScript ? ".ts" : originalExt;
       const nodeFileName = `${folderName}.node${targetExt}`;
       const targetNodeFile = path.join(nodeFolder, nodeFileName);
-      
+
       // Copy the node file
       await fs.copyFile(nodeFilePath, targetNodeFile);
-      
+
       // Create index.ts file
-      const nodeExportName = await this.extractExportNameFromFile(targetNodeFile);
+      const nodeExportName = await this.extractExportNameFromFile(
+        targetNodeFile
+      );
       const indexContent = `export { ${nodeExportName} } from "./${folderName}.node";`;
-      const indexFile = path.join(nodeFolder, 'index.ts');
-      await fs.writeFile(indexFile, indexContent, 'utf-8');
-      
+      const indexFile = path.join(nodeFolder, "index.ts");
+      await fs.writeFile(indexFile, indexContent, "utf-8");
+
       // If there are any related files (like .json, .md, etc.), copy them too
       await this.copyRelatedFiles(nodeFilePath, nodeFolder, extractDir);
-      
+
       logger.info("Node extracted to individual folder", {
         nodeName: nodeDefinition.displayName,
-        folderPath: nodeFolder
+        folderPath: nodeFolder,
       });
-      
+
       return true;
     } catch (error) {
       logger.error("Failed to extract node to folder", {
         error,
         nodeFilePath,
-        nodeName: nodeDefinition.displayName
+        nodeName: nodeDefinition.displayName,
       });
       return false;
     }
@@ -348,37 +354,39 @@ export class CustomNodeUploadHandler {
    */
   private async extractExportNameFromFile(filePath: string): Promise<string> {
     try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      
+      const content = await fs.readFile(filePath, "utf-8");
+
       // Look for export patterns
       const exportPatterns = [
-        /export\s+const\s+(\w+)\s*=/,     // export const NodeName =
-        /export\s+{\s*(\w+)\s*}/,        // export { NodeName }
-        /exports\.(\w+)\s*=/,            // exports.NodeName =
+        /export\s+const\s+(\w+)\s*=/, // export const NodeName =
+        /export\s+{\s*(\w+)\s*}/, // export { NodeName }
+        /exports\.(\w+)\s*=/, // exports.NodeName =
         /module\.exports\s*=\s*{\s*(\w+)/, // module.exports = { NodeName
       ];
-      
+
       for (const pattern of exportPatterns) {
         const match = content.match(pattern);
         if (match && match[1]) {
           return match[1];
         }
       }
-      
+
       // Fallback: try to find any capitalized word that looks like a node name
       const fallbackMatch = content.match(/(\w*Node)/);
       if (fallbackMatch && fallbackMatch[1]) {
         return fallbackMatch[1];
       }
-      
+
       // Last resort: generate name from file
       const baseName = path.basename(filePath, path.extname(filePath));
-      return baseName.replace('.node', '') + 'Node';
-      
+      return baseName.replace(".node", "") + "Node";
     } catch (error) {
-      logger.warn("Failed to extract export name from file", { error, filePath });
+      logger.warn("Failed to extract export name from file", {
+        error,
+        filePath,
+      });
       const baseName = path.basename(filePath, path.extname(filePath));
-      return baseName.replace('.node', '') + 'Node';
+      return baseName.replace(".node", "") + "Node";
     }
   }
 
@@ -387,8 +395,8 @@ export class CustomNodeUploadHandler {
    */
   private generateFolderNameFromDisplayName(displayName: string): string {
     return displayName
-      .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
-      .replace(/\s+/g, '') // Remove spaces
+      .replace(/[^a-zA-Z0-9\s]/g, "") // Remove special characters
+      .replace(/\s+/g, "") // Remove spaces
       .replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
   }
 
@@ -401,39 +409,55 @@ export class CustomNodeUploadHandler {
     extractDir: string
   ): Promise<void> {
     try {
-      const nodeBaseName = path.basename(nodeFilePath, path.extname(nodeFilePath));
+      const nodeBaseName = path.basename(
+        nodeFilePath,
+        path.extname(nodeFilePath)
+      );
       const nodeDir = path.dirname(nodeFilePath);
-      
+
       // Look for related files with the same base name
       const files = await fs.readdir(nodeDir);
-      
+
       for (const file of files) {
         const filePath = path.join(nodeDir, file);
         const fileBaseName = path.basename(file, path.extname(file));
-        
+
         // Copy files that match the node base name (excluding the main node file)
-        if (fileBaseName === nodeBaseName && file !== path.basename(nodeFilePath)) {
+        if (
+          fileBaseName === nodeBaseName &&
+          file !== path.basename(nodeFilePath)
+        ) {
           const targetFile = path.join(targetFolder, file);
           await fs.copyFile(filePath, targetFile);
-          logger.debug("Copied related file", { from: filePath, to: targetFile });
+          logger.debug("Copied related file", {
+            from: filePath,
+            to: targetFile,
+          });
         }
       }
-      
+
       // Also copy any package.json or README files from the root
-      const commonFiles = ['package.json', 'README.md', 'README.txt'];
+      const commonFiles = ["package.json", "README.md", "README.txt"];
       for (const commonFile of commonFiles) {
         const sourcePath = path.join(extractDir, commonFile);
         try {
           await fs.access(sourcePath);
           const targetPath = path.join(targetFolder, commonFile);
           await fs.copyFile(sourcePath, targetPath);
-          logger.debug("Copied common file", { from: sourcePath, to: targetPath });
+          logger.debug("Copied common file", {
+            from: sourcePath,
+            to: targetPath,
+          });
         } catch (error) {
           // File doesn't exist, skip
         }
       }
     } catch (error) {
-      logger.warn("Failed to copy related files", { error, nodeFilePath, targetFolder });
+      logger.warn("Failed to copy related files", {
+        error,
+        nodeFilePath,
+        targetFolder,
+      });
       // Don't fail the extraction if related files can't be copied
     }
   }
