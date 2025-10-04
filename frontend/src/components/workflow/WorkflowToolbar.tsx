@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
+import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
@@ -192,6 +193,28 @@ export function WorkflowToolbar({
     }
   }
 
+  const handleExecuteWorkflow = async (triggerNodeId?: string) => {
+    if (!workflow) return
+    
+    try {
+      // If workflow is not saved (has unsaved changes), save it first
+      if (isDirty || mainTitleDirty) {
+        await handleSave()
+        // Wait a moment for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+      
+      // Execute the workflow using the workflow store's executeNode method
+      const { executeNode } = useWorkflowStore.getState()
+      await executeNode(triggerNodeId || workflow.nodes.find(n => 
+        n.type.includes('trigger') || 
+        ['manual-trigger', 'webhook-trigger', 'schedule-trigger'].includes(n.type)
+      )?.id || '', undefined, 'workflow')
+    } catch (error) {
+      console.error('Failed to execute workflow:', error)
+    }
+  }
+
   return (
     <TooltipProvider>
       <ConfirmDialog />
@@ -265,8 +288,14 @@ export function WorkflowToolbar({
 
       </div>
 
-      {/* Center section - Command Palette */}
-      <div className="flex items-center justify-center">
+      {/* Center section - Command Palette and Execute Button */}
+      <div className="flex items-center justify-center space-x-2">
+          {/* Execute Button */}
+          <WorkflowExecuteButton 
+            onExecute={handleExecuteWorkflow}
+            disabled={isSaving}
+          />
+          
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
