@@ -1710,6 +1710,22 @@ export class ExecutionService {
             nodeStatus = "ERROR";
         }
 
+        // Serialize error properly for database storage
+        let errorData = undefined;
+        if (nodeResult.error) {
+          if (nodeResult.error instanceof Error) {
+            errorData = {
+              message: nodeResult.error.message,
+              name: nodeResult.error.name,
+              stack: nodeResult.error.stack,
+            };
+          } else if (typeof nodeResult.error === "object") {
+            errorData = nodeResult.error;
+          } else {
+            errorData = { message: String(nodeResult.error) };
+          }
+        }
+
         await this.prisma.nodeExecution.create({
           data: {
             id: `${flowResult.executionId}_${nodeId}`,
@@ -1720,7 +1736,7 @@ export class ExecutionService {
             finishedAt: new Date(Date.now() + nodeResult.duration),
             inputData: {}, // TODO: Add actual input data
             outputData: nodeResult.data || undefined,
-            error: nodeResult.error || undefined,
+            error: errorData,
           },
         });
       }

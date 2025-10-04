@@ -1337,13 +1337,33 @@ export const useWorkflowStore = create<WorkflowStore>()(
             const { NodeValidator } = await import("@/utils/nodeValidation");
 
             let filteredParameters = node.parameters;
+            let nodeTypeDefinition: any;
             try {
               const nodeTypes = await workflowService.getNodeTypes();
-              const nodeTypeDefinition = nodeTypes.find(
+              nodeTypeDefinition = nodeTypes.find(
                 (nt) => nt.type === node.type
               );
 
               if (nodeTypeDefinition && nodeTypeDefinition.properties) {
+                // Validate required parameters before execution
+                const validation = NodeValidator.validateNode(
+                  node,
+                  nodeTypeDefinition.properties
+                );
+
+                if (!validation.isValid) {
+                  const errorMessage = NodeValidator.formatValidationMessage(
+                    validation.errors
+                  );
+                  const detailedErrors = validation.errors
+                    .map((e) => `- ${e.message}`)
+                    .join("\n");
+
+                  throw new Error(
+                    `Cannot execute node: ${errorMessage}\n\n${detailedErrors}`
+                  );
+                }
+
                 // Filter parameters to only include visible fields
                 filteredParameters = NodeValidator.filterVisibleParameters(
                   node.parameters,
@@ -1352,6 +1372,13 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 console.log("Filtered parameters:", filteredParameters);
               }
             } catch (error) {
+              // Re-throw validation errors
+              if (
+                error instanceof Error &&
+                error.message.includes("Cannot execute node")
+              ) {
+                throw error;
+              }
               console.warn("Failed to filter parameters, using all:", error);
               // Continue with unfiltered parameters if filtering fails
             }

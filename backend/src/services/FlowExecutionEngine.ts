@@ -929,7 +929,9 @@ export class FlowExecutionEngine extends EventEmitter {
 
     if (incomingConnections.length === 0) {
       if (context.triggerData) {
-        inputData.main = [[context.triggerData]];
+        // Wrap trigger data in the proper format for node execution
+        // The trigger data should be wrapped as { json: data }
+        inputData.main = [[{ json: context.triggerData }]];
       }
       return inputData;
     }

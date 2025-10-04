@@ -309,6 +309,9 @@ export class NodeService {
    */
   async getNodeSchema(nodeType: string): Promise<NodeSchema | null> {
     try {
+      // Wait for built-in nodes to be initialized before accessing registry
+      await this.waitForInitialization();
+
       // First, try to get from in-memory registry
       const nodeDefinition = this.nodeRegistry.get(nodeType);
 
@@ -381,6 +384,9 @@ export class NodeService {
       `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     try {
+      // Wait for built-in nodes to be initialized before executing
+      await this.waitForInitialization();
+
       const nodeDefinition = this.nodeRegistry.get(nodeType);
       if (!nodeDefinition) {
         throw new Error(`Node type not found: ${nodeType}`);
