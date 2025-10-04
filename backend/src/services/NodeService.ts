@@ -683,37 +683,20 @@ export class NodeService {
   }
 
   /**
-   * Register all built-in nodes
+   * Register all built-in nodes using auto-discovery
    */
   private async registerBuiltInNodes(): Promise<void> {
-    // Import trigger nodes
-    const { WebhookTriggerNode, ScheduleTriggerNode, ManualTriggerNode } =
-      await import("../nodes/triggers");
-
-    // Import core nodes
-    const { HttpRequestNode, JsonNode, SetNode, IfNode } = await import(
-      "../nodes/core"
-    );
-
-    // Import example nodes
-    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } =
-      await import("../nodes/examples");
-
-    const builtInNodes = [
-      HttpRequestNode,
-      JsonNode,
-      SetNode,
-      IfNode,
-      WebhookTriggerNode,
-      ScheduleTriggerNode,
-      ManualTriggerNode,
-      DynamicPropertiesNode,
-      CustomTemplateNode,
-      SwitchNode,
-    ];
-
-    for (const nodeDefinition of builtInNodes) {
-      await this.registerNode(nodeDefinition);
+    const { nodeDiscovery } = await import("../utils/NodeDiscovery");
+    
+    try {
+      const nodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
+      
+      for (const nodeDefinition of nodeDefinitions) {
+        await this.registerNode(nodeDefinition);
+      }
+    } catch (error) {
+      console.error("Error registering built-in nodes:", error);
+      throw error;
     }
   }
 }

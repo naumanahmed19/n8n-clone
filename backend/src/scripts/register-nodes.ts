@@ -1,45 +1,41 @@
 #!/usr/bin/env node
 /**
- * Script to manually register built-in nodes
- * Run this to register new built-in nodes without restarting the server
+ * Script to automatically register all discovered nodes
+ * Run this to register all nodes in the nodes directory without manual configuration
  */
 
 import { PrismaClient } from "@prisma/client";
 import { NodeService } from "../services/NodeService";
+import { nodeDiscovery } from "../utils/NodeDiscovery";
 
-async function registerBuiltInNodes() {
+async function registerAllDiscoveredNodes() {
   const prisma = new PrismaClient();
   const nodeService = new NodeService(prisma);
 
   try {
-    console.log("🔄 Registering built-in nodes...\n");
+    console.log("🔄 Auto-discovering and registering nodes...\n");
 
-    // Import all nodes
-    const { DynamicPropertiesNode, CustomTemplateNode, SwitchNode } =
-      await import("../nodes/examples");
-    const { HttpRequestNode, JsonNode, SetNode, IfNode } = await import(
-      "../nodes/core"
-    );
-    const { WebhookTriggerNode, ScheduleTriggerNode, ManualTriggerNode } =
-      await import("../nodes/triggers");
+    // Auto-discover all nodes
+    const nodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
+    
+    if (nodeDefinitions.length === 0) {
+      console.log("⚠️  No nodes discovered in the nodes directory");
+      return;
+    }
 
-    const nodes = [
-      HttpRequestNode,
-      JsonNode,
-      SetNode,
-      IfNode,
-      WebhookTriggerNode,
-      ScheduleTriggerNode,
-      ManualTriggerNode,
-      DynamicPropertiesNode,
-      CustomTemplateNode,
-      SwitchNode,
-    ];
+    console.log(`📦 Discovered ${nodeDefinitions.length} node(s):\n`);
+    
+    // List discovered nodes
+    nodeDefinitions.forEach((node, index) => {
+      console.log(`   ${index + 1}. ${node.displayName} (${node.type})`);
+    });
+    
+    console.log("\n🔄 Registering nodes...\n");
 
     let registered = 0;
     let failed = 0;
 
-    for (const node of nodes) {
+    for (const node of nodeDefinitions) {
       try {
         const result = await nodeService.registerNode(node);
 
@@ -60,7 +56,18 @@ async function registerBuiltInNodes() {
     console.log(`\n📊 Summary:`);
     console.log(`   Registered: ${registered}`);
     console.log(`   Failed: ${failed}`);
-    console.log(`   Total: ${nodes.length}`);
+    console.log(`   Total: ${nodeDefinitions.length}`);
+    
+    // Show nodes grouped by directory
+    console.log(`\n📁 Nodes by directory:`);
+    const nodesByDir = await nodeDiscovery.getNodesByDirectory();
+    for (const [dirName, nodes] of Object.entries(nodesByDir)) {
+      console.log(`   ${dirName}/`);
+      nodes.forEach(node => {
+        console.log(`     └─ ${node.displayName}`);
+      });
+    }
+    
   } catch (error) {
     console.error("❌ Fatal error:", error);
     process.exit(1);
@@ -70,12 +77,12 @@ async function registerBuiltInNodes() {
 }
 
 // Run the registration
-registerBuiltInNodes()
+registerAllDiscoveredNodes()
   .then(() => {
-    console.log("\n✅ Node registration complete");
+    console.log("\n✅ Auto-registration complete");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("\n❌ Node registration failed:", error);
+    console.error("\n❌ Auto-registration failed:", error);
     process.exit(1);
   });
