@@ -7,9 +7,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
-import { useNodeTypes } from '@/stores'
 import { globalToastManager } from '@/hooks/useToast'
 import { nodeTypeService } from '@/services/nodeType'
+import { useNodeTypes } from '@/stores'
 import { NodeType } from '@/types'
 import {
   ChevronDown,

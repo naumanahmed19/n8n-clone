@@ -8,9 +8,9 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
-import { useAddNodeDialogStore, useWorkflowStore, useNodeTypes } from '@/stores'
+import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
-import { useCallback, useMemo, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useReactFlow } from 'reactflow'
 
 interface AddNodeCommandDialogProps {
