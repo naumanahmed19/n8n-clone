@@ -4,28 +4,28 @@ import { CredentialTypeSelection } from '@/components/credential/CredentialTypeS
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useSidebarContext } from '@/contexts'
 import { credentialService } from '@/services'
 import { useCredentialStore } from '@/stores'
 import { Credential, CredentialType } from '@/types'
 import {
-  Activity,
-  Calendar,
-  Clock,
-  Copy,
-  Edit,
-  Key as KeyIcon,
-  MoreHorizontal,
-  Shield,
-  TestTube,
-  Trash2,
-  Users
+    Activity,
+    Calendar,
+    Clock,
+    Copy,
+    Edit,
+    Key as KeyIcon,
+    MoreHorizontal,
+    Shield,
+    TestTube,
+    Trash2,
+    Users
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'

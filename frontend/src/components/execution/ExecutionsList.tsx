@@ -1,26 +1,26 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
 import { apiClient } from '@/services/api'
 import { executionService, type ExecutionDetails } from '@/services/execution'
 import {
-    Activity,
-    AlertCircle,
-    Calendar,
-    CheckCircle,
-    Clock,
-    MoreHorizontal,
-    Pause,
-    Play,
-    StopCircle,
-    XCircle
+  Activity,
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  MoreHorizontal,
+  Pause,
+  Play,
+  StopCircle,
+  XCircle
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'

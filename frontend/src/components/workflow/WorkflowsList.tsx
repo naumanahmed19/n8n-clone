@@ -1,28 +1,28 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { WorkflowsHeader } from '@/components/workflow/WorkflowsHeader'
 import { useSidebarContext } from '@/contexts'
 import { workflowService } from '@/services'
 import type { Workflow } from '@/types'
 import {
-  Activity,
-  Calendar,
-  ChevronDown,
-  ChevronRight,
-  FolderOpen,
-  MoreHorizontal,
-  Workflow as WorkflowIcon
+    Activity,
+    Calendar,
+    ChevronDown,
+    ChevronRight,
+    FolderOpen,
+    MoreHorizontal,
+    Workflow as WorkflowIcon
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
