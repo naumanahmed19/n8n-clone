@@ -41,6 +41,7 @@ export function ExecutionsList({}: ExecutionsListProps) {
   const [allExecutions, setAllExecutions] = useState<Execution[]>([])
   const [workflowExecutions, setWorkflowExecutions] = useState<Execution[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
@@ -67,42 +68,51 @@ export function ExecutionsList({}: ExecutionsListProps) {
     return pathMatch ? pathMatch[1] : null
   }, [location.pathname])
 
-  useEffect(() => {
-    const fetchExecutions = async () => {
-      try {
+  const fetchExecutions = async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) {
+        setIsRefreshing(true)
+      } else {
         setIsLoading(true)
-        setError(null)
-        
-        // Fetch all executions
-        const allExecutionsList = await executionService.listExecutions({
+      }
+      setError(null)
+      
+      // Fetch all executions
+      const allExecutionsList = await executionService.listExecutions({
+        status: statusFilter || undefined,
+        limit: 50,
+        page: 1
+      })
+      
+      setAllExecutions(allExecutionsList)
+      
+      // Filter executions for current workflow if we have a workflow ID
+      if (currentWorkflowId && currentWorkflowId !== 'new') {
+        const workflowExecutionsList = await executionService.listExecutions({
+          workflowId: currentWorkflowId,
           status: statusFilter || undefined,
           limit: 50,
           page: 1
         })
-        
-        setAllExecutions(allExecutionsList)
-        
-        // Filter executions for current workflow if we have a workflow ID
-        if (currentWorkflowId && currentWorkflowId !== 'new') {
-          const workflowExecutionsList = await executionService.listExecutions({
-            workflowId: currentWorkflowId,
-            status: statusFilter || undefined,
-            limit: 50,
-            page: 1
-          })
-          setWorkflowExecutions(workflowExecutionsList)
-        } else {
-          setWorkflowExecutions([])
-        }
-        
-      } catch (err) {
-        console.error('Failed to fetch executions:', err)
-        setError('Failed to load executions')
-      } finally {
-        setIsLoading(false)
+        setWorkflowExecutions(workflowExecutionsList)
+      } else {
+        setWorkflowExecutions([])
       }
+      
+    } catch (err) {
+      console.error('Failed to fetch executions:', err)
+      setError('Failed to load executions')
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
     }
+  }
 
+  const handleRefresh = () => {
+    fetchExecutions(true)
+  }
+
+  useEffect(() => {
     fetchExecutions()
   }, [statusFilter, currentWorkflowId])
 
@@ -136,6 +146,8 @@ export function ExecutionsList({}: ExecutionsListProps) {
         currentWorkflowId={currentWorkflowId}
         workflowExecutionCount={workflowExecutions.length}
         allExecutionCount={allExecutions.length}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
       />
     )
     
@@ -143,7 +155,7 @@ export function ExecutionsList({}: ExecutionsListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, filteredExecutions.length, searchTerm, setSearchTerm, statusFilter, setStatusFilter, activeTab, setActiveTab, currentWorkflowId, workflowExecutions.length, allExecutions.length])
+  }, [setHeaderSlot, filteredExecutions.length, searchTerm, setSearchTerm, statusFilter, setStatusFilter, activeTab, setActiveTab, currentWorkflowId, workflowExecutions.length, allExecutions.length, isRefreshing])
 
   const handleExecutionClick = (executionId: string) => {
     navigate(`/executions/${executionId}`)

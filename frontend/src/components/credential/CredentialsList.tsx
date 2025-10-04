@@ -53,6 +53,7 @@ export function CredentialsList({}: CredentialsListProps) {
   } = useCredentialStore()
   
   const [isLoading, setIsLoading] = useState(!isCredentialsLoaded)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [localSearchTerm, setLocalSearchTerm] = useState("")
   
   // Dialog states
@@ -183,30 +184,39 @@ export function CredentialsList({}: CredentialsListProps) {
     navigate(`/credentials/${credentialId}`)
   }
 
-  useEffect(() => {
-    const fetchCredentials = async () => {
-      // Don't fetch if we already have data loaded
-      if (isCredentialsLoaded && credentials.length > 0) {
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Fetch fresh data
-        const fetchedCredentials = await credentialService.getCredentials()
-        setCredentials(fetchedCredentials)
-        setIsCredentialsLoaded(true)
-      } catch (err) {
-        console.error('Failed to fetch credentials:', err)
-        setError('Failed to load credentials')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchCredentials = async (forceRefresh = false) => {
+    // Don't fetch if we already have data loaded (unless force refresh)
+    if (!forceRefresh && isCredentialsLoaded && credentials.length > 0) {
+      setIsLoading(false)
+      return
     }
 
+    try {
+      if (forceRefresh) {
+        setIsRefreshing(true)
+      } else {
+        setIsLoading(true)
+      }
+      setError(null)
+      
+      // Fetch fresh data
+      const fetchedCredentials = await credentialService.getCredentials()
+      setCredentials(fetchedCredentials)
+      setIsCredentialsLoaded(true)
+    } catch (err) {
+      console.error('Failed to fetch credentials:', err)
+      setError('Failed to load credentials')
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    fetchCredentials(true)
+  }
+
+  useEffect(() => {
     fetchCredentials()
   }, [isCredentialsLoaded, setCredentials, setIsCredentialsLoaded, setError])
 
@@ -233,6 +243,8 @@ export function CredentialsList({}: CredentialsListProps) {
         searchTerm={localSearchTerm}
         onSearchChange={setLocalSearchTerm}
         onCreateClick={handleCreateCredential}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
       />
     )
     
@@ -240,7 +252,7 @@ export function CredentialsList({}: CredentialsListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, filteredCredentials.length, localSearchTerm, handleCreateCredential])
+  }, [setHeaderSlot, filteredCredentials.length, localSearchTerm, handleCreateCredential, isRefreshing])
 
   const handleCredentialAction = (action: string, credentialId: string, event: React.MouseEvent) => {
     event.stopPropagation()

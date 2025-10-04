@@ -9,7 +9,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { RotateCcw, Search } from 'lucide-react'
+import { RefreshCw, RotateCcw, Search } from 'lucide-react'
 
 interface ExecutionsHeaderProps {
   executionCount: number
@@ -22,6 +22,8 @@ interface ExecutionsHeaderProps {
   currentWorkflowId: string | null
   workflowExecutionCount: number
   allExecutionCount: number
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
 export function ExecutionsHeader({
@@ -34,7 +36,9 @@ export function ExecutionsHeader({
   setActiveTab,
   currentWorkflowId,
   workflowExecutionCount,
-  allExecutionCount
+  allExecutionCount,
+  onRefresh,
+  isRefreshing = false
 }: ExecutionsHeaderProps) {
   const handleClearFilters = () => {
     setSearchTerm('')
@@ -67,15 +71,28 @@ export function ExecutionsHeader({
 
       {/* Search and Filters */}
       <div className="space-y-2">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search executions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 h-9"
-          />
+        {/* Search Input with refresh button */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search executions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
         </div>
 
         {/* Status Filter */}

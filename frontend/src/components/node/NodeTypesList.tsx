@@ -205,6 +205,8 @@ export function NodeTypesList({}: NodeTypesListProps) {
         nodeCount={activeNodeTypes.length}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        onRefresh={refetchNodeTypes}
+        isRefreshing={isLoading}
       />
     )
     
@@ -212,7 +214,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, activeTab, setActiveTab, activeNodeTypes.length, searchTerm, setSearchTerm])
+  }, [setHeaderSlot, activeTab, setActiveTab, activeNodeTypes.length, searchTerm, setSearchTerm, refetchNodeTypes, isLoading])
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
