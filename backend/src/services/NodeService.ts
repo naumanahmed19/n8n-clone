@@ -136,7 +136,7 @@ export class NodeService {
       );
 
       if (existingNode) {
-        // Update existing node
+        // Update existing node but preserve the active status
         await this.prisma.nodeType.update({
           where: { type: nodeDefinition.type },
           data: {
@@ -151,7 +151,8 @@ export class NodeService {
             properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
-            active: true,
+            // Preserve existing active status instead of overriding to true
+            active: existingNode.active,
           },
         });
       } else {
@@ -683,6 +684,17 @@ export class NodeService {
   }
 
   /**
+   * Register all discovered nodes from the nodes directory
+   */
+  async registerDiscoveredNodes(): Promise<void> {
+    try {
+      await this.registerBuiltInNodes();
+    } catch (error) {
+      throw new Error(`Failed to register discovered nodes: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  /**
    * Register all built-in nodes using auto-discovery
    */
   private async registerBuiltInNodes(): Promise<void> {
@@ -697,6 +709,186 @@ export class NodeService {
     } catch (error) {
       console.error("Error registering built-in nodes:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Activate a node type
+   */
+  async activateNode(nodeType: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const existingNode = await this.prisma.nodeType.findUnique({
+        where: { type: nodeType },
+      });
+
+      if (!existingNode) {
+        return {
+          success: false,
+          message: `Node type '${nodeType}' not found`,
+        };
+      }
+
+      if (existingNode.active) {
+        return {
+          success: true,
+          message: `Node type '${nodeType}' is already active`,
+        };
+      }
+
+      await this.prisma.nodeType.update({
+        where: { type: nodeType },
+        data: { active: true, updatedAt: new Date() },
+      });
+
+      logger.info("Node type activated", { nodeType });
+      return {
+        success: true,
+        message: `Node type '${nodeType}' activated successfully`,
+      };
+    } catch (error) {
+      logger.error("Failed to activate node type", { error, nodeType });
+      return {
+        success: false,
+        message: `Failed to activate node type: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  /**
+   * Deactivate a node type
+   */
+  async deactivateNode(nodeType: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const existingNode = await this.prisma.nodeType.findUnique({
+        where: { type: nodeType },
+      });
+
+      if (!existingNode) {
+        return {
+          success: false,
+          message: `Node type '${nodeType}' not found`,
+        };
+      }
+
+      if (!existingNode.active) {
+        return {
+          success: true,
+          message: `Node type '${nodeType}' is already inactive`,
+        };
+      }
+
+      await this.prisma.nodeType.update({
+        where: { type: nodeType },
+        data: { active: false, updatedAt: new Date() },
+      });
+
+      logger.info("Node type deactivated", { nodeType });
+      return {
+        success: true,
+        message: `Node type '${nodeType}' deactivated successfully`,
+      };
+    } catch (error) {
+      logger.error("Failed to deactivate node type", { error, nodeType });
+      return {
+        success: false,
+        message: `Failed to deactivate node type: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  /**
+   * Get all active node types
+   */
+  async getActiveNodes(): Promise<Array<{
+    type: string;
+    displayName: string;
+    group: string[];
+    description: string;
+  }>> {
+    try {
+      const nodes = await this.prisma.nodeType.findMany({
+        where: { active: true },
+        select: {
+          type: true,
+          displayName: true,
+          group: true,
+          description: true,
+        },
+        orderBy: { displayName: 'asc' },
+      });
+
+      return nodes;
+    } catch (error) {
+      logger.error("Failed to get active nodes", { error });
+      return [];
+    }
+  }
+
+  /**
+   * Get all node types with their activation status
+   */
+  async getNodesWithStatus(): Promise<Array<{
+    type: string;
+    displayName: string;
+    active: boolean;
+    group: string[];
+    description: string;
+  }>> {
+    try {
+      const nodes = await this.prisma.nodeType.findMany({
+        select: {
+          type: true,
+          displayName: true,
+          active: true,
+          group: true,
+          description: true,
+        },
+        orderBy: [
+          { active: 'desc' }, // Active nodes first
+          { displayName: 'asc' }, // Then alphabetical
+        ],
+      });
+
+      return nodes;
+    } catch (error) {
+      logger.error("Failed to get nodes with status", { error });
+      return [];
+    }
+  }
+
+  /**
+   * Bulk activate/deactivate nodes
+   */
+  async bulkUpdateNodeStatus(
+    nodeTypes: string[],
+    active: boolean
+  ): Promise<{ success: boolean; message: string; updated: number }> {
+    try {
+      const result = await this.prisma.nodeType.updateMany({
+        where: {
+          type: { in: nodeTypes },
+        },
+        data: {
+          active,
+          updatedAt: new Date(),
+        },
+      });
+
+      const action = active ? "activated" : "deactivated";
+      logger.info(`Bulk ${action} node types`, { nodeTypes, count: result.count });
+
+      return {
+        success: true,
+        message: `Successfully ${action} ${result.count} node(s)`,
+        updated: result.count,
+      };
+    } catch (error) {
+      logger.error("Failed to bulk update node status", { error, nodeTypes, active });
+      return {
+        success: false,
+        message: `Failed to update node status: ${error instanceof Error ? error.message : "Unknown error"}`,
+        updated: 0,
+      };
     }
   }
 }

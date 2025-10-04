@@ -146,19 +146,27 @@ router.post(
 router.patch("/:type", async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
-    const { active, ...updateData } = req.body;
+    const updateData = req.body;
+
+    // Log the update request for debugging
+    logger.info("Updating node type", { type, updateData });
 
     const nodeType = await prisma.nodeType.update({
       where: { type },
-      data: updateData,
+      data: {
+        ...updateData,
+        updatedAt: new Date(),
+      },
     });
+
+    logger.info("Node type updated successfully", { type, active: nodeType.active });
 
     res.json({
       success: true,
       data: nodeType,
       message: "Node type updated successfully",
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === "P2025") {
       return res.status(404).json({
         success: false,
@@ -169,6 +177,7 @@ router.patch("/:type", async (req: Request, res: Response) => {
     logger.error("Failed to update node type", {
       error,
       type: req.params.type,
+      updateData: req.body,
     });
     res.status(500).json({
       success: false,
@@ -193,7 +202,7 @@ router.delete("/:type", async (req: Request, res: Response) => {
       success: true,
       message: `Node type ${type} deleted successfully`,
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === "P2025") {
       return res.status(404).json({
         success: false,

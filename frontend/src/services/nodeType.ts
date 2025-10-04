@@ -103,7 +103,7 @@ export class NodeTypeService {
         active,
       }
     );
-    return response.data.data;
+    return response.data;
   }
 }
 

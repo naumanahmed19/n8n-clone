@@ -16,13 +16,14 @@ export interface TestNodeResponse {
 
 export class NodeService {
   async getNodeTypes(): Promise<NodeType[]> {
-    const response: any = await apiClient.get("/nodes");
+    // Use /node-types endpoint to get data from database with active status
+    const response: any = await apiClient.get("/node-types");
 
     if (!response.success) {
       throw new Error("Failed to fetch node types");
     }
 
-    // response.data contains the NodeType[] array
+    // response.data contains the NodeType[] array from database
     const nodeTypesArray: NodeType[] = response.data || [];
     return nodeTypesArray;
   }

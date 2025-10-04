@@ -78,7 +78,6 @@ export function NodeTypesList({}: NodeTypesListProps) {
   const { 
     nodeTypesData: nodeTypesFromContext,
     setNodeTypesData,
-    isNodeTypesLoaded,
     setIsNodeTypesLoaded,
     nodeTypesError: error,
     setNodeTypesError: setError,
@@ -97,11 +96,11 @@ export function NodeTypesList({}: NodeTypesListProps) {
 
   // Update context when hook data changes
   useEffect(() => {
-    if (nodeTypes.length > 0 && !isNodeTypesLoaded) {
+    if (nodeTypes.length > 0) {
       setNodeTypesData(nodeTypes)
       setIsNodeTypesLoaded(true)
     }
-  }, [nodeTypes, setNodeTypesData, isNodeTypesLoaded, setIsNodeTypesLoaded])
+  }, [nodeTypes, setNodeTypesData, setIsNodeTypesLoaded])
 
   // Update error state
   useEffect(() => {
@@ -301,13 +300,13 @@ export function NodeTypesList({}: NodeTypesListProps) {
     try {
       await nodeTypeService.updateNodeTypeStatus(nodeType.type, newStatus);
       
+      // Refresh the list immediately after successful update
+      await refetch();
+      
       globalToastManager.showSuccess(
         `Node ${newStatus ? 'Enabled' : 'Disabled'}`,
         { message: `${nodeType.displayName} is now ${newStatus ? 'active' : 'inactive'}` }
       );
-      
-      // Refresh the list
-      refetch();
       
     } catch (error: any) {
       console.error('Failed to toggle node status:', error);
@@ -354,9 +353,12 @@ export function NodeTypesList({}: NodeTypesListProps) {
               {group.nodeTypes.map((nodeType) => {
                 const IconComponent = getNodeIcon(nodeType)
                 
+                
                 const nodeElement = (
                   <div
-                    className="bg-white hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors"
+                    className={`bg-white hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors ${
+                      (nodeType as ExtendedNodeType).active === false ? 'opacity-50 bg-muted/30' : ''
+                    }`}
                     style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                     draggable
 
@@ -384,7 +386,15 @@ export function NodeTypesList({}: NodeTypesListProps) {
                       <IconComponent className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0 overflow-hidden">
-                      <div className="font-medium truncate">{nodeType.displayName}</div>
+                      <div className="font-medium truncate flex items-center gap-2">
+                        {nodeType.displayName}
+                        {(nodeType as ExtendedNodeType).active === false && (
+                          <Badge variant="outline" className="text-xs h-4 px-1">
+                            <PowerOff className="h-2 w-2 mr-1" />
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
                       {nodeType.description && (
                         <div 
                           className="text-xs text-muted-foreground overflow-hidden leading-relaxed mt-1"
@@ -415,14 +425,14 @@ export function NodeTypesList({}: NodeTypesListProps) {
                 
                 // Wrap with context menu
                 return (
-                  <ContextMenu key={nodeType.type}>
+                  <ContextMenu key={`${nodeType.type}-${(nodeType as ExtendedNodeType).active}`}>
                     <ContextMenuTrigger className="block w-full">
                       {nodeElement}
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
                       <ContextMenuItem
                         onClick={() => handleToggleNodeStatus(nodeType)}
-                        disabled={processingNode === nodeType.type || !isDeletable}
+                        disabled={processingNode === nodeType.type}
                       >
                         {(nodeType as ExtendedNodeType).active !== false ? (
                           <>
