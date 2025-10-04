@@ -209,7 +209,6 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             <AddNodeCommandDialog
                 open={showAddNodeDialog}
                 onOpenChange={closeDialog}
-                nodeTypes={availableNodeTypes}
                 position={position}
             />
         </div>

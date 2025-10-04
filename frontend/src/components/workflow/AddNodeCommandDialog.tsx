@@ -8,33 +8,41 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
-import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
+import { useAddNodeDialogStore, useWorkflowStore, useNodeTypes } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useEffect } from 'react'
 import { useReactFlow } from 'reactflow'
 
 interface AddNodeCommandDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  nodeTypes: NodeType[]
   position?: { x: number; y: number }
 }
 
 export function AddNodeCommandDialog({
   open,
   onOpenChange,
-  nodeTypes,
   position,
 }: AddNodeCommandDialogProps) {
   const { addNode, addConnection, removeConnection, workflow, updateNode } = useWorkflowStore()
   const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
+  
+  // Get only active node types from the store
+  const { activeNodeTypes, fetchNodeTypes } = useNodeTypes()
+  
+  // Initialize store if needed
+  useEffect(() => {
+    if (activeNodeTypes.length === 0) {
+      fetchNodeTypes()
+    }
+  }, [activeNodeTypes.length, fetchNodeTypes])
 
-  // Group nodes by category
+  // Group nodes by category - only active nodes will be shown
   const groupedNodes = useMemo(() => {
     const groups = new Map<string, NodeType[]>()
     
-    nodeTypes.forEach(node => {
+    activeNodeTypes.forEach(node => {
       node.group.forEach(group => {
         if (!groups.has(group)) {
           groups.set(group, [])
@@ -50,7 +58,7 @@ export function AddNodeCommandDialog({
         name: groupName,
         nodes: nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
       }))
-  }, [nodeTypes])
+  }, [activeNodeTypes])
 
   const handleSelectNode = useCallback((nodeType: NodeType) => {
     // Calculate position where to add the node

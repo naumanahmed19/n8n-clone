@@ -7,7 +7,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useSidebarContext } from '@/contexts'
-import { useNodeTypes } from '@/hooks/useNodeTypes'
+import { useNodeTypes } from '@/stores'
 import { globalToastManager } from '@/hooks/useToast'
 import { nodeTypeService } from '@/services/nodeType'
 import { NodeType } from '@/types'
@@ -79,7 +79,6 @@ export function NodeTypesList({}: NodeTypesListProps) {
     nodeTypesData: nodeTypesFromContext,
     setNodeTypesData,
     setIsNodeTypesLoaded,
-    nodeTypesError: error,
     setNodeTypesError: setError,
     setHeaderSlot
   } = useSidebarContext()
@@ -87,14 +86,27 @@ export function NodeTypesList({}: NodeTypesListProps) {
   // Search term for nodes
   const [searchTerm, setSearchTerm] = useState("")
   
-  const { nodeTypes, isLoading, error: hookError, refetch } = useNodeTypes()
+  const { 
+    nodeTypes, 
+    isLoading, 
+    error: storeError, 
+    fetchNodeTypes, 
+    refetchNodeTypes
+  } = useNodeTypes()
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<string>('available')
   const [processingNode, setProcessingNode] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [nodeToDelete, setNodeToDelete] = useState<NodeType | null>(null)
 
-  // Update context when hook data changes
+  // Initialize store on mount
+  useEffect(() => {
+    if (nodeTypes.length === 0 && !isLoading) {
+      fetchNodeTypes()
+    }
+  }, [nodeTypes.length, isLoading, fetchNodeTypes])
+
+  // Update context when store data changes
   useEffect(() => {
     if (nodeTypes.length > 0) {
       setNodeTypesData(nodeTypes)
@@ -104,15 +116,15 @@ export function NodeTypesList({}: NodeTypesListProps) {
 
   // Update error state
   useEffect(() => {
-    setError(hookError)
-  }, [hookError, setError])
+    setError(storeError)
+  }, [storeError, setError])
 
   // Use data from context if available, otherwise use hook data
   const activeNodeTypes = nodeTypesFromContext.length > 0 ? nodeTypesFromContext : nodeTypes
 
   // Callback to refresh nodes after upload
   const handleUploadSuccess = () => {
-    refetch()
+    refetchNodeTypes()
     setActiveTab('available')
   }
 
@@ -249,7 +261,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
       );
       
       // Refresh the list
-      await refetch();
+      await refetchNodeTypes();
       
     } catch (error: any) {
       console.error('Failed to delete node:', error);
@@ -301,7 +313,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
       await nodeTypeService.updateNodeTypeStatus(nodeType.type, newStatus);
       
       // Refresh the list immediately after successful update
-      await refetch();
+      await refetchNodeTypes();
       
       globalToastManager.showSuccess(
         `Node ${newStatus ? 'Enabled' : 'Disabled'}`,
@@ -493,16 +505,16 @@ export function NodeTypesList({}: NodeTypesListProps) {
               ))}
             </div>
           </div>
-        ) : error ? (
+        ) : storeError ? (
           <div className="p-4">
             <div className="text-center text-muted-foreground">
               <Command className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm">{error}</p>
+              <p className="text-sm">{storeError}</p>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="mt-2"
-                onClick={refetch}
+                onClick={refetchNodeTypes}
               >
                 Try Again
               </Button>
