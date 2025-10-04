@@ -99,6 +99,12 @@ export interface NodeExecutionContext {
   getInputData(inputName?: string): NodeInputData;
   helpers: NodeHelpers;
   logger: NodeLogger;
+  // Utility functions for common node operations
+  resolveValue: (value: string | any, item: any) => any;
+  resolvePath: (obj: any, path: string) => any;
+  extractJsonData: (items: any[]) => any[];
+  wrapJsonData: (items: any[]) => any[];
+  normalizeInputItems: (items: any[] | any[][]) => any[];
 }
 
 export interface NodeHelpers {

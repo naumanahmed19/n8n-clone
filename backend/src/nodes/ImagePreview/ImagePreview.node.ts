@@ -34,7 +34,8 @@ export const ImagePreviewNode: NodeDefinition = {
       type: "string",
       required: true,
       default: "",
-      description: "The URL of the image to preview and display",
+      description:
+        "The URL of the image to preview and display. Use {{json.fieldName}} to reference input data.",
       placeholder: "https://example.com/image.jpg",
     },
     {
@@ -67,7 +68,8 @@ export const ImagePreviewNode: NodeDefinition = {
       type: "string",
       required: false,
       default: "",
-      description: "Alternative text for the image (accessibility)",
+      description:
+        "Alternative text for the image (accessibility). Use {{json.fieldName}} to reference input data.",
       placeholder: "Description of the image",
     },
     {
@@ -82,6 +84,7 @@ export const ImagePreviewNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
+    // getNodeParameter now automatically resolves {{...}} placeholders from the first item
     const imageUrl = this.getNodeParameter("imageUrl") as string;
     const altText = this.getNodeParameter("altText") as string;
     const displayInOutput = this.getNodeParameter("displayInOutput") as boolean;
@@ -193,10 +196,10 @@ export const ImagePreviewNode: NodeDefinition = {
       }
     }
 
-    // Prepare output data
+    // Prepare output data with resolved values
     const outputData = {
-      imageUrl,
-      altText,
+      imageUrl: imageUrl,
+      altText: altText,
       metadata: imageMetadata,
       timestamp: new Date().toISOString(),
     };

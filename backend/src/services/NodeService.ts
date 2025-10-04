@@ -15,6 +15,13 @@ import {
 } from "../types/node.types";
 import { logger } from "../utils/logger";
 import {
+  extractJsonData,
+  normalizeInputItems,
+  resolvePath,
+  resolveValue,
+  wrapJsonData,
+} from "../utils/nodeHelpers";
+import {
   SecureExecutionOptions,
   SecureExecutionService,
 } from "./SecureExecutionService";
@@ -631,7 +638,24 @@ export class NodeService {
   ): NodeExecutionContext {
     return {
       getNodeParameter: (parameterName: string, itemIndex?: number) => {
-        return parameters[parameterName];
+        const value = parameters[parameterName];
+
+        // Auto-resolve placeholders if value is a string with {{...}} patterns
+        if (typeof value === "string" && value.includes("{{")) {
+          // Get the item to resolve against
+          const items = normalizeInputItems(inputData.main || []);
+          const processedItems = extractJsonData(items);
+
+          if (processedItems.length > 0) {
+            // Use specified itemIndex or default to first item
+            const itemToUse = processedItems[itemIndex ?? 0];
+            if (itemToUse) {
+              return resolveValue(value, itemToUse);
+            }
+          }
+        }
+
+        return value;
       },
       getCredentials: async (type: string) => {
         return credentials?.[type] || {};
@@ -675,6 +699,12 @@ export class NodeService {
         warn: (message: string, extra?: any) => logger.warn(message, extra),
         error: (message: string, extra?: any) => logger.error(message, extra),
       },
+      // Utility functions for common node operations
+      resolveValue,
+      resolvePath,
+      extractJsonData,
+      wrapJsonData,
+      normalizeInputItems,
     };
   }
 
