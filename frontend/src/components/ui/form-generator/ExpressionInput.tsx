@@ -382,79 +382,74 @@ export function ExpressionInput({
   )
 
   return (
-    <div className="relative">
-      {/* Input Field */}
-      <div className="relative bg-background">
-        {/* Background highlighting overlay - behind the text */}
-        {mode === 'expression' && value && value.includes('{{') && (
-          <ExpressionBackgroundHighlight value={value} className="font-mono text-sm" />
-        )}
-        
-        <Textarea
-          ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-          value={value || ''}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onBlur={onBlur}
-          onKeyDown={handleKeyDown}
-          onClick={handleClick}
-          placeholder={
-            mode === 'expression'
-              ? placeholder || 'Type {{ to see available variables and functions...'
-              : placeholder
-          }
-          disabled={disabled}
-          rows={1}
-          style={{
-            minHeight: '40px',
-            maxHeight: '120px',
-            overflow: autoHeight && autoHeight >= 120 ? 'auto' : 'hidden',
-            resize: 'none',
-            background: 'transparent',
-            position: 'relative',
-            zIndex: 1
-          }}
-          className={inputClassName}
+    <div className="space-y-2">
+      {/* Input Field with inline toggle button */}
+      <div className="relative">
+        <div className="relative bg-background">
+          {/* Background highlighting overlay - behind the text */}
+          {mode === 'expression' && value && value.includes('{{') && (
+            <ExpressionBackgroundHighlight value={value} className="font-mono text-sm" />
+          )}
+          
+          <Textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            value={value || ''}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onBlur={onBlur}
+            onKeyDown={handleKeyDown}
+            onClick={handleClick}
+            placeholder={
+              mode === 'expression'
+                ? placeholder || 'Type {{ to see available variables and functions...'
+                : placeholder
+            }
+            disabled={disabled}
+            rows={1}
+            style={{
+              minHeight: '40px',
+              maxHeight: '120px',
+              overflow: autoHeight && autoHeight >= 120 ? 'auto' : 'hidden',
+              resize: 'none',
+              background: 'transparent',
+              position: 'relative',
+              zIndex: 1,
+              paddingRight: '40px' // Make room for the button
+            }}
+            className={inputClassName}
+          />
+
+          {/* Mode Toggle Button - Positioned inside input on the right */}
+          <button
+            type="button"
+            onClick={() => toggleMode(mode === 'expression' ? 'fixed' : 'expression')}
+            disabled={disabled}
+            style={{ zIndex: 10 }}
+            className={cn(
+              'absolute right-2 top-2 flex items-center justify-center p-1 rounded transition-colors',
+              mode === 'expression'
+                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+              disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
+            )}
+            title={mode === 'expression' ? 'Switch to Fixed mode' : 'Switch to Expression mode'}
+          >
+            {mode === 'expression' ? (
+              <Code2 className="h-3.5 w-3.5" />
+            ) : (
+              <Type className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Autocomplete Dropdown */}
+        <ExpressionAutocomplete
+          visible={showAutocomplete}
+          items={filteredItems}
+          position={autocompletePosition}
+          selectedIndex={selectedItemIndex}
+          onSelect={insertAutocompleteItem}
+          onClose={() => setShowAutocomplete(false)}
         />
-      </div>
-
-      {/* Autocomplete Dropdown */}
-      <ExpressionAutocomplete
-        visible={showAutocomplete}
-        items={filteredItems}
-        position={autocompletePosition}
-        selectedIndex={selectedItemIndex}
-        onSelect={insertAutocompleteItem}
-        onClose={() => setShowAutocomplete(false)}
-      />
-
-      {/* Button Container */}
-      <div className="absolute right-2 top-2 flex items-center gap-1">
-        {/* Mode Toggle Badge */}
-        <button
-          type="button"
-          onClick={() => toggleMode(mode === 'expression' ? 'fixed' : 'expression')}
-          disabled={disabled}
-          className={cn(
-            'flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors',
-            mode === 'expression'
-              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
-              : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
-            disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
-          )}
-          title={mode === 'expression' ? 'Switch to Fixed mode' : 'Switch to Expression mode'}
-        >
-          {mode === 'expression' ? (
-            <>
-              <Code2 className="h-3 w-3" />
-              <span>Expr</span>
-            </>
-          ) : (
-            <>
-              <Type className="h-3 w-3" />
-              <span>Fixed</span>
-            </>
-          )}
-        </button>
       </div>
 
       {/* Helper Text */}
