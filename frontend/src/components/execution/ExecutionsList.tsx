@@ -64,7 +64,7 @@ export function ExecutionsList({}: ExecutionsListProps) {
 
   // Extract the currently active execution ID from URL if viewing execution details
   const activeExecutionId = useMemo(() => {
-    const pathMatch = location.pathname.match(/^\/executions\/([^\/]+)$/)
+    const pathMatch = location.pathname.match(/^\/workflows\/[^\/]+\/executions\/([^\/]+)$/)
     return pathMatch ? pathMatch[1] : null
   }, [location.pathname])
 
@@ -158,7 +158,11 @@ export function ExecutionsList({}: ExecutionsListProps) {
   }, [setHeaderSlot, filteredExecutions.length, searchTerm, setSearchTerm, statusFilter, setStatusFilter, activeTab, setActiveTab, currentWorkflowId, workflowExecutions.length, allExecutions.length, isRefreshing])
 
   const handleExecutionClick = (executionId: string) => {
-    navigate(`/executions/${executionId}`)
+    // Find the execution to get its workflowId
+    const execution = filteredExecutions.find(e => e.id === executionId)
+    if (execution) {
+      navigate(`/workflows/${execution.workflowId}/executions/${executionId}`)
+    }
   }
 
   const handleExecutionAction = async (action: string, executionId: string, event: React.MouseEvent) => {

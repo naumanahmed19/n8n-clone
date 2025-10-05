@@ -1,4 +1,5 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
+import { useWorkflowStore } from '@/stores'
 import { isTriggerNode } from '@/utils/nodeTypeClassification'
 import { clsx } from 'clsx'
 import { useState } from 'react'
@@ -44,10 +45,14 @@ interface CustomNodeData {
 }
 
 export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
+  // Check if in execution mode (read-only)
+  const { executionState } = useWorkflowStore()
+  const isReadOnly = !!executionState.executionId
+  
   // Use custom hooks
   const { 
     nodeExecutionState, 
-    executionState, 
+    executionState: _nodeExecutionStatus, 
     nodeVisualState, 
     handleExecuteNode, 
     handleRetryNode 
@@ -73,12 +78,19 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   const nodeColor = getNodeColor(data.disabled, selected, nodeVisualState, nodeExecutionState, data.status)
   const animationClasses = getAnimationClasses(nodeVisualState)
 
+  // Handle double-click to open properties
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    handleOpenProperties()
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div className="flex flex-col items-center">
           {/* Main Node Container */}
           <div
+            onDoubleClick={handleDoubleClick}
             className={clsx(
               'p-3 shadow-md border-2 transition-all duration-200 relative',
               isTrigger 
@@ -99,6 +111,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
               onOutputMouseEnter={setHoveredOutput}
               onOutputMouseLeave={() => setHoveredOutput(null)}
               onOutputClick={handleOutputClick}
+              readOnly={isReadOnly}
             />
 
             {/* Node Content */}
@@ -142,6 +155,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         onExecute={handleExecuteFromContext}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
+        readOnly={isReadOnly}
       />
     </ContextMenu>
   )

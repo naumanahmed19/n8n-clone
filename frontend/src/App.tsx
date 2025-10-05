@@ -2,7 +2,15 @@ import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
 import { Toaster } from '@/components/ui/sonner'
 
 import { SidebarContextProvider } from '@/contexts'
-import { CredentialsPage, CustomNodesPage, ExecutionsPage, LoginPage, RegisterPage, WorkspacePage } from '@/pages'
+import { 
+  CredentialsPage, 
+  CustomNodesPage, 
+  ExecutionsPage, 
+  LoginPage, 
+  RegisterPage, 
+  WorkspacePage,
+  WorkflowEditorPage
+} from '@/pages'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function App() {
@@ -31,10 +39,18 @@ function App() {
 
           {/* Workflow editor routes with persistent layout - must come before main routes */}
           <Route
+            path="/workflows/:id/executions/:executionId"
+            element={
+              <ProtectedRoute>
+                <WorkflowEditorPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/workflows/:id/*"
             element={
               <ProtectedRoute>
-                <WorkflowEditorLayout />
+                <WorkflowEditorPage />
               </ProtectedRoute>
             }
           />

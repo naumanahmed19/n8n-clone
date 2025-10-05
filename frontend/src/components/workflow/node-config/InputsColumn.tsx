@@ -45,6 +45,7 @@ import { useEffect, useMemo, useState } from 'react'
  */
 interface InputsColumnProps {
   node: WorkflowNode
+  readOnly?: boolean
 }
 
 /**

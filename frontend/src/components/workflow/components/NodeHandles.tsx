@@ -10,6 +10,7 @@ interface NodeHandlesProps {
   onOutputMouseEnter: (output: string) => void
   onOutputMouseLeave: () => void
   onOutputClick: (event: React.MouseEvent<HTMLDivElement>, output: string) => void
+  readOnly?: boolean
 }
 
 export function NodeHandles({
@@ -20,7 +21,8 @@ export function NodeHandles({
   hoveredOutput,
   onOutputMouseEnter,
   onOutputMouseLeave,
-  onOutputClick
+  onOutputClick,
+  readOnly = false
 }: NodeHandlesProps) {
   return (
     <>
@@ -75,6 +77,7 @@ export function NodeHandles({
                 isHovered={isHovered}
                 disabled={disabled}
                 isTrigger={isTrigger}
+                readOnly={readOnly}
                 onMouseEnter={() => onOutputMouseEnter(output)}
                 onMouseLeave={onOutputMouseLeave}
                 onClick={(e) => onOutputClick(e, output)}
@@ -93,6 +96,7 @@ interface OutputHandleProps {
   isHovered: boolean
   disabled: boolean
   isTrigger: boolean
+  readOnly: boolean
   onMouseEnter: () => void
   onMouseLeave: () => void
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void
@@ -104,6 +108,7 @@ function OutputHandle({
   isHovered,
   disabled,
   isTrigger,
+  readOnly,
   onMouseEnter,
   onMouseLeave,
   onClick
@@ -139,7 +144,7 @@ function OutputHandle({
       />
       
       {/* Plus icon on hover */}
-      {isHovered && !disabled && (
+      {isHovered && !disabled && !readOnly && (
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           style={{ zIndex: 10 }}

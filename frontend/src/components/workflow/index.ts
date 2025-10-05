@@ -3,6 +3,7 @@ export { CreateCategoryModal } from "./CreateCategoryModal";
 export { CustomNode } from "./CustomNode";
 export { DisableToggleToolbarButton } from "./DisableToggleToolbarButton";
 export { ExecuteToolbarButton } from "./ExecuteToolbarButton";
+export { ExecutionToolbar } from "./ExecutionToolbar";
 export { NewWorkflowModal } from "./NewWorkflowModal";
 export * from "./nodes/WorkflowTrigger";
 export { TitleManager } from "./TitleManager";

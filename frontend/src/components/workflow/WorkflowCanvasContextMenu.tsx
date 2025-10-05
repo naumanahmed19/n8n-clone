@@ -39,10 +39,12 @@ import React from 'react';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode
+  readOnly?: boolean
 }
 
 export function WorkflowCanvasContextMenu({
-  children
+  children,
+  readOnly = false
 }: WorkflowCanvasContextMenuProps) {
   // Use stores directly instead of hooks with local state
   const {
@@ -111,7 +113,7 @@ export function WorkflowCanvasContextMenu({
         {/* File Operations */}
         <ContextMenuItem
           onClick={saveWorkflow}
-          disabled={!hasUnsavedChanges}
+          disabled={!hasUnsavedChanges || readOnly}
           className="cursor-pointer"
         >
           <Save className="mr-2 h-4 w-4" />
@@ -135,7 +137,7 @@ export function WorkflowCanvasContextMenu({
             </ContextMenuItem>
             <ContextMenuItem
               onClick={handleImportClick}
-              disabled={isImporting}
+              disabled={isImporting || readOnly}
               className="cursor-pointer"
             >
               <Upload className="mr-2 h-4 w-4" />
@@ -149,7 +151,7 @@ export function WorkflowCanvasContextMenu({
         {/* Edit Operations */}
         <ContextMenuItem
           onClick={undo}
-          disabled={!canUndo()}
+          disabled={!canUndo() || readOnly}
           className="cursor-pointer"
         >
           <Undo className="mr-2 h-4 w-4" />
@@ -157,7 +159,7 @@ export function WorkflowCanvasContextMenu({
         </ContextMenuItem>
         <ContextMenuItem
           onClick={redo}
-          disabled={!canRedo()}
+          disabled={!canRedo() || readOnly}
           className="cursor-pointer"
         >
           <Redo className="mr-2 h-4 w-4" />
@@ -169,6 +171,7 @@ export function WorkflowCanvasContextMenu({
         {/* Workflow Control */}
         <ContextMenuItem
           onClick={toggleWorkflowActive}
+          disabled={readOnly}
           className="cursor-pointer"
         >
           {workflow?.active ? (

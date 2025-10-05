@@ -172,6 +172,10 @@ interface WorkflowStore extends WorkflowEditorState {
   // Helper functions
   gatherInputDataFromConnectedNodes: (nodeId: string) => any;
 
+  // Execution mode control
+  setExecutionMode: (enabled: boolean, executionId?: string) => void;
+  setNodeExecutionResult: (nodeId: string, result: Partial<NodeExecutionResult>) => void;
+
   // Node interaction actions
   setShowPropertyPanel: (show: boolean) => void;
   setPropertyPanelNode: (nodeId: string | null) => void;
@@ -3095,6 +3099,30 @@ export const useWorkflowStore = create<WorkflowStore>()(
           propertyPanelNodeId: nodeId,
           showPropertyPanel: nodeId !== null,
         });
+      },
+
+      // Execution mode control
+      setExecutionMode: (enabled: boolean, executionId?: string) => {
+        set({
+          executionState: {
+            ...get().executionState,
+            executionId: enabled ? executionId : undefined,
+          },
+        });
+      },
+
+      setNodeExecutionResult: (nodeId: string, result: Partial<NodeExecutionResult>) => {
+        const { persistentNodeResults } = get();
+        const newPersistentResults = new Map(persistentNodeResults);
+        
+        // Merge with existing result if present
+        const existing = newPersistentResults.get(nodeId);
+        newPersistentResults.set(nodeId, {
+          ...existing,
+          ...result,
+        } as NodeExecutionResult);
+        
+        set({ persistentNodeResults: newPersistentResults });
       },
 
       showContextMenu: (nodeId: string, position: { x: number; y: number }) => {

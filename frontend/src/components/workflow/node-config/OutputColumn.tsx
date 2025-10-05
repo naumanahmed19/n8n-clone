@@ -19,6 +19,7 @@ import { getOutputComponent } from './output-components/OutputComponentRegistry'
 
 interface OutputColumnProps {
   node: WorkflowNode
+  readOnly?: boolean
 }
 
 export function OutputColumn({ node }: OutputColumnProps) {

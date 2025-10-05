@@ -13,9 +13,10 @@ import { useEffect } from 'react'
 interface ConfigTabProps {
   node: WorkflowNode
   nodeType: NodeType
+  readOnly?: boolean
 }
 
-export function ConfigTab({ node, nodeType }: ConfigTabProps) {
+export function ConfigTab({ node, nodeType, readOnly = false }: ConfigTabProps) {
   const { fetchCredentials, fetchCredentialTypes } = useCredentialStore()
   const {
     parameters,
@@ -93,6 +94,7 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
                   value={credentials[credentialDef.name]}
                   onChange={(credentialId) => updateCredentials(credentialDef.name, credentialId)}
                   required={credentialDef.required}
+                  disabled={readOnly}
                 />
                 {credentialDef.description && (
                   <p className="text-xs text-gray-500 mt-1">{credentialDef.description}</p>
@@ -114,6 +116,7 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
               showRequiredIndicator={true}
               fieldClassName="space-y-2"
               nodeId={node.id}
+              disabled={readOnly}
             />
           </div>
         )}

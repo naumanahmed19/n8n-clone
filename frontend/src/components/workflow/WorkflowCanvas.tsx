@@ -1,5 +1,5 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
-import ReactFlow, { Background, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
+import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
 
@@ -18,6 +18,8 @@ interface WorkflowCanvasProps {
     backgroundVariant: string
     onInit: (instance: any) => void
     isExecuting?: boolean
+    readOnly?: boolean
+    executionMode?: boolean
 }
 
 export function WorkflowCanvas({
@@ -30,6 +32,8 @@ export function WorkflowCanvas({
     backgroundVariant,
     onInit,
     isExecuting = false,
+    readOnly = false,
+    executionMode = false,
 }: WorkflowCanvasProps) {
     const {
         reactFlowWrapper,
@@ -42,26 +46,46 @@ export function WorkflowCanvas({
         handleNodeDoubleClick,
     } = useReactFlowInteractions()
     
+    // Determine if interactions should be disabled
+    const isDisabled = readOnly || executionMode
+    
+    // Change background pattern for disabled/read-only mode
+    const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
+    const backgroundColor = isDisabled ? '#f8fafc' : undefined
+    
+    // Debug log
+    console.log('WorkflowCanvas render:', {
+        readOnly,
+        executionMode,
+        isDisabled,
+        nodesDraggable: !isDisabled,
+        nodesConnectable: !isDisabled,
+        backgroundVariant: displayBackgroundVariant
+    })
+    
     return (
-        <WorkflowCanvasContextMenu>
-            <div className="h-full" ref={reactFlowWrapper}>
+        <WorkflowCanvasContextMenu readOnly={isDisabled}>
+            <div className="h-full" ref={reactFlowWrapper} style={{ backgroundColor }}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
-                    onNodesChange={handleNodesChange}
-                    onEdgesChange={handleEdgesChange}
-                    onConnect={handleConnect}
+                    onNodesChange={isDisabled ? undefined : handleNodesChange}
+                    onEdgesChange={isDisabled ? undefined : handleEdgesChange}
+                    onConnect={isDisabled ? undefined : handleConnect}
                     onInit={onInit}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
+                    onDrop={isDisabled ? undefined : handleDrop}
+                    onDragOver={isDisabled ? undefined : handleDragOver}
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
+                    nodesDraggable={!isDisabled}
+                    nodesConnectable={!isDisabled}
+                    elementsSelectable={true}
                     fitView
                     attributionPosition="bottom-left"
-                    edgeUpdaterRadius={10}
-                    connectionRadius={20}
+                    edgeUpdaterRadius={isDisabled ? 0 : 10}
+                    connectionRadius={isDisabled ? 0 : 20}
                     defaultEdgeOptions={{
                         type: 'smoothstep',
                         animated: isExecuting,
@@ -69,7 +93,14 @@ export function WorkflowCanvas({
                 >
                     {showControls && <Controls />}
                     {showMinimap && <MiniMap />}
-                    {showBackground && <Background variant={backgroundVariant as any} gap={12} size={1} />}
+                    {showBackground && (
+                        <Background 
+                            variant={displayBackgroundVariant} 
+                            gap={isDisabled ? 20 : 12} 
+                            size={isDisabled ? 2 : 1}
+                            color={isDisabled ? '#cbd5e1' : undefined}
+                        />
+                    )}
                 </ReactFlow>
             </div>
         </WorkflowCanvasContextMenu>
