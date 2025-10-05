@@ -336,12 +336,10 @@ export class WorkflowTriggerHelper {
   /**
    * Get workflow details
    */
-  static async getWorkflowDetails(
-    workflowId: string,
-    userId: string = "system"
-  ) {
+  static async getWorkflowDetails(workflowId: string, userId?: string) {
     try {
-      return await this.workflowService.getWorkflow(workflowId, userId);
+      // Don't pass userId to allow cross-user workflow triggers if policy allows
+      return await this.workflowService.getWorkflow(workflowId);
     } catch (error) {
       console.error("Error getting workflow details:", error);
       return null;

@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { workflowService } from '@/services/workflow'
 import { TriggerOption, WorkflowOption } from '@/types/workflow'
@@ -121,9 +121,10 @@ export function TriggerSelector({ workflowId, value, onChange, disabled, error }
     loadTriggers()
   }, [workflowId])
 
-  // Clear value if workflow changes
+  // Clear value if workflow changes and triggers have been loaded
   useEffect(() => {
-    if (value && !triggers.find(t => t.id === value)) {
+    // Only clear if we have loaded triggers and the value is not in the list
+    if (value && triggers.length > 0 && !triggers.find(t => t.id === value)) {
       onChange('')
     }
   }, [triggers, value, onChange])
