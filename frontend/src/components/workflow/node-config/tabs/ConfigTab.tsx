@@ -113,6 +113,7 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
               onChange={updateParameters}
               showRequiredIndicator={true}
               fieldClassName="space-y-2"
+              nodeId={node.id}
             />
           </div>
         )}

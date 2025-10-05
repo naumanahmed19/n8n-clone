@@ -24,6 +24,7 @@ export function FieldRenderer({
   allValues,
   allFields,
   onFieldChange,
+  nodeId,
 }: FormFieldRendererProps) {
   const handleChange = (newValue: any) => {
     onChange(newValue)
@@ -85,6 +86,7 @@ export function FieldRenderer({
           disabled={disabled || field.disabled || field.readonly}
           error={!!error}
           multiline={false}
+          nodeId={nodeId}
         />
       )
 
@@ -157,6 +159,7 @@ export function FieldRenderer({
           error={!!error}
           multiline={true}
           rows={field.rows || 4}
+          nodeId={nodeId}
         />
       )
 

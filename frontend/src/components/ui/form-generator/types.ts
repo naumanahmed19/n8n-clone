@@ -79,6 +79,7 @@ export interface FormGeneratorProps {
   fieldClassName?: string;
   showRequiredIndicator?: boolean;
   requiredIndicator?: ReactNode;
+  nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
 }
 
 export interface FieldVisibilityOptions {
@@ -96,6 +97,7 @@ export interface FormFieldRendererProps {
   allValues: Record<string, any>;
   allFields: FormFieldConfig[];
   onFieldChange?: (fieldName: string, value: any) => void; // For updating other fields
+  nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
 }
 
 export interface RepeatingFieldItem {

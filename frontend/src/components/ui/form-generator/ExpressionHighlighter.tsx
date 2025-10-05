@@ -35,10 +35,10 @@ export function ExpressionHighlighter({ value, className }: ExpressionHighlighte
       // Highlight the expression content
       const expressionContent = match[1]
       parts.push(
-        <span key={match.index} className="inline-flex items-center">
-          <span className="text-orange-500 dark:text-orange-400 font-bold">{'{{'}</span>
+        <span key={match.index} className="inline-flex items-center bg-blue-100 dark:bg-blue-900/30 px-1 rounded">
+          <span className="text-orange-600 dark:text-orange-400 font-bold">{'{{'}</span>
           {highlightExpressionContent(expressionContent)}
-          <span className="text-orange-500 dark:text-orange-400 font-bold">{'}}'}</span>
+          <span className="text-orange-600 dark:text-orange-400 font-bold">{'}}'}</span>
         </span>
       )
 
@@ -67,48 +67,48 @@ export function ExpressionHighlighter({ value, className }: ExpressionHighlighte
       if (token === '.' || token === '[' || token === ']' || token === '(' || token === ')' || token === ',') {
         // Operators and delimiters
         parts.push(
-          <span key={index} className="text-gray-500 dark:text-gray-400">
+          <span key={index} className="text-gray-600 dark:text-gray-300">
             {token}
           </span>
         )
       } else if (/^\d+$/.test(token)) {
         // Numbers
         parts.push(
-          <span key={index} className="text-purple-600 dark:text-purple-400">
+          <span key={index} className="text-purple-700 dark:text-purple-300 font-medium">
             {token}
           </span>
         )
       } else if (token.startsWith('$')) {
         // Special variables ($item, $node, $workflow, etc.)
         parts.push(
-          <span key={index} className="text-blue-600 dark:text-blue-400 font-semibold">
+          <span key={index} className="text-blue-700 dark:text-blue-300 font-semibold">
             {token}
           </span>
         )
       } else if (token === 'json') {
         // json keyword
         parts.push(
-          <span key={index} className="text-emerald-600 dark:text-emerald-400 font-semibold">
+          <span key={index} className="text-emerald-700 dark:text-emerald-300 font-semibold">
             {token}
           </span>
         )
       } else if (/^[a-zA-Z_]\w*$/.test(token)) {
         // Properties and function names
         parts.push(
-          <span key={index} className="text-cyan-600 dark:text-cyan-400">
+          <span key={index} className="text-cyan-700 dark:text-cyan-300 font-medium">
             {token}
           </span>
         )
       } else if (token.match(/^['"].*['"]$/)) {
         // Strings
         parts.push(
-          <span key={index} className="text-green-600 dark:text-green-400">
+          <span key={index} className="text-green-700 dark:text-green-300">
             {token}
           </span>
         )
       } else if (token.trim()) {
         // Other content
-        parts.push(<span key={index}>{token}</span>)
+        parts.push(<span key={index} className="text-gray-900 dark:text-gray-100">{token}</span>)
       } else {
         // Whitespace
         parts.push(<span key={index}>{token}</span>)
