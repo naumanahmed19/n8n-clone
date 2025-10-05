@@ -170,13 +170,15 @@ export class SecureExecutionService {
 
         // Auto-resolve placeholders if value is a string with {{...}} patterns
         if (typeof value === "string" && value.includes("{{")) {
-          // Get the item to resolve against
+          // Normalize and extract input items
           const items = normalizeInputItems(inputData.main || []);
           const processedItems = extractJsonData(items);
 
           if (processedItems.length > 0) {
-            // Use specified itemIndex or default to first item
-            const itemToUse = processedItems[itemIndex ?? 0];
+            // Use specified itemIndex or default to first item (0)
+            const targetIndex = itemIndex ?? 0;
+            const itemToUse = processedItems[targetIndex];
+
             if (itemToUse) {
               return resolveValue(value, itemToUse);
             }

@@ -1,15 +1,16 @@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays } from 'lucide-react'
+import { ExpressionInput } from './ExpressionInput'
 import { RepeatingField } from './RepeatingField'
 import { FormFieldRendererProps } from './types'
 
@@ -76,14 +77,14 @@ export function FieldRenderer({
   switch (field.type) {
     case 'string':
       return (
-        <Input
-          type="text"
+        <ExpressionInput
           value={value || ''}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           placeholder={field.placeholder}
           disabled={disabled || field.disabled || field.readonly}
-          className={error ? 'border-destructive' : ''}
+          error={!!error}
+          multiline={false}
         />
       )
 
@@ -147,14 +148,15 @@ export function FieldRenderer({
 
     case 'textarea':
       return (
-        <Textarea
+        <ExpressionInput
           value={value || ''}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           placeholder={field.placeholder}
           disabled={disabled || field.disabled || field.readonly}
+          error={!!error}
+          multiline={true}
           rows={field.rows || 4}
-          className={error ? 'border-destructive' : ''}
         />
       )
 
