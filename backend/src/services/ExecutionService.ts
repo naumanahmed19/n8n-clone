@@ -239,7 +239,15 @@ export class ExecutionService {
         flowResult,
         workflowId,
         userId,
-        triggerData
+        triggerData,
+        // Pass workflow snapshot
+        parsedWorkflow
+          ? {
+              nodes: parsedWorkflow.nodes,
+              connections: parsedWorkflow.connections,
+              settings: parsedWorkflow.settings,
+            }
+          : undefined
       );
 
       // Collect error information from failed nodes
@@ -365,7 +373,15 @@ export class ExecutionService {
         flowResult,
         workflowId,
         userId,
-        inputData
+        inputData,
+        // Pass workflow snapshot
+        parsedWorkflow
+          ? {
+              nodes: parsedWorkflow.nodes,
+              connections: parsedWorkflow.connections,
+              settings: parsedWorkflow.settings,
+            }
+          : undefined
       );
 
       // Collect error information from failed nodes
@@ -1479,6 +1495,18 @@ export class ExecutionService {
               startedAt: new Date(startTime),
               finishedAt: new Date(endTime),
               triggerData: nodeInputData || undefined,
+              // Save workflow snapshot for single node execution too
+              workflowSnapshot: workflowData
+                ? {
+                    nodes: workflowData.nodes,
+                    connections: workflowData.connections || [],
+                    settings: workflowData.settings || {},
+                  }
+                : {
+                    nodes: workflowNodes,
+                    connections: [], // We don't have connections in this context
+                    settings: {},
+                  },
               error: nodeResult.success
                 ? undefined
                 : {
@@ -1506,7 +1534,9 @@ export class ExecutionService {
               startedAt: new Date(startTime),
               finishedAt: new Date(endTime),
               inputData: nodeInputData || {},
-              outputData: nodeResult.data || {},
+              outputData: nodeResult.data
+                ? JSON.parse(JSON.stringify(nodeResult.data))
+                : {},
               error: nodeResult.success
                 ? undefined
                 : nodeResult.error
@@ -1651,7 +1681,8 @@ export class ExecutionService {
     flowResult: FlowExecutionResult,
     workflowId: string,
     userId: string,
-    triggerData?: any
+    triggerData?: any,
+    workflowSnapshot?: { nodes: any[]; connections: any[]; settings?: any }
   ): Promise<any> {
     try {
       // Map flow status to execution status
@@ -1673,7 +1704,7 @@ export class ExecutionService {
           executionStatus = ExecutionStatus.ERROR;
       }
 
-      // Create main execution record
+      // Create main execution record with workflow snapshot
       const execution = await this.prisma.execution.create({
         data: {
           id: flowResult.executionId,
@@ -1682,6 +1713,7 @@ export class ExecutionService {
           startedAt: new Date(Date.now() - flowResult.totalDuration),
           finishedAt: new Date(),
           triggerData: triggerData || undefined,
+          workflowSnapshot: workflowSnapshot || undefined, // Store workflow state at execution time
           error:
             flowResult.status === "failed" || flowResult.status === "partial"
               ? {

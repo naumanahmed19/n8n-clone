@@ -51,6 +51,11 @@ export interface ExecutionDetails {
   finishedAt?: string;
   triggerData: any;
   error?: any;
+  workflowSnapshot?: {
+    nodes: any[];
+    connections: any[];
+    settings?: any;
+  };
   nodeExecutions: Array<{
     id: string;
     nodeId: string;

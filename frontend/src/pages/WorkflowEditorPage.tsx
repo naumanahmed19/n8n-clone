@@ -1,13 +1,13 @@
 import { ExecutionToolbar, WorkflowEditorWrapper } from '@/components'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
-  SidebarInset,
-  SidebarProvider,
+    SidebarInset,
+    SidebarProvider,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
 import {
-  useWorkflowOperations
+    useWorkflowOperations
 } from '@/hooks/workflow'
 import { workflowService } from '@/services'
 import type { ExecutionDetails } from '@/services/execution'
@@ -87,6 +87,51 @@ export function WorkflowEditorPage() {
         const executionData = await executionService.getExecutionDetails(executionId)
         setExecution(executionData)
 
+        // CRITICAL FIX: Use workflow snapshot from execution if available
+        // This ensures we display the workflow state at the time of execution
+        if (executionData.workflowSnapshot) {
+          console.log('Using workflow snapshot from execution', {
+            executionId,
+            snapshotNodes: executionData.workflowSnapshot.nodes.length,
+            snapshotConnections: executionData.workflowSnapshot.connections.length,
+          })
+
+          // Load the current workflow to get basic metadata (name, description, etc.)
+          let workflowMetadata: any = null
+          if (id && id !== 'new') {
+            try {
+              workflowMetadata = await workflowService.getWorkflow(id)
+            } catch (err) {
+              console.warn('Failed to load workflow metadata:', err)
+            }
+          }
+
+          // Create workflow object with snapshot data
+          const snapshotWorkflow: Workflow = {
+            id: executionData.workflowId,
+            name: workflowMetadata?.name || 'Workflow Snapshot',
+            description: workflowMetadata?.description || 'Viewing execution snapshot',
+            userId: user?.id || 'guest',
+            nodes: executionData.workflowSnapshot.nodes,
+            connections: executionData.workflowSnapshot.connections,
+            settings: executionData.workflowSnapshot.settings || {
+              timezone: 'UTC',
+              saveDataErrorExecution: 'all',
+              saveDataSuccessExecution: 'all',
+              saveManualExecutions: true,
+              callerPolicy: 'workflowsFromSameOwner',
+            },
+            active: workflowMetadata?.active !== undefined ? workflowMetadata.active : true,
+            category: workflowMetadata?.category,
+            tags: workflowMetadata?.tags || [],
+            createdAt: workflowMetadata?.createdAt || new Date().toISOString(),
+            updatedAt: workflowMetadata?.updatedAt || new Date().toISOString(),
+          }
+
+          // Set the snapshot workflow as current workflow
+          setWorkflow(snapshotWorkflow)
+        }
+
         // Set execution mode
         setExecutionMode(true, executionId)
 
@@ -135,7 +180,7 @@ export function WorkflowEditorPage() {
         clearExecutionState()
       }
     }
-  }, [executionId, setExecutionMode, setNodeExecutionResult, clearExecutionState])
+  }, [executionId, setExecutionMode, setNodeExecutionResult, clearExecutionState, setWorkflow, id, user?.id])
 
   useEffect(() => {
     const loadWorkflow = async () => {

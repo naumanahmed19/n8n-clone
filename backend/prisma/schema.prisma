@@ -77,6 +77,9 @@ model Execution {
   pausedAt            DateTime?
   progress            Int?                 @default(0)
   resumedAt           DateTime?
+  workflowSnapshot    Json?                // Workflow state at execution time (nodes, connections, settings)
+  snapshotVersion     String?              // Snapshot version for tracking
+  snapshotHash        String?              // Hash of workflow structure for quick comparison
   executionHistory    ExecutionHistory[]
   workflow            Workflow             @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   flowExecutionStates FlowExecutionState[]
