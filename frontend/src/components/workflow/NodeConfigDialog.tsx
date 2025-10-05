@@ -1,14 +1,14 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  VisuallyHidden,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+    VisuallyHidden,
 } from '@/components/ui/dialog'
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { useCredentialStore, useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'

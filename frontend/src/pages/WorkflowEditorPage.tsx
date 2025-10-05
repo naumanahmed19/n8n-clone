@@ -1,4 +1,4 @@
-import { WorkflowEditorWrapper, ExecutionToolbar } from '@/components'
+import { ExecutionToolbar, WorkflowEditorWrapper } from '@/components'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   SidebarInset,
@@ -10,13 +10,13 @@ import {
   useWorkflowOperations
 } from '@/hooks/workflow'
 import { workflowService } from '@/services'
+import type { ExecutionDetails } from '@/services/execution'
 import { executionService } from '@/services/execution'
 import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, Workflow } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { ExecutionDetails } from '@/services/execution'
 
 export function WorkflowEditorPage() {
   const { id, executionId } = useParams<{ id: string; executionId?: string }>()

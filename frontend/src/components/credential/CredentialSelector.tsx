@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Plus, Key, ChevronDown, AlertCircle } from 'lucide-react'
-import { Credential } from '@/types'
 import { useCredentialStore } from '@/stores'
+import { Credential } from '@/types'
+import { AlertCircle, ChevronDown, Key, Plus } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { CredentialModal } from './CredentialModal'
 
 interface CredentialSelectorProps {

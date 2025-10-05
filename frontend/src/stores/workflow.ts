@@ -174,7 +174,10 @@ interface WorkflowStore extends WorkflowEditorState {
 
   // Execution mode control
   setExecutionMode: (enabled: boolean, executionId?: string) => void;
-  setNodeExecutionResult: (nodeId: string, result: Partial<NodeExecutionResult>) => void;
+  setNodeExecutionResult: (
+    nodeId: string,
+    result: Partial<NodeExecutionResult>
+  ) => void;
 
   // Node interaction actions
   setShowPropertyPanel: (show: boolean) => void;
@@ -3111,17 +3114,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
         });
       },
 
-      setNodeExecutionResult: (nodeId: string, result: Partial<NodeExecutionResult>) => {
+      setNodeExecutionResult: (
+        nodeId: string,
+        result: Partial<NodeExecutionResult>
+      ) => {
         const { persistentNodeResults } = get();
         const newPersistentResults = new Map(persistentNodeResults);
-        
+
         // Merge with existing result if present
         const existing = newPersistentResults.get(nodeId);
         newPersistentResults.set(nodeId, {
           ...existing,
           ...result,
         } as NodeExecutionResult);
-        
+
         set({ persistentNodeResults: newPersistentResults });
       },
 

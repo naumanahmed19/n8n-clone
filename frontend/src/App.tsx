@@ -2,14 +2,14 @@ import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
 import { Toaster } from '@/components/ui/sonner'
 
 import { SidebarContextProvider } from '@/contexts'
-import { 
-  CredentialsPage, 
-  CustomNodesPage, 
-  ExecutionsPage, 
-  LoginPage, 
-  RegisterPage, 
-  WorkspacePage,
-  WorkflowEditorPage
+import {
+  CredentialsPage,
+  CustomNodesPage,
+  ExecutionsPage,
+  LoginPage,
+  RegisterPage,
+  WorkflowEditorPage,
+  WorkspacePage
 } from '@/pages'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 

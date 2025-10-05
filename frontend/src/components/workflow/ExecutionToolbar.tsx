@@ -8,17 +8,17 @@ import {
     TooltipProvider,
     TooltipTrigger
 } from '@/components/ui/tooltip'
+import type { ExecutionDetails } from '@/services/execution'
 import { useWorkflowStore } from '@/stores'
 import {
+    Activity,
     ArrowLeft,
     CheckCircle,
     Clock,
     Eye,
     Loader2,
-    XCircle,
-    Activity
+    XCircle
 } from 'lucide-react'
-import type { ExecutionDetails } from '@/services/execution'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
 
 interface ExecutionToolbarProps {

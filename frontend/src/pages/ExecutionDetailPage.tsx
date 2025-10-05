@@ -1,36 +1,36 @@
-import { WorkflowEditor } from '@/components/workflow'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { WorkflowEditor } from '@/components/workflow'
+import type { ExecutionDetails } from '@/services/execution'
 import { executionService } from '@/services/execution'
-import { workflowService } from '@/services/workflow'
 import { nodeService } from '@/services/node'
+import { workflowService } from '@/services/workflow'
 import { useWorkflowStore } from '@/stores'
 import type { NodeType } from '@/types'
-import { ReactFlowProvider } from 'reactflow'
-import { TooltipProvider } from '@/components/ui/tooltip'
 import {
-  Activity,
-  ArrowLeft,
-  CheckCircle,
-  Clock,
-  Download,
-  Eye,
-  Loader2,
-  MoreHorizontal,
-  RefreshCw,
-  Trash2,
-  XCircle,
-  AlertCircle,
+    Activity,
+    AlertCircle,
+    ArrowLeft,
+    CheckCircle,
+    Clock,
+    Download,
+    Eye,
+    Loader2,
+    MoreHorizontal,
+    RefreshCw,
+    Trash2,
+    XCircle,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { ExecutionDetails } from '@/services/execution'
+import { ReactFlowProvider } from 'reactflow'
 
 export function ExecutionDetailPage() {
   const { executionId } = useParams<{ executionId: string }>()
