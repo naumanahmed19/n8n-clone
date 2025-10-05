@@ -23,7 +23,7 @@ export function ExpressionBackgroundHighlight({ value, className }: ExpressionBa
       // Add text before the expression (no background)
       if (match.index > lastIndex) {
         parts.push(
-          <span key={`text-${lastIndex}`} className="invisible">
+          <span key={`text-${lastIndex}`} className="text-transparent select-none">
             {text.substring(lastIndex, match.index)}
           </span>
         )
@@ -34,7 +34,7 @@ export function ExpressionBackgroundHighlight({ value, className }: ExpressionBa
       parts.push(
         <span 
           key={`expr-${match.index}`} 
-          className="bg-green-100 dark:bg-green-900/30 rounded px-0.5 invisible"
+          className="bg-green-100 dark:bg-green-900/30 rounded px-0.5 text-transparent select-none"
         >
           {fullExpression}
         </span>
@@ -46,7 +46,7 @@ export function ExpressionBackgroundHighlight({ value, className }: ExpressionBa
     // Add remaining text
     if (lastIndex < text.length) {
       parts.push(
-        <span key={`text-${lastIndex}`} className="invisible">
+        <span key={`text-${lastIndex}`} className="text-transparent select-none">
           {text.substring(lastIndex)}
         </span>
       )

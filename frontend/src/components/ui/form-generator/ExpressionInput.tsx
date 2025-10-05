@@ -384,37 +384,37 @@ export function ExpressionInput({
   return (
     <div className="relative">
       {/* Input Field */}
-      <div className="relative">
-        <>
-          {/* Background highlighting overlay - behind the text */}
-          {mode === 'expression' && value && value.includes('{{') && (
-            <ExpressionBackgroundHighlight value={value} className="font-mono text-sm" />
-          )}
-          
-          <Textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            value={value || ''}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onBlur={onBlur}
-            onKeyDown={handleKeyDown}
-            onClick={handleClick}
-            placeholder={
-              mode === 'expression'
-                ? placeholder || 'Type {{ to see available variables and functions...'
-                : placeholder
-            }
-            disabled={disabled}
-            rows={1}
-            style={{
-              minHeight: '40px',
-              maxHeight: '120px',
-              overflow: autoHeight && autoHeight >= 120 ? 'auto' : 'hidden',
-              resize: 'none',
-              background: 'transparent'
-            }}
-            className={inputClassName}
-          />
-        </>
+      <div className="relative bg-background">
+        {/* Background highlighting overlay - behind the text */}
+        {mode === 'expression' && value && value.includes('{{') && (
+          <ExpressionBackgroundHighlight value={value} className="font-mono text-sm" />
+        )}
+        
+        <Textarea
+          ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+          value={value || ''}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onBlur={onBlur}
+          onKeyDown={handleKeyDown}
+          onClick={handleClick}
+          placeholder={
+            mode === 'expression'
+              ? placeholder || 'Type {{ to see available variables and functions...'
+              : placeholder
+          }
+          disabled={disabled}
+          rows={1}
+          style={{
+            minHeight: '40px',
+            maxHeight: '120px',
+            overflow: autoHeight && autoHeight >= 120 ? 'auto' : 'hidden',
+            resize: 'none',
+            background: 'transparent',
+            position: 'relative',
+            zIndex: 1
+          }}
+          className={inputClassName}
+        />
       </div>
 
       {/* Autocomplete Dropdown */}
