@@ -19,6 +19,7 @@ import {
     MoreHorizontal,
     Pause,
     Play,
+    RefreshCw,
     StopCircle,
     XCircle
 } from 'lucide-react'
@@ -49,7 +50,8 @@ export function ExecutionsList({}: ExecutionsListProps) {
 
   // Extract the currently active workflow ID from URL if in workflow editor
   const currentWorkflowId = useMemo(() => {
-    const pathMatch = location.pathname.match(/^\/workflows\/([^\/]+)(?:\/edit)?$/)
+    // Match patterns: /workflows/{id}, /workflows/{id}/edit, /workflows/{id}/executions/{executionId}
+    const pathMatch = location.pathname.match(/^\/workflows\/([^\/]+)/)
     return pathMatch ? pathMatch[1] : null
   }, [location.pathname])
 
@@ -58,13 +60,14 @@ export function ExecutionsList({}: ExecutionsListProps) {
     if (!currentWorkflowId || currentWorkflowId === 'new') {
       setActiveTab("all")
     } else {
+      // When viewing a specific execution, default to workflow tab to show context
       setActiveTab("workflow")
     }
   }, [currentWorkflowId])
 
   // Extract the currently active execution ID from URL if viewing execution details
   const activeExecutionId = useMemo(() => {
-    const pathMatch = location.pathname.match(/^\/workflows\/[^\/]+\/executions\/([^\/]+)$/)
+    const pathMatch = location.pathname.match(/\/executions\/([^\/]+)$/)
     return pathMatch ? pathMatch[1] : null
   }, [location.pathname])
 
@@ -207,6 +210,32 @@ export function ExecutionsList({}: ExecutionsListProps) {
     })
   }
 
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    // Less than 1 minute ago
+    if (diffMins < 1) return 'Just now'
+    // Less than 1 hour ago
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`
+    // Less than 24 hours ago
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    // Less than 7 days ago
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    
+    // More than 7 days ago, show full date
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   const formatDuration = (startedAt: string, finishedAt?: string) => {
     const start = new Date(startedAt)
     const end = finishedAt ? new Date(finishedAt) : new Date()
@@ -221,190 +250,162 @@ export function ExecutionsList({}: ExecutionsListProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'running':
-        return <Play className="h-3 w-3 text-blue-500" />
+        return <Play className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
       case 'success':
-        return <CheckCircle className="h-3 w-3 text-green-500" />
+        return <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
       case 'error':
-        return <XCircle className="h-3 w-3 text-red-500" />
+        return <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
       case 'cancelled':
-        return <StopCircle className="h-3 w-3 text-gray-500" />
+        return <StopCircle className="h-3.5 w-3.5 text-muted-foreground" />
       case 'paused':
-        return <Pause className="h-3 w-3 text-yellow-500" />
+        return <Pause className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400" />
       case 'partial':
-        return <AlertCircle className="h-3 w-3 text-orange-500" />
+        return <AlertCircle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
       default:
-        return <Clock className="h-3 w-3 text-gray-500" />
+        return <Clock className="h-3.5 w-3.5 text-muted-foreground" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'running':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
+        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800'
       case 'success':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800'
       case 'error':
-        return 'bg-red-100 text-red-800 border-red-200'
+        return 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
       case 'paused':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800'
       case 'partial':
-        return 'bg-orange-100 text-orange-800 border-orange-200'
+        return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="p-4">
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="border rounded-lg p-3">
-              <div className="animate-pulse">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-1/2 mb-1"></div>
-                <div className="h-3 bg-muted rounded w-1/4"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-4">
-        <div className="text-center text-muted-foreground">
-          <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-          <p className="text-sm">{error}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2"
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (filteredExecutions.length === 0) {
-    return (
-      <div className="p-4">
-        <div className="text-center text-muted-foreground">
-          <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-          <p className="text-sm">
-            {searchTerm || statusFilter ? 'No executions match your filters' : 'No executions found'}
-          </p>
-          <p className="text-xs mt-1">Run a workflow to see execution history</p>
-        </div>
-      </div>
-    )
+  const getStatusBorderColor = (status: string) => {
+    switch (status) {
+      case 'running':
+        return 'border-l-blue-500 dark:border-l-blue-400'
+      case 'success':
+        return 'border-l-green-500 dark:border-l-green-400'
+      case 'error':
+        return 'border-l-red-500 dark:border-l-red-400'
+      case 'cancelled':
+        return 'border-l-muted-foreground'
+      case 'paused':
+        return 'border-l-yellow-500 dark:border-l-yellow-400'
+      case 'partial':
+        return 'border-l-orange-500 dark:border-l-orange-400'
+      default:
+        return 'border-l-muted-foreground'
+    }
   }
 
   const renderExecutionItem = (execution: Execution) => {
     const isActive = activeExecutionId === execution.id
+    const statusBorderColor = getStatusBorderColor(execution.status)
+    const showWorkflowId = activeTab === 'all' // Only show workflow ID in "All Executions" tab
     
     return (
       <div
         key={execution.id}
         className={`
-          border-b last:border-b-0 cursor-pointer group transition-colors
+          group cursor-pointer transition-all duration-200 border-b last:border-b-0
           ${isActive 
-            ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-l-primary' 
-            : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+            ? `bg-sidebar-accent/80 border-l-[3px] ${statusBorderColor}` 
+            : `hover:bg-sidebar-accent/50 border-l-[3px] border-l-transparent hover:${statusBorderColor}`
           }
         `}
         onClick={() => handleExecutionClick(execution.id)}
       >
-        <div className="p-3">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <Activity className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <h4 className="text-sm font-medium truncate">
-                  Workflow {execution.workflowId.slice(0, 8)}...
+        <div className="p-3.5">
+          {/* Execution Info with Status */}
+          <div className="flex items-start gap-2.5 mb-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="text-sm font-semibold text-foreground">
+                  {formatTime(execution.startedAt)}
                 </h4>
-                <p className="text-xs text-muted-foreground truncate">
-                  {execution.id.slice(0, 8)}...
-                </p>
+                <Badge 
+                  variant="outline" 
+                  className={`text-[11px] h-5 px-2 capitalize font-medium shrink-0 ${getStatusColor(execution.status)}`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {getStatusIcon(execution.status)}
+                    <span>{execution.status}</span>
+                  </div>
+                </Badge>
+              </div>
+              <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                <span className="truncate">ID: {execution.id.slice(-12)}</span>
+                {showWorkflowId && (
+                  <span className="truncate">Workflow: {execution.workflowId.slice(0, 12)}...</span>
+                )}
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              <Badge 
-                variant="outline" 
-                className={`text-xs h-5 capitalize ${getStatusColor(execution.status)}`}
-              >
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(execution.status)}
-                  {execution.status}
-                </div>
-              </Badge>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  onClick={(e) => handleExecutionAction('view', execution.id, e)}
+                >
+                  View Details
+                </DropdownMenuItem>
+                {execution.status === 'running' && (
                   <DropdownMenuItem
-                    onClick={(e) => handleExecutionAction('view', execution.id, e)}
+                    onClick={(e) => handleExecutionAction('cancel', execution.id, e)}
                   >
-                    View Details
+                    Cancel
                   </DropdownMenuItem>
-                  {execution.status === 'running' && (
-                    <DropdownMenuItem
-                      onClick={(e) => handleExecutionAction('cancel', execution.id, e)}
-                    >
-                      Cancel
-                    </DropdownMenuItem>
-                  )}
-                  {(execution.status === 'error' || execution.status === 'cancelled') && (
-                    <DropdownMenuItem
-                      onClick={(e) => handleExecutionAction('retry', execution.id, e)}
-                    >
-                      Retry
-                    </DropdownMenuItem>
-                  )}
+                )}
+                {(execution.status === 'error' || execution.status === 'cancelled') && (
                   <DropdownMenuItem
-                    onClick={(e) => handleExecutionAction('delete', execution.id, e)}
-                    className="text-red-600"
+                    onClick={(e) => handleExecutionAction('retry', execution.id, e)}
                   >
-                    Delete
+                    Retry
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                )}
+                <DropdownMenuItem
+                  onClick={(e) => handleExecutionAction('delete', execution.id, e)}
+                  className="text-red-600"
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          {/* Metadata Footer */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground/60 pt-2 border-t border-border/40">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span className="text-[11px]">{formatDate(execution.startedAt)}</span>
+            </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>{formatDate(execution.startedAt)}</span>
+                <Activity className="h-3 w-3" />
+                <span className="text-[11px] font-medium">{formatDuration(execution.startedAt, execution.finishedAt)}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{formatDuration(execution.startedAt, execution.finishedAt)}</span>
-              </div>
+              {execution.nodeExecutions && execution.nodeExecutions.length > 0 && (
+                <div className="flex items-center gap-1 bg-muted/50 px-1.5 py-0.5 rounded text-[11px]">
+                  <Activity className="h-2.5 w-2.5" />
+                  <span>{execution.nodeExecutions.length}</span>
+                </div>
+              )}
             </div>
-            
-            {execution.nodeExecutions && (
-              <span className="text-xs">
-                {execution.nodeExecutions.length} nodes
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -415,14 +416,31 @@ export function ExecutionsList({}: ExecutionsListProps) {
   const renderContent = (isForWorkflow: boolean = false) => {
     if (isLoading) {
       return (
-        <div className="p-4">
-          <div className="space-y-3">
+        <div className="p-3.5">
+          <div className="space-y-2.5">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="border rounded-lg p-3">
+              <div key={i} className="border-b pb-3.5">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-muted rounded w-1/2 mb-1"></div>
-                  <div className="h-3 bg-muted rounded w-1/4"></div>
+                  {/* Status badge skeleton */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="h-6 w-20 bg-muted rounded"></div>
+                  </div>
+                  {/* Execution info skeleton */}
+                  <div className="flex gap-2.5 mb-2.5">
+                    <div className="h-4 w-4 bg-muted rounded mt-0.5"></div>
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 bg-muted rounded w-3/4"></div>
+                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                    </div>
+                  </div>
+                  {/* Metadata skeleton */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-3">
+                      <div className="h-3 bg-muted rounded w-20"></div>
+                      <div className="h-3 bg-muted rounded w-16"></div>
+                    </div>
+                    <div className="h-3 w-12 bg-muted rounded"></div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -433,16 +451,22 @@ export function ExecutionsList({}: ExecutionsListProps) {
 
     if (error) {
       return (
-        <div className="p-4">
-          <div className="text-center text-muted-foreground">
-            <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-            <p className="text-sm">{error}</p>
+        <div className="p-6">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/30">
+              <RefreshCw className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Failed to load executions</p>
+              <p className="text-xs text-muted-foreground">{error}</p>
+            </div>
             <Button 
               variant="outline" 
               size="sm" 
               className="mt-2"
               onClick={() => window.location.reload()}
             >
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               Try Again
             </Button>
           </div>
@@ -452,23 +476,27 @@ export function ExecutionsList({}: ExecutionsListProps) {
 
     if (filteredExecutions.length === 0) {
       return (
-        <div className="p-4">
-          <div className="text-center text-muted-foreground">
-            <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-            <p className="text-sm">
-              {searchTerm || statusFilter 
-                ? 'No executions match your filters' 
-                : isForWorkflow 
-                  ? 'No executions for this workflow'
-                  : 'No executions found'
-              }
-            </p>
-            <p className="text-xs mt-1">
-              {isForWorkflow 
-                ? 'Run this workflow to see execution history'
-                : 'Run a workflow to see execution history'
-              }
-            </p>
+        <div className="p-6">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted/50">
+              <Activity className="h-5 w-5 text-muted-foreground/50" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground/80">
+                {searchTerm || statusFilter 
+                  ? 'No executions match your filters' 
+                  : isForWorkflow 
+                    ? 'No executions for this workflow'
+                    : 'No executions found'
+                }
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isForWorkflow 
+                  ? 'Run this workflow to see execution history'
+                  : 'Run a workflow to see execution history'
+                }
+              </p>
+            </div>
           </div>
         </div>
       )
