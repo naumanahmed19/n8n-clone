@@ -1467,14 +1467,16 @@ export class ExecutionService {
           // node.credentials is an array of credential IDs like ["cred_123"]
           // We need to figure out which type each credential is
           let credentialsMapping: Record<string, string> | undefined;
-          
+
           if (node.credentials && node.credentials.length > 0) {
             credentialsMapping = {};
-            
+
             // Get all node types and find the one we need
             const allNodeTypes = await this.nodeService.getNodeTypes();
-            const nodeTypeInfo = allNodeTypes.find(nt => nt.type === node.type);
-            
+            const nodeTypeInfo = allNodeTypes.find(
+              (nt) => nt.type === node.type
+            );
+
             logger.info(`Building credentials mapping - Step 1`, {
               nodeId,
               nodeType: node.type,
@@ -1482,7 +1484,7 @@ export class ExecutionService {
               foundNodeType: !!nodeTypeInfo,
               nodeTypeCredentials: nodeTypeInfo?.credentials,
             });
-            
+
             if (nodeTypeInfo && nodeTypeInfo.credentials) {
               // For each credential definition in the node type
               for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
@@ -1498,13 +1500,16 @@ export class ExecutionService {
                 }
               }
             }
-            
-            logger.info(`Credentials mapping for single node execution - Final`, {
-              nodeId,
-              nodeType: node.type,
-              rawCredentials: node.credentials,
-              credentialsMapping,
-            });
+
+            logger.info(
+              `Credentials mapping for single node execution - Final`,
+              {
+                nodeId,
+                nodeType: node.type,
+                rawCredentials: node.credentials,
+                credentialsMapping,
+              }
+            );
           }
 
           // Execute the actual node

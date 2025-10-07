@@ -157,9 +157,11 @@ export class SecureExecutionService {
     options: SecureExecutionOptions = {}
   ): Promise<NodeExecutionContext> {
     const limits = this.mergeLimits(options);
-    
+
     // Convert credentialIds to a mapping object if it's an array
-    const credentialsMapping: Record<string, string> = Array.isArray(credentialIds)
+    const credentialsMapping: Record<string, string> = Array.isArray(
+      credentialIds
+    )
       ? {} // Empty mapping if array (legacy format)
       : credentialIds; // Use the mapping directly
 
@@ -204,7 +206,7 @@ export class SecureExecutionService {
         if (!credentialId) {
           console.error(`No credential found for type '${type}'`, {
             requestedType: type,
-            availableCredentials: credentialsMapping
+            availableCredentials: credentialsMapping,
           });
           throw new Error(`No credential of type '${type}' available`);
         }
@@ -233,7 +235,9 @@ export class SecureExecutionService {
       helpers: this.createSecureHelpers(
         limits,
         executionId,
-        Array.isArray(credentialIds) ? credentialIds : Object.values(credentialsMapping),
+        Array.isArray(credentialIds)
+          ? credentialIds
+          : Object.values(credentialsMapping),
         userId
       ),
       logger: this.createSecureLogger(executionId),

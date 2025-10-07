@@ -777,14 +777,14 @@ export class FlowExecutionEngine extends EventEmitter {
       // node.credentials is an array of credential IDs like ["cred_123"]
       // We need to figure out which type each credential is
       let credentialsMapping: Record<string, string> | undefined;
-      
+
       if (node.credentials && node.credentials.length > 0) {
         credentialsMapping = {};
-        
+
         // Get all node types and find the one we need
         const allNodeTypes = await this.nodeService.getNodeTypes();
-        const nodeTypeInfo = allNodeTypes.find(nt => nt.type === node.type);
-        
+        const nodeTypeInfo = allNodeTypes.find((nt) => nt.type === node.type);
+
         if (nodeTypeInfo && nodeTypeInfo.credentials) {
           // For each credential definition in the node type
           for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
@@ -795,7 +795,7 @@ export class FlowExecutionEngine extends EventEmitter {
             }
           }
         }
-        
+
         logger.info(`FlowExecutionEngine - Credentials mapping for node`, {
           nodeId,
           nodeType: node.type,
