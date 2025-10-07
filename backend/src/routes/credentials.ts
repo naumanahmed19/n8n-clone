@@ -198,6 +198,40 @@ router.post(
   })
 );
 
+// Test a saved credential (for OAuth credentials that don't have tokens in the form)
+router.post(
+  "/test-saved",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { credentialId } = req.body;
+
+    if (!credentialId) {
+      throw new AppError("Credential ID is required", 400);
+    }
+
+    // Get the credential from database
+    const credential = await credentialService.getCredential(
+      credentialId,
+      req.user!.id
+    );
+
+    if (!credential) {
+      throw new AppError("Credential not found", 404);
+    }
+
+    // Test the credential with its saved data (includes tokens)
+    const testResult = await credentialService.testCredential(
+      credential.type,
+      credential.data
+    );
+
+    res.json({
+      success: true,
+      data: testResult,
+    });
+  })
+);
+
 // Rotate a credential
 router.post(
   "/:id/rotate",

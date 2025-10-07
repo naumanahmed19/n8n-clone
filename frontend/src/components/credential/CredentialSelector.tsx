@@ -43,7 +43,8 @@ export function CredentialSelector({
     if (credentialTypes.length === 0) {
       fetchCredentialTypes()
     }
-  }, [credentials.length, credentialTypes.length, fetchCredentials, fetchCredentialTypes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [credentials.length, credentialTypes.length])
 
   const handleSelect = (credentialId: string | undefined) => {
     onChange(credentialId)

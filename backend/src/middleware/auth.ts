@@ -15,8 +15,14 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ) => {
+  // Try to get token from Authorization header first, then from cookie
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  
+  // If no token in header, try to get it from cookie
+  if (!token && req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
 
   if (!token) {
     throw new AppError('Access token required', 401, 'UNAUTHORIZED');

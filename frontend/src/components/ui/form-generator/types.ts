@@ -66,6 +66,7 @@ export interface CustomFieldProps {
   allValues?: Record<string, any>;
   allFields?: FormFieldConfig[];
   onFieldUpdate?: (fieldName: string, value: any) => void; // Update other fields
+  credentialId?: string; // Credential ID for custom components that need API access
 }
 
 export interface FormGeneratorProps {

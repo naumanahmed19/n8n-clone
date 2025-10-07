@@ -1,15 +1,16 @@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays } from 'lucide-react'
+import { getCustomComponent } from './customComponentRegistry'
 import { ExpressionInput } from './ExpressionInput'
 import { RepeatingField } from './RepeatingField'
 import { FormFieldRendererProps } from './types'
@@ -36,18 +37,62 @@ export function FieldRenderer({
     }
   }
 
-  // Custom field component
-  if (field.type === 'custom' && field.customComponent) {
-    return field.customComponent({
-      value,
-      onChange: handleChange,
-      field,
-      error,
-      disabled,
-      allValues,
-      allFields,
-      onFieldUpdate: onFieldChange, // Pass the field change handler
-    })
+  // Custom field component - support both inline and registry-based components
+  if (field.type === 'custom') {
+    // First check for inline custom component
+    if (field.customComponent) {
+      // Extract credentials from allValues for inline components too
+      const credentials = allValues?.__credentials || {}
+      const credentialId = Object.values(credentials)[0] as string | undefined
+      
+      return field.customComponent({
+        value,
+        onChange: handleChange,
+        field,
+        error,
+        disabled,
+        allValues,
+        allFields,
+        onFieldUpdate: onFieldChange,
+        credentialId, // Pass credential ID to inline custom components
+      })
+    }
+    
+    // Then check for registry-based component
+    if (field.component) {
+      const CustomComponent = getCustomComponent(field.component)
+      
+      if (CustomComponent) {
+        // Extract credentials from allValues
+        const credentials = allValues?.__credentials || {}
+        
+        // Get the first credential ID (most nodes have only one credential type)
+        const credentialId = Object.values(credentials)[0] as string | undefined
+        
+        return (
+          <CustomComponent
+            value={value}
+            onChange={handleChange}
+            disabled={disabled}
+            error={error}
+            credentialId={credentialId} // Pass credential ID to custom components
+            {...(field.componentProps || {})}
+            // Pass dependent field values
+            {...Object.keys(field.componentProps?.dependsOn || {}).reduce((acc, key) => {
+              acc[key] = allValues?.[key]
+              return acc
+            }, {} as Record<string, any>)}
+          />
+        )
+      }
+    }
+    
+    // Fallback for unknown custom component
+    return (
+      <div className="text-sm text-amber-600">
+        Custom component "{field.component || 'unknown'}" not found
+      </div>
+    )
   }
 
   // Collection type with multipleValues - use RepeatingField

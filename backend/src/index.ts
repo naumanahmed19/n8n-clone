@@ -1,5 +1,6 @@
 // Main entry point for the n8n clone backend
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -15,8 +16,10 @@ import executionHistoryRoutes from "./routes/execution-history";
 import executionRecoveryRoutes from "./routes/execution-recovery";
 import { executionRoutes } from "./routes/executions";
 import flowExecutionRoutes from "./routes/flow-execution";
+import googleRoutes from "./routes/google";
 import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
+import oauthRoutes from "./routes/oauth";
 import triggerRoutes from "./routes/triggers";
 import variableRoutes from "./routes/variables";
 import { workflowRoutes } from "./routes/workflows";
@@ -82,6 +85,7 @@ app.use(
   })
 );
 app.use(compression());
+app.use(cookieParser()); // Parse cookies
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -124,6 +128,8 @@ app.get("/", (req, res) => {
       executionControl: "/api/execution-control",
       executionHistory: "/api/execution-history",
       executionRecovery: "/api/execution-recovery",
+      oauth: "/api/oauth",
+      google: "/api/google",
       health: "/health",
     },
   });
@@ -143,6 +149,8 @@ app.use("/api/flow-execution", flowExecutionRoutes);
 app.use("/api/execution-control", executionControlRoutes);
 app.use("/api/execution-history", executionHistoryRoutes);
 app.use("/api/execution-recovery", executionRecoveryRoutes);
+app.use("/api/oauth", oauthRoutes);
+app.use("/api/google", googleRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

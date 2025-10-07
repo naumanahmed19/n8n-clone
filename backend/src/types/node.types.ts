@@ -207,6 +207,7 @@ export interface NodeTypeInfo {
   inputs: string[];
   outputs: string[];
   properties: NodeProperty[];
+  credentials?: CredentialDefinition[]; // Include credentials
   icon?: string;
   color?: string;
 }

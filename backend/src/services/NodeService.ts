@@ -251,6 +251,7 @@ export class NodeService {
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs,
           properties: this.resolveProperties(nodeDefinition.properties || []),
+          credentials: nodeDefinition.credentials, // Include credentials
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
         });
@@ -336,6 +337,7 @@ export class NodeService {
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs,
           properties: this.resolveProperties(nodeDefinition.properties || []),
+          credentials: nodeDefinition.credentials, // Include credentials
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
         };

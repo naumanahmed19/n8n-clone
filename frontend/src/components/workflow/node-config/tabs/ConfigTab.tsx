@@ -76,6 +76,15 @@ export function ConfigTab({ node, nodeType, readOnly = false }: ConfigTabProps) 
     return acc
   }, {} as Record<string, string>)
 
+  // Handle parameter changes, filtering out internal keys like __credentials
+  const handleParameterChange = (fieldName: string, value: any) => {
+    // Don't save internal keys like __credentials
+    if (fieldName === '__credentials') {
+      return
+    }
+    updateParameters(fieldName, value)
+  }
+
   return (
     <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
       <div className="space-y-6 max-w-lg">
@@ -110,9 +119,13 @@ export function ConfigTab({ node, nodeType, readOnly = false }: ConfigTabProps) 
             <h4 className="text-sm font-medium">Properties</h4>
             <FormGenerator
               fields={formFields}
-              values={parameters}
+              values={{
+                ...parameters,
+                // Include credentials so custom components can access them
+                __credentials: credentials,
+              }}
               errors={formErrors}
-              onChange={updateParameters}
+              onChange={handleParameterChange}
               showRequiredIndicator={true}
               fieldClassName="space-y-2"
               nodeId={node.id}

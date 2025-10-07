@@ -3,14 +3,15 @@ import { Toaster } from '@/components/ui/sonner'
 
 import { SidebarContextProvider } from '@/contexts'
 import {
-  CredentialsPage,
-  CustomNodesPage,
-  ExecutionsPage,
-  LoginPage,
-  RegisterPage,
-  WorkflowEditorPage,
-  WorkspacePage
+    CredentialsPage,
+    CustomNodesPage,
+    ExecutionsPage,
+    LoginPage,
+    RegisterPage,
+    WorkflowEditorPage,
+    WorkspacePage
 } from '@/pages'
+import { OAuthCallback } from '@/pages/OAuthCallback'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function App() {
@@ -33,6 +34,16 @@ function App() {
             element={
               <ProtectedRoute requireAuth={false}>
                 <RegisterPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* OAuth callback route - requires auth */}
+          <Route
+            path="/oauth/callback"
+            element={
+              <ProtectedRoute>
+                <OAuthCallback />
               </ProtectedRoute>
             }
           />
