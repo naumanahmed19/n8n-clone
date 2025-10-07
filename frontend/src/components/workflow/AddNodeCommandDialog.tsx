@@ -65,72 +65,91 @@ export function AddNodeCommandDialog({
     let nodePosition = { x: 300, y: 300 }
     
     if (insertionContext && reactFlowInstance) {
-      // When inserting between nodes, create space with proper gaps
-      const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
-      const targetNode = reactFlowInstance.getNode(insertionContext.targetNodeId)
+      // Check if this is a connection drop (source but no target)
+      const isConnectionDrop = insertionContext.sourceNodeId && !insertionContext.targetNodeId
       
-      if (sourceNode && targetNode) {
-        // Assume standard node width (adjust based on your node sizes)
-        const nodeWidth = 150
-        const gap = 25
+      if (isConnectionDrop) {
+        // Connection was dropped on canvas - position near the source node
+        const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
         
-        // Calculate the vector from source to target
-        const deltaX = targetNode.position.x - sourceNode.position.x
-        const deltaY = targetNode.position.y - sourceNode.position.y
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
-        
-        // Calculate direction vector (normalized)
-        const directionX = deltaX / distance
-        const directionY = deltaY / distance
-        
-        // Position new node: source node + its width + gap
-        const distanceFromSource = nodeWidth + gap
-        nodePosition = {
-          x: sourceNode.position.x + directionX * distanceFromSource,
-          y: sourceNode.position.y + directionY * distanceFromSource
+        if (sourceNode) {
+          // Position to the right of the source node
+          nodePosition = {
+            x: sourceNode.position.x + 200,
+            y: sourceNode.position.y
+          }
+        } else if (position) {
+          // Use the drop position
+          nodePosition = reactFlowInstance.screenToFlowPosition(position)
         }
+      } else if (insertionContext.targetNodeId) {
+        // Inserting between nodes - use existing logic
+        const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+        const targetNode = reactFlowInstance.getNode(insertionContext.targetNodeId)
         
-        // Calculate minimum distance needed: source width + gap + new node width + gap
-        const minDistanceNeeded = nodeWidth + gap + nodeWidth + gap
-        
-        // If current distance is less than needed, shift target node and all downstream nodes
-        if (distance < minDistanceNeeded) {
-          const additionalSpace = minDistanceNeeded - distance
-          const shiftX = directionX * additionalSpace
-          const shiftY = directionY * additionalSpace
+        if (sourceNode && targetNode) {
+          // Assume standard node width (adjust based on your node sizes)
+          const nodeWidth = 150
+          const gap = 25
           
-          // Helper function to recursively shift nodes
-          const shiftNodeAndDownstream = (nodeId: string, visited = new Set<string>()) => {
-            if (visited.has(nodeId)) return
-            visited.add(nodeId)
-            
-            const node = reactFlowInstance.getNode(nodeId)
-            if (!node) return
-            
-            // Shift this node
-            updateNode(nodeId, {
-              position: {
-                x: node.position.x + shiftX,
-                y: node.position.y + shiftY
-              }
-            })
-            
-            // Find all connections where this node is the source and shift their targets
-            workflow?.connections.forEach(conn => {
-              if (conn.sourceNodeId === nodeId) {
-                shiftNodeAndDownstream(conn.targetNodeId, visited)
-              }
-            })
+          // Calculate the vector from source to target
+          const deltaX = targetNode.position.x - sourceNode.position.x
+          const deltaY = targetNode.position.y - sourceNode.position.y
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+          
+          // Calculate direction vector (normalized)
+          const directionX = deltaX / distance
+          const directionY = deltaY / distance
+          
+          // Position new node: source node + its width + gap
+          const distanceFromSource = nodeWidth + gap
+          nodePosition = {
+            x: sourceNode.position.x + directionX * distanceFromSource,
+            y: sourceNode.position.y + directionY * distanceFromSource
           }
           
-          // Start shifting from the target node
-          shiftNodeAndDownstream(insertionContext.targetNodeId)
-        }
-      } else if (sourceNode) {
-        // Fallback: position to the right of source node
-        nodePosition = {
-          x: sourceNode.position.x + 300,
-          y: sourceNode.position.y
+          // Calculate minimum distance needed: source width + gap + new node width + gap
+          const minDistanceNeeded = nodeWidth + gap + nodeWidth + gap
+          
+          // If current distance is less than needed, shift target node and all downstream nodes
+          if (distance < minDistanceNeeded) {
+            const additionalSpace = minDistanceNeeded - distance
+            const shiftX = directionX * additionalSpace
+            const shiftY = directionY * additionalSpace
+            
+            // Helper function to recursively shift nodes
+            const shiftNodeAndDownstream = (nodeId: string, visited = new Set<string>()) => {
+              if (visited.has(nodeId)) return
+              visited.add(nodeId)
+              
+              const node = reactFlowInstance.getNode(nodeId)
+              if (!node) return
+              
+              // Shift this node
+              updateNode(nodeId, {
+                position: {
+                  x: node.position.x + shiftX,
+                  y: node.position.y + shiftY
+                }
+              })
+              
+              // Find all connections where this node is the source and shift their targets
+              workflow?.connections.forEach(conn => {
+                if (conn.sourceNodeId === nodeId) {
+                  shiftNodeAndDownstream(conn.targetNodeId, visited)
+                }
+              })
+            }
+            
+            // Start shifting from the target node
+            shiftNodeAndDownstream(insertionContext.targetNodeId)
+          }
+        } else if (sourceNode) {
+          // Fallback: position to the right of source node
+          nodePosition = {
+            x: sourceNode.position.x + 300,
+            y: sourceNode.position.y
+          }
         }
       }
     } else if (position) {
@@ -176,18 +195,23 @@ export function AddNodeCommandDialog({
     addNode(newNode)
 
     // If we have insertion context, create connections
-    if (insertionContext) {
-      // First, find and remove the existing connection between source and target
-      const existingConnection = workflow?.connections.find(
-        conn =>
-          conn.sourceNodeId === insertionContext.sourceNodeId &&
-          conn.targetNodeId === insertionContext.targetNodeId &&
-          (conn.sourceOutput === insertionContext.sourceOutput || (!conn.sourceOutput && !insertionContext.sourceOutput)) &&
-          (conn.targetInput === insertionContext.targetInput || (!conn.targetInput && !insertionContext.targetInput))
-      )
+    if (insertionContext && insertionContext.sourceNodeId) {
+      // Check if this is inserting between nodes or just connecting from source
+      const isInsertingBetweenNodes = insertionContext.targetNodeId && insertionContext.targetNodeId !== ''
+      
+      if (isInsertingBetweenNodes) {
+        // First, find and remove the existing connection between source and target
+        const existingConnection = workflow?.connections.find(
+          conn =>
+            conn.sourceNodeId === insertionContext.sourceNodeId &&
+            conn.targetNodeId === insertionContext.targetNodeId &&
+            (conn.sourceOutput === insertionContext.sourceOutput || (!conn.sourceOutput && !insertionContext.sourceOutput)) &&
+            (conn.targetInput === insertionContext.targetInput || (!conn.targetInput && !insertionContext.targetInput))
+        )
 
-      if (existingConnection) {
-        removeConnection(existingConnection.id)
+        if (existingConnection) {
+          removeConnection(existingConnection.id)
+        }
       }
 
       // Create connection from source node to new node
@@ -202,7 +226,7 @@ export function AddNodeCommandDialog({
       addConnection(sourceConnection)
 
       // If there's a target node specified, wire the new node to it
-      if (insertionContext.targetNodeId) {
+      if (isInsertingBetweenNodes && insertionContext.targetNodeId) {
         const targetConnection: WorkflowConnection = {
           id: `${newNode.id}-${insertionContext.targetNodeId}-${Date.now() + 1}`,
           sourceNodeId: newNode.id,

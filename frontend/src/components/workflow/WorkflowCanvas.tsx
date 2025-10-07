@@ -40,6 +40,8 @@ export function WorkflowCanvas({
         handleNodesChange,
         handleEdgesChange,
         handleConnect,
+        handleConnectStart,
+        handleConnectEnd,
         handleDrop,
         handleDragOver,
         handleSelectionChange,
@@ -72,6 +74,8 @@ export function WorkflowCanvas({
                     onNodesChange={isDisabled ? undefined : handleNodesChange}
                     onEdgesChange={isDisabled ? undefined : handleEdgesChange}
                     onConnect={isDisabled ? undefined : handleConnect}
+                    onConnectStart={isDisabled ? undefined : handleConnectStart}
+                    onConnectEnd={isDisabled ? undefined : handleConnectEnd}
                     onInit={onInit}
                     onDrop={isDisabled ? undefined : handleDrop}
                     onDragOver={isDisabled ? undefined : handleDragOver}
