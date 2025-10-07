@@ -1,8 +1,8 @@
-import { useWorkflowStore } from "@/stores";
-import { useAddNodeDialogStore } from "@/stores";
+import { useAddNodeDialogStore, useWorkflowStore } from "@/stores";
 import { NodeType, WorkflowConnection, WorkflowNode } from "@/types";
 import { useCallback, useRef, useState } from "react";
 import {
+  Connection,
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
@@ -11,7 +11,6 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-  Connection,
 } from "reactflow";
 
 /**
@@ -36,7 +35,8 @@ export function useReactFlowInteractions() {
   const { openDialog } = useAddNodeDialogStore();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [connectionInProgress, setConnectionInProgress] = useState<Connection | null>(null);
+  const [connectionInProgress, setConnectionInProgress] =
+    useState<Connection | null>(null);
 
   // Use the useReactFlow hook to get the ReactFlow instance directly
   const reactFlowInstance = useReactFlow();
@@ -202,8 +202,15 @@ export function useReactFlowInteractions() {
 
   // Handle connection start - track the connection being created
   const handleConnectStart = useCallback(
-    (_event: React.MouseEvent | React.TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
-      if (params.nodeId && params.handleType === 'source') {
+    (
+      _event: React.MouseEvent | React.TouchEvent,
+      params: {
+        nodeId: string | null;
+        handleId: string | null;
+        handleType: string | null;
+      }
+    ) => {
+      if (params.nodeId && params.handleType === "source") {
         setConnectionInProgress({
           source: params.nodeId,
           sourceHandle: params.handleId,
@@ -223,15 +230,24 @@ export function useReactFlowInteractions() {
         return;
       }
 
-      const targetIsPane = (event.target as HTMLElement).classList.contains('react-flow__pane');
-      
+      const targetIsPane = (event.target as HTMLElement).classList.contains(
+        "react-flow__pane"
+      );
+
       if (targetIsPane && connectionInProgress.source) {
         // Connection was dropped on the canvas (not on a node)
         // Get the mouse position
-        const clientX = 'clientX' in event ? event.clientX : (event as TouchEvent).touches[0].clientX;
-        const clientY = 'clientY' in event ? event.clientY : (event as TouchEvent).touches[0].clientY;
-        
-        const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+        const clientX =
+          "clientX" in event
+            ? event.clientX
+            : (event as TouchEvent).touches[0].clientX;
+        const clientY =
+          "clientY" in event
+            ? event.clientY
+            : (event as TouchEvent).touches[0].clientY;
+
+        const reactFlowBounds =
+          reactFlowWrapper.current?.getBoundingClientRect();
         if (!reactFlowBounds) {
           setConnectionInProgress(null);
           return;
@@ -246,7 +262,7 @@ export function useReactFlowInteractions() {
         // Open the add node dialog at the drop position with source connection context
         openDialog(position, {
           sourceNodeId: connectionInProgress.source,
-          targetNodeId: '', // Empty target since we're adding a new node
+          targetNodeId: "", // Empty target since we're adding a new node
           sourceOutput: connectionInProgress.sourceHandle || undefined,
           targetInput: undefined,
         });
