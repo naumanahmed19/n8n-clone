@@ -82,7 +82,14 @@ export function AutoComplete<T = any>({
   triggerClassName,
   filterFn = defaultFilterFn,
 }: AutoCompleteProps<T>) {
-  console.log('AutoComplete: Render', { value, preloadOnMount, hasOnFetch: !!onFetch, disabled });
+  console.log('AutoComplete: Render', { 
+    value, 
+    preloadOnMount, 
+    hasOnFetch: !!onFetch, 
+    disabled,
+    optionsCount: propOptions?.length || 0,
+    placeholder,
+  });
   
   const [options, setOptions] = useState<AutoCompleteOption<T>[]>(propOptions);
   const [loading, setLoading] = useState(false);
@@ -182,6 +189,14 @@ export function AutoComplete<T = any>({
     }
   }, [value, options]);
 
+  // Sync options state with propOptions when they change
+  useEffect(() => {
+    if (propOptions && propOptions.length > 0) {
+      console.log('AutoComplete: Syncing propOptions', { propOptionsLength: propOptions.length });
+      setOptions(propOptions);
+    }
+  }, [propOptions]);
+
   // Preload data when preloadOnMount changes to true
   useEffect(() => {
     console.log('AutoComplete: preloadOnMount effect', { preloadOnMount, hasOnFetch: !!onFetch, optionsLength: options.length, hasLoaded: hasLoadedRef.current });
@@ -197,14 +212,9 @@ export function AutoComplete<T = any>({
           console.error('AutoComplete: fetchData failed in useEffect', err);
         });
       }
-    } else if (!preloadOnMount) {
-      // Reset loaded flag when preloadOnMount becomes false (e.g., when dependencies are removed)
-      console.log('AutoComplete: Resetting state');
-      hasLoadedRef.current = false;
-      setOptions([]);
-      setSelectedOption(null);
-      setApiError(null);
     }
+    // Note: We don't reset options when preloadOnMount is false
+    // Static options should remain available even without preload
     // Only react to preloadOnMount changes, not onFetch changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preloadOnMount]);

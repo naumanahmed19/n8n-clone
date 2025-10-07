@@ -773,12 +773,44 @@ export class FlowExecutionEngine extends EventEmitter {
       );
       nodeState.inputData = inputData;
 
+      // Build credentials mapping: need to map credential types to IDs
+      // node.credentials is an array of credential IDs like ["cred_123"]
+      // We need to figure out which type each credential is
+      let credentialsMapping: Record<string, string> | undefined;
+      
+      if (node.credentials && node.credentials.length > 0) {
+        credentialsMapping = {};
+        
+        // Get all node types and find the one we need
+        const allNodeTypes = await this.nodeService.getNodeTypes();
+        const nodeTypeInfo = allNodeTypes.find(nt => nt.type === node.type);
+        
+        if (nodeTypeInfo && nodeTypeInfo.credentials) {
+          // For each credential definition in the node type
+          for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
+            const credDef = nodeTypeInfo.credentials[i];
+            // Map the credential type to the credential ID from the node
+            if (node.credentials[i]) {
+              credentialsMapping[credDef.name] = node.credentials[i];
+            }
+          }
+        }
+        
+        logger.info(`FlowExecutionEngine - Credentials mapping for node`, {
+          nodeId,
+          nodeType: node.type,
+          rawCredentials: node.credentials,
+          credentialsMapping,
+        });
+      }
+
       const nodeResult = await this.nodeService.executeNode(
         node.type,
         node.parameters,
         inputData,
-        node.credentials ? {} : undefined, // TODO: Load actual credentials
-        context.executionId
+        credentialsMapping,
+        context.executionId,
+        context.userId // Pass the userId from context
       );
 
       if (!nodeResult.success) {

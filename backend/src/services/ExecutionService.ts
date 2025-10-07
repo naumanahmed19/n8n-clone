@@ -1463,13 +1463,58 @@ export class ExecutionService {
             mode: "single",
           });
 
+          // Build credentials mapping: need to map credential types to IDs
+          // node.credentials is an array of credential IDs like ["cred_123"]
+          // We need to figure out which type each credential is
+          let credentialsMapping: Record<string, string> | undefined;
+          
+          if (node.credentials && node.credentials.length > 0) {
+            credentialsMapping = {};
+            
+            // Get all node types and find the one we need
+            const allNodeTypes = await this.nodeService.getNodeTypes();
+            const nodeTypeInfo = allNodeTypes.find(nt => nt.type === node.type);
+            
+            logger.info(`Building credentials mapping - Step 1`, {
+              nodeId,
+              nodeType: node.type,
+              rawCredentials: node.credentials,
+              foundNodeType: !!nodeTypeInfo,
+              nodeTypeCredentials: nodeTypeInfo?.credentials,
+            });
+            
+            if (nodeTypeInfo && nodeTypeInfo.credentials) {
+              // For each credential definition in the node type
+              for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
+                const credDef = nodeTypeInfo.credentials[i];
+                // Map the credential type to the credential ID from the node
+                if (node.credentials[i]) {
+                  credentialsMapping[credDef.name] = node.credentials[i];
+                  logger.info(`Mapped credential`, {
+                    index: i,
+                    credentialType: credDef.name,
+                    credentialId: node.credentials[i],
+                  });
+                }
+              }
+            }
+            
+            logger.info(`Credentials mapping for single node execution - Final`, {
+              nodeId,
+              nodeType: node.type,
+              rawCredentials: node.credentials,
+              credentialsMapping,
+            });
+          }
+
           // Execute the actual node
           nodeResult = await this.nodeService.executeNode(
             node.type,
             nodeParameters,
             nodeInputData,
-            node.credentials ? {} : undefined, // TODO: Load actual credentials
-            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            credentialsMapping,
+            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId // Pass the actual userId so credentials can be looked up
           );
 
           const endTime = Date.now();

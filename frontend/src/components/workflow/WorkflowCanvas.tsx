@@ -55,16 +55,7 @@ export function WorkflowCanvas({
     const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
     const backgroundColor = isDisabled ? '#f8fafc' : undefined
     
-    // Debug log
-    console.log('WorkflowCanvas render:', {
-        readOnly,
-        executionMode,
-        isDisabled,
-        nodesDraggable: !isDisabled,
-        nodesConnectable: !isDisabled,
-        backgroundVariant: displayBackgroundVariant
-    })
-    
+
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
             <div className="h-full" ref={reactFlowWrapper} style={{ backgroundColor }}>

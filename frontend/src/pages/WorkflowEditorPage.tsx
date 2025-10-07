@@ -1,13 +1,13 @@
 import { ExecutionToolbar, WorkflowEditorWrapper } from '@/components'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
-    SidebarInset,
-    SidebarProvider,
+  SidebarInset,
+  SidebarProvider,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
 import {
-    useWorkflowOperations
+  useWorkflowOperations
 } from '@/hooks/workflow'
 import { workflowService } from '@/services'
 import type { ExecutionDetails } from '@/services/execution'
@@ -301,13 +301,6 @@ export function WorkflowEditorPage() {
     )
   }
 
-  // Debug log
-  console.log('WorkflowEditorPage render:', {
-    executionId,
-    hasExecution: !!execution,
-    readOnly: !!executionId,
-    executionMode: !!executionId
-  })
 
   return (
     <TooltipProvider>

@@ -113,6 +113,7 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
       required: true,
       default: "row",
       description: "What type of change should trigger the workflow",
+      placeholder: "Select trigger event...",
       options: [
         {
           name: "Row Added",

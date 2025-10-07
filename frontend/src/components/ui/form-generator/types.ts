@@ -23,6 +23,7 @@ export interface FormFieldConfig {
     | "email"
     | "url"
     | "switch"
+    | "autocomplete"
     | "custom";
   required?: boolean;
   default?: any;

@@ -1,3 +1,4 @@
+import { AutoComplete, AutoCompleteOption } from '@/components/ui/autocomplete'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
@@ -10,7 +11,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays } from 'lucide-react'
-import { getCustomComponent } from './customComponentRegistry'
+import { getCustomComponent } from './CustomComponentRegistry'
 import { ExpressionInput } from './ExpressionInput'
 import { RepeatingField } from './RepeatingField'
 import { FormFieldRendererProps } from './types'
@@ -105,6 +106,13 @@ export function FieldRenderer({
         // Filter out dependsOn from componentProps to avoid passing it as a prop
         const { dependsOn: _, ...componentPropsWithoutDependsOn } = field.componentProps || {}
         
+        // Merge field.options with componentProps if options exist at field level
+        const finalProps = {
+          ...componentPropsWithoutDependsOn,
+          // If options exist at field level and not in componentProps, add them
+          ...(field.options && !componentPropsWithoutDependsOn.options ? { options: field.options } : {}),
+        };
+        
         return (
           <CustomComponent
             value={value}
@@ -112,7 +120,7 @@ export function FieldRenderer({
             disabled={disabled}
             error={error}
             credentialId={credentialId} // Pass credential ID to custom components
-            {...componentPropsWithoutDependsOn}
+            {...finalProps}
             {...dependsOnValues} // Pass dependent field values
           />
         )
@@ -162,7 +170,6 @@ export function FieldRenderer({
           placeholder={field.placeholder}
           disabled={disabled || field.disabled || field.readonly}
           error={!!error}
-          multiline={false}
           nodeId={nodeId}
         />
       )
@@ -234,8 +241,6 @@ export function FieldRenderer({
           placeholder={field.placeholder}
           disabled={disabled || field.disabled || field.readonly}
           error={!!error}
-          multiline={true}
-          rows={field.rows || 4}
           nodeId={nodeId}
         />
       )
@@ -302,6 +307,53 @@ export function FieldRenderer({
           </SelectContent>
         </Select>
       )
+
+    case 'autocomplete': {
+      // Convert field options to AutoComplete format
+      const autocompleteOptions: AutoCompleteOption[] = (field.options || []).map((option) => ({
+        id: String(option.value),
+        label: option.name,
+        value: String(option.value),
+        metadata: {
+          subtitle: option.description,
+        },
+      }));
+
+      console.log('FieldRenderer autocomplete:', {
+        fieldName: field.name,
+        fieldDisplayName: field.displayName,
+        value,
+        optionsCount: autocompleteOptions.length,
+        options: autocompleteOptions,
+      });
+
+      return (
+        <AutoComplete
+          value={String(value || '')}
+          onChange={(selectedValue) => handleChange(selectedValue)}
+          options={autocompleteOptions}
+          placeholder={field.placeholder || `Select ${field.displayName}`}
+          searchPlaceholder={`Search ${field.displayName.toLowerCase()}...`}
+          emptyMessage={`No ${field.displayName.toLowerCase()} available`}
+          noOptionsMessage="No matching results"
+          disabled={disabled || field.disabled}
+          error={error}
+          clearable={!field.required}
+          refreshable={false}
+          searchable={true}
+          renderOption={(option) => (
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{option.label}</p>
+              {option.metadata?.subtitle && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {option.metadata.subtitle}
+                </p>
+              )}
+            </div>
+          )}
+        />
+      );
+    }
 
     case 'multiOptions':
       return (

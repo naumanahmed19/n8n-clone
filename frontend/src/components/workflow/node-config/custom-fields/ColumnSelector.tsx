@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { apiClient } from "@/services/api";
 import { Loader2, RefreshCw, Search, Table } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -47,26 +48,18 @@ export function ColumnSelector({
 
     setLoading(true);
     try {
-      // Mock API call - replace with actual Google Sheets API call
-      const response = await fetch(
+      const response = await apiClient.get(
         `/api/google/spreadsheets/${spreadsheetId}/sheets/${encodeURIComponent(
           sheetName
-        )}/columns`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+        )}/columns?credentialId=${credentialId}`
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        setColumns(data.columns || []);
+      if (response.success && response.data) {
+        setColumns(response.data.columns || []);
       }
     } catch (err) {
       console.error("Failed to fetch columns:", err);
+      setColumns([]);
     } finally {
       setLoading(false);
     }

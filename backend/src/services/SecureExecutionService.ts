@@ -151,12 +151,17 @@ export class SecureExecutionService {
   async createSecureContext(
     parameters: Record<string, any>,
     inputData: NodeInputData,
-    credentialIds: string[] = [],
+    credentialIds: string[] | Record<string, string> = [],
     userId: string,
     executionId: string,
     options: SecureExecutionOptions = {}
   ): Promise<NodeExecutionContext> {
     const limits = this.mergeLimits(options);
+    
+    // Convert credentialIds to a mapping object if it's an array
+    const credentialsMapping: Record<string, string> = Array.isArray(credentialIds)
+      ? {} // Empty mapping if array (legacy format)
+      : credentialIds; // Use the mapping directly
 
     return {
       getNodeParameter: (parameterName: string, itemIndex?: number) => {
@@ -194,9 +199,13 @@ export class SecureExecutionService {
           throw new Error("Credential type must be a string");
         }
 
-        // Find credential ID for the requested type
-        const credentialId = credentialIds.find((id) => id); // This would need better logic
+        // Use the credentials mapping to find the credential ID for this type
+        const credentialId = credentialsMapping[type];
         if (!credentialId) {
+          console.error(`No credential found for type '${type}'`, {
+            requestedType: type,
+            availableCredentials: credentialsMapping
+          });
           throw new Error(`No credential of type '${type}' available`);
         }
 
@@ -224,7 +233,7 @@ export class SecureExecutionService {
       helpers: this.createSecureHelpers(
         limits,
         executionId,
-        credentialIds,
+        Array.isArray(credentialIds) ? credentialIds : Object.values(credentialsMapping),
         userId
       ),
       logger: this.createSecureLogger(executionId),

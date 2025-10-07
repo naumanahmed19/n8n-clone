@@ -388,11 +388,15 @@ export class NodeService {
     inputData: NodeInputData,
     credentials?: Record<string, any>,
     executionId?: string,
+    userId?: string,
     options?: SecureExecutionOptions
   ): Promise<NodeExecutionResult> {
     const execId =
       executionId ||
       `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Use provided userId or fallback to "system" for backward compatibility
+    const executingUserId = userId || "system";
 
     try {
       // Wait for built-in nodes to be initialized before executing
@@ -413,12 +417,12 @@ export class NodeService {
       }
 
       // Create secure execution context
-      const credentialIds = credentials ? Object.keys(credentials) : [];
+      // credentials is already a mapping of type -> id (e.g., { "googleSheetsOAuth2": "cred_123" })
       const context = await this.secureExecutionService.createSecureContext(
         parameters,
         inputValidation.sanitizedData!,
-        credentialIds,
-        "system",
+        credentials || {},
+        executingUserId,
         execId,
         options
       );

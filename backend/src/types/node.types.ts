@@ -37,6 +37,7 @@ export interface NodeProperty {
     | "json"
     | "dateTime"
     | "collection"
+    | "autocomplete"
     | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
