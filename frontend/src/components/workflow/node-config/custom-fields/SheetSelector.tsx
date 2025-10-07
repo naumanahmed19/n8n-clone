@@ -1,8 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileSpreadsheet, Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AutoComplete, AutoCompleteOption } from "@/components/ui/autocomplete";
+import { FileSpreadsheet } from "lucide-react";
+import { useCallback } from "react";
 
 interface Sheet {
   id: number;
@@ -29,173 +27,113 @@ export function SheetSelector({
   credentialId,
   error,
 }: SheetSelectorProps) {
-  const [sheets, setSheets] = useState<Sheet[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedSheet, setSelectedSheet] = useState<Sheet | null>(null);
-
   // Fetch sheets from Google Sheets API
-  const fetchSheets = async () => {
-    if (!spreadsheetId || !credentialId) {
-      return;
-    }
-
-    setLoading(true);
+  const fetchSheets = useCallback(async (): Promise<AutoCompleteOption<Sheet>[]> => {
     try {
+      if (!spreadsheetId) {
+        throw new Error("Please select a spreadsheet first");
+      }
+
+      if (!credentialId) {
+        throw new Error("Please select credentials first");
+      }
+
+      const token = localStorage.getItem("auth_token");
+      
       // Call Google Sheets API with credential ID
+      const url = `/api/google/spreadsheets/${spreadsheetId}/sheets?credentialId=${credentialId}`;
+      
       const response = await fetch(
-        `/api/google/spreadsheets/${spreadsheetId}/sheets?credentialId=${credentialId}`,
+        url,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
+          credentials: "include",
         }
       );
 
-      if (response.ok) {
-        const result = await response.json();
-        const data = result.data || {};
-        setSheets(data.sheets || []);
-
-        // Find and set the selected sheet
-        if (value) {
-          const selected = data.sheets.find((s: Sheet) => s.title === value);
-          if (selected) {
-            setSelectedSheet(selected);
-          }
+      if (!response.ok) {
+        // Parse error response
+        let errorMessage = response.statusText;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorData.message || response.statusText;
+        } catch (parseError) {
+          // Ignore parse errors
         }
-      } else {
-        console.error("Failed to fetch sheets:", response.statusText);
-        setSheets([]);
+        
+        // Extract Google API error if present
+        if (errorMessage.includes("Spreadsheet not found")) {
+          throw new Error("The selected spreadsheet could not be found. It may have been deleted or you may not have access.");
+        } else if (errorMessage.includes("Invalid token") || errorMessage.includes("Token expired")) {
+          throw new Error("Your Google credentials have expired. Please update your credentials.");
+        } else {
+          throw new Error(errorMessage);
+        }
       }
-    } catch (err) {
-      console.error("Failed to fetch sheets:", err);
-      setSheets([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    if (spreadsheetId) {
-      fetchSheets();
-    } else {
-      setSheets([]);
-      setSelectedSheet(null);
+      const result = await response.json();
+      const data = result.data || {};
+      const sheets = data.sheets || [];
+      
+      // Transform to AutoComplete options
+      return sheets.map((sheet: Sheet) => ({
+        id: sheet.title, // Use title as ID since it's the value we want
+        label: sheet.title,
+        value: sheet,
+        metadata: {
+          subtitle: sheet.rowCount && sheet.columnCount
+            ? `${sheet.rowCount} rows × ${sheet.columnCount} columns`
+            : undefined,
+          index: sheet.index,
+        },
+      }));
+    } catch (error) {
+      // Re-throw to let AutoComplete handle the error display
+      throw error;
     }
   }, [spreadsheetId, credentialId]);
 
-  const handleSelect = (sheet: Sheet) => {
-    setSelectedSheet(sheet);
-    onChange(sheet.title);
-  };
-
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          {selectedSheet ? (
-            <Card>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium">{selectedSheet.title}</p>
-                      {(selectedSheet.rowCount || selectedSheet.columnCount) && (
-                        <p className="text-xs text-muted-foreground">
-                          {selectedSheet.rowCount} rows × {selectedSheet.columnCount} columns
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedSheet(null);
-                      onChange("");
-                    }}
-                    disabled={disabled}
-                  >
-                    Change
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="p-3">
-                <p className="text-sm text-muted-foreground">
-                  {!spreadsheetId
-                    ? "Select a spreadsheet first"
-                    : "Select a sheet..."}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={fetchSheets}
-          disabled={disabled || loading || !spreadsheetId || !credentialId}
-          title="Refresh sheets"
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-        </Button>
-      </div>
-
-      {!selectedSheet && spreadsheetId && (
-        <Card>
-          <ScrollArea className="h-[200px]">
-            <CardContent className="p-2 space-y-1">
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : sheets.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">
-                  No sheets found
-                </div>
-              ) : (
-                sheets.map((sheet) => (
-                  <Button
-                    key={sheet.id}
-                    type="button"
-                    variant="ghost"
-                    className="w-full justify-start h-auto py-2 px-3"
-                    onClick={() => handleSelect(sheet)}
-                    disabled={disabled}
-                  >
-                    <div className="flex items-start gap-2 w-full">
-                      <FileSpreadsheet className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 text-left">
-                        <p className="text-sm font-medium">{sheet.title}</p>
-                        {(sheet.rowCount || sheet.columnCount) && (
-                          <p className="text-xs text-muted-foreground">
-                            {sheet.rowCount} rows × {sheet.columnCount} columns
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Button>
-                ))
-              )}
-            </CardContent>
-          </ScrollArea>
-        </Card>
-      )}
-
-      {error && <p className="text-xs text-red-500">{error}</p>}
-
+      <AutoComplete<Sheet>
+        key={spreadsheetId || 'no-spreadsheet'} // Force remount when spreadsheet changes
+        value={value}
+        onChange={onChange}
+        onFetch={fetchSheets}
+        preloadOnMount={!!spreadsheetId && !!credentialId}
+        placeholder="Select a sheet..."
+        searchPlaceholder="Search sheets..."
+        emptyMessage={
+          !spreadsheetId 
+            ? "Please select a spreadsheet first" 
+            : !credentialId
+            ? "Please select credentials first"
+            : "No sheets available"
+        }
+        noOptionsMessage="No sheets found"
+        disabled={disabled || !spreadsheetId || !credentialId}
+        error={error}
+        icon={<FileSpreadsheet className="w-4 h-4 text-blue-600" />}
+        clearable={true}
+        refreshable={true}
+        searchable={true}
+        maxHeight={300}
+        renderOption={(option) => (
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium">{option.label}</span>
+            {option.metadata?.subtitle && (
+              <span className="text-xs text-muted-foreground">
+                {option.metadata.subtitle}
+              </span>
+            )}
+          </div>
+        )}
+      />
+      
       {!spreadsheetId && (
         <p className="text-xs text-amber-600">
           ⚠️ Please select a spreadsheet first

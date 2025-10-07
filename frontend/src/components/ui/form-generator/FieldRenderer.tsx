@@ -45,6 +45,22 @@ export function FieldRenderer({
       const credentials = allValues?.__credentials || {}
       const credentialId = Object.values(credentials)[0] as string | undefined
       
+      // Extract dependsOn fields (same logic as registry-based components)
+      const dependsOn = field.componentProps?.dependsOn
+      const dependsOnValues: Record<string, any> = {}
+      
+      if (dependsOn) {
+        if (Array.isArray(dependsOn)) {
+          // dependsOn is an array: ["spreadsheetId", "sheetName"]
+          dependsOn.forEach((key) => {
+            dependsOnValues[key] = allValues?.[key]
+          })
+        } else if (typeof dependsOn === 'string') {
+          // dependsOn is a string: "spreadsheetId"
+          dependsOnValues[dependsOn] = allValues?.[dependsOn]
+        }
+      }
+      
       return field.customComponent({
         value,
         onChange: handleChange,
@@ -55,6 +71,7 @@ export function FieldRenderer({
         allFields,
         onFieldUpdate: onFieldChange,
         credentialId, // Pass credential ID to inline custom components
+        ...dependsOnValues, // Pass dependent field values
       })
     }
     
@@ -69,6 +86,25 @@ export function FieldRenderer({
         // Get the first credential ID (most nodes have only one credential type)
         const credentialId = Object.values(credentials)[0] as string | undefined
         
+        // Extract dependsOn fields
+        const dependsOn = field.componentProps?.dependsOn
+        const dependsOnValues: Record<string, any> = {}
+        
+        if (dependsOn) {
+          if (Array.isArray(dependsOn)) {
+            // dependsOn is an array: ["spreadsheetId", "sheetName"]
+            dependsOn.forEach((key) => {
+              dependsOnValues[key] = allValues?.[key]
+            })
+          } else if (typeof dependsOn === 'string') {
+            // dependsOn is a string: "spreadsheetId"
+            dependsOnValues[dependsOn] = allValues?.[dependsOn]
+          }
+        }
+        
+        // Filter out dependsOn from componentProps to avoid passing it as a prop
+        const { dependsOn: _, ...componentPropsWithoutDependsOn } = field.componentProps || {}
+        
         return (
           <CustomComponent
             value={value}
@@ -76,12 +112,8 @@ export function FieldRenderer({
             disabled={disabled}
             error={error}
             credentialId={credentialId} // Pass credential ID to custom components
-            {...(field.componentProps || {})}
-            // Pass dependent field values
-            {...Object.keys(field.componentProps?.dependsOn || {}).reduce((acc, key) => {
-              acc[key] = allValues?.[key]
-              return acc
-            }, {} as Record<string, any>)}
+            {...componentPropsWithoutDependsOn}
+            {...dependsOnValues} // Pass dependent field values
           />
         )
       }
