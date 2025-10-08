@@ -199,6 +199,8 @@ export enum BuiltInNodeTypes {
   SCHEDULE_TRIGGER = "schedule-trigger",
   MANUAL_TRIGGER = "manual-trigger",
   WORKFLOW_CALLED = "workflow-called",
+  OPENAI = "openai",
+  ANTHROPIC = "anthropic",
 }
 
 export interface NodeTypeInfo {
