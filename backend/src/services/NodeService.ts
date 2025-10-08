@@ -255,8 +255,12 @@ export class NodeService {
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
           // Add execution metadata - use provided values or compute from group
-          executionCapability: nodeDefinition.executionCapability || this.getExecutionCapability(nodeDefinition),
-          canExecuteIndividually: nodeDefinition.canExecuteIndividually ?? this.canExecuteIndividually(nodeDefinition),
+          executionCapability:
+            nodeDefinition.executionCapability ||
+            this.getExecutionCapability(nodeDefinition),
+          canExecuteIndividually:
+            nodeDefinition.canExecuteIndividually ??
+            this.canExecuteIndividually(nodeDefinition),
           canBeDisabled: nodeDefinition.canBeDisabled ?? true, // Default to true if not specified
         });
       }

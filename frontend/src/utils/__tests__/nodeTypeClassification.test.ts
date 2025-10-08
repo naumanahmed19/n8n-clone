@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import type { NodeType } from "@/types";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   canNodeBeDisabled,
   canNodeExecuteIndividually,
@@ -14,7 +15,6 @@ import {
   shouldShowExecuteButton,
   updateNodeTypesCache,
 } from "../nodeTypeClassification";
-import type { NodeType } from "@/types";
 
 // Mock node types data for testing
 const mockNodeTypes: NodeType[] = [

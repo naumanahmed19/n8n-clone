@@ -1,7 +1,7 @@
 /**
  * Node type classification utilities for determining execution capabilities
  * and toolbar button visibility
- * 
+ *
  * This module now uses data from the node types store/API instead of hardcoded registry.
  * The metadata comes directly from backend node definitions.
  */
@@ -27,7 +27,14 @@ export function updateNodeTypesCache(nodeTypes: NodeType[]): void {
  * Get node type data from cache
  */
 function getNodeTypeData(nodeType: string): NodeType | null {
-  return nodeTypesCache.find((nt) => nt.type === nodeType || nt.name === nodeType || nt.displayName === nodeType) || null;
+  return (
+    nodeTypesCache.find(
+      (nt) =>
+        nt.type === nodeType ||
+        nt.name === nodeType ||
+        nt.displayName === nodeType
+    ) || null
+  );
 }
 
 /**
@@ -36,7 +43,7 @@ function getNodeTypeData(nodeType: string): NodeType | null {
  */
 export function getNodeTypeMetadata(nodeType: string): NodeTypeMetadata | null {
   const nodeData = getNodeTypeData(nodeType);
-  
+
   if (!nodeData) {
     return null;
   }
@@ -44,8 +51,11 @@ export function getNodeTypeMetadata(nodeType: string): NodeTypeMetadata | null {
   return {
     type: nodeData.type,
     group: nodeData.group,
-    executionCapability: nodeData.executionCapability || determineExecutionCapability(nodeData),
-    canExecuteIndividually: nodeData.canExecuteIndividually ?? determineCanExecuteIndividually(nodeData),
+    executionCapability:
+      nodeData.executionCapability || determineExecutionCapability(nodeData),
+    canExecuteIndividually:
+      nodeData.canExecuteIndividually ??
+      determineCanExecuteIndividually(nodeData),
     canBeDisabled: nodeData.canBeDisabled ?? true,
   };
 }
@@ -53,9 +63,11 @@ export function getNodeTypeMetadata(nodeType: string): NodeTypeMetadata | null {
 /**
  * Fallback: Determine execution capability from group if not provided by backend
  */
-function determineExecutionCapability(nodeData: NodeType): NodeExecutionCapability {
+function determineExecutionCapability(
+  nodeData: NodeType
+): NodeExecutionCapability {
   const group = nodeData.group;
-  
+
   if (group.includes("trigger")) {
     return "trigger";
   } else if (group.includes("condition")) {
@@ -148,7 +160,7 @@ export function registerNodeType(
   metadata: NodeTypeMetadata
 ): void {
   const existingIndex = nodeTypesCache.findIndex((nt) => nt.type === nodeType);
-  
+
   const nodeData: NodeType = {
     type: metadata.type,
     displayName: metadata.type,
@@ -164,7 +176,7 @@ export function registerNodeType(
     canExecuteIndividually: metadata.canExecuteIndividually,
     canBeDisabled: metadata.canBeDisabled,
   };
-  
+
   if (existingIndex >= 0) {
     nodeTypesCache[existingIndex] = nodeData;
   } else {
