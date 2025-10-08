@@ -1,187 +1,77 @@
 /**
  * Node type classification utilities for determining execution capabilities
  * and toolbar button visibility
+ * 
+ * This module now uses data from the node types store/API instead of hardcoded registry.
+ * The metadata comes directly from backend node definitions.
  */
 
 import type {
   NodeExecutionCapability,
   NodeTypeMetadata,
 } from "@/components/workflow/types";
+import type { NodeType } from "@/types";
+
+// Cache for node types data from store
+let nodeTypesCache: NodeType[] = [];
 
 /**
- * Node type metadata registry
- * Maps both backend node types and display names to metadata
+ * Initialize or update the node types cache
+ * This should be called when the store loads node types
  */
-const NODE_TYPE_REGISTRY: Record<string, NodeTypeMetadata> = {
-  // Trigger nodes - backend types
-  "manual-trigger": {
-    type: "manual-trigger",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  "webhook-trigger": {
-    type: "webhook-trigger",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  "schedule-trigger": {
-    type: "schedule-trigger",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  "workflow-called": {
-    type: "workflow-called",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  webhook: {
-    type: "webhook",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
+export function updateNodeTypesCache(nodeTypes: NodeType[]): void {
+  nodeTypesCache = nodeTypes;
+}
 
-  // Trigger nodes - display names (for backward compatibility)
-  "Manual Trigger": {
-    type: "Manual Trigger",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  "Webhook Trigger": {
-    type: "Webhook Trigger",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  "Schedule Trigger": {
-    type: "Schedule Trigger",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-  "Called by Workflow": {
-    type: "Called by Workflow",
-    group: ["trigger"],
-    executionCapability: "trigger",
-    canExecuteIndividually: true,
-    canBeDisabled: true,
-  },
-
-  // Action nodes - backend types
-  "http-request": {
-    type: "http-request",
-    group: ["action"],
-    executionCapability: "action",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-  set: {
-    type: "set",
-    group: ["action"],
-    executionCapability: "action",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-
-  // Action nodes - display names (for backward compatibility)
-  "HTTP Request": {
-    type: "HTTP Request",
-    group: ["action"],
-    executionCapability: "action",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-  Set: {
-    type: "Set",
-    group: ["action"],
-    executionCapability: "action",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-
-  // Transform nodes - backend types
-  json: {
-    type: "json",
-    group: ["transform"],
-    executionCapability: "transform",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-  code: {
-    type: "code",
-    group: ["transform"],
-    executionCapability: "transform",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-
-  // Transform nodes - display names (for backward compatibility)
-  JSON: {
-    type: "JSON",
-    group: ["transform"],
-    executionCapability: "transform",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-  Code: {
-    type: "Code",
-    group: ["transform"],
-    executionCapability: "transform",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-
-  // Condition nodes - backend types
-  if: {
-    type: "if",
-    group: ["condition"],
-    executionCapability: "condition",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-  switch: {
-    type: "switch",
-    group: ["condition"],
-    executionCapability: "condition",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-
-  // Condition nodes - display names (for backward compatibility)
-  IF: {
-    type: "IF",
-    group: ["condition"],
-    executionCapability: "condition",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-  Switch: {
-    type: "Switch",
-    group: ["condition"],
-    executionCapability: "condition",
-    canExecuteIndividually: false,
-    canBeDisabled: true,
-  },
-};
+/**
+ * Get node type data from cache
+ */
+function getNodeTypeData(nodeType: string): NodeType | null {
+  return nodeTypesCache.find((nt) => nt.type === nodeType || nt.name === nodeType || nt.displayName === nodeType) || null;
+}
 
 /**
  * Get node type metadata for a given node type
+ * Now retrieves from cached node types data
  */
 export function getNodeTypeMetadata(nodeType: string): NodeTypeMetadata | null {
-  return NODE_TYPE_REGISTRY[nodeType] || null;
+  const nodeData = getNodeTypeData(nodeType);
+  
+  if (!nodeData) {
+    return null;
+  }
+
+  return {
+    type: nodeData.type,
+    group: nodeData.group,
+    executionCapability: nodeData.executionCapability || determineExecutionCapability(nodeData),
+    canExecuteIndividually: nodeData.canExecuteIndividually ?? determineCanExecuteIndividually(nodeData),
+    canBeDisabled: nodeData.canBeDisabled ?? true,
+  };
+}
+
+/**
+ * Fallback: Determine execution capability from group if not provided by backend
+ */
+function determineExecutionCapability(nodeData: NodeType): NodeExecutionCapability {
+  const group = nodeData.group;
+  
+  if (group.includes("trigger")) {
+    return "trigger";
+  } else if (group.includes("condition")) {
+    return "condition";
+  } else if (group.includes("transform")) {
+    return "transform";
+  } else {
+    return "action";
+  }
+}
+
+/**
+ * Fallback: Determine if node can execute individually
+ */
+function determineCanExecuteIndividually(nodeData: NodeType): boolean {
+  return nodeData.group.includes("trigger");
 }
 
 /**
@@ -243,20 +133,43 @@ export function isConditionNode(nodeType: string): boolean {
 }
 
 /**
- * Get all registered node types
+ * Get all registered node types from cache
  */
 export function getAllNodeTypes(): string[] {
-  return Object.keys(NODE_TYPE_REGISTRY);
+  return nodeTypesCache.map((nt) => nt.type);
 }
 
 /**
- * Register a new node type (for extensibility)
+ * Register/update node type in cache (for extensibility)
+ * Note: This modifies the cache, prefer using updateNodeTypesCache for bulk updates
  */
 export function registerNodeType(
   nodeType: string,
   metadata: NodeTypeMetadata
 ): void {
-  NODE_TYPE_REGISTRY[nodeType] = metadata;
+  const existingIndex = nodeTypesCache.findIndex((nt) => nt.type === nodeType);
+  
+  const nodeData: NodeType = {
+    type: metadata.type,
+    displayName: metadata.type,
+    name: metadata.type,
+    group: metadata.group,
+    version: 1,
+    description: "",
+    defaults: {},
+    inputs: ["main"],
+    outputs: ["main"],
+    properties: [],
+    executionCapability: metadata.executionCapability,
+    canExecuteIndividually: metadata.canExecuteIndividually,
+    canBeDisabled: metadata.canBeDisabled,
+  };
+  
+  if (existingIndex >= 0) {
+    nodeTypesCache[existingIndex] = nodeData;
+  } else {
+    nodeTypesCache.push(nodeData);
+  }
 }
 
 /**

@@ -1,5 +1,6 @@
 import { nodeService } from "@/services/node";
 import { NodeType } from "@/types";
+import { updateNodeTypesCache } from "@/utils/nodeTypeClassification";
 import { create } from "zustand";
 
 // Extended node type that might have additional properties for custom nodes
@@ -57,6 +58,9 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
       const response = await nodeService.getNodeTypes();
       console.log(`Fetched ${response.length} node types`);
 
+      // Update the classification cache with fresh data
+      updateNodeTypesCache(response);
+
       set({
         nodeTypes: response,
         isLoading: false,
@@ -84,6 +88,9 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
       const response = await nodeService.getNodeTypes();
       console.log(`Refetched ${response.length} node types`);
 
+      // Update the classification cache with fresh data
+      updateNodeTypesCache(response);
+
       set({
         nodeTypes: response,
         isRefetching: false,
@@ -99,23 +106,31 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
   },
 
   setNodeTypes: (nodeTypes: ExtendedNodeType[]) => {
+    // Update the classification cache when setting node types
+    updateNodeTypesCache(nodeTypes);
     set({ nodeTypes });
   },
 
   updateNodeType: (updatedNodeType: ExtendedNodeType) => {
-    set((state) => ({
-      nodeTypes: state.nodeTypes.map((nodeType) =>
+    set((state) => {
+      const updatedTypes = state.nodeTypes.map((nodeType) =>
         nodeType.type === updatedNodeType.type ? updatedNodeType : nodeType
-      ),
-    }));
+      );
+      // Update the classification cache
+      updateNodeTypesCache(updatedTypes);
+      return { nodeTypes: updatedTypes };
+    });
   },
 
   removeNodeType: (nodeTypeId: string) => {
-    set((state) => ({
-      nodeTypes: state.nodeTypes.filter(
+    set((state) => {
+      const updatedTypes = state.nodeTypes.filter(
         (nodeType) => nodeType.type !== nodeTypeId && nodeType.id !== nodeTypeId
-      ),
-    }));
+      );
+      // Update the classification cache
+      updateNodeTypesCache(updatedTypes);
+      return { nodeTypes: updatedTypes };
+    });
   },
 
   clearError: () => {

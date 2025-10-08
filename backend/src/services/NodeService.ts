@@ -254,6 +254,10 @@ export class NodeService {
           credentials: nodeDefinition.credentials, // Include credentials
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
+          // Add execution metadata - use provided values or compute from group
+          executionCapability: nodeDefinition.executionCapability || this.getExecutionCapability(nodeDefinition),
+          canExecuteIndividually: nodeDefinition.canExecuteIndividually ?? this.canExecuteIndividually(nodeDefinition),
+          canBeDisabled: nodeDefinition.canBeDisabled ?? true, // Default to true if not specified
         });
       }
 
@@ -961,5 +965,31 @@ export class NodeService {
         updated: 0,
       };
     }
+  }
+
+  /**
+   * Determine execution capability based on node group
+   */
+  private getExecutionCapability(
+    nodeDefinition: NodeDefinition
+  ): "trigger" | "action" | "transform" | "condition" {
+    const group = nodeDefinition.group;
+
+    if (group.includes("trigger")) {
+      return "trigger";
+    } else if (group.includes("condition")) {
+      return "condition";
+    } else if (group.includes("transform")) {
+      return "transform";
+    } else {
+      return "action";
+    }
+  }
+
+  /**
+   * Determine if node can execute individually (only trigger nodes)
+   */
+  private canExecuteIndividually(nodeDefinition: NodeDefinition): boolean {
+    return nodeDefinition.group.includes("trigger");
   }
 }

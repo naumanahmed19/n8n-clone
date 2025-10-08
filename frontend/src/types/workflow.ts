@@ -129,6 +129,10 @@ export interface NodeType {
   id?: string; // Optional database ID for custom nodes
   createdAt?: string; // Optional timestamp for custom nodes
   updatedAt?: string; // Optional timestamp for custom nodes
+  // Execution metadata from backend
+  executionCapability?: "trigger" | "action" | "transform" | "condition";
+  canExecuteIndividually?: boolean;
+  canBeDisabled?: boolean;
 }
 
 export interface CredentialDefinition {

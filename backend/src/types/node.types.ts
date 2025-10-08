@@ -17,6 +17,10 @@ export interface NodeDefinition {
   icon?: string;
   color?: string;
   outputComponent?: string; // Optional custom output component identifier
+  // Execution metadata (optional - will be computed from group if not provided)
+  executionCapability?: "trigger" | "action" | "transform" | "condition";
+  canExecuteIndividually?: boolean;
+  canBeDisabled?: boolean;
 }
 
 export interface NodePropertyOption {
@@ -211,4 +215,8 @@ export interface NodeTypeInfo {
   credentials?: CredentialDefinition[]; // Include credentials
   icon?: string;
   color?: string;
+  // Execution metadata
+  executionCapability?: "trigger" | "action" | "transform" | "condition";
+  canExecuteIndividually?: boolean;
+  canBeDisabled?: boolean;
 }
