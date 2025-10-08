@@ -9,4 +9,3 @@ export * from "./layouts";
 export { NavUser } from "./nav-user";
 export * from "./node";
 export * from "./workflow";
-export * from "./workspace";

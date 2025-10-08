@@ -8,4 +8,3 @@ export * from "./nodeTypes";
 export * from "./reactFlowUI";
 export * from "./workflow";
 export * from "./workflowToolbar";
-export * from "./workspace";

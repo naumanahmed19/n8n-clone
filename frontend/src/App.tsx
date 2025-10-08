@@ -8,8 +8,7 @@ import {
     ExecutionsPage,
     LoginPage,
     RegisterPage,
-    WorkflowEditorPage,
-    WorkspacePage
+    WorkflowEditorPage
 } from '@/pages'
 import { OAuthCallback } from '@/pages/OAuthCallback'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
@@ -86,7 +85,6 @@ function App() {
             }
           >
             <Route index element={<Navigate to="/workflows" replace />} />
-            <Route path="workspace" element={<WorkspacePage />} />
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />

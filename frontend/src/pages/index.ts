@@ -6,4 +6,3 @@ export * from "./LoginPage";
 export * from "./RegisterPage";
 export * from "./WorkflowEditorPage";
 export * from "./WorkflowsPage";
-export * from "./WorkspacePage";
