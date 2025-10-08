@@ -14,6 +14,7 @@ export const WorkflowTriggerNode: NodeDefinition = {
   description: "Trigger another workflow with optional data",
   icon: "fa:play-circle",
   color: "#10B981",
+  executionCapability: "action",
   defaults: {
     workflowId: "",
     triggerId: "",
@@ -31,7 +32,7 @@ export const WorkflowTriggerNode: NodeDefinition = {
       required: true,
       default: "",
       description: "Select the workflow to trigger",
-      component: "WorkflowSelector",
+      component: "WorkflowAutocomplete",
       componentProps: {
         placeholder: "Select a workflow to trigger",
       },
@@ -43,7 +44,7 @@ export const WorkflowTriggerNode: NodeDefinition = {
       required: true,
       default: "",
       description: "Select the trigger to activate",
-      component: "TriggerSelector",
+      component: "TriggerAutocomplete",
       displayOptions: {
         hide: {
           workflowId: [""],

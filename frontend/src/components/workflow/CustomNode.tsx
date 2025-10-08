@@ -1,6 +1,6 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useWorkflowStore } from '@/stores'
-import { isTriggerNode } from '@/utils/nodeTypeClassification'
+import type { NodeType } from '@/types'
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import { NodeProps } from 'reactflow'
@@ -25,6 +25,8 @@ interface CustomNodeData {
   // Node definition properties
   inputs?: string[]
   outputs?: string[]
+  nodeTypeDefinition?: NodeType  // Add full node type definition
+  executionCapability?: 'trigger' | 'action' | 'transform' | 'condition'  // Add capability
   // Position and style properties
   position?: { x: number; y: number }
   dimensions?: { width: number; height: number }
@@ -33,7 +35,7 @@ interface CustomNodeData {
     borderColor?: string
     borderWidth?: number
     borderRadius?: number
-    shape?: 'rectangle' | 'circle' | 'diamond' | 'trigger'
+    shape?: 'rectangle' | 'trigger'
     opacity?: number
   }
   // Additional properties for node toolbar
@@ -71,7 +73,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   const [hoveredOutput, setHoveredOutput] = useState<string | null>(null)
 
   // Check if this is a trigger node
-  const isTrigger = isTriggerNode(data.nodeType)
+  const isTrigger = data.executionCapability === 'trigger'
 
   // Get styling
   const statusIcon = getStatusIcon(nodeVisualState, nodeExecutionState, data.status)

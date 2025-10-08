@@ -1,5 +1,4 @@
 import { NodeType } from "@/types";
-import { isTriggerNode } from "@/utils/nodeTypeClassification";
 
 // Type definitions for workflow data
 type WorkflowNode = {
@@ -94,14 +93,14 @@ function getNodeCustomStyle(
   node: WorkflowNode,
   nodeTypeDefinition: NodeType | undefined
 ) {
-  const isTriggerId = isTriggerNode(node.type);
+  const isTrigger = nodeTypeDefinition?.executionCapability === "trigger";
 
   return {
     backgroundColor: nodeTypeDefinition?.color || "#666",
     borderColor: undefined, // Will be handled by CSS based on selection state
     borderWidth: 2,
-    borderRadius: isTriggerId ? 32 : 8,
-    shape: isTriggerId ? ("trigger" as const) : ("rectangle" as const),
+    borderRadius: isTrigger ? 32 : 8,
+    shape: isTrigger ? ("trigger" as const) : ("rectangle" as const),
     opacity: node.disabled ? 0.5 : 1.0,
   };
 }
@@ -147,6 +146,9 @@ export function transformWorkflowNodesToReactFlow(
         lastExecutionData: lastExecutionResult?.nodeResults.find(
           (nr) => nr.nodeId === node.id
         ),
+        // Add node type definition and execution capability
+        nodeTypeDefinition,
+        executionCapability: nodeTypeDefinition?.executionCapability,
       },
     };
   });

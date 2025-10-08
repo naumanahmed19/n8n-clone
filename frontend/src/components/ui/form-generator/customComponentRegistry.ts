@@ -3,7 +3,9 @@ import {
   RangeSelector,
   SheetSelector,
   SpreadsheetSelector,
+  TriggerAutocomplete,
   TriggerOnAutocomplete,
+  WorkflowAutocomplete,
 } from "@/components/workflow/node-config/custom-fields";
 
 /**
@@ -16,6 +18,8 @@ export const customFieldComponents: Record<string, any> = {
   RangeSelector,
   ColumnSelector,
   TriggerOnAutocomplete,
+  WorkflowAutocomplete,
+  TriggerAutocomplete,
 };
 
 /**
