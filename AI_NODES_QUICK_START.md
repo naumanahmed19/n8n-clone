@@ -5,11 +5,13 @@
 ### Step 1: Get API Keys
 
 **OpenAI:**
+
 1. Visit https://platform.openai.com/api-keys
 2. Create new secret key
 3. Copy it (starts with `sk-...`)
 
 **Anthropic:**
+
 1. Visit https://console.anthropic.com/settings/keys
 2. Create new API key
 3. Copy it (starts with `sk-ant-...`)
@@ -92,12 +94,12 @@ User Message: "Review this code:\n\n{{json.code}}"
 
 ### Model Selection
 
-| Need | Use This |
-|------|----------|
-| Fast & Cheap | GPT-4o Mini, Claude 3.5 Haiku |
-| Balanced | GPT-4o, Claude 3.5 Sonnet |
-| Most Powerful | GPT-4, Claude 3 Opus |
-| Long Context | Any Claude model (200K tokens) |
+| Need          | Use This                       |
+| ------------- | ------------------------------ |
+| Fast & Cheap  | GPT-4o Mini, Claude 3.5 Haiku  |
+| Balanced      | GPT-4o, Claude 3.5 Sonnet      |
+| Most Powerful | GPT-4, Claude 3 Opus           |
+| Long Context  | Any Claude model (200K tokens) |
 
 ### Temperature Guide
 
@@ -109,11 +111,13 @@ User Message: "Review this code:\n\n{{json.code}}"
 ### Memory Usage
 
 ✅ **Use memory for:**
+
 - Chatbots
 - Multi-turn conversations
 - Context-dependent tasks
 
 ❌ **Don't use memory for:**
+
 - One-off requests
 - Batch processing
 - Independent tasks
@@ -123,15 +127,19 @@ User Message: "Review this code:\n\n{{json.code}}"
 ## 🔧 Quick Fixes
 
 ### "Invalid API key"
+
 → Re-enter your API key in credentials
 
 ### "Rate limit exceeded"
+
 → Wait 1 minute and retry
 
 ### "No response"
+
 → Check your API key and model selection
 
 ### "Memory not working"
+
 → Ensure Session ID is the same across requests
 
 ---
@@ -208,11 +216,13 @@ Send confirmation email
 ## 🚦 Status & Limits
 
 ### Memory Limits
+
 - **Max messages per session:** 50
 - **Session lifetime:** 24 hours
 - **Auto-cleanup:** Hourly
 
 ### API Limits (vary by plan)
+
 - **OpenAI Free Tier:** 3 RPM, 200 RPD
 - **OpenAI Pay-as-go:** 3,500 RPM
 - **Anthropic Free Tier:** Limited

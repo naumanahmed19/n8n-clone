@@ -1,1 +1,1 @@
-export { OpenAINode } from './OpenAI.node';
+export { OpenAINode } from "./OpenAI.node";

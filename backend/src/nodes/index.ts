@@ -17,5 +17,5 @@ export * from "./WorkflowCalled";
 export * from "./WorkflowTrigger";
 
 // AI Nodes
-export * from "./OpenAI";
 export * from "./Anthropic";
+export * from "./OpenAI";

@@ -1,6 +1,7 @@
 # AI Nodes Architecture - Complete Diagram
 
 ## 📋 Table of Contents
+
 1. [System Overview](#system-overview)
 2. [Component Architecture](#component-architecture)
 3. [Data Flow Diagrams](#data-flow-diagrams)
@@ -309,7 +310,7 @@ START
   │     │     response.content[0].text (Anthropic)
   │     │
   │     ├─► Calculate Cost
-  │     │     const cost = 
+  │     │     const cost =
   │     │       (promptTokens / 1000) * modelInfo.costPer1kInput +
   │     │       (completionTokens / 1000) * modelInfo.costPer1kOutput
   │     │
@@ -448,7 +449,7 @@ END
    │     │     GET /api/credentials
    │     │
    │     ├── Filter by Type
-   │     │     const availableCredentials = 
+   │     │     const availableCredentials =
    │     │       credentials.filter(c => c.type === 'apiKey')
    │     │
    │     └── Render Dropdown
@@ -667,13 +668,13 @@ Memory State AFTER:
 └─────────────────────────────────────────────────────────────────┘
 
 IF messages.length > MAX_MESSAGES (50):
-  
+
   1. Preserve System Message (if first)
      systemMessage = messages[0].role === 'system' ? messages[0] : null
-  
+
   2. Keep Recent Messages
      recentMessages = messages.slice(-50)
-  
+
   3. Rebuild Array
      IF systemMessage exists AND not in recentMessages:
        messages = [systemMessage, ...recentMessages]
@@ -691,7 +692,7 @@ Every 60 minutes:
   FOR EACH conversation IN conversations:
     IF (now - conversation.updatedAt) > 24 hours:
       DELETE conversation
-  
+
   Log: "Cleaned up X old conversations"
 ```
 
@@ -997,7 +998,7 @@ Frontend displays error in:
    ────────────────
    Symptom: 401 error
    Cause: Wrong/expired API key
-   Solution: 
+   Solution:
      • Re-enter API key in credentials
      • Check API key is active on provider's dashboard
      • Ensure correct API key format (OpenAI: sk-..., Anthropic: sk-ant-...)
@@ -1087,7 +1088,7 @@ STEP-BY-STEP EXECUTION:
      "subject": "Product Inquiry",
      "body": "I'm interested in your premium subscription..."
    }
-   
+
    Output:
    ├─► main: [{
    │     json: {
@@ -1099,7 +1100,7 @@ STEP-BY-STEP EXECUTION:
 
 2. OPENAI NODE PROCESSES
    ──────────────────────
-   
+
    Configuration:
    ├─► Credential: "My OpenAI Key" (type: apiKey)
    ├─► Model: gpt-4o-mini
@@ -1108,18 +1109,18 @@ STEP-BY-STEP EXECUTION:
    ├─► Temperature: 0.3
    ├─► Max Tokens: 150
    └─► Enable Memory: false
-   
+
    Execution:
-   
+
    A. Get Credentials
       ├─► this.getCredentials('apiKey')
       └─► Returns: { apiKey: "sk-proj-..." }
-   
+
    B. Resolve Dynamic Values
       ├─► Input: {{json.subject}} → "Product Inquiry"
       ├─► Input: {{json.body}} → "I'm interested in..."
       └─► Final: "Summarize this email:\n\nSubject: Product Inquiry\n\nBody: I'm interested in..."
-   
+
    C. Call OpenAI API
       ├─► POST https://api.openai.com/v1/chat/completions
       ├─► Headers: { Authorization: "Bearer sk-proj-..." }
@@ -1132,13 +1133,13 @@ STEP-BY-STEP EXECUTION:
             temperature: 0.3,
             max_tokens: 150
           }
-   
+
    D. Process Response
       ├─► Response: "Customer inquiry about premium subscription. Interested in features and pricing."
       ├─► Usage: { prompt_tokens: 45, completion_tokens: 15, total_tokens: 60 }
       ├─► Cost: (45 * 0.00015 + 15 * 0.0006) / 1000 = $0.0000158
       └─► Log: "OpenAI request completed: 60 tokens, $0.0000158"
-   
+
    Output:
    └─► main: [{
          json: {
@@ -1156,17 +1157,17 @@ STEP-BY-STEP EXECUTION:
 
 3. SEND EMAIL NODE
    ────────────────
-   
+
    Configuration:
    ├─► To: "support@company.com"
    ├─► Subject: "Email Summary: {{$node.Webhook.json.subject}}"
    └─► Body: "Summary: {{$node.OpenAI.json.response}}\n\nOriginal from: {{$node.Webhook.json.from}}"
-   
+
    Execution:
    ├─► Resolve: {{$node.OpenAI.json.response}} → "Customer inquiry about..."
    ├─► Resolve: {{$node.Webhook.json.from}} → "customer@example.com"
    └─► Send email via SMTP
-   
+
    Output:
    └─► main: [{
          json: {

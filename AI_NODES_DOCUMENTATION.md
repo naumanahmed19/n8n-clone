@@ -8,6 +8,7 @@ Two powerful AI nodes have been added to your n8n-clone platform, allowing you t
 2. **Anthropic Node** - Access Claude 3.5 Sonnet, Opus, Haiku, and other Claude models
 
 Both nodes support:
+
 - ✅ **Conversation Memory** - Maintain context across multiple messages
 - ✅ **Dynamic Parameters** - Use data from previous nodes with `{{json.fieldName}}`
 - ✅ **Cost Tracking** - Monitor token usage and estimated costs
@@ -21,6 +22,7 @@ Both nodes support:
 ### 1. Install Dependencies
 
 Already installed! The following packages have been added to your backend:
+
 - `openai` - Official OpenAI SDK
 - `@anthropic-ai/sdk` - Official Anthropic SDK
 
@@ -60,20 +62,22 @@ The nodes have been registered in your database. They should appear in your node
 
 ### Available Models
 
-| Model | Context Window | Cost (Input/Output per 1K tokens) | Best For |
-|-------|----------------|----------------------------------|----------|
-| **GPT-4o** | 128,000 | $0.0025 / $0.01 | Latest, most capable, multimodal |
-| **GPT-4o Mini** | 128,000 | $0.00015 / $0.0006 | Fast, affordable, intelligent |
-| **GPT-4 Turbo** | 128,000 | $0.01 / $0.03 | Previous generation, reliable |
-| **GPT-4** | 8,192 | $0.03 / $0.06 | Original GPT-4 |
-| **GPT-3.5 Turbo** | 16,385 | $0.0005 / $0.0015 | Fast, cheap for simple tasks |
+| Model             | Context Window | Cost (Input/Output per 1K tokens) | Best For                         |
+| ----------------- | -------------- | --------------------------------- | -------------------------------- |
+| **GPT-4o**        | 128,000        | $0.0025 / $0.01                   | Latest, most capable, multimodal |
+| **GPT-4o Mini**   | 128,000        | $0.00015 / $0.0006                | Fast, affordable, intelligent    |
+| **GPT-4 Turbo**   | 128,000        | $0.01 / $0.03                     | Previous generation, reliable    |
+| **GPT-4**         | 8,192          | $0.03 / $0.06                     | Original GPT-4                   |
+| **GPT-3.5 Turbo** | 16,385         | $0.0005 / $0.0015                 | Fast, cheap for simple tasks     |
 
 ### Parameters
 
 #### **Model** (required)
+
 Choose which OpenAI model to use.
 
 #### **System Prompt** (optional)
+
 Instructions that define the AI's behavior and personality.
 
 ```
@@ -81,6 +85,7 @@ Example: "You are a helpful customer support agent. Be friendly and professional
 ```
 
 #### **User Message** (required)
+
 The actual message/question for the AI. Supports dynamic data:
 
 ```
@@ -89,23 +94,30 @@ Dynamic: "Summarize this text: {{json.articleContent}}"
 ```
 
 #### **Temperature** (0.0 - 2.0, default: 0.7)
+
 Controls randomness:
+
 - **0.0-0.3**: Very focused, deterministic (good for factual tasks)
 - **0.7-1.0**: Balanced creativity
 - **1.5-2.0**: Very creative, random
 
 #### **Max Tokens** (default: 1000)
+
 Maximum length of the response. Note: Both input and output count toward model limits.
 
 #### **Enable Conversation Memory** (default: false)
+
 When enabled, the AI remembers previous messages in the conversation.
 
 #### **Session ID** (default: "default")
+
 Unique identifier for the conversation. Use different IDs for different conversations:
+
 - User-specific: `{{json.userId}}-chat`
 - Workflow-specific: `order-processing-chat`
 
 #### **JSON Mode** (default: false)
+
 Forces the model to return valid JSON (GPT-4 Turbo and newer only).
 
 ### Output
@@ -132,17 +144,18 @@ Forces the model to return valid JSON (GPT-4 Turbo and newer only).
 
 ### Available Models
 
-| Model | Context Window | Cost (Input/Output per 1K tokens) | Best For |
-|-------|----------------|----------------------------------|----------|
-| **Claude 3.5 Sonnet** | 200,000 | $0.003 / $0.015 | Latest, most capable |
-| **Claude 3.5 Haiku** | 200,000 | $0.0008 / $0.004 | Fast, affordable |
-| **Claude 3 Opus** | 200,000 | $0.015 / $0.075 | Most powerful, complex tasks |
-| **Claude 3 Sonnet** | 200,000 | $0.003 / $0.015 | Balanced performance |
-| **Claude 3 Haiku** | 200,000 | $0.00025 / $0.00125 | Fastest, cheapest |
+| Model                 | Context Window | Cost (Input/Output per 1K tokens) | Best For                     |
+| --------------------- | -------------- | --------------------------------- | ---------------------------- |
+| **Claude 3.5 Sonnet** | 200,000        | $0.003 / $0.015                   | Latest, most capable         |
+| **Claude 3.5 Haiku**  | 200,000        | $0.0008 / $0.004                  | Fast, affordable             |
+| **Claude 3 Opus**     | 200,000        | $0.015 / $0.075                   | Most powerful, complex tasks |
+| **Claude 3 Sonnet**   | 200,000        | $0.003 / $0.015                   | Balanced performance         |
+| **Claude 3 Haiku**    | 200,000        | $0.00025 / $0.00125               | Fastest, cheapest            |
 
 ### Parameters
 
 Similar to OpenAI node, but Claude models are known for:
+
 - ✅ Longer context windows (200K tokens)
 - ✅ Better at following complex instructions
 - ✅ Strong reasoning and analysis capabilities
@@ -158,7 +171,7 @@ Similar to OpenAI node, but Claude models are known for:
     "promptTokens": 20,
     "completionTokens": 150,
     "totalTokens": 170,
-    "estimatedCost": 0.002310
+    "estimatedCost": 0.00231
   },
   "stopReason": "end_turn",
   "sessionId": "default",
@@ -173,16 +186,19 @@ Similar to OpenAI node, but Claude models are known for:
 ### Example 1: Simple Question & Answer
 
 **Workflow:**
+
 ```
 Manual Trigger → OpenAI Node
 ```
 
 **OpenAI Configuration:**
+
 - Model: `gpt-4o-mini`
 - System Prompt: `You are a helpful assistant.`
 - User Message: `What is the capital of France?`
 
 **Output:**
+
 ```json
 {
   "response": "The capital of France is Paris."
@@ -194,11 +210,13 @@ Manual Trigger → OpenAI Node
 ### Example 2: Summarize Data from Previous Node
 
 **Workflow:**
+
 ```
 HTTP Request → OpenAI Node → Save to Database
 ```
 
 **HTTP Request Output:**
+
 ```json
 {
   "article": {
@@ -209,9 +227,11 @@ HTTP Request → OpenAI Node → Save to Database
 ```
 
 **OpenAI Configuration:**
+
 - User Message: `Summarize this article in 3 bullet points: {{json.article.content}}`
 
 **Output:**
+
 ```json
 {
   "response": "• Point 1...\n• Point 2...\n• Point 3..."
@@ -223,11 +243,13 @@ HTTP Request → OpenAI Node → Save to Database
 ### Example 3: Chatbot with Memory
 
 **Workflow:**
+
 ```
 Webhook Trigger → Anthropic Node → Return Response
 ```
 
 **Anthropic Configuration:**
+
 - Model: `claude-3-5-sonnet-20241022`
 - System Prompt: `You are a customer support agent for an e-commerce store.`
 - User Message: `{{json.userMessage}}`
@@ -237,12 +259,14 @@ Webhook Trigger → Anthropic Node → Return Response
 **Conversation Flow:**
 
 **Message 1:**
+
 ```
 Input: "I want to return an item"
 Output: "I'd be happy to help with your return. Could you provide your order number?"
 ```
 
 **Message 2 (remembers context):**
+
 ```
 Input: "Order #12345"
 Output: "Thank you! I found order #12345. What item would you like to return?"
@@ -253,17 +277,20 @@ Output: "Thank you! I found order #12345. What item would you like to return?"
 ### Example 4: JSON Output for Structured Data
 
 **Workflow:**
+
 ```
 Manual Trigger → OpenAI Node (JSON Mode) → Process Data
 ```
 
 **OpenAI Configuration:**
+
 - Model: `gpt-4-turbo`
 - System Prompt: `Extract person information as JSON with fields: name, age, occupation`
 - User Message: `John is 30 years old and works as a software engineer.`
 - JSON Mode: `true`
 
 **Output:**
+
 ```json
 {
   "response": "{\"name\":\"John\",\"age\":30,\"occupation\":\"software engineer\"}"
@@ -275,8 +302,9 @@ Manual Trigger → OpenAI Node (JSON Mode) → Process Data
 ### Example 5: Compare Multiple AI Models
 
 **Workflow:**
+
 ```
-Manual Trigger 
+Manual Trigger
   ↓
   Split in two paths:
   ├─ OpenAI Node (GPT-4)
@@ -308,16 +336,16 @@ Ask both models the same question and compare their responses!
 
 ```typescript
 // User-specific conversations
-sessionId: `user-${userId}-support`
+sessionId: `user-${userId}-support`;
 
 // Workflow-specific
-sessionId: `workflow-${workflowId}-chat`
+sessionId: `workflow-${workflowId}-chat`;
 
 // Time-based
-sessionId: `daily-${currentDate}`
+sessionId: `daily-${currentDate}`;
 
 // No memory (each execution is independent)
-enableMemory: false
+enableMemory: false;
 ```
 
 ---
@@ -334,7 +362,7 @@ Each response includes cost estimates:
     "promptTokens": 100,
     "completionTokens": 50,
     "totalTokens": 150,
-    "estimatedCost": 0.000225  // $0.000225
+    "estimatedCost": 0.000225 // $0.000225
   }
 }
 ```
@@ -342,15 +370,18 @@ Each response includes cost estimates:
 ### Cost Optimization Tips
 
 1. **Choose the right model:**
+
    - Simple tasks: GPT-4o Mini or Claude 3 Haiku
    - Complex tasks: GPT-4o or Claude 3.5 Sonnet
    - Only use Opus for most demanding tasks
 
 2. **Limit max tokens:**
+
    - Set lower limits for short responses
    - Typical: 500-1000 tokens
 
 3. **Optimize system prompts:**
+
    - Shorter prompts = fewer input tokens
    - Clear instructions = better responses
 
@@ -366,19 +397,23 @@ Each response includes cost estimates:
 ### Common Errors
 
 **"Invalid API key"**
+
 - Check your credentials configuration
 - Ensure API key is correct and active
 
 **"Rate limit exceeded"**
+
 - You've hit API rate limits
 - Wait and retry, or upgrade your plan
 
 **"Context length exceeded"**
+
 - Input + output exceeds model's token limit
 - Reduce input size or max tokens
 - Use a model with larger context window
 
 **"User message cannot be empty"**
+
 - User message field is required
 - Check your dynamic data references
 
@@ -421,12 +456,14 @@ backend/src/
 ### Memory Architecture
 
 The `MemoryManager` is a singleton service that:
+
 - Stores conversations in-memory (Map data structure)
 - Auto-prunes old messages (max 50 per session)
 - Auto-cleans expired sessions (24 hours)
 - Thread-safe for concurrent requests
 
 **Note:** Memory is currently in-memory only. For production, consider:
+
 - Redis for distributed systems
 - Database persistence
 - Vector stores for semantic search
@@ -436,22 +473,26 @@ The `MemoryManager` is a singleton service that:
 ## Troubleshooting
 
 ### Node doesn't appear in UI
+
 ```bash
 cd backend
 npm run nodes:register
 ```
 
 ### Credentials not saving
+
 - Check backend logs
 - Verify CREDENTIAL_ENCRYPTION_KEY in .env
 - Ensure database is connected
 
 ### AI responses are inconsistent
+
 - Lower temperature for more deterministic responses
 - Use more specific system prompts
 - Try different models
 
 ### Memory not working
+
 - Check Session ID is consistent across requests
 - Verify "Enable Memory" is checked
 - Check backend logs for memory stats
@@ -469,7 +510,7 @@ console.log(stats);
 // { activeConversations: 5, totalMessages: 127, averageMessagesPerConversation: 25 }
 
 // Clear specific session
-MemoryManager.getInstance().clearMemory('user-123-chat');
+MemoryManager.getInstance().clearMemory("user-123-chat");
 
 // Get all active sessions
 const sessions = MemoryManager.getInstance().getActiveSessions();
@@ -480,10 +521,12 @@ const sessions = MemoryManager.getInstance().getActiveSessions();
 ## Support & Resources
 
 ### Documentation
+
 - [OpenAI API Docs](https://platform.openai.com/docs)
 - [Anthropic API Docs](https://docs.anthropic.com/)
 
 ### Community
+
 - Report issues on GitHub
 - Join our Discord/Slack
 - Check the forums
@@ -493,6 +536,7 @@ const sessions = MemoryManager.getInstance().getActiveSessions();
 ## Changelog
 
 ### v1.0.0 (Initial Release)
+
 - ✅ OpenAI node with GPT-4o, GPT-3.5 support
 - ✅ Anthropic node with Claude 3.5, Claude 3 support
 - ✅ Conversation memory system

@@ -1,4 +1,4 @@
-import { AIMessage, ConversationMemory } from '../../types/ai.types';
+import { AIMessage, ConversationMemory } from "../../types/ai.types";
 
 /**
  * Simple in-memory conversation manager
@@ -34,7 +34,7 @@ export class MemoryManager {
         updatedAt: Date.now(),
       });
     }
-    
+
     const memory = this.conversations.get(sessionId)!;
     memory.updatedAt = Date.now();
     return memory;
@@ -45,7 +45,7 @@ export class MemoryManager {
    */
   addMessage(sessionId: string, message: AIMessage): void {
     const memory = this.getMemory(sessionId);
-    
+
     message.timestamp = message.timestamp || Date.now();
     memory.messages.push(message);
     memory.updatedAt = Date.now();
@@ -93,13 +93,12 @@ export class MemoryManager {
     }
 
     // Keep system message (if first) and recent messages
-    const systemMessage = memory.messages[0]?.role === 'system' 
-      ? memory.messages[0] 
-      : null;
+    const systemMessage =
+      memory.messages[0]?.role === "system" ? memory.messages[0] : null;
 
     const recentMessages = memory.messages.slice(-this.MAX_MESSAGES);
 
-    if (systemMessage && recentMessages[0]?.role !== 'system') {
+    if (systemMessage && recentMessages[0]?.role !== "system") {
       memory.messages = [systemMessage, ...recentMessages];
     } else {
       memory.messages = recentMessages;
@@ -119,7 +118,7 @@ export class MemoryManager {
       }
     }
 
-    toDelete.forEach(sessionId => this.conversations.delete(sessionId));
+    toDelete.forEach((sessionId) => this.conversations.delete(sessionId));
 
     if (toDelete.length > 0) {
       console.log(`Cleaned up ${toDelete.length} old conversations`);
@@ -130,15 +129,18 @@ export class MemoryManager {
    * Get memory stats
    */
   getStats() {
-    const totalMessages = Array.from(this.conversations.values())
-      .reduce((sum, conv) => sum + conv.messages.length, 0);
+    const totalMessages = Array.from(this.conversations.values()).reduce(
+      (sum, conv) => sum + conv.messages.length,
+      0
+    );
 
     return {
       activeConversations: this.conversations.size,
       totalMessages,
-      averageMessagesPerConversation: this.conversations.size > 0 
-        ? Math.round(totalMessages / this.conversations.size) 
-        : 0,
+      averageMessagesPerConversation:
+        this.conversations.size > 0
+          ? Math.round(totalMessages / this.conversations.size)
+          : 0,
     };
   }
 }
