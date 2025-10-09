@@ -30,10 +30,12 @@ import {
     transformWorkflowEdgesToReactFlow,
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
+import { ChatInterfaceNode } from './nodes'
 
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
+    chat: ChatInterfaceNode,
 }
 
 interface WorkflowEditorProps {

@@ -127,9 +127,12 @@ export function transformWorkflowNodesToReactFlow(
       (nt) => nt.type === node.type
     );
 
+    // Use specific node type for special nodes, otherwise use 'custom'
+    const reactFlowNodeType = node.type === 'chat' ? 'chat' : 'custom';
+
     return {
       id: node.id,
-      type: "custom",
+      type: reactFlowNodeType,
       position: node.position,
       data: {
         label: node.name,

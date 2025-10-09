@@ -690,8 +690,14 @@ export class ExecutionEngine extends EventEmitter {
 
       const node = graph.nodes.get(nodeId);
       if (!node || node.disabled) {
+        logger.info(`Skipping node ${nodeId}: ${!node ? 'not found' : 'disabled'}`);
         continue;
       }
+
+      logger.info(`Executing node ${nodeId} (${node.type})`, {
+        nodeType: node.type,
+        nodeName: node.name
+      });
 
       // Prepare input data for the node
       const inputData = this.prepareNodeInputData(nodeId, graph, context);
@@ -706,6 +712,8 @@ export class ExecutionEngine extends EventEmitter {
 
       // Wait for node execution to complete
       await this.waitForNodeCompletion(context.executionId, nodeId);
+      
+      logger.info(`Node ${nodeId} completed execution`);
     }
   }
 
