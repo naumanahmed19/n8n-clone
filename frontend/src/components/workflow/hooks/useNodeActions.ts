@@ -18,6 +18,7 @@ export function useNodeActions(nodeId: string) {
   };
 
   const handleOpenProperties = () => {
+    // Open regular properties panel for all nodes (including chat)
     openNodeProperties(nodeId);
   };
 

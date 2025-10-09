@@ -75,6 +75,10 @@ interface WorkflowStore extends WorkflowEditorState {
   contextMenuVisible: boolean;
   contextMenuPosition: { x: number; y: number } | null;
   contextMenuNodeId: string | null;
+  
+  // Chat dialog state
+  showChatDialog: boolean;
+  chatDialogNodeId: string | null;
 
   // Actions
   setWorkflow: (workflow: Workflow | null) => void;
@@ -186,6 +190,10 @@ interface WorkflowStore extends WorkflowEditorState {
   hideContextMenu: () => void;
   openNodeProperties: (nodeId: string) => void;
   closeNodeProperties: () => void;
+  
+  // Chat dialog actions
+  openChatDialog: (nodeId: string) => void;
+  closeChatDialog: () => void;
 
   // Error handling
   handleError: (
@@ -260,6 +268,10 @@ export const useWorkflowStore = create<WorkflowStore>()(
       contextMenuVisible: false,
       contextMenuPosition: null,
       contextMenuNodeId: null,
+      
+      // Chat dialog state
+      showChatDialog: false,
+      chatDialogNodeId: null,
 
       // Actions
       setWorkflow: (workflow) => {
@@ -288,6 +300,8 @@ export const useWorkflowStore = create<WorkflowStore>()(
           contextMenuVisible: false,
           contextMenuPosition: null,
           contextMenuNodeId: null,
+          showChatDialog: false,
+          chatDialogNodeId: null,
         });
         if (processedWorkflow) {
           get().saveToHistory("Load workflow");
@@ -3162,6 +3176,21 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set({
           showPropertyPanel: false,
           propertyPanelNodeId: null,
+        });
+      },
+      
+      // Chat dialog actions
+      openChatDialog: (nodeId: string) => {
+        set({
+          showChatDialog: true,
+          chatDialogNodeId: nodeId,
+        });
+      },
+
+      closeChatDialog: () => {
+        set({
+          showChatDialog: false,
+          chatDialogNodeId: null,
         });
       },
 

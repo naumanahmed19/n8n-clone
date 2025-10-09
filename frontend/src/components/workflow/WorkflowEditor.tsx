@@ -21,6 +21,7 @@ import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkfl
 import { NodeType } from '@/types'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 
+import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
@@ -53,9 +54,12 @@ export function WorkflowEditor({
         workflow,
         showPropertyPanel,
         propertyPanelNodeId,
+        showChatDialog,
+        chatDialogNodeId,
         undo,
         redo,
         closeNodeProperties,
+        closeChatDialog,
     } = useWorkflowStore()
 
     // Command dialog state
@@ -142,6 +146,10 @@ export function WorkflowEditor({
     // Get selected node data for config panel
     const selectedNode = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
     const selectedNodeType = selectedNode ? availableNodeTypes.find(nt => nt.type === selectedNode.type) : null
+    
+    // Get chat node data for chat dialog
+    const chatNode = workflow?.nodes.find(node => node.id === chatDialogNodeId)
+    const chatNodeName = chatNode?.name || 'Chat'
 
     return (
         <div className="flex flex-col h-full w-full">
@@ -212,6 +220,16 @@ export function WorkflowEditor({
                     isOpen={showPropertyPanel}
                     onClose={closeNodeProperties}
                     readOnly={readOnly}
+                />
+            )}
+            
+            {/* Chat Dialog */}
+            {chatDialogNodeId && (
+                <ChatDialog
+                    nodeId={chatDialogNodeId}
+                    nodeName={chatNodeName}
+                    isOpen={showChatDialog}
+                    onClose={closeChatDialog}
                 />
             )}
 
