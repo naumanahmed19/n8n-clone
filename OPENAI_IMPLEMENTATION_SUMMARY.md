@@ -7,24 +7,26 @@ We're extending the OpenAI node from a simple chat interface to a **comprehensiv
 ## 🎯 What We're Building
 
 ### Current State (v1)
+
 - ✅ Basic chat completions (GPT-4, GPT-3.5)
 - ✅ Simple parameters (temperature, max tokens)
 - ✅ Conversation memory
 - ✅ JSON mode
 
 ### Target State (v2)
+
 A **unified, resource-based OpenAI node** that supports:
 
-| Resource | Capability | Models | Use Cases |
-|----------|-----------|--------|-----------|
-| **Text** | Chat completions | GPT-4o, o1, GPT-3.5 | Chatbots, content generation, analysis |
-| **TTS** | Text to speech | tts-1, tts-1-hd | Voiceovers, accessibility, IVR |
-| **STT** | Speech to text | whisper-1 | Transcription, translation, subtitles |
-| **Image Gen** | Generate images | DALL-E 3, DALL-E 2 | Art, mockups, marketing materials |
-| **Image Edit** | Edit/vary images | DALL-E 2 | Image enhancement, variations |
-| **Vision** | Analyze images | GPT-4o, GPT-4 Vision | OCR, object detection, scene analysis |
-| **Embeddings** | Text vectors | text-embedding-3 | Semantic search, RAG, clustering |
-| **Moderation** | Content filtering | text-moderation | Safety, compliance, filtering |
+| Resource       | Capability        | Models               | Use Cases                              |
+| -------------- | ----------------- | -------------------- | -------------------------------------- |
+| **Text**       | Chat completions  | GPT-4o, o1, GPT-3.5  | Chatbots, content generation, analysis |
+| **TTS**        | Text to speech    | tts-1, tts-1-hd      | Voiceovers, accessibility, IVR         |
+| **STT**        | Speech to text    | whisper-1            | Transcription, translation, subtitles  |
+| **Image Gen**  | Generate images   | DALL-E 3, DALL-E 2   | Art, mockups, marketing materials      |
+| **Image Edit** | Edit/vary images  | DALL-E 2             | Image enhancement, variations          |
+| **Vision**     | Analyze images    | GPT-4o, GPT-4 Vision | OCR, object detection, scene analysis  |
+| **Embeddings** | Text vectors      | text-embedding-3     | Semantic search, RAG, clustering       |
+| **Moderation** | Content filtering | text-moderation      | Safety, compliance, filtering          |
 
 ## 🏗️ Architecture Approach
 
@@ -37,6 +39,7 @@ User selects: Resource → Operation → Model → Parameters
 ```
 
 **Benefits:**
+
 - ✅ Single node for all OpenAI features
 - ✅ Context-aware parameters (only show relevant fields)
 - ✅ Consistent UX across resources
@@ -45,6 +48,7 @@ User selects: Resource → Operation → Model → Parameters
 ## 🎨 Key Features
 
 ### 1. Smart Parameter Management
+
 ```typescript
 // Parameters change based on resource selection
 Resource: "Text" → Shows chat parameters
@@ -53,12 +57,14 @@ Resource: "Image" → Shows size, quality, style
 ```
 
 ### 2. Autocomplete Support
+
 - **Models**: Search and filter models
 - **Voices**: Preview voice characteristics
 - **Languages**: Language code autocomplete
 - **Dynamic data**: {{json.field}} from previous nodes
 
 ### 3. File Handling
+
 - Upload audio/image files
 - Base64 support
 - URL input
@@ -66,6 +72,7 @@ Resource: "Image" → Shows size, quality, style
 - Return file paths to next nodes
 
 ### 4. Advanced Text Features
+
 - JSON schema responses (structured outputs)
 - Reproducible outputs (seed)
 - Advanced sampling (top_p, penalties)
@@ -73,6 +80,7 @@ Resource: "Image" → Shows size, quality, style
 - Token optimization
 
 ### 5. Cost Tracking
+
 ```json
 {
   "usage": {
@@ -80,7 +88,7 @@ Resource: "Image" → Shows size, quality, style
     "model": "dall-e-3",
     "imageCount": 1,
     "imageSize": "1024x1024",
-    "estimatedCost": 0.040
+    "estimatedCost": 0.04
   }
 }
 ```
@@ -102,6 +110,7 @@ OpenAI.node.ts (Main)
 ```
 
 **Each resource handler:**
+
 - Independent logic
 - Own parameter validation
 - Own error handling
@@ -111,6 +120,7 @@ OpenAI.node.ts (Main)
 ## 🚀 Implementation Phases
 
 ### Phase 1: Foundation (Week 1)
+
 - [ ] Refactor existing text resource
 - [ ] Add resource selector infrastructure
 - [ ] Implement Vision resource (high value)
@@ -120,6 +130,7 @@ OpenAI.node.ts (Main)
 **Deliverable**: Working node with Text, Vision, TTS, and Image Generation
 
 ### Phase 2: Expansion (Week 2)
+
 - [ ] Implement Whisper (STT)
 - [ ] Implement Embeddings
 - [ ] Implement Image Edit/Variation
@@ -128,6 +139,7 @@ OpenAI.node.ts (Main)
 **Deliverable**: Full feature parity with OpenAI API
 
 ### Phase 3: Polish (Week 3)
+
 - [ ] Enhanced error handling
 - [ ] File management optimization
 - [ ] Comprehensive testing
@@ -139,6 +151,7 @@ OpenAI.node.ts (Main)
 ## 📊 Success Metrics
 
 ### Technical
+
 - ✅ 100% OpenAI API coverage (core features)
 - ✅ <2s response time (excluding API calls)
 - ✅ Proper error handling (all edge cases)
@@ -146,6 +159,7 @@ OpenAI.node.ts (Main)
 - ✅ 80%+ test coverage
 
 ### User Experience
+
 - ✅ Intuitive resource selection
 - ✅ Context-aware parameters
 - ✅ Helpful descriptions and tooltips
@@ -153,6 +167,7 @@ OpenAI.node.ts (Main)
 - ✅ Cost transparency
 
 ### Documentation
+
 - ✅ Complete API reference
 - ✅ Example workflows for each resource
 - ✅ Troubleshooting guides
@@ -162,8 +177,9 @@ OpenAI.node.ts (Main)
 ## 🎯 Example Use Cases
 
 ### 1. Content Creation Pipeline
+
 ```
-Manual Trigger 
+Manual Trigger
   → OpenAI (Text: Generate article)
   → OpenAI (Image: Generate cover art)
   → OpenAI (TTS: Create audio version)
@@ -171,6 +187,7 @@ Manual Trigger
 ```
 
 ### 2. Customer Support Automation
+
 ```
 Webhook (Customer question + screenshot)
   → OpenAI (Vision: Analyze screenshot)
@@ -180,6 +197,7 @@ Webhook (Customer question + screenshot)
 ```
 
 ### 3. Podcast Transcription & Analysis
+
 ```
 Upload Audio File
   → OpenAI (Whisper: Transcribe)
@@ -189,6 +207,7 @@ Upload Audio File
 ```
 
 ### 4. Image Processing Workflow
+
 ```
 HTTP Request (Get product image)
   → OpenAI (Vision: Analyze product)
@@ -200,6 +219,7 @@ HTTP Request (Get product image)
 ## 💡 Technical Highlights
 
 ### 1. Dynamic Property System
+
 ```typescript
 // Properties change based on resource selection
 properties: [
@@ -211,7 +231,7 @@ properties: [
       { name: "Text", value: "text" },
       { name: "Vision", value: "vision" },
       // ...
-    ]
+    ],
   },
   // Model selector - options filtered by resource
   {
@@ -219,17 +239,18 @@ properties: [
     name: "model",
     type: "autocomplete",
     displayOptions: {
-      show: { resource: ["text", "vision"] }
-    }
-  }
-]
+      show: { resource: ["text", "vision"] },
+    },
+  },
+];
 ```
 
 ### 2. File Handling
+
 ```typescript
 // Support multiple input methods
 interface FileInput {
-  sourceType: 'file' | 'url' | 'base64';
+  sourceType: "file" | "url" | "base64";
   file?: string;
   url?: string;
   data?: string;
@@ -245,16 +266,19 @@ interface FileOutput {
 ```
 
 ### 3. Cost Calculation
+
 ```typescript
 // Unified cost tracking across resources
 function calculateCost(resource, usage) {
   switch (resource) {
-    case 'text':
-      return (usage.promptTokens / 1000) * inputRate +
-             (usage.completionTokens / 1000) * outputRate;
-    case 'tts':
+    case "text":
+      return (
+        (usage.promptTokens / 1000) * inputRate +
+        (usage.completionTokens / 1000) * outputRate
+      );
+    case "tts":
       return (usage.characters / 1000) * charRate;
-    case 'image':
+    case "image":
       return usage.imageCount * imageRate;
     // ...
   }
@@ -264,22 +288,26 @@ function calculateCost(resource, usage) {
 ## 🔒 Security & Best Practices
 
 ### API Key Management
+
 - ✅ Secure credential storage
 - ✅ Never log API keys
 - ✅ Rotate keys regularly
 
 ### Rate Limiting
+
 - ✅ Respect OpenAI rate limits
 - ✅ Implement retry logic
 - ✅ Queue requests if needed
 
 ### File Security
+
 - ✅ Validate file types
 - ✅ Size limits
 - ✅ Sanitize filenames
 - ✅ Cleanup old files
 
 ### Cost Control
+
 - ✅ Track usage per execution
 - ✅ Optional cost limits
 - ✅ Warning thresholds
@@ -310,18 +338,21 @@ AI_NODES_DOCUMENTATION.md
 ## 🧪 Testing Strategy
 
 ### Unit Tests
+
 - Individual resource handlers
 - Parameter validation
 - Cost calculations
 - Error handling
 
 ### Integration Tests
+
 - OpenAI API mocking
 - File upload/download
 - Autocomplete functionality
 - Workflow execution
 
 ### E2E Tests
+
 - Complete workflows
 - Real API calls (test mode)
 - File handling
@@ -330,6 +361,7 @@ AI_NODES_DOCUMENTATION.md
 ## 📈 Performance Considerations
 
 ### Optimization Areas
+
 1. **File Handling**: Stream large files instead of loading in memory
 2. **Caching**: Cache model lists and configurations
 3. **Parallel Execution**: Support multiple items in batch
@@ -337,6 +369,7 @@ AI_NODES_DOCUMENTATION.md
 5. **Connection Pooling**: Reuse HTTP connections
 
 ### Expected Performance
+
 - Text: 500ms - 5s (model dependent)
 - TTS: 1s - 10s (audio length dependent)
 - STT: 2s - 30s (audio length dependent)
@@ -348,12 +381,14 @@ AI_NODES_DOCUMENTATION.md
 ## 🎓 Learning Resources
 
 ### For Users
+
 - Quick start guide
 - Video tutorials (planned)
 - Example workflows
 - FAQ section
 
 ### For Developers
+
 - Code architecture
 - Adding new resources
 - Testing guide

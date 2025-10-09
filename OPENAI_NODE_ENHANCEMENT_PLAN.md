@@ -5,8 +5,9 @@
 Based on OpenAI's current API offerings, here are the main capabilities we need to support:
 
 ### 1. **Text Generation (Chat Completions)**
+
 - **Models**: GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-4, GPT-3.5 Turbo, o1, o1-mini
-- **Features**: 
+- **Features**:
   - Chat completions with system/user/assistant messages
   - JSON mode for structured outputs
   - Function calling
@@ -15,15 +16,17 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
   - Context windows: 4K - 128K tokens
 
 ### 2. **Text-to-Speech (TTS)**
+
 - **Models**: tts-1, tts-1-hd
 - **Voices**: alloy, echo, fable, onyx, nova, shimmer
 - **Formats**: mp3, opus, aac, flac, wav, pcm
-- **Features**: 
+- **Features**:
   - High quality audio generation
   - Variable speed (0.25x - 4.0x)
   - Different voice personalities
 
 ### 3. **Speech-to-Text (STT/Whisper)**
+
 - **Models**: whisper-1
 - **Features**:
   - Audio transcription
@@ -34,6 +37,7 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
   - Formats: mp3, mp4, mpeg, mpga, m4a, wav, webm
 
 ### 4. **Image Generation (DALL-E)**
+
 - **Models**: dall-e-3, dall-e-2
 - **Features**:
   - Text-to-image generation
@@ -44,6 +48,7 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
   - Multiple images per request (DALL-E 2)
 
 ### 5. **Vision (Image Understanding)**
+
 - **Models**: GPT-4o, GPT-4 Turbo, GPT-4 Vision
 - **Features**:
   - Image analysis and description
@@ -54,6 +59,7 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
   - Image URLs or base64
 
 ### 6. **Embeddings**
+
 - **Models**: text-embedding-3-large, text-embedding-3-small, text-embedding-ada-002
 - **Features**:
   - Text vectorization for semantic search
@@ -62,6 +68,7 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
   - Dimensions: 1536 (ada-002), 3072 (large), variable
 
 ### 7. **Moderation**
+
 - **Models**: text-moderation-latest, text-moderation-stable
 - **Categories**: hate, harassment, self-harm, sexual, violence
 - **Features**:
@@ -70,6 +77,7 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
   - Automatic flagging
 
 ### 8. **Assistants API** (Advanced - Phase 2)
+
 - Code Interpreter
 - File Search (RAG)
 - Function Calling
@@ -77,6 +85,7 @@ Based on OpenAI's current API offerings, here are the main capabilities we need 
 - Knowledge retrieval
 
 ### 9. **Fine-tuning** (Advanced - Phase 2)
+
 - Custom model training
 - Dataset management
 - Model versioning
@@ -127,6 +136,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 ### 1. Text (Chat Completions) - CURRENT + ENHANCEMENTS
 
 **Current Features:**
+
 - ✅ Model selection
 - ✅ System prompt
 - ✅ User message
@@ -136,6 +146,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - ✅ JSON mode
 
 **New Enhancements:**
+
 - 🆕 Top P (nucleus sampling)
 - 🆕 Frequency penalty
 - 🆕 Presence penalty
@@ -147,6 +158,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - ⏳ Function calling (Future - requires Agent node)
 
 **New Models:**
+
 ```typescript
 "o1-preview": {
   name: "O1 Preview",
@@ -169,6 +181,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Convert text to natural-sounding speech
 
 **Models:**
+
 ```typescript
 "tts-1": {
   name: "TTS-1 (Standard)",
@@ -185,6 +198,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 ```
 
 **Parameters:**
+
 - **Text Input** (string, required, supports autocomplete from previous nodes)
 - **Model** (options: tts-1, tts-1-hd)
 - **Voice** (options: alloy, echo, fable, onyx, nova, shimmer)
@@ -195,6 +209,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - **Output Path** (string, conditional) - Where to save file
 
 **Output:**
+
 ```json
 {
   "audio": "<base64_audio_data>",
@@ -213,10 +228,12 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Transcribe or translate audio to text
 
 **Operations:**
+
 - Transcribe (speech to text in original language)
 - Translate (speech to English text)
 
 **Parameters:**
+
 - **Operation** (options: transcribe, translate)
 - **Audio Source** (options: file, url, base64)
 - **Audio File** (file upload or path from previous node)
@@ -229,6 +246,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - **Timestamp Granularities** (multiselect: segment, word)
 
 **Output:**
+
 ```json
 {
   "text": "The transcribed text content",
@@ -247,6 +265,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Generate images from text descriptions
 
 **Models:**
+
 ```typescript
 "dall-e-3": {
   name: "DALL-E 3",
@@ -263,6 +282,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 ```
 
 **Parameters:**
+
 - **Model** (options: dall-e-3, dall-e-2)
 - **Prompt** (string, required, supports autocomplete)
   - Max 4000 characters
@@ -275,6 +295,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - **Output Path** (string, conditional)
 
 **Output:**
+
 ```json
 {
   "images": [
@@ -287,7 +308,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
   ],
   "model": "dall-e-3",
   "size": "1024x1024",
-  "cost": 0.040
+  "cost": 0.04
 }
 ```
 
@@ -298,10 +319,12 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Edit images or create variations
 
 **Operations:**
+
 - Edit (modify image with prompt)
 - Variation (create variations of image)
 
 **Parameters:**
+
 - **Operation** (options: edit, variation)
 - **Image Source** (options: file, url, base64)
 - **Image File** (file upload or path)
@@ -313,6 +336,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - **Save to File** (boolean)
 
 **Output:**
+
 ```json
 {
   "images": [
@@ -334,11 +358,13 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Analyze and describe images using GPT-4 Vision
 
 **Models:**
+
 - GPT-4o
 - GPT-4 Turbo
 - GPT-4 Vision
 
 **Parameters:**
+
 - **Model** (options: gpt-4o, gpt-4-turbo, gpt-4-vision-preview)
 - **System Prompt** (string, optional)
 - **User Message** (string, required, supports autocomplete)
@@ -353,6 +379,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - **Max Tokens** (number)
 
 **Output:**
+
 ```json
 {
   "response": "Description and analysis of the image(s)",
@@ -374,6 +401,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Convert text to vector embeddings for semantic search
 
 **Models:**
+
 ```typescript
 "text-embedding-3-large": {
   name: "Text Embedding 3 Large",
@@ -393,12 +421,14 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 ```
 
 **Parameters:**
+
 - **Model** (options: text-embedding-3-large, text-embedding-3-small, ada-002)
 - **Input** (string or array of strings, supports autocomplete)
 - **Dimensions** (number, optional) - For new models only
 - **Encoding Format** (options: float, base64)
 
 **Output:**
+
 ```json
 {
   "embeddings": [
@@ -423,10 +453,12 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 **Purpose:** Check content for policy violations
 
 **Parameters:**
+
 - **Text** (string, required, supports autocomplete)
 - **Model** (options: text-moderation-latest, text-moderation-stable)
 
 **Categories Checked:**
+
 - Hate
 - Hate/Threatening
 - Harassment
@@ -440,6 +472,7 @@ The enhanced OpenAI node will use a **resource selector** pattern similar to pro
 - Violence/Graphic
 
 **Output:**
+
 ```json
 {
   "flagged": false,
@@ -475,16 +508,48 @@ properties: [
     name: "resource",
     type: "options",
     options: [
-      { name: "Text (Chat)", value: "text", description: "Generate text with GPT models" },
-      { name: "Audio - Text to Speech", value: "tts", description: "Convert text to speech" },
-      { name: "Audio - Transcribe", value: "transcribe", description: "Convert speech to text" },
-      { name: "Image - Generate", value: "imageGenerate", description: "Generate images with DALL-E" },
-      { name: "Image - Edit", value: "imageEdit", description: "Edit or create image variations" },
-      { name: "Vision", value: "vision", description: "Analyze images with GPT-4 Vision" },
-      { name: "Embeddings", value: "embeddings", description: "Convert text to vectors" },
-      { name: "Moderation", value: "moderation", description: "Check content for violations" }
+      {
+        name: "Text (Chat)",
+        value: "text",
+        description: "Generate text with GPT models",
+      },
+      {
+        name: "Audio - Text to Speech",
+        value: "tts",
+        description: "Convert text to speech",
+      },
+      {
+        name: "Audio - Transcribe",
+        value: "transcribe",
+        description: "Convert speech to text",
+      },
+      {
+        name: "Image - Generate",
+        value: "imageGenerate",
+        description: "Generate images with DALL-E",
+      },
+      {
+        name: "Image - Edit",
+        value: "imageEdit",
+        description: "Edit or create image variations",
+      },
+      {
+        name: "Vision",
+        value: "vision",
+        description: "Analyze images with GPT-4 Vision",
+      },
+      {
+        name: "Embeddings",
+        value: "embeddings",
+        description: "Convert text to vectors",
+      },
+      {
+        name: "Moderation",
+        value: "moderation",
+        description: "Check content for violations",
+      },
     ],
-    default: "text"
+    default: "text",
   },
 
   // 2. Model Selector (Dynamic based on resource)
@@ -496,14 +561,14 @@ properties: [
     default: "gpt-4o-mini",
     displayOptions: {
       show: {
-        resource: ["text", "vision"]
-      }
-    }
+        resource: ["text", "vision"],
+      },
+    },
   },
 
   // 3. Resource-specific parameters
   // ... (shown dynamically based on resource selection)
-]
+];
 ```
 
 ---
@@ -524,18 +589,21 @@ Based on your system's autocomplete capability:
 ## Implementation Phases
 
 ### Phase 1: Core Resources (Priority)
+
 1. ✅ Text (existing - enhance)
 2. 🆕 Vision (high value)
 3. 🆕 TTS (Text to Speech)
 4. 🆕 Image Generation (DALL-E 3)
 
 ### Phase 2: Advanced Resources
+
 5. 🆕 Whisper (STT)
 6. 🆕 Embeddings
 7. 🆕 Image Edit/Variation
 8. 🆕 Moderation
 
 ### Phase 3: Enterprise Features (Future)
+
 9. 🔮 Assistants API
 10. 🔮 Fine-tuning
 11. 🔮 Batch API
@@ -602,18 +670,21 @@ interface CostBreakdown {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Test each resource handler independently
 - Mock OpenAI API responses
 - Test parameter validation
 - Test error handling
 
 ### Integration Tests
+
 - Test with actual OpenAI API (optional, with test keys)
 - Test file upload/download
 - Test autocomplete functionality
 - Test cost calculations
 
 ### E2E Tests
+
 - Test complete workflows
 - Test node connections
 - Test data transformation
@@ -634,24 +705,28 @@ interface CostBreakdown {
 ## Benefits of This Design
 
 ### 1. **User-Friendly**
+
 - Single node for all OpenAI capabilities
 - Clear resource categories
 - Context-aware parameters
 - Helpful descriptions
 
 ### 2. **Powerful**
+
 - Full OpenAI API coverage
 - Support for advanced features
 - Flexible data handling
 - Cost tracking
 
 ### 3. **Maintainable**
+
 - Modular resource handlers
 - Clear separation of concerns
 - Easy to add new resources
 - Type-safe implementation
 
 ### 4. **Production-Ready**
+
 - Error handling
 - File management
 - Rate limiting awareness
@@ -674,14 +749,16 @@ interface CostBreakdown {
 
 1. Should we split into multiple nodes or keep one unified node?
    - **Recommendation**: Keep unified, use resource selector
-   
 2. How to handle file storage (uploads folder structure)?
+
    - **Recommendation**: Use existing uploads system with subdirectories
 
 3. Should streaming be supported in Phase 1?
+
    - **Recommendation**: Add in Phase 3 (requires WebSocket support)
 
 4. Rate limiting - handle at node level or service level?
+
    - **Recommendation**: Add configurable retry logic at node level
 
 5. Cost limits - add warnings or hard limits?

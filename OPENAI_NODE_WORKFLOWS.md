@@ -90,6 +90,7 @@
 ```
 
 **Cost Breakdown**:
+
 - Text (GPT-4o): ~$0.05
 - Image (DALL-E 3): ~$0.04
 - TTS (1000 words): ~$0.06
@@ -493,13 +494,14 @@
   "resource": "tts",
   "model": "tts-1-hd",
   "text": "Welcome to our service!",
-  "voice": "nova",     // Professional female
-  "speed": 1.0,        // Normal speed
+  "voice": "nova", // Professional female
+  "speed": 1.0, // Normal speed
   "format": "mp3"
 }
 ```
 
 **Voice Characteristics**:
+
 - **alloy**: Neutral, balanced
 - **echo**: Male, clear
 - **fable**: British accent
@@ -534,9 +536,9 @@
   "resource": "imageGenerate",
   "model": "dall-e-3",
   "prompt": "A serene Japanese garden with cherry blossoms",
-  "size": "1792x1024",  // Wide landscape
-  "quality": "hd",       // High quality
-  "style": "natural"     // Photorealistic
+  "size": "1792x1024", // Wide landscape
+  "quality": "hd", // High quality
+  "style": "natural" // Photorealistic
 }
 ```
 
@@ -562,14 +564,14 @@ High Quality:
 
 ```typescript
 // Reduce token usage
-maxTokens: 500      // Instead of 4000
-temperature: 0.3    // More focused = fewer retries
+maxTokens: 500; // Instead of 4000
+temperature: 0.3; // More focused = fewer retries
 
 // Batch processing
-input: [text1, text2, text3]  // Process multiple at once
+input: [text1, text2, text3]; // Process multiple at once
 
 // Caching
-enableMemory: true  // Reuse context
+enableMemory: true; // Reuse context
 ```
 
 ### 3. Conditional Execution
@@ -606,7 +608,7 @@ try {
 
 ```typescript
 // Clean up temporary files
-if (resource === 'tts' || resource === 'imageGenerate') {
+if (resource === "tts" || resource === "imageGenerate") {
   scheduleCleanup(filePath, 24 * 60 * 60 * 1000); // 24 hours
 }
 ```
@@ -615,13 +617,10 @@ if (resource === 'tts' || resource === 'imageGenerate') {
 
 ```typescript
 // Track per workflow
-const totalCost = 
-  textCost + 
-  imageCost + 
-  ttsCost;
+const totalCost = textCost + imageCost + ttsCost;
 
 if (totalCost > BUDGET_LIMIT) {
-  logger.warn('Budget exceeded');
+  logger.warn("Budget exceeded");
 }
 ```
 
@@ -639,6 +638,7 @@ if (enableMemory) {
 ## 🚀 Quick Start Templates
 
 ### Template 1: Text Summarization
+
 ```json
 {
   "resource": "text",
@@ -650,6 +650,7 @@ if (enableMemory) {
 ```
 
 ### Template 2: Image Generation
+
 ```json
 {
   "resource": "imageGenerate",
@@ -661,6 +662,7 @@ if (enableMemory) {
 ```
 
 ### Template 3: Audio Transcription
+
 ```json
 {
   "resource": "transcribe",
@@ -675,16 +677,16 @@ if (enableMemory) {
 
 ## 📊 Performance Metrics
 
-| Resource | Avg Time | Tokens/Chars | Cost |
-|----------|----------|--------------|------|
-| Text (GPT-4o-mini) | 1-2s | 500 tokens | $0.0001 |
-| Text (GPT-4o) | 2-5s | 500 tokens | $0.0075 |
-| TTS | 3-8s | 1000 chars | $0.015 |
-| Whisper | 5-20s | 5 min audio | $0.03 |
-| Image Gen (DALL-E 3) | 10-30s | 1 image | $0.04 |
-| Vision | 2-5s | 1 image | $0.01 |
-| Embeddings | 0.5-1s | 500 tokens | $0.00001 |
-| Moderation | 0.2-0.5s | 500 tokens | Free |
+| Resource             | Avg Time | Tokens/Chars | Cost     |
+| -------------------- | -------- | ------------ | -------- |
+| Text (GPT-4o-mini)   | 1-2s     | 500 tokens   | $0.0001  |
+| Text (GPT-4o)        | 2-5s     | 500 tokens   | $0.0075  |
+| TTS                  | 3-8s     | 1000 chars   | $0.015   |
+| Whisper              | 5-20s    | 5 min audio  | $0.03    |
+| Image Gen (DALL-E 3) | 10-30s   | 1 image      | $0.04    |
+| Vision               | 2-5s     | 1 image      | $0.01    |
+| Embeddings           | 0.5-1s   | 500 tokens   | $0.00001 |
+| Moderation           | 0.2-0.5s | 500 tokens   | Free     |
 
 ---
 
