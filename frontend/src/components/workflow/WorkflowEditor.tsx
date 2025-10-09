@@ -24,13 +24,13 @@ import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
+import { ChatInterfaceNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {
     transformWorkflowEdgesToReactFlow,
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
-import { ChatInterfaceNode } from './nodes'
 
 
 const nodeTypes: NodeTypes = {

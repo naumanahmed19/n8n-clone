@@ -20,6 +20,7 @@ frontend/src/components/workflow/nodes/
 ## 🎨 Component Features
 
 ### Visual Features
+
 - ✅ Beautiful chat interface with message bubbles
 - ✅ User (right-aligned) and Assistant (left-aligned) messages
 - ✅ Avatar icons for both user and AI
@@ -30,6 +31,7 @@ frontend/src/components/workflow/nodes/
 - ✅ Professional shadcn/ui styling
 
 ### Functional Features
+
 - ✅ Real-time message sending
 - ✅ Enter key to send (Shift+Enter for new line)
 - ✅ Input validation (no empty messages)
@@ -40,6 +42,7 @@ frontend/src/components/workflow/nodes/
 - ✅ Customizable placeholder text
 
 ### Integration Features
+
 - ✅ ReactFlow node compatibility
 - ✅ Workflow store integration
 - ✅ Node selection state
@@ -50,6 +53,7 @@ frontend/src/components/workflow/nodes/
 ## 📦 Dependencies Used
 
 All dependencies are already in your project:
+
 - `reactflow` - ReactFlow library
 - `lucide-react` - Icons (MessageCircle, Send, Sparkles, User)
 - `@/components/ui/button` - Button component
@@ -61,41 +65,45 @@ All dependencies are already in your project:
 ## 🚀 Usage
 
 ### Basic Usage
+
 ```tsx
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
+import { ChatInterfaceNode } from "@/components/workflow/nodes";
 
 const nodeTypes = {
   chatInterface: ChatInterfaceNode,
-}
+};
 
 const node = {
-  id: 'chat-1',
-  type: 'chatInterface',
+  id: "chat-1",
+  type: "chatInterface",
   position: { x: 250, y: 100 },
   data: {
-    label: 'AI Chat',
-    nodeType: 'chatInterface',
-    model: 'GPT-4',
+    label: "AI Chat",
+    nodeType: "chatInterface",
+    model: "GPT-4",
     disabled: false,
     parameters: {},
   },
-}
+};
 ```
 
 ### Run the Demo
-```tsx
-import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes/ChatInterfaceNodeDemo'
 
-<ChatInterfaceNodeDemo />
+```tsx
+import { ChatInterfaceNodeDemo } from "@/components/workflow/nodes/ChatInterfaceNodeDemo";
+
+<ChatInterfaceNodeDemo />;
 ```
 
 ## 🎯 Key Components Breakdown
 
 ### Header Section
+
 - Icon (MessageCircle) + Title
 - Model badge (optional, shows when model is specified)
 
 ### Content Section
+
 - Scrollable message area (300px height)
 - Empty state when no messages
 - Message bubbles with:
@@ -106,11 +114,13 @@ import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes/ChatInterface
 - Typing indicator
 
 ### Footer Section
+
 - Text input field
 - Send button with icon
 - Disabled states handled
 
 ### ReactFlow Handles
+
 - **Input** (left, blue): Connects from previous nodes
 - **Output** (right, green): Connects to next nodes
 
@@ -118,73 +128,75 @@ import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes/ChatInterface
 
 ```typescript
 interface ChatInterfaceNodeData {
-  label: string                    // Node display name
-  nodeType: string                 // Must be 'chatInterface'
-  parameters: Record<string, any>  // Custom parameters
-  disabled: boolean                // Disable the node
-  messages?: Message[]             // Initial messages (optional)
-  placeholder?: string             // Input placeholder (optional)
-  systemPrompt?: string            // AI system prompt (optional)
-  model?: string                   // Model name to display (optional)
+  label: string; // Node display name
+  nodeType: string; // Must be 'chatInterface'
+  parameters: Record<string, any>; // Custom parameters
+  disabled: boolean; // Disable the node
+  messages?: Message[]; // Initial messages (optional)
+  placeholder?: string; // Input placeholder (optional)
+  systemPrompt?: string; // AI system prompt (optional)
+  model?: string; // Model name to display (optional)
 }
 
 interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
 }
 ```
 
 ## 🔧 Customization Options
 
 ### Change Node Width
+
 ```tsx
 <BaseNode className={`w-[380px] ...`}>  // Default: 380px
 ```
 
 ### Change Message Area Height
+
 ```tsx
 <ScrollArea className="h-[300px] ...">  // Default: 300px
 ```
 
 ### Change Colors
+
 ```tsx
 // User messages
-className="bg-blue-500 text-white"
+className = "bg-blue-500 text-white";
 
 // Assistant messages
-className="bg-secondary text-foreground"
+className = "bg-secondary text-foreground";
 
 // Input handle
-className="!bg-blue-500"
+className = "!bg-blue-500";
 
 // Output handle
-className="!bg-green-500"
+className = "!bg-green-500";
 ```
 
 ## 🔌 Integration Steps
 
 ### 1. Import the Component
+
 ```tsx
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
+import { ChatInterfaceNode } from "@/components/workflow/nodes";
 ```
 
 ### 2. Add to Node Types
+
 ```tsx
 const nodeTypes = {
   // ... existing types
   chatInterface: ChatInterfaceNode,
-}
+};
 ```
 
 ### 3. Use in ReactFlow
+
 ```tsx
-<ReactFlow
-  nodes={nodes}
-  edges={edges}
-  nodeTypes={nodeTypes}
-/>
+<ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} />
 ```
 
 ## 💡 Next Steps
@@ -192,16 +204,19 @@ const nodeTypes = {
 ### For Production Use:
 
 1. **Connect to Real AI Service**
+
    - Replace the simulated response in `handleSendMessage`
    - Integrate with OpenAI, Anthropic, or your AI provider
    - Add proper error handling
 
 2. **Add Persistence**
+
    - Save messages to database
    - Load message history on mount
    - Sync with backend
 
 3. **Enhanced Features**
+
    - Markdown rendering in messages
    - Code syntax highlighting
    - File/image upload

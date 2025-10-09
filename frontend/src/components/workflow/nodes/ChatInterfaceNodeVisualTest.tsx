@@ -5,11 +5,10 @@
  * in different states and configurations.
  */
 
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ReactFlowProvider } from 'reactflow'
-import ReactFlow, { Background, Controls } from 'reactflow'
+import { ChatInterfaceNode } from '@/components/workflow/nodes'
+import ReactFlow, { Background, Controls, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 const nodeTypes = {

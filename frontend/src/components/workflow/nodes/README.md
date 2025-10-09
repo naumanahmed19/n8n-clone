@@ -17,37 +17,37 @@ Location: `frontend/src/components/workflow/nodes/ChatInterfaceNode.tsx`
 ### 2. View the Demo
 
 ```tsx
-import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes/ChatInterfaceNodeDemo'
+import { ChatInterfaceNodeDemo } from "@/components/workflow/nodes/ChatInterfaceNodeDemo";
 
 function App() {
-  return <ChatInterfaceNodeDemo />
+  return <ChatInterfaceNodeDemo />;
 }
 ```
 
 ### 3. Use in Your Workflow
 
 ```tsx
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
+import { ChatInterfaceNode } from "@/components/workflow/nodes";
 
 const nodeTypes = {
   chatInterface: ChatInterfaceNode,
-}
+};
 
 const nodes = [
   {
-    id: 'chat-1',
-    type: 'chatInterface',
+    id: "chat-1",
+    type: "chatInterface",
     position: { x: 250, y: 100 },
     data: {
-      label: 'AI Chat',
-      nodeType: 'chatInterface',
-      model: 'GPT-4',
-      placeholder: 'Ask me anything...',
+      label: "AI Chat",
+      nodeType: "chatInterface",
+      model: "GPT-4",
+      placeholder: "Ask me anything...",
       disabled: false,
       parameters: {},
     },
   },
-]
+];
 ```
 
 ## ✨ Features
@@ -65,22 +65,25 @@ const nodes = [
 ## 🎨 Customization
 
 ### Change Message Area Height
+
 ```tsx
 <ScrollArea className="h-[300px] px-3 py-2"> // Change 300px
 ```
 
 ### Change Node Width
+
 ```tsx
 <BaseNode className={`w-[380px] ...`}> // Change 380px
 ```
 
 ### Change Colors
+
 ```tsx
 // User messages
-className="bg-blue-500 text-white"
+className = "bg-blue-500 text-white";
 
-// Assistant messages  
-className="bg-secondary text-foreground"
+// Assistant messages
+className = "bg-secondary text-foreground";
 ```
 
 ## 🔌 Integration Steps
@@ -88,23 +91,23 @@ className="bg-secondary text-foreground"
 ### In WorkflowEditor.tsx
 
 ```tsx
-import { ChatInterfaceNode } from './nodes'
+import { ChatInterfaceNode } from "./nodes";
 
 const nodeTypes = {
   // ...existing node types
   chatInterface: ChatInterfaceNode,
-}
+};
 ```
 
 ### Add to Available Nodes
 
 ```tsx
-import { chatInterfaceNodeType } from './nodes/chatInterfaceNodeType'
+import { chatInterfaceNodeType } from "./nodes/chatInterfaceNodeType";
 
 const availableNodes = [
   // ...existing nodes
   chatInterfaceNodeType,
-]
+];
 ```
 
 ## 📝 Node Data Structure
@@ -149,8 +152,9 @@ Full documentation is available in `CHAT_INTERFACE_NODE.md`
 ## 🔗 Dependencies
 
 All required dependencies are already installed:
+
 - `reactflow` ✅
-- `lucide-react` ✅  
+- `lucide-react` ✅
 - `@/components/ui/*` (shadcn/ui) ✅
 - `@/components/base-node` ✅
 

@@ -55,6 +55,7 @@ Chat Node → Set Node → HTTP Request
 ```
 
 In the Set node, you can access:
+
 - `{{ $json.message }}` - The AI response
 - `{{ $json.userMessage }}` - The original user message
 - `{{ $json.model }}` - The model used
@@ -66,6 +67,7 @@ Chat Node → Switch Node → Different Actions
 ```
 
 In the Switch node:
+
 - Check if `{{ $json.message }}` contains certain keywords
 - Route based on conversation length: `{{ $json.conversation.length }}`
 
@@ -76,16 +78,19 @@ Chat Node → Database Node
 ```
 
 Store the entire conversation:
+
 - Save `{{ $json.conversation }}` to preserve full chat history
 - Use `{{ $json.lastMessage }}` for just the latest AI response
 
 ## 🎨 Visual Indicators
 
 ### Before Execution
+
 - Node shows placeholder or local messages (interactive mode)
 - No "Output Ready" badge
 
 ### After Execution
+
 - ✅ **Green "Output Ready" badge** appears in the header
 - Shows the actual conversation from the workflow execution
 - Next nodes can access all the output data
@@ -93,12 +98,14 @@ Store the entire conversation:
 ## 🔧 Two Operating Modes
 
 ### 1. Interactive Mode (Before Workflow Runs)
+
 - Type messages directly in the node
 - Get demo responses
 - Useful for testing the UI
 - **Data is local** - not passed to other nodes
 
 ### 2. Execution Mode (When Workflow Runs)
+
 - Node processes input data
 - Calls AI service (currently demo)
 - **Output is passed** to connected nodes
@@ -123,13 +130,16 @@ Store the entire conversation:
 ```
 
 ### Chat Node Configuration
+
 - **AI Model**: GPT-3.5 Turbo
 - **System Prompt**: "You are a helpful assistant"
 - **User Message**: `{{ $json.userInput }}`
 - **Include Metadata**: ✓ Enabled
 
 ### Set Node (Next Node)
+
 Can access:
+
 ```javascript
 {
   "aiResponse": "{{ $json.message }}",
@@ -152,11 +162,13 @@ Can access:
 ## 🐛 Troubleshooting
 
 ### "No output data"
+
 - Make sure the workflow has been executed
 - Check the execution panel for errors
 - Verify the Chat node has input data (if it needs it)
 
 ### "Output Ready badge not showing"
+
 - Restart the frontend: `npm run dev`
 - Execute the workflow to generate new results
 - Check browser console for any errors

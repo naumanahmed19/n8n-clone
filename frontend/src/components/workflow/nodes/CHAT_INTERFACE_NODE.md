@@ -24,59 +24,54 @@ npx shadcn@latest add https://ui.reactflow.dev/base-node
 ### Basic Setup
 
 ```tsx
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
-import ReactFlow from 'reactflow'
-import 'reactflow/dist/style.css'
+import { ChatInterfaceNode } from "@/components/workflow/nodes";
+import ReactFlow from "reactflow";
+import "reactflow/dist/style.css";
 
 const nodeTypes = {
   chatInterface: ChatInterfaceNode,
-}
+};
 
 function MyWorkflow() {
   const nodes = [
     {
-      id: 'chat-1',
-      type: 'chatInterface',
+      id: "chat-1",
+      type: "chatInterface",
       position: { x: 250, y: 100 },
       data: {
-        label: 'AI Chat Assistant',
-        nodeType: 'chatInterface',
+        label: "AI Chat Assistant",
+        nodeType: "chatInterface",
         parameters: {},
         disabled: false,
       },
     },
-  ]
+  ];
 
-  return (
-    <ReactFlow 
-      nodes={nodes} 
-      nodeTypes={nodeTypes}
-    />
-  )
+  return <ReactFlow nodes={nodes} nodeTypes={nodeTypes} />;
 }
 ```
 
 ### Node Data Properties
 
-| Property | Type | Description | Default |
-|----------|------|-------------|---------|
-| `label` | `string` | The display name of the node | `'Chat Interface'` |
-| `nodeType` | `string` | Type identifier for the node | `'chatInterface'` |
-| `parameters` | `Record<string, any>` | Custom parameters | `{}` |
-| `disabled` | `boolean` | Whether the node is disabled | `false` |
-| `messages` | `Message[]` | Initial message history | `[]` |
-| `placeholder` | `string` | Input placeholder text | `'Type a message...'` |
-| `systemPrompt` | `string` | System prompt for AI | `undefined` |
-| `model` | `string` | AI model name to display | `undefined` |
+| Property       | Type                  | Description                  | Default               |
+| -------------- | --------------------- | ---------------------------- | --------------------- |
+| `label`        | `string`              | The display name of the node | `'Chat Interface'`    |
+| `nodeType`     | `string`              | Type identifier for the node | `'chatInterface'`     |
+| `parameters`   | `Record<string, any>` | Custom parameters            | `{}`                  |
+| `disabled`     | `boolean`             | Whether the node is disabled | `false`               |
+| `messages`     | `Message[]`           | Initial message history      | `[]`                  |
+| `placeholder`  | `string`              | Input placeholder text       | `'Type a message...'` |
+| `systemPrompt` | `string`              | System prompt for AI         | `undefined`           |
+| `model`        | `string`              | AI model name to display     | `undefined`           |
 
 ### Message Interface
 
 ```tsx
 interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
 }
 ```
 
@@ -84,27 +79,27 @@ interface Message {
 
 ```tsx
 const chatNode = {
-  id: 'chat-1',
-  type: 'chatInterface',
+  id: "chat-1",
+  type: "chatInterface",
   position: { x: 250, y: 100 },
   data: {
-    label: 'Customer Support Bot',
-    nodeType: 'chatInterface',
-    model: 'GPT-4',
-    placeholder: 'How can we help you?',
-    systemPrompt: 'You are a helpful customer support assistant.',
+    label: "Customer Support Bot",
+    nodeType: "chatInterface",
+    model: "GPT-4",
+    placeholder: "How can we help you?",
+    systemPrompt: "You are a helpful customer support assistant.",
     messages: [
       {
-        id: '1',
-        role: 'assistant',
-        content: 'Hello! How can I assist you today?',
+        id: "1",
+        role: "assistant",
+        content: "Hello! How can I assist you today?",
         timestamp: new Date(),
       },
     ],
     disabled: false,
     parameters: {},
   },
-}
+};
 ```
 
 ## Customization
@@ -131,10 +126,10 @@ Customize the color scheme by modifying the message bubble classes:
 
 ```tsx
 // User messages
-className="bg-blue-500 text-white"
+className = "bg-blue-500 text-white";
 
 // Assistant messages
-className="bg-secondary text-foreground"
+className = "bg-secondary text-foreground";
 ```
 
 ## Features
@@ -149,13 +144,15 @@ className="bg-secondary text-foreground"
 The component shows a typing indicator when the AI is "thinking":
 
 ```tsx
-{isTyping && (
-  <div className="flex gap-1">
-    <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" />
-    <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" />
-    <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" />
-  </div>
-)}
+{
+  isTyping && (
+    <div className="flex gap-1">
+      <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" />
+      <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" />
+      <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" />
+    </div>
+  );
+}
 ```
 
 ### ReactFlow Handles
@@ -195,8 +192,8 @@ The chat interface node can be connected to:
 The node automatically enters read-only mode during workflow execution:
 
 ```tsx
-const { executionState } = useWorkflowStore()
-const isReadOnly = !!executionState.executionId
+const { executionState } = useWorkflowStore();
+const isReadOnly = !!executionState.executionId;
 ```
 
 ## Demo
@@ -204,10 +201,10 @@ const isReadOnly = !!executionState.executionId
 A demo component is included to showcase the chat interface node:
 
 ```tsx
-import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes/ChatInterfaceNodeDemo'
+import { ChatInterfaceNodeDemo } from "@/components/workflow/nodes/ChatInterfaceNodeDemo";
 
 function App() {
-  return <ChatInterfaceNodeDemo />
+  return <ChatInterfaceNodeDemo />;
 }
 ```
 

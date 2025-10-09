@@ -7,7 +7,7 @@
 Find your `WorkflowEditor.tsx` or `WorkflowCanvas.tsx` file and add:
 
 ```tsx
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
+import { ChatInterfaceNode } from "@/components/workflow/nodes";
 ```
 
 ### Step 2: Register the Node Type
@@ -24,7 +24,7 @@ const nodeTypes = useMemo(
     chatInterface: ChatInterfaceNode,
   }),
   []
-)
+);
 ```
 
 ### Step 3: Add to Available Nodes (Optional)
@@ -32,18 +32,18 @@ const nodeTypes = useMemo(
 If you have a node palette or sidebar, add the chat interface node:
 
 ```tsx
-import { chatInterfaceNodeType } from '@/components/workflow/nodes'
+import { chatInterfaceNodeType } from "@/components/workflow/nodes";
 
 const availableNodes = [
   // ... your existing nodes
   {
-    type: 'chatInterface',
-    displayName: 'Chat Interface',
-    group: 'communication',
-    icon: 'MessageCircle',
-    description: 'Interactive chat interface for AI conversations',
+    type: "chatInterface",
+    displayName: "Chat Interface",
+    group: "communication",
+    icon: "MessageCircle",
+    description: "Interactive chat interface for AI conversations",
   },
-]
+];
 ```
 
 ### Step 4: Create Node Function (Optional)
@@ -54,17 +54,17 @@ If you have a function to create new nodes, add:
 function createChatNode(position: { x: number; y: number }) {
   return {
     id: `chat-${Date.now()}`,
-    type: 'chatInterface',
+    type: "chatInterface",
     position,
     data: {
-      label: 'AI Chat',
-      nodeType: 'chatInterface',
-      model: 'GPT-4',
-      placeholder: 'Type a message...',
+      label: "AI Chat",
+      nodeType: "chatInterface",
+      model: "GPT-4",
+      placeholder: "Type a message...",
       disabled: false,
       parameters: {},
     },
-  }
+  };
 }
 ```
 
@@ -76,19 +76,19 @@ You can test immediately by:
 
 ```tsx
 // Add to your routes or pages
-import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes'
+import { ChatInterfaceNodeDemo } from "@/components/workflow/nodes";
 
 // Use in your component
-<ChatInterfaceNodeDemo />
+<ChatInterfaceNodeDemo />;
 ```
 
 #### Option B: Using the Visual Test Suite
 
 ```tsx
-import { ChatInterfaceNodeVisualTest } from '@/components/workflow/nodes'
+import { ChatInterfaceNodeVisualTest } from "@/components/workflow/nodes";
 
 // Use in your component
-<ChatInterfaceNodeVisualTest />
+<ChatInterfaceNodeVisualTest />;
 ```
 
 #### Option C: Add Directly to Existing Workflow
@@ -96,35 +96,35 @@ import { ChatInterfaceNodeVisualTest } from '@/components/workflow/nodes'
 ```tsx
 // Add to your initial nodes or create programmatically
 const newNode = {
-  id: 'chat-1',
-  type: 'chatInterface',
+  id: "chat-1",
+  type: "chatInterface",
   position: { x: 250, y: 100 },
   data: {
-    label: 'AI Chat',
-    nodeType: 'chatInterface',
-    model: 'GPT-4',
+    label: "AI Chat",
+    nodeType: "chatInterface",
+    model: "GPT-4",
     disabled: false,
     parameters: {},
   },
-}
+};
 
 // Add to your workflow
-setNodes((nodes) => [...nodes, newNode])
+setNodes((nodes) => [...nodes, newNode]);
 ```
 
 ## Example: Complete Integration
 
 ```tsx
 // WorkflowEditor.tsx
-import { useCallback, useMemo, useState } from 'react'
-import ReactFlow, { addEdge, Background, Controls } from 'reactflow'
-import { ChatInterfaceNode } from '@/components/workflow/nodes'
-import { CustomNode } from './CustomNode'
-import 'reactflow/dist/style.css'
+import { useCallback, useMemo, useState } from "react";
+import ReactFlow, { addEdge, Background, Controls } from "reactflow";
+import { ChatInterfaceNode } from "@/components/workflow/nodes";
+import { CustomNode } from "./CustomNode";
+import "reactflow/dist/style.css";
 
 export function WorkflowEditor() {
-  const [nodes, setNodes] = useState([])
-  const [edges, setEdges] = useState([])
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
 
   // Register node types
   const nodeTypes = useMemo(
@@ -133,35 +133,35 @@ export function WorkflowEditor() {
       chatInterface: ChatInterfaceNode, // Add this
     }),
     []
-  )
+  );
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
     []
-  )
+  );
 
   // Function to add a chat node
   const addChatNode = () => {
     const newNode = {
       id: `chat-${Date.now()}`,
-      type: 'chatInterface',
+      type: "chatInterface",
       position: { x: 250, y: 100 },
       data: {
-        label: 'AI Chat',
-        nodeType: 'chatInterface',
-        model: 'GPT-4',
-        placeholder: 'Type a message...',
+        label: "AI Chat",
+        nodeType: "chatInterface",
+        model: "GPT-4",
+        placeholder: "Type a message...",
         disabled: false,
         parameters: {},
       },
-    }
-    setNodes((nds) => [...nds, newNode])
-  }
+    };
+    setNodes((nds) => [...nds, newNode]);
+  };
 
   return (
     <div className="h-screen w-full">
       <button onClick={addChatNode}>Add Chat Node</button>
-      
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -173,7 +173,7 @@ export function WorkflowEditor() {
         <Controls />
       </ReactFlow>
     </div>
-  )
+  );
 }
 ```
 
@@ -199,21 +199,25 @@ After integration, verify:
 ## Troubleshooting
 
 ### Node doesn't appear
+
 - Check that `chatInterface` is added to `nodeTypes`
 - Verify import path is correct
 - Check console for errors
 
 ### Styling looks wrong
+
 - Ensure shadcn/ui components are installed
 - Check Tailwind CSS configuration
 - Verify `base-node.tsx` component exists
 
 ### Handles not connecting
+
 - Check ReactFlow version compatibility
 - Ensure handles are not disabled
 - Verify handle IDs are unique
 
 ### Messages not sending
+
 - Check console for errors
 - Verify state management is working
 - Check if node is disabled or in read-only mode
@@ -244,7 +248,7 @@ import {
   ChatInterfaceNodeVisualTest,
   chatInterfaceNodeType,
   chatInterfaceExamples,
-} from '@/components/workflow/nodes'
+} from "@/components/workflow/nodes";
 ```
 
 ---

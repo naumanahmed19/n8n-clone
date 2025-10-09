@@ -5,6 +5,7 @@
 ### Option 1: Test in Existing Workflow
 
 1. **Make sure both backend and frontend are running**:
+
 ```bash
 # Backend should show: Server running on http://localhost:3001
 # Frontend should show: Local: http://localhost:5173
@@ -17,6 +18,7 @@
 4. **Click "Add Node"** or the **+** button
 
 5. **Find "AI Chat"** in the node list
+
    - Look for the 💬 emoji icon
    - Should be in "Communication" or "AI" category
 
@@ -33,16 +35,17 @@ Create a test page to see all variations:
 **File**: `frontend/src/App.tsx` or create a new route
 
 ```tsx
-import { ChatInterfaceNodeVisualTest } from '@/components/workflow/nodes'
+import { ChatInterfaceNodeVisualTest } from "@/components/workflow/nodes";
 
 function TestPage() {
-  return <ChatInterfaceNodeVisualTest />
+  return <ChatInterfaceNodeVisualTest />;
 }
 ```
 
 This shows:
+
 - Basic empty chat
-- Chat with message history  
+- Chat with message history
 - Disabled state
 - Selected state
 - Full workflow integration
@@ -54,10 +57,10 @@ This shows:
 **File**: Add to your routes or test in a page
 
 ```tsx
-import { ChatInterfaceNodeDemo } from '@/components/workflow/nodes'
+import { ChatInterfaceNodeDemo } from "@/components/workflow/nodes";
 
 function DemoPage() {
-  return <ChatInterfaceNodeDemo />
+  return <ChatInterfaceNodeDemo />;
 }
 ```
 
@@ -68,8 +71,9 @@ This shows a simple ReactFlow canvas with one chat node.
 ## What You Should See
 
 ### On the Canvas:
+
 ```
-🔵 (Input Handle)  
+🔵 (Input Handle)
      ╔════════════════════════════════╗
      ║ 💬 AI Chat     🌟 GPT-4       ║
      ╠════════════════════════════════╣
@@ -85,6 +89,7 @@ This shows a simple ReactFlow canvas with one chat node.
 ```
 
 ### Try It:
+
 1. Click in the input field
 2. Type "Hello!"
 3. Press Enter or click Send
@@ -97,17 +102,20 @@ This shows a simple ReactFlow canvas with one chat node.
 ## Verification Checklist
 
 ✅ **Backend**:
+
 - [ ] Backend running on port 3001
 - [ ] Node registered (you saw "AI Chat (chat)" in terminal)
 - [ ] Database has the node type
 
 ✅ **Frontend**:
+
 - [ ] Frontend running on port 5173
 - [ ] No console errors
 - [ ] WorkflowEditor.tsx imports ChatInterfaceNode
 - [ ] workflowTransformers.ts uses 'chat' type
 
 ✅ **In Browser**:
+
 - [ ] Can open workflow editor
 - [ ] Can see "AI Chat" in node list
 - [ ] Can drag node onto canvas
@@ -141,6 +149,7 @@ npm run dev
 ### If it appears but looks wrong:
 
 Check browser console (F12) for errors. Common issues:
+
 - Missing component imports
 - TypeScript errors
 - CSS not loading
@@ -148,9 +157,10 @@ Check browser console (F12) for errors. Common issues:
 ### If it's a regular node instead of chat interface:
 
 The transformer might not be using the 'chat' type. Verify:
+
 ```typescript
 // In workflowTransformers.ts
-const reactFlowNodeType = node.type === 'chat' ? 'chat' : 'custom';
+const reactFlowNodeType = node.type === "chat" ? "chat" : "custom";
 ```
 
 ---
@@ -158,12 +168,14 @@ const reactFlowNodeType = node.type === 'chat' ? 'chat' : 'custom';
 ## Expected Behavior
 
 ### When Adding Node:
+
 1. Appears in node palette as "AI Chat" with 💬 icon
 2. Can be dragged onto canvas
 3. Immediately shows chat interface (not a small node)
 4. Is 380px wide (much wider than regular nodes)
 
 ### When Interacting:
+
 1. Input field is clickable
 2. Can type text
 3. Enter key sends message
@@ -173,6 +185,7 @@ const reactFlowNodeType = node.type === 'chat' ? 'chat' : 'custom';
 7. AI response appears after 1 second
 
 ### When Connecting:
+
 1. Left handle (blue) = Input
 2. Right handle (green) = Output
 3. Can connect to other nodes
@@ -183,12 +196,15 @@ const reactFlowNodeType = node.type === 'chat' ? 'chat' : 'custom';
 ## Pro Tips
 
 ### 1. Configure the Backend Node First
+
 Before adding to canvas, configure:
+
 - Model: GPT-4
 - System Prompt: "You are a coding assistant"
 - This will show in the chat interface!
 
 ### 2. Use in a Workflow
+
 ```
 Manual Trigger → AI Chat → JSON Node
 ```
@@ -196,11 +212,14 @@ Manual Trigger → AI Chat → JSON Node
 The chat interface works great in the middle of workflows!
 
 ### 3. Multiple Chat Nodes
+
 You can add multiple chat nodes to the same workflow.
 Each one is independent with its own messages.
 
 ### 4. Test the Visual Test Suite
+
 The `ChatInterfaceNodeVisualTest` component shows:
+
 - 5 different configurations
 - All states (empty, with history, disabled, selected, workflow)
 - Feature checklist
@@ -225,11 +244,13 @@ You'll know it's working when:
 ## Need Help?
 
 ### Check the docs:
+
 - `CHAT_BASENODE_WORKING.md` - Full integration guide
 - `frontend/src/components/workflow/nodes/README.md` - Quick start
 - `frontend/src/components/workflow/nodes/CHAT_INTERFACE_NODE.md` - Complete docs
 
 ### Common Files:
+
 - Backend: `backend/src/nodes/Chat/ChatNode.ts`
 - Frontend: `frontend/src/components/workflow/nodes/ChatInterfaceNode.tsx`
 - Integration: `frontend/src/components/workflow/WorkflowEditor.tsx`

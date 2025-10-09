@@ -20,15 +20,16 @@ The Chat node was checking `data.disabled` property to determine if the input sh
 updateNode(id, {
   parameters: {
     ...data.parameters,
-    userMessage: messageToSend
+    userMessage: messageToSend,
   },
-  disabled: false // Explicitly keep the node enabled
-})
+  disabled: false, // Explicitly keep the node enabled
+});
 ```
 
 ### 2. Remove `data.disabled` Check from Input Controls
 
 **Before**:
+
 ```typescript
 <Input
   disabled={data.disabled || isReadOnly || isTyping || isExecuting}
@@ -42,6 +43,7 @@ updateNode(id, {
 ```
 
 **After**:
+
 ```typescript
 <Input
   disabled={isReadOnly || isTyping || isExecuting}
@@ -77,6 +79,7 @@ updateNode(id, {
 ## 📋 What's Still Disabled (Correctly)
 
 The input is still appropriately disabled during:
+
 - **Workflow Execution** (`isExecuting: true`)
 - **Read-Only Mode** (`isReadOnly: true`) - When viewing past executions
 - **While Processing** (`isTyping: true`) - For future AI integration
@@ -86,6 +89,7 @@ The input is still appropriately disabled during:
 ### Node Disabled Property
 
 In workflow systems, the `disabled` property is typically used to:
+
 - Prevent a node from executing during workflow runs
 - Skip nodes during testing
 - Temporarily disable problematic nodes

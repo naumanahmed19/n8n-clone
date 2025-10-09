@@ -9,19 +9,22 @@ The Chat node has been **dramatically simplified** to focus on its core purpose:
 ### Backend (ChatNode.ts)
 
 **Removed Properties:**
+
 - ❌ AI Model selection (gpt-3.5-turbo, gpt-4, etc.)
 - ❌ System Prompt
 - ❌ Conversation History
 - ❌ Temperature setting
-- ❌ Max Tokens setting  
+- ❌ Max Tokens setting
 - ❌ Include Metadata toggle
 
 **Kept Properties:**
+
 - ✅ User Message (the only property needed)
 
 ### Frontend (ChatInterfaceNode.tsx)
 
 **Removed UI Elements:**
+
 - ❌ Model badge (e.g., "🌟 GPT-3.5")
 - ❌ System prompt display
 - ❌ AI response simulation
@@ -29,14 +32,16 @@ The Chat node has been **dramatically simplified** to focus on its core purpose:
 - ❌ Complex metadata output
 
 **Kept UI Elements:**
+
 - ✅ Message input field
-- ✅ Send button  
+- ✅ Send button
 - ✅ "Sent" badge when executed
 - ✅ Simple output display
 
 ## 📤 New Simple Output Format
 
 ### Before (Complex):
+
 ```json
 {
   "message": "✨ [Demo Response using gpt-3.5-turbo] ✨...",
@@ -57,6 +62,7 @@ The Chat node has been **dramatically simplified** to focus on its core purpose:
 ```
 
 ### After (Simple):
+
 ```json
 {
   "message": "Hello",
@@ -68,6 +74,7 @@ The Chat node has been **dramatically simplified** to focus on its core purpose:
 ## 🎨 Visual Changes
 
 ### Before:
+
 ```
 ┌─────────────────────────────┐
 │ 💬 Chat Interface           │
@@ -85,6 +92,7 @@ The Chat node has been **dramatically simplified** to focus on its core purpose:
 ```
 
 ### After:
+
 ```
 ┌─────────────────────────┐
 │ 💬 Chat Interface       │
@@ -103,18 +111,32 @@ The Chat node has been **dramatically simplified** to focus on its core purpose:
 The next node receives the simple user message:
 
 ### Access the data:
+
 ```javascript
 // The user's message
-{{ $json.message }}
+{
+  {
+    $json.message;
+  }
+}
 
 // Or
-{{ $json.userMessage }}
+{
+  {
+    $json.userMessage;
+  }
+}
 
 // Timestamp
-{{ $json.timestamp }}
+{
+  {
+    $json.timestamp;
+  }
+}
 ```
 
 ### Example: Set Node
+
 ```javascript
 {
   "user_input": "{{ $json.message }}",
@@ -123,6 +145,7 @@ The next node receives the simple user message:
 ```
 
 ### Example: HTTP Request
+
 ```javascript
 {
   "url": "https://api.openai.com/v1/chat/completions",
@@ -149,6 +172,7 @@ The Chat node now serves as a **pure input trigger**:
 4. **No AI processing** - Just passes the message, doesn't generate responses
 
 This makes it:
+
 - ✅ **Simpler** - One property instead of 7
 - ✅ **Faster** - No complex processing
 - ✅ **More flexible** - Connect to ANY AI node you want
@@ -157,6 +181,7 @@ This makes it:
 ## 🔄 Workflow Pattern
 
 ### Typical Usage:
+
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │  Chat Node   │────▶│  OpenAI Node │────▶│   Set Node   │
@@ -167,18 +192,21 @@ This makes it:
 ```
 
 ### Chat Node Output:
+
 ```json
 { "message": "What is AI?" }
 ```
 
 ### OpenAI Node Receives:
+
 ```json
 {
-  "userMessage": "{{ $json.message }}"  // References Chat output
+  "userMessage": "{{ $json.message }}" // References Chat output
 }
 ```
 
 ### OpenAI Node Output:
+
 ```json
 {
   "response": "AI stands for Artificial Intelligence..."
@@ -188,6 +216,7 @@ This makes it:
 ## 📝 Node Configuration
 
 ### Old (7 fields):
+
 ```
 - AI Model: [dropdown]
 - System Prompt: [text field]
@@ -199,6 +228,7 @@ This makes it:
 ```
 
 ### New (1 field):
+
 ```
 - User Message: [text field]  ← That's it!
 ```
@@ -206,21 +236,25 @@ This makes it:
 ## 🚀 Benefits
 
 1. **Clearer Responsibility**
+
    - Chat node = Input capture
    - AI node = AI processing
    - Separation of concerns
 
 2. **More Flexible**
+
    - Use ANY AI provider (OpenAI, Anthropic, local models)
    - Not tied to one AI service
    - Can process the message however you want
 
 3. **Easier to Understand**
+
    - New users immediately get it
    - One field = one purpose
    - No confusion about what it does
 
 4. **Better Debugging**
+
    - See exactly what input was captured
    - Track the message through the workflow
    - Simple output = easy to debug
@@ -235,16 +269,19 @@ This makes it:
 If you have existing workflows with the old Chat node:
 
 ### Old workflow:
+
 ```
 Chat Node (with AI processing) → Next Node
 ```
 
 ### New workflow:
+
 ```
 Chat Node (input only) → OpenAI Node → Next Node
 ```
 
 ### Update your references:
+
 - Old: `{{ $json.conversation }}`  
   New: `{{ $json.message }}`
 

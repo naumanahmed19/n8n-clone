@@ -1,6 +1,5 @@
 import { ChatInterfaceNode } from '@/components/workflow/nodes'
-import { ReactFlowProvider } from 'reactflow'
-import ReactFlow, { Background, Controls, Node, Edge } from 'reactflow'
+import ReactFlow, { Background, Controls, Edge, Node, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 // Define the node types mapping
