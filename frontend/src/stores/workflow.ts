@@ -75,7 +75,7 @@ interface WorkflowStore extends WorkflowEditorState {
   contextMenuVisible: boolean;
   contextMenuPosition: { x: number; y: number } | null;
   contextMenuNodeId: string | null;
-  
+
   // Chat dialog state
   showChatDialog: boolean;
   chatDialogNodeId: string | null;
@@ -190,7 +190,7 @@ interface WorkflowStore extends WorkflowEditorState {
   hideContextMenu: () => void;
   openNodeProperties: (nodeId: string) => void;
   closeNodeProperties: () => void;
-  
+
   // Chat dialog actions
   openChatDialog: (nodeId: string) => void;
   closeChatDialog: () => void;
@@ -268,7 +268,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       contextMenuVisible: false,
       contextMenuPosition: null,
       contextMenuNodeId: null,
-      
+
       // Chat dialog state
       showChatDialog: false,
       chatDialogNodeId: null,
@@ -3178,7 +3178,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           propertyPanelNodeId: null,
         });
       },
-      
+
       // Chat dialog actions
       openChatDialog: (nodeId: string) => {
         set({

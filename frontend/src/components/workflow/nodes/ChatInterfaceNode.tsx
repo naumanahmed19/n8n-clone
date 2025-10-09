@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
+import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
 import { ChevronDown, ChevronUp, MessageCircle, Send, User } from 'lucide-react'
