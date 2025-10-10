@@ -5,6 +5,7 @@ import { ReactNode, useCallback } from 'react'
 import { Handle, Position } from 'reactflow'
 import { NodeContextMenu } from '../components/NodeContextMenu'
 import { useNodeActions } from '../hooks/useNodeActions'
+import '../node-animations.css'
 
 export interface BaseNodeWrapperProps {
   /** Node ID */
@@ -72,6 +73,27 @@ export interface BaseNodeWrapperProps {
   
   /** Custom on double click handler - if not provided, will open properties dialog */
   onDoubleClick?: (e: React.MouseEvent) => void
+}
+
+/**
+ * Get border color and animation classes based on node status
+ */
+function getNodeStatusClasses(status?: string, selected?: boolean, disabled?: boolean): string {
+  if (disabled) return 'border-gray-300'
+  if (selected) return 'border-blue-500 ring-2 ring-blue-200'
+  
+  switch (status) {
+    case 'running':
+      return 'border-blue-300 node-running node-glow-running'
+    case 'success':
+      return 'border-green-300 node-success node-glow-success'
+    case 'error':
+      return 'border-red-300 node-error node-glow-error'
+    case 'skipped':
+      return 'border-gray-200'
+    default:
+      return 'border-gray-300'
+  }
 }
 
 /**
@@ -168,7 +190,7 @@ export function BaseNodeWrapper({
             <div
               onDoubleClick={handleDoubleClick}
               className={`relative bg-white rounded-lg border-2 shadow-md transition-all duration-200 ${
-                selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'
+                getNodeStatusClasses(data.status, selected, data.disabled)
               } ${className}`}
               style={{ width: collapsedWidth }}
             >
@@ -247,7 +269,7 @@ export function BaseNodeWrapper({
           <div
             onDoubleClick={handleDoubleClick}
             className={`relative bg-white rounded-lg border-2 shadow-lg transition-all duration-200 ${
-              selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'
+              getNodeStatusClasses(data.status, selected, data.disabled)
             } ${className}`}
             style={{ width: expandedWidth }}
           >
