@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { ImageIcon, Pause } from 'lucide-react'
+import { ImageIcon, Loader2, Pause } from 'lucide-react'
 import { useState } from 'react'
 
 interface NodeContentProps {
@@ -10,6 +10,7 @@ interface NodeContentProps {
   isTrigger: boolean
   statusIcon: React.ReactNode
   imageUrl?: string // For image preview nodes
+  isRunning?: boolean // Add running state
 }
 
 export function NodeContent({
@@ -19,7 +20,8 @@ export function NodeContent({
   disabled,
   isTrigger,
   statusIcon,
-  imageUrl
+  imageUrl,
+  isRunning = false
 }: NodeContentProps) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -35,7 +37,7 @@ export function NodeContent({
         {hasImageUrl && !imageError ? (
           <div 
             className={clsx(
-              "w-8 h-8 flex items-center justify-center overflow-hidden",
+              "w-8 h-8 flex items-center justify-center overflow-hidden relative",
               isTrigger ? 'rounded-full' : 'rounded',
               !imageLoaded && 'bg-gray-100'
             )}
@@ -48,7 +50,8 @@ export function NodeContent({
               alt="Node preview"
               className={clsx(
                 "w-full h-full object-cover",
-                !imageLoaded && 'hidden'
+                !imageLoaded && 'hidden',
+                isRunning && 'opacity-30'
               )}
               onLoad={() => setImageLoaded(true)}
               onError={() => {
@@ -56,16 +59,30 @@ export function NodeContent({
                 setImageLoaded(false)
               }}
             />
+            {/* Loading spinner overlay on image */}
+            {isRunning && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+              </div>
+            )}
           </div>
         ) : (
           <div 
             className={clsx(
-              "w-8 h-8 flex items-center justify-center text-white text-sm font-bold",
+              "w-8 h-8 flex items-center justify-center text-white text-sm font-bold relative",
               isTrigger ? 'rounded-full' : 'rounded'
             )}
             style={{ backgroundColor: color || '#666' }}
           >
-            {icon || nodeType.charAt(0).toUpperCase()}
+            <span className={clsx(isRunning && 'opacity-30')}>
+              {icon || nodeType.charAt(0).toUpperCase()}
+            </span>
+            {/* Loading spinner overlay on icon */}
+            {isRunning && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              </div>
+            )}
           </div>
         )}
 

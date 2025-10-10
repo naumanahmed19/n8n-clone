@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { Handle, Position } from 'reactflow'
+import { calculateHandlePosition } from '../utils/handlePositioning'
 
 interface NodeHandlesProps {
   inputs?: string[]
@@ -30,11 +31,7 @@ export function NodeHandles({
       {inputs && inputs.length > 0 && (
         <>
           {inputs.map((input, index) => {
-            const totalInputs = inputs.length
-            const isSingleInput = totalInputs === 1
-            const top = isSingleInput 
-              ? '50%' 
-              : `${((index + 1) / (totalInputs + 1)) * 100}%`
+            const top = calculateHandlePosition(index, inputs.length)
             
             return (
               <Handle
@@ -61,12 +58,7 @@ export function NodeHandles({
       {outputs && outputs.length > 0 && (
         <>
           {outputs.map((output, index) => {
-            const totalOutputs = outputs.length
-            const isSingleOutput = totalOutputs === 1
-            const top = isSingleOutput 
-              ? '50%' 
-              : `${((index + 1) / (totalOutputs + 1)) * 100}%`
-            
+            const top = calculateHandlePosition(index, outputs.length)
             const isHovered = hoveredOutput === output
             
             return (

@@ -11,7 +11,7 @@ export const WebhookTriggerNode: NodeDefinition = {
   group: ["trigger"],
   version: 1,
   description: "Triggers workflow execution when a webhook is called",
-  icon: "",
+  icon: "🪝",
   color: "#FF6B35",
   defaults: {
     httpMethod: "POST",

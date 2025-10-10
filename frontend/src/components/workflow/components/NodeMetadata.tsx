@@ -1,7 +1,7 @@
 import { NodeExecutionStatus } from '@/types/execution'
 
 interface NodeMetadataProps {
-  label: string
+  label?: string // Made optional since label is now shown inside the node
   nodeVisualState?: {
     status: NodeExecutionStatus
     progress?: number
@@ -9,21 +9,14 @@ interface NodeMetadataProps {
   }
 }
 
-export function NodeMetadata({ label, nodeVisualState }: NodeMetadataProps) {
+export function NodeMetadata({ nodeVisualState }: NodeMetadataProps) {
   return (
     <>
-      {/* Node label */}
-      <div className="mt-2 text-center max-w-[120px]">
-        <div className="text-xs font-medium text-gray-900 truncate">
-          {label}
-        </div>
-      </div>
-
       {/* Progress bar for running nodes */}
       {nodeVisualState && 
        nodeVisualState.status === NodeExecutionStatus.RUNNING && 
        nodeVisualState.progress && nodeVisualState.progress > 0 && (
-        <div className="mt-2 w-full max-w-[120px]">
+        <div className="mt-2 w-full max-w-[120px] mx-auto">
           <div className="w-full bg-gray-200 rounded-full h-1">
             <div 
               className="bg-blue-500 h-1 rounded-full transition-all duration-300"

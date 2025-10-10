@@ -1,6 +1,6 @@
 import { useWorkflowStore } from '@/stores'
 import type { NodeType } from '@/types'
-import { Settings } from 'lucide-react'
+import { getNodeIcon } from '@/utils/nodeIconMap'
 import { NodeProps } from 'reactflow'
 import { NodeMetadata } from './components/NodeMetadata'
 import { useNodeExecution } from './hooks/useNodeExecution'
@@ -47,6 +47,14 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   // Use custom hooks for node visual state
   const { nodeVisualState } = useNodeExecution(id, data.nodeType)
 
+  // Check if this is a trigger node
+  const isTrigger = data.executionCapability === 'trigger'
+
+  // Get icon from map if not provided in data
+  const iconConfig = getNodeIcon(data.nodeType)
+  const nodeIcon = data.icon || iconConfig.icon
+  const nodeColor = data.color || iconConfig.color
+
   return (
     <BaseNodeWrapper
       id={id}
@@ -55,11 +63,17 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
       isReadOnly={isReadOnly}
       isExpanded={false}
       onToggleExpand={() => {}}
-      Icon={Settings}
-      canExpand={true}
+      canExpand={false}
+      nodeConfig={{
+        icon: nodeIcon,
+        color: nodeColor,
+        isTrigger,
+        inputs: data.inputs,
+        outputs: data.outputs,
+        imageUrl: data.parameters?.imageUrl as string,
+      }}
       customMetadata={
         <NodeMetadata
-          label={data.label}
           nodeVisualState={nodeVisualState}
         />
       }
