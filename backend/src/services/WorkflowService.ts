@@ -5,6 +5,7 @@ import {
   UpdateWorkflowRequest,
   WorkflowQueryRequest,
 } from "../types/api";
+import { getTriggerService, isTriggerServiceInitialized } from "./triggerServiceSingleton";
 
 interface ValidationResult {
   isValid: boolean;
@@ -251,6 +252,16 @@ export class WorkflowService {
           updatedAt: new Date(),
         },
       });
+
+      // Sync triggers with TriggerService if triggers or active status changed
+      if (isTriggerServiceInitialized() && (normalizedTriggers || data.active !== undefined)) {
+        try {
+          await getTriggerService().syncWorkflowTriggers(id);
+        } catch (error) {
+          console.error(`Error syncing triggers for workflow ${id}:`, error);
+          // Don't fail the update if trigger sync fails
+        }
+      }
 
       return workflow;
     } catch (error) {

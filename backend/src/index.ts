@@ -22,6 +22,7 @@ import { nodeRoutes } from "./routes/nodes";
 import oauthRoutes from "./routes/oauth";
 import triggerRoutes from "./routes/triggers";
 import variableRoutes from "./routes/variables";
+import webhookRoutes from "./routes/webhook";
 import { workflowRoutes } from "./routes/workflows";
 
 // Import middleware
@@ -122,7 +123,8 @@ app.get("/", (req, res) => {
       credentials: "/api/credentials",
       variables: "/api/variables",
       triggers: "/api/triggers",
-      webhooks: "/api/triggers/webhooks",
+      webhooks: "/webhook/{webhookId}",
+      webhookTest: "/webhook/{webhookId}/test",
       customNodes: "/api/custom-nodes",
       flowExecution: "/api/flow-execution",
       executionControl: "/api/execution-control",
@@ -152,6 +154,9 @@ app.use("/api/execution-recovery", executionRecoveryRoutes);
 app.use("/api/oauth", oauthRoutes);
 app.use("/api/google", googleRoutes);
 
+// Webhook routes (public endpoints without /api prefix for easier external integration)
+app.use("/webhook", webhookRoutes);
+
 // 404 handler
 app.use(notFoundHandler);
 
@@ -172,8 +177,9 @@ httpServer.listen(PORT, async () => {
   console.log(`   - Credentials: http://localhost:${PORT}/api/credentials`);
   console.log(`   - Variables: http://localhost:${PORT}/api/variables`);
   console.log(`   - Triggers: http://localhost:${PORT}/api/triggers`);
-  console.log(`   - Webhooks: http://localhost:${PORT}/api/triggers/webhooks`);
   console.log(`   - Custom Nodes: http://localhost:${PORT}/api/custom-nodes`);
+  console.log(`📨 Webhook endpoint (public):`);
+  console.log(`   - http://localhost:${PORT}/webhook/{webhookId}`);
 
   // Initialize node systems after server starts
   await initializeNodeSystems();

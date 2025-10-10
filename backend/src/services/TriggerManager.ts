@@ -508,8 +508,12 @@ export class TriggerManager extends EventEmitter {
     workflow: any
   ): Promise<void> {
     try {
+      if (!context.triggerNodeId) {
+        throw new Error(`Trigger node ID is missing for trigger ${context.triggerId}`);
+      }
+
       const result = await this.flowExecutionEngine.executeFromTrigger(
-        context.triggerId,
+        context.triggerNodeId,
         context.workflowId,
         context.userId,
         context.triggerData,
@@ -531,6 +535,31 @@ export class TriggerManager extends EventEmitter {
 
     // Release resources
     this.resourceManager.releaseLocks(context.executionId);
+
+    // Save execution to database
+    try {
+      await this.saveExecutionToDatabase(context, result);
+    } catch (error) {
+      logger.error("Failed to save execution to database", {
+        executionId: context.executionId,
+        error,
+      });
+    }
+
+    // Emit socket event for real-time updates
+    try {
+      this.socketService.emitToUser(context.userId, "executionCompleted", {
+        executionId: context.executionId,
+        workflowId: context.workflowId,
+        status: result.status,
+        duration: Date.now() - context.startTime,
+      });
+    } catch (error) {
+      logger.error("Failed to emit socket event", {
+        executionId: context.executionId,
+        error,
+      });
+    }
 
     // Add to completed triggers
     const info: TriggerExecutionInfo = {
@@ -683,6 +712,125 @@ export class TriggerManager extends EventEmitter {
         });
       }
     });
+  }
+
+  /**
+   * Save execution result to database
+   */
+  private async saveExecutionToDatabase(
+    context: TriggerExecutionContext,
+    result: FlowExecutionResult
+  ): Promise<void> {
+    try {
+      // Map flow status to execution status
+      let executionStatus: "SUCCESS" | "ERROR" | "CANCELLED" | "RUNNING";
+      switch (result.status) {
+        case "completed":
+          executionStatus = "SUCCESS";
+          break;
+        case "failed":
+          executionStatus = "ERROR";
+          break;
+        case "cancelled":
+          executionStatus = "CANCELLED";
+          break;
+        case "partial":
+          executionStatus = "ERROR"; // Partial completion is treated as error
+          break;
+        default:
+          executionStatus = "ERROR";
+      }
+
+      // Load workflow for snapshot
+      const workflow = await this.loadWorkflow(context.workflowId);
+
+      // Create main execution record with workflow snapshot
+      await this.prisma.execution.create({
+        data: {
+          id: result.executionId,
+          workflowId: context.workflowId,
+          status: executionStatus,
+          startedAt: new Date(context.startTime),
+          finishedAt: new Date(),
+          triggerData: context.triggerData || undefined,
+          workflowSnapshot: workflow
+            ? {
+                nodes: workflow.nodes,
+                connections: workflow.connections,
+                settings: workflow.settings,
+              }
+            : undefined,
+          error:
+            result.status === "failed" || result.status === "partial"
+              ? {
+                  message: "Flow execution failed",
+                  failedNodes: result.failedNodes,
+                  executionPath: result.executionPath,
+                }
+              : undefined,
+        },
+      });
+
+      // Create node execution records
+      for (const [nodeId, nodeResult] of result.nodeResults) {
+        let nodeStatus: "SUCCESS" | "ERROR" | "CANCELLED";
+        switch (nodeResult.status) {
+          case "completed":
+            nodeStatus = "SUCCESS";
+            break;
+          case "failed":
+            nodeStatus = "ERROR";
+            break;
+          case "cancelled":
+            nodeStatus = "CANCELLED";
+            break;
+          default:
+            nodeStatus = "ERROR";
+        }
+
+        // Serialize error properly for database storage
+        let errorData = undefined;
+        if (nodeResult.error) {
+          if (nodeResult.error instanceof Error) {
+            errorData = {
+              message: nodeResult.error.message,
+              name: nodeResult.error.name,
+              stack: nodeResult.error.stack,
+            };
+          } else if (typeof nodeResult.error === "object") {
+            errorData = nodeResult.error;
+          } else {
+            errorData = { message: String(nodeResult.error) };
+          }
+        }
+
+        await this.prisma.nodeExecution.create({
+          data: {
+            id: `${result.executionId}_${nodeId}`,
+            executionId: result.executionId,
+            nodeId: nodeId,
+            status: nodeStatus as any,
+            startedAt: new Date(context.startTime),
+            finishedAt: new Date(context.startTime + nodeResult.duration),
+            inputData: {},
+            outputData: nodeResult.data ? JSON.parse(JSON.stringify(nodeResult.data)) : undefined,
+            error: errorData,
+          },
+        });
+      }
+
+      logger.info("Execution saved to database", {
+        executionId: result.executionId,
+        workflowId: context.workflowId,
+        status: executionStatus,
+      });
+    } catch (error) {
+      logger.error("Failed to save execution to database", {
+        executionId: result.executionId,
+        error,
+      });
+      throw error;
+    }
   }
 
   /**
