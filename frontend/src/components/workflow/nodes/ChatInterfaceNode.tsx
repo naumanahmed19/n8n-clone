@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
 import { ChevronDown, ChevronUp, MessageCircle, Send, User } from 'lucide-react'
@@ -427,7 +426,10 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
             </div>
 
             {/* Chat Messages Area */}
-            <ScrollArea ref={scrollAreaRef} className="h-[250px] p-3">
+            <div
+              ref={scrollAreaRef}
+              className="h-[250px] p-3 overflow-y-auto"
+            >
               {displayMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <MessageCircle className="w-12 h-12 mb-2 opacity-50" />
@@ -477,7 +479,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                   )}
                 </div>
               )}
-            </ScrollArea>
+            </div>
             
             {/* Input Area */}
             <div className="flex gap-2 p-3 border-t bg-gray-50">

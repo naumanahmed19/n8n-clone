@@ -1,4 +1,4 @@
-import { NodeType, WorkflowNode, WorkflowConnection } from "@/types";
+import { NodeType, WorkflowConnection, WorkflowNode } from "@/types";
 
 // Type definitions for workflow data
 type NodeExecutionResult = {

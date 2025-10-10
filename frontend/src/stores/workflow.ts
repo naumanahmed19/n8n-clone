@@ -2909,11 +2909,13 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         const newLockedState = !node.locked;
         get().updateNode(nodeId, { locked: newLockedState });
-        
+
         get().addExecutionLog({
           timestamp: new Date().toISOString(),
           level: "info",
-          message: `Node "${node.name}" ${newLockedState ? "locked" : "unlocked"}`,
+          message: `Node "${node.name}" ${
+            newLockedState ? "locked" : "unlocked"
+          }`,
         });
       },
 

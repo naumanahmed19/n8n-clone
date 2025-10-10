@@ -66,7 +66,8 @@ export const useReactFlowUIStore = create<ReactFlowUIState>((set, get) => ({
     set((state) => ({ showBackground: !state.showBackground })),
   toggleControls: () => set((state) => ({ showControls: !state.showControls })),
   togglePanOnDrag: () => set((state) => ({ panOnDrag: !state.panOnDrag })),
-  toggleZoomOnScroll: () => set((state) => ({ zoomOnScroll: !state.zoomOnScroll })),
+  toggleZoomOnScroll: () =>
+    set((state) => ({ zoomOnScroll: !state.zoomOnScroll })),
 
   changeBackgroundVariant: (variant) => {
     if (variant === "none") {
