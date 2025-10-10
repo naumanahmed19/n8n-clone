@@ -1,4 +1,5 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
+import { useReactFlowUIStore } from '@/stores'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
@@ -48,6 +49,9 @@ export function WorkflowCanvas({
         handleNodeDoubleClick,
     } = useReactFlowInteractions()
     
+    // Get panOnDrag and zoomOnScroll settings from store
+    const { panOnDrag, zoomOnScroll } = useReactFlowUIStore()
+    
     // Determine if interactions should be disabled
     const isDisabled = readOnly || executionMode
     
@@ -77,6 +81,8 @@ export function WorkflowCanvas({
                     nodesDraggable={!isDisabled}
                     nodesConnectable={!isDisabled}
                     elementsSelectable={true}
+                    panOnDrag={panOnDrag}
+                    zoomOnScroll={zoomOnScroll}
                     fitView
                     attributionPosition="bottom-left"
                     edgeUpdaterRadius={isDisabled ? 0 : 10}

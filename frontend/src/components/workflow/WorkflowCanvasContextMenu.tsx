@@ -20,6 +20,8 @@ import {
   Grid3X3,
   Hash,
   History,
+  Lock,
+  Unlock,
   Map,
   Maximize,
   Palette,
@@ -72,9 +74,13 @@ export function WorkflowCanvasContextMenu({
     showBackground,
     showControls,
     showExecutionPanel,
+    panOnDrag,
+    zoomOnScroll,
     toggleMinimap,
     toggleBackground,
     toggleControls,
+    togglePanOnDrag,
+    toggleZoomOnScroll,
     changeBackgroundVariant,
     toggleExecutionPanel,
     zoomIn,
@@ -255,6 +261,39 @@ export function WorkflowCanvasContextMenu({
             >
               <Settings className="mr-2 h-4 w-4" />
               {showControls ? 'Hide' : 'Show'} Controls
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={togglePanOnDrag}
+              className="cursor-pointer"
+            >
+              {panOnDrag ? (
+                <>
+                  <Lock className="mr-2 h-4 w-4" />
+                  Lock Canvas Pan
+                </>
+              ) : (
+                <>
+                  <Unlock className="mr-2 h-4 w-4" />
+                  Unlock Canvas Pan
+                </>
+              )}
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={toggleZoomOnScroll}
+              className="cursor-pointer"
+            >
+              {zoomOnScroll ? (
+                <>
+                  <Lock className="mr-2 h-4 w-4" />
+                  Lock Zoom
+                </>
+              ) : (
+                <>
+                  <Unlock className="mr-2 h-4 w-4" />
+                  Unlock Zoom
+                </>
+              )}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem

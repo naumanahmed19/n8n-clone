@@ -3,13 +3,15 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
 } from '@/components/ui/context-menu'
-import { Copy, Play, Settings, Trash2 } from 'lucide-react'
+import { Copy, Lock, Play, Settings, Trash2, Unlock } from 'lucide-react'
 
 interface NodeContextMenuProps {
   onOpenProperties: () => void
   onExecute: () => void
   onDuplicate: () => void
   onDelete: () => void
+  onToggleLock: () => void
+  isLocked: boolean
   readOnly?: boolean
 }
 
@@ -18,6 +20,8 @@ export function NodeContextMenu({
   onExecute,
   onDuplicate,
   onDelete,
+  onToggleLock,
+  isLocked,
   readOnly = false
 }: NodeContextMenuProps) {
   return (
@@ -37,6 +41,26 @@ export function NodeContextMenu({
       >
         <Play className="mr-2 h-4 w-4" />
         Execute Node
+      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
+      <ContextMenuItem
+        onClick={onToggleLock}
+        disabled={readOnly}
+        className="cursor-pointer"
+      >
+        {isLocked ? (
+          <>
+            <Unlock className="mr-2 h-4 w-4" />
+            Unlock Node
+          </>
+        ) : (
+          <>
+            <Lock className="mr-2 h-4 w-4" />
+            Lock Node
+          </>
+        )}
       </ContextMenuItem>
 
       <ContextMenuSeparator />

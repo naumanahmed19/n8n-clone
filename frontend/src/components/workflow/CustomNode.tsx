@@ -19,6 +19,7 @@ interface CustomNodeData {
   nodeType: string
   parameters: Record<string, any>
   disabled: boolean
+  locked?: boolean
   status?: 'idle' | 'running' | 'success' | 'error'
   icon?: string
   color?: string
@@ -66,6 +67,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
     handleExecuteFromContext,
     handleDuplicate,
     handleDelete,
+    handleToggleLock,
     handleOutputClick
   } = useNodeActions(id)
 
@@ -157,6 +159,8 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
         onExecute={handleExecuteFromContext}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
+        onToggleLock={handleToggleLock}
+        isLocked={!!data.locked}
         readOnly={isReadOnly}
       />
     </ContextMenu>

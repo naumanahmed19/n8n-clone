@@ -169,6 +169,9 @@ interface WorkflowStore extends WorkflowEditorState {
   toggleWorkflowActive: () => void;
   setWorkflowActive: (active: boolean) => void;
 
+  // Node lock/unlock
+  toggleNodeLock: (nodeId: string) => void;
+
   // Validation
   validateWorkflow: () => { isValid: boolean; errors: string[] };
   validateConnection: (sourceId: string, targetId: string) => boolean;
@@ -2894,6 +2897,24 @@ export const useWorkflowStore = create<WorkflowStore>()(
             message: `Workflow ${active ? "activated" : "deactivated"}`,
           });
         }
+      },
+
+      // Node lock/unlock
+      toggleNodeLock: (nodeId: string) => {
+        const { workflow } = get();
+        if (!workflow) return;
+
+        const node = workflow.nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+
+        const newLockedState = !node.locked;
+        get().updateNode(nodeId, { locked: newLockedState });
+        
+        get().addExecutionLog({
+          timestamp: new Date().toISOString(),
+          level: "info",
+          message: `Node "${node.name}" ${newLockedState ? "locked" : "unlocked"}`,
+        });
       },
 
       // Validation

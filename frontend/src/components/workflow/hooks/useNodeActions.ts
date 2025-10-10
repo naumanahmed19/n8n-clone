@@ -6,6 +6,7 @@ export function useNodeActions(nodeId: string) {
   const updateNode = useWorkflowStore((state) => state.updateNode);
   const addNode = useWorkflowStore((state) => state.addNode);
   const removeNode = useWorkflowStore((state) => state.removeNode);
+  const toggleNodeLock = useWorkflowStore((state) => state.toggleNodeLock);
   const openNodeProperties = useWorkflowStore(
     (state) => state.openNodeProperties
   );
@@ -48,6 +49,10 @@ export function useNodeActions(nodeId: string) {
     }
   };
 
+  const handleToggleLock = () => {
+    toggleNodeLock(nodeId);
+  };
+
   const handleOutputClick = (
     event: React.MouseEvent<HTMLDivElement>,
     outputHandle: string
@@ -75,6 +80,7 @@ export function useNodeActions(nodeId: string) {
     handleExecuteFromContext,
     handleDuplicate,
     handleDelete,
+    handleToggleLock,
     handleOutputClick,
   };
 }

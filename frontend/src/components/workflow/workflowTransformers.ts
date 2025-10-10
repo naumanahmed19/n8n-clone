@@ -1,23 +1,6 @@
-import { NodeType } from "@/types";
+import { NodeType, WorkflowNode, WorkflowConnection } from "@/types";
 
 // Type definitions for workflow data
-type WorkflowNode = {
-  id: string;
-  name: string;
-  type: string;
-  position: { x: number; y: number };
-  parameters?: Record<string, any>;
-  disabled?: boolean;
-};
-
-type WorkflowConnection = {
-  id: string;
-  sourceNodeId: string;
-  targetNodeId: string;
-  sourceOutput: string;
-  targetInput: string;
-};
-
 type NodeExecutionResult = {
   nodeId: string;
   status: "idle" | "running" | "success" | "error" | "skipped";
@@ -134,11 +117,13 @@ export function transformWorkflowNodesToReactFlow(
       id: node.id,
       type: reactFlowNodeType,
       position: node.position,
+      draggable: !node.locked,
       data: {
         label: node.name,
         nodeType: node.type,
         parameters: node.parameters,
         disabled: node.disabled,
+        locked: node.locked,
         status: nodeStatus,
         inputs: nodeTypeDefinition?.inputs || [],
         outputs: getNodeOutputs(node, nodeTypeDefinition),

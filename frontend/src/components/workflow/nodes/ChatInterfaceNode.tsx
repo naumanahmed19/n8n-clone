@@ -22,6 +22,7 @@ interface ChatInterfaceNodeData {
   nodeType: string
   parameters: Record<string, any>
   disabled: boolean
+  locked?: boolean
   status?: 'idle' | 'running' | 'success' | 'error' | 'skipped'
   executionResult?: any
   lastExecutionData?: any
@@ -43,6 +44,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     handleExecuteFromContext,
     handleDuplicate,
     handleDelete,
+    handleToggleLock,
     handleOutputClick
   } = useNodeActions(id)
   
@@ -373,6 +375,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
           onExecute={handleExecuteFromContext}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+          onToggleLock={handleToggleLock}
+          isLocked={!!data.locked}
           readOnly={isReadOnly}
         />
       </ContextMenu>
@@ -517,6 +521,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         onExecute={handleExecuteFromContext}
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
+        onToggleLock={handleToggleLock}
+        isLocked={!!data.locked}
         readOnly={isReadOnly}
       />
     </ContextMenu>

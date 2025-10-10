@@ -6,6 +6,7 @@ export interface WorkflowNode {
   position: { x: number; y: number };
   credentials?: string[];
   disabled: boolean;
+  locked?: boolean;
   mockData?: any;
   mockDataPinned?: boolean;
 }
