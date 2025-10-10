@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 import { Workflow } from "../types/database";
-import { NodeInputData, NodeOutputData, StandardizedNodeOutput } from "../types/node.types";
+import { NodeInputData, StandardizedNodeOutput } from "../types/node.types";
 import { logger } from "../utils/logger";
 import { DependencyResolver } from "./DependencyResolver";
 import ExecutionHistoryService from "./ExecutionHistoryService";
@@ -971,11 +971,11 @@ export class FlowExecutionEngine extends EventEmitter {
     const collectedData: any[] = [];
     for (const connection of incomingConnections) {
       const sourceNodeState = context.nodeStates.get(connection.sourceNodeId);
-      
+
       if (sourceNodeState && sourceNodeState.outputData) {
         // outputData is now standardized format: { main: [...], metadata: {...}, branches?: {...} }
         const outputData = sourceNodeState.outputData as any;
-        
+
         // Check if this is the standardized format (has metadata)
         if (outputData.metadata) {
           // Standardized format

@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
 import { ChevronDown, ChevronUp, MessageCircle, Send, User } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Handle, NodeProps, Position } from 'reactflow'
 import { NodeContextMenu } from '../components/NodeContextMenu'
 import { useNodeActions } from '../hooks/useNodeActions'
@@ -31,9 +31,10 @@ interface ChatInterfaceNodeData {
 }
 
 export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfaceNodeData>) {
-  const { executionState, updateNode } = useWorkflowStore()
+  const { executionState, updateNode, workflow, lastExecutionResult } = useWorkflowStore()
   const { executeWorkflow } = useExecutionControls()
-  const isReadOnly = !!executionState.executionId
+  // For chat nodes, only set read-only during actual execution, not just when execution ID exists
+  const isReadOnly = false // Chat should always be interactive
   const isExecuting = executionState.status === 'running'
   
   // Use node actions hook for context menu functionality
@@ -51,31 +52,193 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   // Get parameters from node configuration
   const placeholder = data.parameters?.placeholder || 'Type a message...'
   
-  // Check if we have execution results
-  const executionResult = data.executionResult || data.lastExecutionData
-  const hasExecutionData = executionResult && executionResult.data
-  
-  // Use execution data if available, otherwise use local state
-  const [localMessages, setLocalMessages] = useState<Message[]>([])
+  // State for input and UI
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [lastProcessedExecutionId, setLastProcessedExecutionId] = useState<string | null>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
-  // Determine which messages to display
-  let displayMessages: Message[] = localMessages
-  
-  if (hasExecutionData) {
-    const executionData = executionResult.data
-    if (executionData.message || executionData.userMessage) {
-      displayMessages = [
-        {
-          id: 'exec-user',
-          role: 'user',
-          content: executionData.userMessage || executionData.message,
-          timestamp: new Date(executionData.timestamp || Date.now())
-        }
-      ]
+  // Get stored messages from node parameters
+  const storedMessages = (data.parameters?.conversationHistory as Message[]) || []
+
+  // Get connected node's output (e.g., OpenAI response)
+  const getConnectedNodeResponse = useCallback(() => {
+    if (!workflow || !lastExecutionResult) {
+      console.log('ChatNode: No workflow or lastExecutionResult', { workflow: !!workflow, lastExecutionResult: !!lastExecutionResult })
+      return null
     }
-  }
+    
+    // Find connections where this chat node is the source
+    const outgoingConnections = workflow.connections.filter(
+      conn => conn.sourceNodeId === id
+    )
+    
+    console.log('ChatNode: Outgoing connections', outgoingConnections)
+    
+    if (outgoingConnections.length === 0) return null
+    
+    // Get the first connected node's execution result
+    const connectedNodeId = outgoingConnections[0].targetNodeId
+    const connectedNodeExecution = lastExecutionResult.nodeResults?.find(
+      nr => nr.nodeId === connectedNodeId
+    )
+    
+    console.log('ChatNode: Connected node execution', { 
+      connectedNodeId, 
+      connectedNodeExecution,
+      allNodeResults: lastExecutionResult.nodeResults 
+    })
+    
+    if (!connectedNodeExecution || !connectedNodeExecution.data) return null
+    
+    // Extract response from the execution data
+    // The data structure is: { main: [{ json: { response, message, etc } }] }
+    let data = connectedNodeExecution.data
+    
+    console.log('ChatNode: Raw data from connected node', data)
+    
+    // If data has a 'main' output array, get the first item's json
+    if (data.main && Array.isArray(data.main) && data.main.length > 0) {
+      const mainOutput = data.main[0]
+      if (mainOutput.json) {
+        data = mainOutput.json
+        console.log('ChatNode: Extracted json from main output', data)
+      }
+    }
+    
+    // OpenAI format
+    if (data.response) {
+      console.log('ChatNode: Found response in data.response')
+      return data.response
+    }
+    
+    // Generic message format
+    if (data.message) {
+      console.log('ChatNode: Found response in data.message')
+      return data.message
+    }
+    
+    // Text format
+    if (data.text) {
+      console.log('ChatNode: Found response in data.text')
+      return data.text
+    }
+    
+    // If output is an array, get first item
+    if (Array.isArray(data) && data.length > 0) {
+      const firstItem = data[0]
+      console.log('ChatNode: Data is array, using first item', firstItem)
+      return firstItem.response || firstItem.message || firstItem.text || JSON.stringify(firstItem)
+    }
+    
+    console.log('ChatNode: No response found in any expected format')
+    return null
+  }, [workflow, lastExecutionResult, id])
+
+  // Append new messages from execution to conversation history
+  useEffect(() => {
+    if (!lastExecutionResult || !workflow) return
+    
+    const executionId = lastExecutionResult.executionId
+    
+    // Don't process the same execution twice
+    if (executionId === lastProcessedExecutionId) return
+    
+    const chatNodeResult = lastExecutionResult.nodeResults?.find(nr => nr.nodeId === id)
+    
+    if (chatNodeResult && chatNodeResult.data) {
+      // Get user message from chat node's output
+      let userMessage = null
+      const chatData = chatNodeResult.data
+      
+      // Extract user message from chat node's output: data.main[0].json
+      if (chatData.main && Array.isArray(chatData.main) && chatData.main.length > 0) {
+        const mainOutput = chatData.main[0]
+        if (mainOutput.json) {
+          userMessage = mainOutput.json.userMessage || mainOutput.json.message
+        }
+      }
+      
+      if (userMessage) {
+        // Check if this message already exists in history
+        const currentMessages = (data.parameters?.conversationHistory as Message[]) || []
+        const userMsgId = `${executionId}-user`
+        const alreadyExists = currentMessages.some(msg => msg.id === userMsgId)
+        
+        if (alreadyExists) {
+          console.log('ChatNode: Messages already in history, skipping')
+          setLastProcessedExecutionId(executionId)
+          return
+        }
+        
+        const newMessages: Message[] = []
+        
+        // Add user message
+        newMessages.push({
+          id: userMsgId,
+          role: 'user',
+          content: userMessage,
+          timestamp: new Date(chatNodeResult.startTime || Date.now())
+        })
+        
+        // Add AI response if available
+        const aiResponse = getConnectedNodeResponse()
+        
+        if (aiResponse) {
+          newMessages.push({
+            id: `${executionId}-assistant`,
+            role: 'assistant',
+            content: aiResponse,
+            timestamp: new Date(chatNodeResult.endTime || Date.now())
+          })
+        }
+        
+        // Append to conversation history
+        const updatedHistory = [...currentMessages, ...newMessages]
+        
+        console.log('ChatNode: Appending messages to history', { 
+          executionId, 
+          newMessages, 
+          totalMessages: updatedHistory.length 
+        })
+        
+        // Update node parameters with new conversation history
+        updateNode(id, {
+          parameters: {
+            ...data.parameters,
+            conversationHistory: updatedHistory
+          }
+        })
+        
+        setLastProcessedExecutionId(executionId)
+      }
+    }
+    // Only depend on lastExecutionResult changes - not on data.parameters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastExecutionResult])
+
+  // Use stored conversation history for display
+  const displayMessages: Message[] = storedMessages
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
+      }
+    }
+  }, [displayMessages.length, isTyping])
+
+  // Turn off typing indicator when execution completes and we have a response
+  useEffect(() => {
+    if (!isExecuting && isTyping) {
+      const aiResponse = getConnectedNodeResponse()
+      if (aiResponse || executionState.status === 'error') {
+        setIsTyping(false)
+      }
+    }
+  }, [isExecuting, isTyping, executionState.status, getConnectedNodeResponse])
 
   // Handle expand/collapse toggle
   const handleToggleExpand = useCallback((e: React.MouseEvent) => {
@@ -93,15 +256,6 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isExecuting) return
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue,
-      timestamp: new Date()
-    }
-
-    setLocalMessages(prev => [...prev, userMessage])
     
     const messageToSend = inputValue
     setInputValue('')
@@ -119,23 +273,31 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       await new Promise(resolve => setTimeout(resolve, 100))
       
       console.log('Executing workflow with node:', id, 'message:', messageToSend)
-      await executeWorkflow(id)
+      const result = await executeWorkflow(id)
       
-      console.log('Workflow execution completed')
+      console.log('Workflow execution completed', result)
       setIsTyping(false)
     } catch (error) {
       console.error('Failed to execute workflow:', error)
       setIsTyping(false)
       
+      // Add error message to conversation history
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `error-${Date.now()}`,
         role: 'assistant',
         content: `❌ Error: Failed to execute workflow. ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date()
       }
-      setLocalMessages(prev => [...prev, errorMessage])
+      
+      const updatedHistory = [...storedMessages, errorMessage]
+      updateNode(id, {
+        parameters: {
+          ...data.parameters,
+          conversationHistory: updatedHistory
+        }
+      })
     }
-  }, [inputValue, isExecuting, id, data.parameters, updateNode, executeWorkflow])
+  }, [inputValue, isExecuting, id, data.parameters, updateNode, executeWorkflow, storedMessages])
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -179,8 +341,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                   </div>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{data.label || 'Chat'}</span>
-                    {hasExecutionData && (
-                      <span className="text-xs text-green-600">✓ Sent</span>
+                    {displayMessages.length > 0 && (
+                      <span className="text-xs text-muted-foreground">{displayMessages.length} msg</span>
                     )}
                   </div>
                 </div>
@@ -245,8 +407,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{data.label || 'Chat'}</span>
-                  {hasExecutionData && (
-                    <span className="text-xs text-green-600">✓ Message Sent</span>
+                  {displayMessages.length > 0 && (
+                    <span className="text-xs text-muted-foreground">{displayMessages.length} message{displayMessages.length !== 1 ? 's' : ''}</span>
                   )}
                 </div>
               </div>
@@ -261,7 +423,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
             </div>
 
             {/* Chat Messages Area */}
-            <ScrollArea className="h-[250px] p-3">
+            <ScrollArea ref={scrollAreaRef} className="h-[250px] p-3">
               {displayMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <MessageCircle className="w-12 h-12 mb-2 opacity-50" />
@@ -290,7 +452,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                       >
                         <p className="text-xs whitespace-pre-wrap">{message.content}</p>
                         <span className="text-[10px] opacity-70 mt-1 block">
-                          {message.timestamp.toLocaleTimeString([], { 
+                          {new Date(message.timestamp).toLocaleTimeString([], { 
                             hour: '2-digit', 
                             minute: '2-digit' 
                           })}
@@ -312,14 +474,6 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                 </div>
               )}
             </ScrollArea>
-
-            {/* Output Info */}
-            {hasExecutionData && (
-              <div className="px-3 py-2 bg-secondary/50 border-t text-[10px] text-muted-foreground">
-                <div className="font-medium mb-0.5">📤 Output Available</div>
-                <div>Message: {executionResult.data.message}</div>
-              </div>
-            )}
             
             {/* Input Area */}
             <div className="flex gap-2 p-3 border-t bg-gray-50">
@@ -329,13 +483,13 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isReadOnly || isTyping || isExecuting}
+                disabled={isTyping || isExecuting}
                 className="flex-1 h-9 text-sm"
               />
               <Button
                 size="sm"
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isReadOnly || isTyping || isExecuting}
+                disabled={!inputValue.trim() || isTyping || isExecuting}
                 className="h-9 px-3"
               >
                 {isExecuting ? (

@@ -1266,7 +1266,19 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 },
               });
 
-              // Set final execution state
+              // Create execution result with all node results
+              const executionResult: WorkflowExecutionResult = {
+                executionId: executionResponse.executionId,
+                workflowId: workflow.id,
+                status: finalStatus,
+                startTime,
+                endTime,
+                duration,
+                nodeResults: Array.from(get().realTimeResults.values()),
+                error: finalProgress.error?.message,
+              };
+
+              // Set final execution state with lastExecutionResult
               set({
                 executionState: {
                   status: finalStatus,
@@ -1276,6 +1288,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                   error: finalProgress.error?.message,
                   executionId: executionResponse.executionId,
                 },
+                lastExecutionResult: executionResult,
               });
 
               console.log(
