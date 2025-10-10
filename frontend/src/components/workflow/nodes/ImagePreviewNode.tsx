@@ -14,6 +14,10 @@ interface ImagePreviewNodeData {
   status?: 'idle' | 'running' | 'success' | 'error' | 'skipped'
   executionResult?: any
   lastExecutionData?: any
+  // Dynamic handles from node definition
+  inputs?: string[]
+  outputs?: string[]
+  executionCapability?: 'trigger' | 'action' | 'transform' | 'condition'
 }
 
 /**
