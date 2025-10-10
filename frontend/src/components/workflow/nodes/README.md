@@ -1,14 +1,84 @@
-# Chat Interface Node - Quick Start
+# Workflow Nodes - Interactive Components
 
-## 📁 Files Created
+## 🎯 Overview
 
-1. **ChatInterfaceNode.tsx** - Main node component
-2. **ChatInterfaceNodeDemo.tsx** - Demo/example implementation
-3. **chatInterfaceNodeType.ts** - Node type definition and integration guide
-4. **CHAT_INTERFACE_NODE.md** - Full documentation
-5. **index.ts** - Export file
+This directory contains reusable interactive node components for the workflow canvas, built on top of the generic `BaseNodeWrapper` component.
 
-## 🚀 Quick Start
+## 🧩 Components
+
+### BaseNodeWrapper (Generic Component)
+
+A reusable wrapper for creating expandable/collapsible interactive nodes with consistent behavior.
+
+**Documentation:**
+- 📖 [Full Documentation](./BASE_NODE_WRAPPER.md)
+- ⚡ [Quick Start Guide](./BASE_NODE_WRAPPER_QUICK_START.md)
+
+**Features:**
+- ✅ Expand/collapse functionality
+- ✅ Context menu integration
+- ✅ Customizable icons and colors
+- ✅ Input/output handles
+- ✅ Persistent state management
+- ✅ Responsive design
+
+**Example Usage:**
+```tsx
+import { BaseNodeWrapper } from './BaseNodeWrapper'
+import { Star } from 'lucide-react'
+
+<BaseNodeWrapper
+  id={id}
+  selected={selected}
+  data={data}
+  isExpanded={isExpanded}
+  onToggleExpand={handleToggle}
+  Icon={Star}
+  iconColor="bg-yellow-500"
+  expandedContent={<YourContent />}
+/>
+```
+
+### ChatInterfaceNode
+
+An interactive chat interface node for AI conversations.
+
+**Quick Start:**
+
+**Features:**
+- � Real-time chat interface
+- 📜 Message history with timestamps
+- ⌨️ Typing indicators
+- 🎨 Beautiful UI with shadcn components
+- 🔌 Full workflow integration
+
+### ImagePreviewNode
+
+An example node for displaying image previews with download and fullscreen capabilities.
+
+**Features:**
+- 🖼️ Image display with zoom
+- ⬇️ Download functionality
+- 🖥️ Fullscreen mode
+- 🔄 Error handling and retry
+
+## 📁 Files in this Directory
+
+1. **BaseNodeWrapper.tsx** - Generic wrapper component
+2. **ChatInterfaceNode.tsx** - Chat interface implementation
+3. **ImagePreviewNode.tsx** - Image preview implementation
+4. **ChatInterfaceNodeDemo.tsx** - Chat demo
+5. **chatInterfaceNodeType.ts** - Node type definitions
+6. **BASE_NODE_WRAPPER.md** - Complete wrapper documentation
+7. **BASE_NODE_WRAPPER_QUICK_START.md** - Quick start guide
+8. **CHAT_INTERFACE_NODE.md** - Chat node documentation
+9. **index.ts** - Exports
+
+## 🚀 Quick Start - Create Your Own Node
+
+See [BASE_NODE_WRAPPER_QUICK_START.md](./BASE_NODE_WRAPPER_QUICK_START.md) for a 5-minute guide to creating custom interactive nodes.
+
+## 🚀 Using Existing Nodes
 
 ### 1. The node component is ready to use!
 

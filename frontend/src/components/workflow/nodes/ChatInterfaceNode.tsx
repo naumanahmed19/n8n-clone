@@ -1,13 +1,11 @@
 import { Button } from '@/components/ui/button'
-import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Input } from '@/components/ui/input'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
-import { ChevronDown, ChevronUp, MessageCircle, Send, User } from 'lucide-react'
+import { MessageCircle, Send, User } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Handle, NodeProps, Position } from 'reactflow'
-import { NodeContextMenu } from '../components/NodeContextMenu'
-import { useNodeActions } from '../hooks/useNodeActions'
+import { NodeProps } from 'reactflow'
+import { BaseNodeWrapper } from './BaseNodeWrapper'
 
 interface Message {
   id: string
@@ -36,16 +34,6 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   // For chat nodes, only set read-only during actual execution, not just when execution ID exists
   const isReadOnly = false // Chat should always be interactive
   const isExecuting = executionState.status === 'running'
-  
-  // Use node actions hook for context menu functionality
-  const {
-    handleOpenProperties,
-    handleExecuteFromContext,
-    handleDuplicate,
-    handleDelete,
-    handleToggleLock,
-    handleOutputClick
-  } = useNodeActions(id)
   
   // Track expanded state (stored in node parameters to persist)
   const [isExpanded, setIsExpanded] = useState(data.parameters?.isExpanded ?? false)
@@ -242,8 +230,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   }, [isExecuting, isTyping, executionState.status, getConnectedNodeResponse])
 
   // Handle expand/collapse toggle
-  const handleToggleExpand = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleToggleExpand = useCallback(() => {
     const newExpanded = !isExpanded
     setIsExpanded(newExpanded)
     // Save expanded state to node parameters
@@ -307,227 +294,116 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     }
   }, [handleSendMessage])
 
-  // Handle double-click to open properties dialog
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    handleOpenProperties()
-  }, [handleOpenProperties])
+  // Prepare header info text
+  const headerInfo = displayMessages.length > 0 
+    ? `${displayMessages.length} message${displayMessages.length !== 1 ? 's' : ''}`
+    : undefined
 
-  // Compact view (collapsed)
-  if (!isExpanded) {
-    return (
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div className="relative">
-            <Handle
-              type="target"
-              position={Position.Left}
-              id="input"
-              className="w-3 h-3 !bg-blue-500 border-2 border-white"
-              isConnectable={!isReadOnly}
-            />
-
-            <div
-              onDoubleClick={handleDoubleClick}
-              className={`relative bg-white rounded-lg border-2 shadow-md transition-all duration-200 ${
-                selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'
-              }`}
-              style={{ width: '180px' }}
-            >
-              {/* Compact Header */}
-              <div className="flex items-center justify-between p-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                    <MessageCircle className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{data.label || 'Chat'}</span>
-                    {displayMessages.length > 0 && (
-                      <span className="text-xs text-muted-foreground">{displayMessages.length} msg</span>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleToggleExpand}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="main"
-              className="w-3 h-3 !bg-green-500 border-2 border-white"
-              isConnectable={!isReadOnly}
-              onClick={(e) => handleOutputClick(e, 'main')}
-            />
+  // Expanded content (chat interface)
+  const expandedContent = (
+    <>
+      {/* Chat Messages Area */}
+      <div
+        ref={scrollAreaRef}
+        className="h-[250px] p-3 overflow-y-auto"
+      >
+        {displayMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <MessageCircle className="w-12 h-12 mb-2 opacity-50" />
+            <p className="text-xs text-center">Type a message below to start</p>
           </div>
-        </ContextMenuTrigger>
-        
-        <NodeContextMenu
-          onOpenProperties={handleOpenProperties}
-          onExecute={handleExecuteFromContext}
-          onDuplicate={handleDuplicate}
-          onDelete={handleDelete}
-          onToggleLock={handleToggleLock}
-          isLocked={!!data.locked}
-          readOnly={isReadOnly}
-        />
-      </ContextMenu>
-    )
-  }
-
-  // Expanded view (full chat interface)
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div className="relative">
-          <Handle
-            type="target"
-            position={Position.Left}
-            id="input"
-            className="w-3 h-3 !bg-blue-500 border-2 border-white"
-            isConnectable={!isReadOnly}
-          />
-
-          <div
-            onDoubleClick={handleDoubleClick}
-            className={`relative bg-white rounded-lg border-2 shadow-lg transition-all duration-200 ${
-              selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'
-            }`}
-            style={{ width: '320px' }}
-          >
-            {/* Expanded Header */}
-            <div className="flex items-center justify-between p-3 border-b">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{data.label || 'Chat'}</span>
-                  {displayMessages.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{displayMessages.length} message{displayMessages.length !== 1 ? 's' : ''}</span>
-                  )}
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleToggleExpand}
-                className="h-8 w-8 p-0"
+        ) : (
+          <div className="flex flex-col gap-3">
+            {displayMessages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex gap-2 ${
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
               >
-                <ChevronUp className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Chat Messages Area */}
-            <div
-              ref={scrollAreaRef}
-              className="h-[250px] p-3 overflow-y-auto"
-            >
-              {displayMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <MessageCircle className="w-12 h-12 mb-2 opacity-50" />
-                  <p className="text-xs text-center">Type a message below to start</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {displayMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex gap-2 ${
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      {message.role === 'user' && (
-                        <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                          <User className="w-4 h-4 text-gray-600" />
-                        </div>
-                      )}
-                      <div
-                        className={`rounded-lg px-3 py-2 max-w-[75%] ${
-                          message.role === 'user'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-secondary text-foreground'
-                        }`}
-                      >
-                        <p className="text-xs whitespace-pre-wrap">{message.content}</p>
-                        <span className="text-[10px] opacity-70 mt-1 block">
-                          {new Date(message.timestamp).toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {isTyping && (
-                    <div className="flex gap-2 justify-start">
-                      <div className="rounded-lg px-3 py-2 bg-secondary text-foreground">
-                        <div className="flex gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            {/* Input Area */}
-            <div className="flex gap-2 p-3 border-t bg-gray-50">
-              <Input
-                type="text"
-                placeholder={isExecuting ? 'Processing...' : placeholder}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isTyping || isExecuting}
-                className="flex-1 h-9 text-sm"
-              />
-              <Button
-                size="sm"
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isTyping || isExecuting}
-                className="h-9 px-3"
-              >
-                {isExecuting ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
+                {message.role === 'user' && (
+                  <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-gray-600" />
+                  </div>
                 )}
-              </Button>
-            </div>
+                <div
+                  className={`rounded-lg px-3 py-2 max-w-[75%] ${
+                    message.role === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-secondary text-foreground'
+                  }`}
+                >
+                  <p className="text-xs whitespace-pre-wrap">{message.content}</p>
+                  <span className="text-[10px] opacity-70 mt-1 block">
+                    {new Date(message.timestamp).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex gap-2 justify-start">
+                <div className="rounded-lg px-3 py-2 bg-secondary text-foreground">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="main"
-            className="w-3 h-3 !bg-green-500 border-2 border-white"
-            isConnectable={!isReadOnly}
-            onClick={(e) => handleOutputClick(e, 'main')}
-          />
-        </div>
-      </ContextMenuTrigger>
+        )}
+      </div>
       
-      <NodeContextMenu
-        onOpenProperties={handleOpenProperties}
-        onExecute={handleExecuteFromContext}
-        onDuplicate={handleDuplicate}
-        onDelete={handleDelete}
-        onToggleLock={handleToggleLock}
-        isLocked={!!data.locked}
-        readOnly={isReadOnly}
-      />
-    </ContextMenu>
+      {/* Input Area */}
+      <div className="flex gap-2 p-3 border-t bg-gray-50">
+        <Input
+          type="text"
+          placeholder={isExecuting ? 'Processing...' : placeholder}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          disabled={isTyping || isExecuting}
+          className="flex-1 h-9 text-sm"
+        />
+        <Button
+          size="sm"
+          onClick={handleSendMessage}
+          disabled={!inputValue.trim() || isTyping || isExecuting}
+          className="h-9 px-3"
+        >
+          {isExecuting ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </Button>
+      </div>
+    </>
+  )
+
+  return (
+    <BaseNodeWrapper
+      id={id}
+      selected={selected}
+      data={data}
+      isReadOnly={isReadOnly}
+      isExpanded={isExpanded}
+      onToggleExpand={handleToggleExpand}
+      Icon={MessageCircle}
+      iconColor="bg-blue-500"
+      collapsedWidth="180px"
+      expandedWidth="320px"
+      headerInfo={headerInfo}
+      expandedContent={expandedContent}
+      showInputHandle={true}
+      showOutputHandle={true}
+      inputHandleColor="!bg-blue-500"
+      outputHandleColor="!bg-green-500"
+    />
   )
 }
 

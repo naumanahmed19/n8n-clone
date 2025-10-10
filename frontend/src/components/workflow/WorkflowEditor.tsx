@@ -25,7 +25,7 @@ import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
-import { ChatInterfaceNode } from './nodes'
+import { ChatInterfaceNode, ImagePreviewNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {
@@ -37,6 +37,7 @@ import {
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
     chat: ChatInterfaceNode,
+    'image-preview': ImagePreviewNode,
 }
 
 interface WorkflowEditorProps {
