@@ -51,7 +51,8 @@ export const OpenAINode: NodeDefinition = {
       type: "string",
       required: false,
       default: "You are a helpful AI assistant.",
-      description: "System instructions for the AI",
+      description:
+        "System instructions for the AI. You can use {{json.fieldName}} to reference input data.",
       placeholder: "You are a helpful AI assistant that...",
     },
     {
@@ -118,7 +119,7 @@ export const OpenAINode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    // Get parameters
+    // Get parameters - getNodeParameter automatically resolves {{...}} expressions
     const model = this.getNodeParameter("model") as string;
     const systemPrompt = this.getNodeParameter("systemPrompt") as string;
     const userMessage = this.getNodeParameter("userMessage") as string;
@@ -142,14 +143,8 @@ export const OpenAINode: NodeDefinition = {
       apiKey: credentials.apiKey as string,
     });
 
-    // Resolve user message with input data
-    const items = this.extractJsonData(
-      this.normalizeInputItems(inputData.main || [])
-    );
-    const resolvedMessage =
-      items.length > 0 ? this.resolveValue(userMessage, items[0]) : userMessage;
-
-    if (!resolvedMessage || resolvedMessage.trim() === "") {
+    // Validate user message
+    if (!userMessage || userMessage.trim() === "") {
       throw new Error("User message cannot be empty");
     }
 
@@ -190,7 +185,7 @@ export const OpenAINode: NodeDefinition = {
     // Add current user message
     const currentUserMessage: AIMessage = {
       role: "user",
-      content: resolvedMessage,
+      content: userMessage,
       timestamp: Date.now(),
     };
     messages.push(currentUserMessage);

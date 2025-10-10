@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 import { Workflow } from "../types/database";
-import { NodeInputData, NodeOutputData } from "../types/node.types";
+import { NodeInputData, NodeOutputData, StandardizedNodeOutput } from "../types/node.types";
 import { logger } from "../utils/logger";
 import { DependencyResolver } from "./DependencyResolver";
 import ExecutionHistoryService from "./ExecutionHistoryService";
@@ -52,7 +52,7 @@ export interface NodeExecutionState {
   progress?: number;
   error?: any;
   inputData?: NodeInputData;
-  outputData?: NodeOutputData[];
+  outputData?: StandardizedNodeOutput; // Changed from NodeOutputData[] to StandardizedNodeOutput
   dependencies: string[];
   dependents: string[];
 }
@@ -70,7 +70,7 @@ export interface FlowExecutionResult {
 export interface NodeExecutionResult {
   nodeId: string;
   status: FlowNodeStatus;
-  data?: NodeOutputData[];
+  data?: StandardizedNodeOutput; // Changed from NodeOutputData[] to StandardizedNodeOutput
   error?: any;
   duration: number;
 }
@@ -817,7 +817,7 @@ export class FlowExecutionEngine extends EventEmitter {
         throw new Error(nodeResult.error?.message || "Node execution failed");
       }
 
-      const outputData = nodeResult.data || [];
+      const outputData = nodeResult.data; // StandardizedNodeOutput | undefined
 
       const result: NodeExecutionResult = {
         nodeId,
@@ -971,16 +971,27 @@ export class FlowExecutionEngine extends EventEmitter {
     const collectedData: any[] = [];
     for (const connection of incomingConnections) {
       const sourceNodeState = context.nodeStates.get(connection.sourceNodeId);
+      
       if (sourceNodeState && sourceNodeState.outputData) {
-        // sourceNodeState.outputData is an array of NodeOutputData
-        // Each NodeOutputData can have multiple outputs like { main: [...], secondary: [...] }
-        if (Array.isArray(sourceNodeState.outputData)) {
-          // Find the output object that contains the requested output
-          const outputData = sourceNodeState.outputData.find(
-            (output) => output && output[connection.sourceOutput]
+        // outputData is now standardized format: { main: [...], metadata: {...}, branches?: {...} }
+        const outputData = sourceNodeState.outputData as any;
+        
+        // Check if this is the standardized format (has metadata)
+        if (outputData.metadata) {
+          // Standardized format
+          const sourceOutput = outputData[connection.sourceOutput];
+          if (Array.isArray(sourceOutput)) {
+            collectedData.push(...sourceOutput);
+          } else if (sourceOutput) {
+            collectedData.push(sourceOutput);
+          }
+        } else if (Array.isArray(outputData)) {
+          // Legacy format: array of output objects [{main: [...]}, {secondary: [...]}]
+          const output = outputData.find(
+            (o) => o && o[connection.sourceOutput]
           );
-          if (outputData && outputData[connection.sourceOutput]) {
-            const sourceOutput = outputData[connection.sourceOutput];
+          if (output && output[connection.sourceOutput]) {
+            const sourceOutput = output[connection.sourceOutput];
             if (Array.isArray(sourceOutput)) {
               collectedData.push(...sourceOutput);
             } else {
@@ -988,22 +999,12 @@ export class FlowExecutionEngine extends EventEmitter {
             }
           }
         } else {
-          // If outputData is not an array, handle it directly
-          // This might happen if there's inconsistent data structure
-          logger.warn("OutputData is not an array, attempting direct access", {
-            nodeId: connection.sourceNodeId,
-            outputData: sourceNodeState.outputData,
-            expectedOutput: connection.sourceOutput,
-          });
-
-          const directOutput = sourceNodeState.outputData as any;
-          if (directOutput[connection.sourceOutput]) {
-            const sourceOutput = directOutput[connection.sourceOutput];
-            if (Array.isArray(sourceOutput)) {
-              collectedData.push(...sourceOutput);
-            } else {
-              collectedData.push(sourceOutput);
-            }
+          // Fallback: direct object access
+          const sourceOutput = outputData[connection.sourceOutput];
+          if (Array.isArray(sourceOutput)) {
+            collectedData.push(...sourceOutput);
+          } else if (sourceOutput) {
+            collectedData.push(sourceOutput);
           }
         }
       }

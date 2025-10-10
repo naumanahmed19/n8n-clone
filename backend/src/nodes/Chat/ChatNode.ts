@@ -6,7 +6,7 @@ import {
 
 export const ChatNode: NodeDefinition = {
   type: "chat",
-  displayName: "Chat",
+  displayName: "Chat One",
   name: "chat",
   group: ["communication", "ai"],
   version: 1,
@@ -46,11 +46,8 @@ export const ChatNode: NodeDefinition = {
         // Get user message
         const userMessage = this.getNodeParameter("userMessage", i) as string;
 
-        this.logger?.info("Chat node executing", {
-          userMessageLength: userMessage.length,
-        });
-
-        // Build simple output with just the user message
+        // Build clean output with just the user message
+        // Don't spread item.json to avoid polluting output with execution metadata
         const resultData: any = {
           message: userMessage,
           userMessage: userMessage,
@@ -58,14 +55,7 @@ export const ChatNode: NodeDefinition = {
         };
 
         results.push({
-          json: {
-            ...item.json,
-            ...resultData,
-          },
-        });
-
-        this.logger?.info("Chat node completed", {
-          message: userMessage,
+          json: resultData,
         });
       } catch (error: any) {
         this.logger?.error("Chat node execution failed", {

@@ -198,10 +198,10 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
             <Handle
               type="source"
               position={Position.Right}
-              id="output"
+              id="main"
               className="w-3 h-3 !bg-green-500 border-2 border-white"
               isConnectable={!isReadOnly}
-              onClick={(e) => handleOutputClick(e, 'output')}
+              onClick={(e) => handleOutputClick(e, 'main')}
             />
           </div>
         </ContextMenuTrigger>
@@ -350,10 +350,10 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
           <Handle
             type="source"
             position={Position.Right}
-            id="output"
+            id="main"
             className="w-3 h-3 !bg-green-500 border-2 border-white"
             isConnectable={!isReadOnly}
-            onClick={(e) => handleOutputClick(e, 'output')}
+            onClick={(e) => handleOutputClick(e, 'main')}
           />
         </div>
       </ContextMenuTrigger>
