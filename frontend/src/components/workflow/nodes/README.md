@@ -11,10 +11,12 @@ This directory contains reusable interactive node components for the workflow ca
 A reusable wrapper for creating expandable/collapsible interactive nodes with consistent behavior.
 
 **Documentation:**
+
 - 📖 [Full Documentation](./BASE_NODE_WRAPPER.md)
 - ⚡ [Quick Start Guide](./BASE_NODE_WRAPPER_QUICK_START.md)
 
 **Features:**
+
 - ✅ Expand/collapse functionality
 - ✅ Context menu integration
 - ✅ Customizable icons and colors
@@ -23,9 +25,10 @@ A reusable wrapper for creating expandable/collapsible interactive nodes with co
 - ✅ Responsive design
 
 **Example Usage:**
+
 ```tsx
-import { BaseNodeWrapper } from './BaseNodeWrapper'
-import { Star } from 'lucide-react'
+import { BaseNodeWrapper } from "./BaseNodeWrapper";
+import { Star } from "lucide-react";
 
 <BaseNodeWrapper
   id={id}
@@ -36,7 +39,7 @@ import { Star } from 'lucide-react'
   Icon={Star}
   iconColor="bg-yellow-500"
   expandedContent={<YourContent />}
-/>
+/>;
 ```
 
 ### ChatInterfaceNode
@@ -46,6 +49,7 @@ An interactive chat interface node for AI conversations.
 **Quick Start:**
 
 **Features:**
+
 - � Real-time chat interface
 - 📜 Message history with timestamps
 - ⌨️ Typing indicators
@@ -57,6 +61,7 @@ An interactive chat interface node for AI conversations.
 An example node for displaying image previews with download and fullscreen capabilities.
 
 **Features:**
+
 - 🖼️ Image display with zoom
 - ⬇️ Download functionality
 - 🖥️ Fullscreen mode
