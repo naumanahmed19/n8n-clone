@@ -1,11 +1,11 @@
 // Export workflow utilities
-export { 
-  getNodeStatusClasses, 
-  getNodeBorderClasses, 
-  getNodeAnimationClasses 
-} from './nodeStyleUtils'
+export {
+  getNodeAnimationClasses,
+  getNodeBorderClasses,
+  getNodeStatusClasses,
+} from "./nodeStyleUtils";
 
-export { 
-  calculateHandlePosition, 
-  generateHandlePositions 
-} from './handlePositioning'
+export {
+  calculateHandlePosition,
+  generateHandlePositions,
+} from "./handlePositioning";

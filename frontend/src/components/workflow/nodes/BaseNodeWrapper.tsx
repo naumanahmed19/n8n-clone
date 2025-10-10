@@ -9,8 +9,8 @@ import { NodeIcon } from '../components/NodeIcon'
 import { NodeToolbarContent } from '../components/NodeToolbarContent'
 import { useNodeActions } from '../hooks/useNodeActions'
 import { useNodeExecution } from '../hooks/useNodeExecution'
-import { getNodeStatusClasses } from '../utils/nodeStyleUtils'
 import '../node-animations.css'
+import { getNodeStatusClasses } from '../utils/nodeStyleUtils'
 
 export interface BaseNodeWrapperProps {
   /** Node ID */
