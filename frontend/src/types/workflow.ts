@@ -244,6 +244,7 @@ export interface NodeExecutionResult {
   endTime: number;
   duration: number;
   data?: any;
+  /** Error message or serialized error object as string */
   error?: string;
 }
 

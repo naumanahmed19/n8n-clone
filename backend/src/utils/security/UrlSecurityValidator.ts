@@ -26,6 +26,10 @@ export class UrlSecurityValidator {
   private static readonly BLOCKED_PROTOCOLS = ['file', 'ftp', 'gopher', 'ldap', 'ldaps'];
   private static readonly ALLOWED_PROTOCOLS = ['http', 'https'];
   
+  // Check if we're in development mode (allow localhost and internal networks)
+  private static readonly IS_DEVELOPMENT = process.env.NODE_ENV === 'development' || 
+                                            process.env.ALLOW_LOCALHOST === 'true';
+  
   // Internal network ranges (RFC 1918)
   private static readonly INTERNAL_NETWORK_RANGES = [
     { start: '10.0.0.0', end: '10.255.255.255' },
@@ -39,10 +43,14 @@ export class UrlSecurityValidator {
 
   // Known malicious or blocked domains (can be extended)
   private static readonly BLOCKED_DOMAINS = [
-    'localhost',
     '0.0.0.0',
     'metadata.google.internal',
     '169.254.169.254' // AWS/GCP metadata service
+  ];
+  
+  // Domains that are blocked only in production
+  private static readonly DEV_BLOCKED_DOMAINS = [
+    'localhost',
   ];
 
   /**
@@ -142,6 +150,15 @@ export class UrlSecurityValidator {
    * Check if hostname is in internal network range
    */
   private static validateNetworkAccess(hostname: string): SecurityValidationResult {
+    // In development mode, allow internal network access
+    if (this.IS_DEVELOPMENT) {
+      return {
+        isValid: true,
+        errors: [],
+        riskLevel: 'low'
+      };
+    }
+    
     // Check if it's an IP address
     if (this.isIPAddress(hostname)) {
       if (this.isInternalNetwork(hostname)) {
@@ -170,7 +187,21 @@ export class UrlSecurityValidator {
   private static validateDomain(hostname: string): SecurityValidationResult {
     const lowerHostname = hostname.toLowerCase();
     
+    // Always check production blocked domains
     if (this.BLOCKED_DOMAINS.includes(lowerHostname)) {
+      return {
+        isValid: false,
+        errors: [{
+          type: SecurityErrorType.MALICIOUS_DOMAIN,
+          message: `Domain '${hostname}' is blocked`,
+          details: { hostname }
+        }],
+        riskLevel: 'high'
+      };
+    }
+    
+    // Check development-only blocked domains only in production
+    if (!this.IS_DEVELOPMENT && this.DEV_BLOCKED_DOMAINS.includes(lowerHostname)) {
       return {
         isValid: false,
         errors: [{

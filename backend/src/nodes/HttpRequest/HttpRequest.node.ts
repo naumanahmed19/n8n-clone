@@ -334,11 +334,19 @@ export const HttpRequestNode: NodeDefinition = {
         errorType: httpError.httpErrorType,
         statusCode: httpError.statusCode,
         error: httpError.message,
+        errorStack: httpError.stack,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       });
 
       // Throw user-friendly error message
       const userMessage =
         HttpExecutionErrorFactory.getUserFriendlyMessage(httpError);
+      
+      // If we don't have a user message, throw the original error for debugging
+      if (!userMessage || userMessage === 'An unexpected error occurred while making the request.') {
+        throw error;
+      }
+      
       throw new Error(userMessage);
     }
   },

@@ -217,6 +217,39 @@ interface WorkflowStore extends WorkflowEditorState {
 
 const MAX_HISTORY_SIZE = 50;
 
+/**
+ * Helper function to serialize error for display
+ * Converts error objects to properly formatted strings
+ */
+function serializeError(error: any): string | undefined {
+  if (!error) return undefined;
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  // If it's an object, try to extract useful information
+  if (typeof error === 'object') {
+    // Check for common error properties
+    if (error.message) {
+      return error.message;
+    }
+    
+    // If the object has useful information, stringify it
+    try {
+      return JSON.stringify(error, null, 2);
+    } catch (e) {
+      return String(error);
+    }
+  }
+  
+  return String(error);
+}
+
 export const useWorkflowStore = create<WorkflowStore>()(
   devtools(
     (set, get) => ({
@@ -1201,7 +1234,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
                 get().updateNodeExecutionState(nodeExec.nodeId, visualStatus, {
                   progress: nodeStatus === "success" ? 100 : undefined,
-                  error: nodeExec.error,
+                  error: serializeError(nodeExec.error),
                   outputData: nodeExec.outputData,
                   startTime: nodeExec.startedAt
                     ? new Date(nodeExec.startedAt).getTime()
@@ -1230,7 +1263,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                         new Date(nodeExec.startedAt).getTime()
                       : 0,
                   data: nodeExec.outputData,
-                  error: nodeExec.error,
+                  error: serializeError(nodeExec.error),
                 });
               });
 
@@ -1456,7 +1489,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
               if (nodeExecution) {
                 nodeOutputData = nodeExecution.outputData;
-                nodeError = nodeExecution.error;
+                nodeError = serializeError(nodeExecution.error);
               }
             } catch (error) {
               console.warn(
@@ -1648,7 +1681,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                       new Date(nodeExec.startedAt).getTime()
                     : 0,
                 data: nodeExec.outputData,
-                error: nodeExec.error,
+                error: serializeError(nodeExec.error),
               };
 
               // Update real-time results
@@ -1665,7 +1698,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
               get().updateNodeExecutionState(nodeExec.nodeId, visualStatus, {
                 progress: nodeStatus === "success" ? 100 : undefined,
-                error: nodeExec.error,
+                error: serializeError(nodeExec.error),
                 outputData: nodeExec.outputData,
                 startTime: nodeExec.startedAt
                   ? new Date(nodeExec.startedAt).getTime()
