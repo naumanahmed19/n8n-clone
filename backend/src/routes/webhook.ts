@@ -6,7 +6,10 @@ import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import { ExecutionService } from "../services/ExecutionService";
 import { SocketService } from "../services/SocketService";
 import { WorkflowService } from "../services/WorkflowService";
-import { getTriggerService, initializeTriggerService } from "../services/triggerServiceSingleton";
+import {
+  getTriggerService,
+  initializeTriggerService,
+} from "../services/triggerServiceSingleton";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -62,25 +65,28 @@ const ensureTriggerServiceInitialized = async () => {
  * Debug endpoint - List all registered webhooks
  * MUST come before /:webhookId route to avoid pattern matching conflict
  */
-router.get("/debug/list", asyncHandler(async (req: Request, res: Response) => {
-  const triggerService = await ensureTriggerServiceInitialized();
-  const webhooks = triggerService.getRegisteredWebhooks();
-  
-  res.json({
-    success: true,
-    count: webhooks.length,
-    webhooks,
-    timestamp: new Date().toISOString(),
-  });
-}));
+router.get(
+  "/debug/list",
+  asyncHandler(async (req: Request, res: Response) => {
+    const triggerService = await ensureTriggerServiceInitialized();
+    const webhooks = triggerService.getRegisteredWebhooks();
+
+    res.json({
+      success: true,
+      count: webhooks.length,
+      webhooks,
+      timestamp: new Date().toISOString(),
+    });
+  })
+);
 
 /**
  * Public Webhook Endpoint - handles incoming webhook requests
  * This route is accessible without authentication to allow external services to trigger workflows
- * 
+ *
  * URL format: http://localhost:4000/webhook/{webhookId}
  * Optional path: http://localhost:4000/webhook/{webhookId}/custom-path
- * 
+ *
  * Supports all HTTP methods: GET, POST, PUT, DELETE, PATCH
  */
 router.all(
@@ -111,7 +117,9 @@ router.all(
       );
 
       if (result.success) {
-        console.log(`✅ Webhook processed successfully - Execution ID: ${result.executionId}`);
+        console.log(
+          `✅ Webhook processed successfully - Execution ID: ${result.executionId}`
+        );
         res.status(200).json({
           success: true,
           message: "Webhook received and workflow triggered",
@@ -125,7 +133,7 @@ router.all(
           : result.error?.includes("authentication")
           ? 401
           : 400;
-        
+
         res.status(statusCode).json({
           success: false,
           error: result.error || "Failed to process webhook",
@@ -151,7 +159,9 @@ router.all(
     const { webhookId } = req.params;
     const pathSuffix = req.params[0] || "";
 
-    console.log(`📨 Webhook received: ${req.method} /webhook/${webhookId}/${pathSuffix}`);
+    console.log(
+      `📨 Webhook received: ${req.method} /webhook/${webhookId}/${pathSuffix}`
+    );
     console.log(`📝 Headers:`, req.headers);
     console.log(`📝 Body:`, req.body);
     console.log(`📝 Query:`, req.query);
@@ -174,7 +184,9 @@ router.all(
       );
 
       if (result.success) {
-        console.log(`✅ Webhook processed successfully - Execution ID: ${result.executionId}`);
+        console.log(
+          `✅ Webhook processed successfully - Execution ID: ${result.executionId}`
+        );
         res.status(200).json({
           success: true,
           message: "Webhook received and workflow triggered",
@@ -188,7 +200,7 @@ router.all(
           : result.error?.includes("authentication")
           ? 401
           : 400;
-        
+
         res.status(statusCode).json({
           success: false,
           error: result.error || "Failed to process webhook",
@@ -220,7 +232,9 @@ router.post(
 
     // Just validate the webhook exists without triggering
     const triggerService = await ensureTriggerServiceInitialized();
-    const webhookExists = (triggerService as any).webhookTriggers?.has(webhookId);
+    const webhookExists = (triggerService as any).webhookTriggers?.has(
+      webhookId
+    );
 
     if (webhookExists) {
       res.json({

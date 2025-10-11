@@ -37,24 +37,26 @@ The component is integrated into the Webhook Trigger node definition:
 
 ### Component Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `value` | `string` | `""` | The webhook ID (UUID) |
-| `onChange` | `function` | - | Callback when webhook ID changes |
-| `disabled` | `boolean` | `false` | Disable all interactions |
-| `path` | `string` | `""` | Optional path to append to URLs |
-| `mode` | `"test" \| "production"` | `"test"` | Initial display mode |
+| Prop       | Type                     | Default  | Description                      |
+| ---------- | ------------------------ | -------- | -------------------------------- |
+| `value`    | `string`                 | `""`     | The webhook ID (UUID)            |
+| `onChange` | `function`               | -        | Callback when webhook ID changes |
+| `disabled` | `boolean`                | `false`  | Disable all interactions         |
+| `path`     | `string`                 | `""`     | Optional path to append to URLs  |
+| `mode`     | `"test" \| "production"` | `"test"` | Initial display mode             |
 
 ### Environment Variables
 
 The component uses the following environment variables for URL generation:
 
 #### Test Environment
+
 - `VITE_WEBHOOK_TEST_URL` - Primary test webhook URL
 - `VITE_API_URL` - Falls back to API URL with `/webhook` path
 - Default: `http://localhost:4000/webhook`
 
 #### Production Environment
+
 - `VITE_WEBHOOK_PROD_URL` - Primary production webhook URL
 - `VITE_WEBHOOK_BASE_URL` - Alternative production URL
 - Default: `https://your-domain.com/webhook`
@@ -66,7 +68,7 @@ The component uses the following environment variables for URL generation:
 VITE_WEBHOOK_TEST_URL=http://localhost:4000/webhook
 VITE_API_URL=http://localhost:4000/api
 
-# Production Environment  
+# Production Environment
 VITE_WEBHOOK_PROD_URL=https://your-production-domain.com/webhook
 VITE_WEBHOOK_BASE_URL=https://your-production-domain.com/webhook
 ```
@@ -89,11 +91,13 @@ The generated webhook URLs follow this pattern:
 ### Examples
 
 **Test URL (without path):**
+
 ```
 http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **Production URL (with path):**
+
 ```
 https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/custom-path
 ```
@@ -101,43 +105,51 @@ https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/custom-path
 ## User Interface
 
 ### Mode Selector
+
 - **Test URL Button**: Displays test environment (blue theme)
 - **Production URL Button**: Displays production environment (green theme)
 
 ### URL Display Cards
 
 #### Test Environment (Blue)
+
 - Shows "localhost" badge
 - Blue-themed card with test URL
 - Copy button with success feedback
 - Helper text for development use
 
 #### Production Environment (Green)
+
 - Shows "live" badge
 - Green-themed card with production URL
 - Copy button with success feedback
 - Helper text for production use
 
 ### Webhook ID Section
+
 - Read-only display of current webhook ID
 - "Regenerate" button to create new ID
 - Warning message about invalidating old URLs
 
 ### Info Box
+
 - Instructions on how to use webhook URLs
 - 4-step guide for integration
 
 ## Integration Flow
 
 1. **User Opens Webhook Trigger Node**
+
    - Component auto-generates a unique webhook ID
    - Test and production URLs are displayed
 
 2. **User Selects Environment**
+
    - Clicks "Test URL" or "Production URL" button
    - Corresponding card is displayed
 
 3. **User Copies URL**
+
    - Clicks copy button
    - URL is copied to clipboard
    - Success checkmark appears for 2 seconds
@@ -238,17 +250,20 @@ const copyToClipboard = async (text: string, type: "test" | "production") => {
 ## Troubleshooting
 
 ### URL Not Working
+
 - Verify backend server is running
 - Check environment variables are set correctly
 - Ensure webhook ID matches in both frontend and backend
 - Verify workflow is active
 
 ### Copy Not Working
+
 - Check browser permissions for clipboard access
 - Try the fallback selection method
 - Ensure HTTPS in production (required for clipboard API)
 
 ### Wrong URL Format
+
 - Verify `.env` files have correct base URLs
 - Check for trailing slashes in environment variables
 - Ensure path parameter doesn't start with `/`

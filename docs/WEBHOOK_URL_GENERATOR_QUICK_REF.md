@@ -75,11 +75,13 @@
 ### Generated URLs
 
 **Test Environment:**
+
 ```
 http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/github-webhook
 ```
 
 **Production Environment:**
+
 ```
 https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/github-webhook
 ```
@@ -101,8 +103,9 @@ curl -X POST \
 ```javascript
 // Trigger webhook from your application
 async function triggerWorkflow(data) {
-  const webhookUrl = "http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890";
-  
+  const webhookUrl =
+    "http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
   const response = await fetch(webhookUrl, {
     method: "POST",
     headers: {
@@ -110,7 +113,7 @@ async function triggerWorkflow(data) {
     },
     body: JSON.stringify(data),
   });
-  
+
   return await response.json();
 }
 
@@ -119,8 +122,8 @@ triggerWorkflow({
   event: "user_signup",
   user: {
     email: "user@example.com",
-    name: "John Doe"
-  }
+    name: "John Doe",
+  },
 });
 ```
 
@@ -152,6 +155,7 @@ print(response.json())
 5. Save webhook
 
 **Webhook URL:**
+
 ```
 https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/github
 ```
@@ -164,6 +168,7 @@ https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/github
 4. Configure trigger words
 
 **Webhook URL:**
+
 ```
 https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/slack
 ```
@@ -177,6 +182,7 @@ https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/slack
 5. Configure payload
 
 **Webhook URL:**
+
 ```
 https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/zapier
 ```
@@ -184,6 +190,7 @@ https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/zapier
 ## Testing Workflow
 
 ### 1. Development Testing
+
 ```bash
 # Use test URL
 curl -X POST http://localhost:4000/webhook/{webhook-id} \
@@ -192,6 +199,7 @@ curl -X POST http://localhost:4000/webhook/{webhook-id} \
 ```
 
 ### 2. Staging Testing
+
 ```bash
 # Use staging environment
 curl -X POST https://staging.your-domain.com/webhook/{webhook-id} \
@@ -200,6 +208,7 @@ curl -X POST https://staging.your-domain.com/webhook/{webhook-id} \
 ```
 
 ### 3. Production Testing
+
 ```bash
 # Use production URL
 curl -X POST https://your-domain.com/webhook/{webhook-id} \
@@ -276,6 +285,7 @@ curl -v -X POST http://localhost:4000/webhook/{webhook-id} \
 ### Webhook Not Triggering
 
 ✅ **Check:**
+
 - Workflow is active
 - Webhook ID is correct
 - Backend server is running
@@ -285,6 +295,7 @@ curl -v -X POST http://localhost:4000/webhook/{webhook-id} \
 ### 404 Not Found
 
 ✅ **Verify:**
+
 - Webhook URL is complete
 - No extra slashes in URL
 - Webhook ID is registered
@@ -293,6 +304,7 @@ curl -v -X POST http://localhost:4000/webhook/{webhook-id} \
 ### 401 Unauthorized
 
 ✅ **Confirm:**
+
 - Authentication is configured correctly
 - Headers/query params match expected values
 - Credentials haven't expired
@@ -300,6 +312,7 @@ curl -v -X POST http://localhost:4000/webhook/{webhook-id} \
 ### 500 Server Error
 
 ✅ **Review:**
+
 - Backend logs for errors
 - Workflow node configurations
 - Input data format

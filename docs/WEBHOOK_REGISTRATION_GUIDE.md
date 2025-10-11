@@ -35,6 +35,7 @@ Click the **Save** button in the workflow editor. This stores the workflow in th
 ### Step 3: Activate the Workflow
 
 Toggle the **Active** switch to ON. This triggers:
+
 - `TriggerService.activateTrigger()` is called
 - The webhook ID is registered in `webhookTriggers` Map
 - The webhook is now listening for requests
@@ -60,6 +61,7 @@ curl http://localhost:4000/webhook/debug/list
 ```
 
 **Example Response:**
+
 ```json
 {
   "success": true,
@@ -85,6 +87,7 @@ curl http://localhost:4000/webhook/debug/list
 ```
 
 If you see no webhooks:
+
 ```json
 {
   "success": true,
@@ -103,6 +106,7 @@ curl -X POST http://localhost:4000/webhook/{webhookId}/test
 ```
 
 **If registered:**
+
 ```json
 {
   "success": true,
@@ -112,6 +116,7 @@ curl -X POST http://localhost:4000/webhook/{webhookId}/test
 ```
 
 **If NOT registered:**
+
 ```json
 {
   "success": false,
@@ -133,18 +138,22 @@ Webhook trigger activated: abc-123-def-456-ghi-789
 ### Webhook Not Registering
 
 - [ ] **Is the workflow saved?**
+
   - Check: Open workflow, see if there's a "Save" button (unsaved changes)
   - Fix: Click Save
 
 - [ ] **Is the workflow active?**
+
   - Check: Look for green "Active" toggle in workflow editor
   - Fix: Toggle the Active switch to ON
 
 - [ ] **Does the webhook node have a webhook ID?**
+
   - Check: Open webhook trigger node, see if "Webhook URL" field has a UUID
   - Fix: If empty, close and reopen the node (it should auto-generate)
 
 - [ ] **Is the webhook ID correct?**
+
   - Check: Compare the ID in your test URL with the one in the workflow
   - Fix: Copy the correct URL from the workflow node
 
@@ -157,17 +166,20 @@ Webhook trigger activated: abc-123-def-456-ghi-789
 If activating the workflow doesn't register the webhook:
 
 1. **Check server logs for errors**
+
    ```
    ❌ Error activating trigger: ...
    ```
 
 2. **Try deactivating and reactivating**
+
    - Toggle OFF
    - Wait 2 seconds
    - Toggle ON
    - Check logs
 
 3. **Restart the backend server**
+
    ```bash
    # Stop server (Ctrl+C)
    cd backend
@@ -183,6 +195,7 @@ If activating the workflow doesn't register the webhook:
 ### 1. Create Test Workflow
 
 **Workflow Structure:**
+
 ```
 [Webhook Trigger] → [Set Node] → [Respond to Webhook]
 ```
@@ -233,6 +246,7 @@ curl -X POST http://localhost:4000/webhook/bb71f9a1-6ab3-4157-8555-da74322a3f9d 
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -282,18 +296,22 @@ curl -X POST http://localhost:4000/webhook/bb71f9a1-6ab3-4157-8555-da74322a3f9d 
 ## 🚨 Common Mistakes
 
 ### 1. Testing Before Activating
+
 ❌ **Wrong:** Create workflow → Immediately test webhook  
 ✅ **Correct:** Create workflow → Save → Activate → Test webhook
 
 ### 2. Wrong Webhook ID
+
 ❌ **Wrong:** Using `bb71f9a1-...` when workflow has `cc82g0b2-...`  
 ✅ **Correct:** Copy the exact webhook URL from the workflow node
 
 ### 3. Workflow Not Active
+
 ❌ **Wrong:** Saved but not activated  
 ✅ **Correct:** Both saved AND activated (toggle ON)
 
 ### 4. Server Not Restarted
+
 ❌ **Wrong:** Made code changes, didn't restart  
 ✅ **Correct:** Restart backend server after any code changes
 

@@ -997,32 +997,37 @@ export class ExecutionService {
     this.flowExecutionEngine.on("flowExecutionCompleted", (flowResult) => {
       logger.debug("Flow execution completed:", flowResult);
 
-      // Broadcast flow completion event
+      // Broadcast flow completion event to BOTH execution room and workflow room
       if (global.socketService) {
-        global.socketService.broadcastExecutionEvent(flowResult.executionId, {
-          executionId: flowResult.executionId,
-          type: "completed",
-          timestamp: new Date(),
-          data: {
-            status: flowResult.status,
-            executedNodes: flowResult.executedNodes,
-            failedNodes: flowResult.failedNodes,
-            duration: flowResult.totalDuration,
+        global.socketService.broadcastExecutionEvent(
+          flowResult.executionId,
+          {
+            executionId: flowResult.executionId,
+            type: "completed",
+            timestamp: new Date(),
+            data: {
+              status: flowResult.status,
+              executedNodes: flowResult.executedNodes,
+              failedNodes: flowResult.failedNodes,
+              duration: flowResult.totalDuration,
+            },
           },
-        });
+          flowResult.workflowId // Pass workflowId to broadcast to workflow room
+        );
       }
     });
 
-    this.flowExecutionEngine.on("nodeExecuted", (nodeEventData) => {
+    this.flowExecutionEngine.on("nodeExecuted", (nodeEventData: any) => {
       logger.info("Flow node executed event received:", nodeEventData);
       console.log("=== NODE EXECUTED EVENT ===", {
         executionId: nodeEventData.executionId,
+        workflowId: nodeEventData.workflowId,
         nodeId: nodeEventData.nodeId,
         status: nodeEventData.status,
         error: nodeEventData.result?.error,
       });
 
-      // Broadcast node execution updates for flow
+      // Broadcast node execution updates for flow to BOTH execution room and workflow room
       if (global.socketService) {
         // Determine if node succeeded or failed - fix the logic here
         const eventType =
@@ -1033,6 +1038,7 @@ export class ExecutionService {
 
         logger.info("Broadcasting node execution event via socket", {
           executionId: nodeEventData.executionId,
+          workflowId: nodeEventData.workflowId,
           nodeId: nodeEventData.nodeId,
           eventType,
           status: nodeEventData.status,
@@ -1056,7 +1062,8 @@ export class ExecutionService {
             data: nodeEventData.result,
             error: nodeEventData.result?.error,
             timestamp: new Date(),
-          }
+          },
+          nodeEventData.workflowId // Pass workflowId to broadcast to workflow room
         );
       } else {
         logger.warn(

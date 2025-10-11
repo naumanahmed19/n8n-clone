@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import { TriggerService } from "./TriggerService";
-import { WorkflowService } from "./WorkflowService";
+import ExecutionHistoryService from "./ExecutionHistoryService";
 import { ExecutionService } from "./ExecutionService";
 import { SocketService } from "./SocketService";
-import ExecutionHistoryService from "./ExecutionHistoryService";
+import { TriggerService } from "./TriggerService";
+import { WorkflowService } from "./WorkflowService";
 
 let triggerServiceInstance: TriggerService | null = null;
 

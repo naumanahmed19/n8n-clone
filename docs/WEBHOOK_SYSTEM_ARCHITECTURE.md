@@ -9,16 +9,19 @@ The webhook system allows external services to trigger workflow executions by se
 ### Components
 
 1. **WebhookUrlGenerator** (Frontend Component)
+
    - Generates unique webhook IDs (UUIDs)
    - Displays test and production URLs
    - Provides copy-to-clipboard functionality
 
 2. **Webhook Router** (`backend/src/routes/webhook.ts`)
+
    - Public HTTP endpoint at `/webhook/:webhookId`
    - Handles all HTTP methods (GET, POST, PUT, DELETE, PATCH)
    - No authentication required (accessible to external services)
 
 3. **TriggerService** (`backend/src/services/TriggerService.ts`)
+
    - Manages webhook registrations
    - Maps webhook IDs to workflows
    - Triggers workflow executions
@@ -48,20 +51,23 @@ Webhook is now listening for requests
 ```
 
 **Code Flow:**
+
 ```typescript
 // 1. Frontend generates webhook ID
 const webhookId = crypto.randomUUID(); // e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 // 2. User saves workflow with webhook trigger
 workflowService.save({
-  nodes: [{
-    type: "webhook-trigger",
-    parameters: {
-      webhookUrl: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      httpMethod: "POST",
-      // ... other settings
-    }
-  }]
+  nodes: [
+    {
+      type: "webhook-trigger",
+      parameters: {
+        webhookUrl: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        httpMethod: "POST",
+        // ... other settings
+      },
+    },
+  ],
 });
 
 // 3. Backend activates trigger
@@ -93,6 +99,7 @@ Response sent back to external service
 ```
 
 **Request Example:**
+
 ```bash
 POST http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 Content-Type: application/json
@@ -107,28 +114,32 @@ Content-Type: application/json
 ```
 
 **Server Handling:**
+
 ```typescript
 // 1. Router receives request
 router.all("/:webhookId/*?", async (req, res) => {
   const { webhookId } = req.params;
-  
+
   // 2. Create webhook request object
   const webhookRequest = {
-    method: req.method,      // "POST"
-    headers: req.headers,    // { "content-type": "application/json", ... }
-    query: req.query,        // URL query parameters
-    body: req.body,          // { "event": "user_signup", ... }
-    ip: req.ip,              // Client IP address
-    userAgent: req.get("User-Agent")
+    method: req.method, // "POST"
+    headers: req.headers, // { "content-type": "application/json", ... }
+    query: req.query, // URL query parameters
+    body: req.body, // { "event": "user_signup", ... }
+    ip: req.ip, // Client IP address
+    userAgent: req.get("User-Agent"),
   };
-  
+
   // 3. Trigger workflow
-  const result = await triggerService.handleWebhookTrigger(webhookId, webhookRequest);
-  
+  const result = await triggerService.handleWebhookTrigger(
+    webhookId,
+    webhookRequest
+  );
+
   // 4. Send response
   res.json({
     success: true,
-    executionId: result.executionId
+    executionId: result.executionId,
   });
 });
 ```
@@ -156,6 +167,7 @@ Execution result stored in database
 ```
 
 **Webhook Data Flow:**
+
 ```typescript
 // Data received by webhook
 const webhookRequest = {
@@ -190,11 +202,13 @@ const triggerData = {
 ## 🔐 Authentication Flow
 
 ### No Authentication
+
 ```mermaid
 Request received → Workflow executes immediately
 ```
 
 ### Header Authentication
+
 ```mermaid
 Request received
     ↓
@@ -207,6 +221,7 @@ Compare with expected value
 ```
 
 ### Basic Authentication
+
 ```mermaid
 Request received
     ↓
@@ -221,6 +236,7 @@ Compare username and password
 ```
 
 ### Query Parameter Authentication
+
 ```mermaid
 Request received
     ↓
@@ -235,6 +251,7 @@ Compare with expected value
 ## 🗺️ URL Structure
 
 ### Base URL Format
+
 ```
 {protocol}://{host}:{port}/webhook/{webhookId}/{path?}
 ```
@@ -242,16 +259,19 @@ Compare with expected value
 ### Examples
 
 **Test Environment (Development):**
+
 ```
 http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **Production Environment:**
+
 ```
 https://your-domain.com/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **With Optional Path:**
+
 ```
 http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/github-webhook
 ```
@@ -261,6 +281,7 @@ http://localhost:4000/webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890/github-webhoo
 ### Successful Request
 
 **Request:**
+
 ```http
 POST /webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890 HTTP/1.1
 Host: localhost:4000
@@ -273,6 +294,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -288,12 +310,14 @@ Content-Type: application/json
 ### Failed Request (Webhook Not Found)
 
 **Request:**
+
 ```http
 POST /webhook/invalid-webhook-id HTTP/1.1
 Host: localhost:4000
 ```
 
 **Response:**
+
 ```http
 HTTP/1.1 404 Not Found
 Content-Type: application/json
@@ -308,6 +332,7 @@ Content-Type: application/json
 ### Failed Request (Authentication)
 
 **Request:**
+
 ```http
 POST /webhook/a1b2c3d4-e5f6-7890-abcd-ef1234567890 HTTP/1.1
 Host: localhost:4000
@@ -315,6 +340,7 @@ X-API-Key: wrong-key
 ```
 
 **Response:**
+
 ```http
 HTTP/1.1 401 Unauthorized
 Content-Type: application/json
@@ -329,12 +355,14 @@ Content-Type: application/json
 ## 🛠️ Testing Webhooks
 
 ### 1. Test Endpoint
+
 ```bash
 # Check if webhook is active without triggering workflow
 curl -X POST http://localhost:4000/webhook/{webhookId}/test
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -345,6 +373,7 @@ curl -X POST http://localhost:4000/webhook/{webhookId}/test
 ```
 
 ### 2. Trigger Webhook
+
 ```bash
 # Actually trigger workflow execution
 curl -X POST http://localhost:4000/webhook/{webhookId} \
@@ -353,6 +382,7 @@ curl -X POST http://localhost:4000/webhook/{webhookId} \
 ```
 
 ### 3. With Authentication
+
 ```bash
 # Header authentication
 curl -X POST http://localhost:4000/webhook/{webhookId} \
@@ -404,6 +434,7 @@ When a webhook is received, the server logs:
 ### 1. Production URL Configuration
 
 Set in `.env`:
+
 ```env
 VITE_WEBHOOK_PROD_URL=https://your-domain.com/webhook
 ```
@@ -413,10 +444,13 @@ VITE_WEBHOOK_PROD_URL=https://your-domain.com/webhook
 Webhooks are public endpoints, but you may want to restrict origins:
 
 ```typescript
-app.use("/webhook", cors({
-  origin: ["https://github.com", "https://trusted-service.com"],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
-}));
+app.use(
+  "/webhook",
+  cors({
+    origin: ["https://github.com", "https://trusted-service.com"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  })
+);
 ```
 
 ### 3. Rate Limiting
@@ -428,7 +462,7 @@ import rateLimit from "express-rate-limit";
 
 const webhookLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100 // limit each webhook to 100 requests per minute
+  max: 100, // limit each webhook to 100 requests per minute
 });
 
 app.use("/webhook", webhookLimiter);

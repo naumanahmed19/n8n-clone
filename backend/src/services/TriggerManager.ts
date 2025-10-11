@@ -1,13 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import { logger } from "../utils/logger";
-import ExecutionHistoryService from "./ExecutionHistoryService";
-import {
-  FlowExecutionEngine,
-  FlowExecutionResult,
-} from "./FlowExecutionEngine";
-import { NodeService } from "./NodeService";
-import { SocketService } from "./SocketService";
+import { ExecutionService } from "./ExecutionService";
+import { ExecutionResult } from "../types/database";
 import {
   TriggerExecutionContext,
   TriggerExecutionContextFactory,
@@ -63,8 +58,7 @@ export interface ConflictResolutionStrategy {
  */
 export class TriggerManager extends EventEmitter {
   private prisma: PrismaClient;
-  private flowExecutionEngine: FlowExecutionEngine;
-  private socketService: SocketService;
+  private executionService: ExecutionService;
   private resourceManager: TriggerResourceManager;
 
   private activeTriggers: Map<string, TriggerExecutionContext> = new Map();
@@ -76,20 +70,13 @@ export class TriggerManager extends EventEmitter {
 
   constructor(
     prisma: PrismaClient,
-    nodeService: NodeService,
-    executionHistoryService: ExecutionHistoryService,
-    socketService: SocketService,
+    executionService: ExecutionService,
     config: Partial<ConcurrencyConfig> = {},
     conflictStrategy: ConflictResolutionStrategy = { type: "queue" }
   ) {
     super();
     this.prisma = prisma;
-    this.flowExecutionEngine = new FlowExecutionEngine(
-      prisma,
-      nodeService,
-      executionHistoryService
-    );
-    this.socketService = socketService;
+    this.executionService = executionService;
     this.resourceManager = new TriggerResourceManager();
 
     this.config = {
@@ -103,8 +90,6 @@ export class TriggerManager extends EventEmitter {
     };
 
     this.conflictStrategy = conflictStrategy;
-
-    this.setupEventHandlers();
   }
 
   /**
@@ -251,7 +236,16 @@ export class TriggerManager extends EventEmitter {
 
     if (activeContext) {
       try {
-        await this.flowExecutionEngine.cancelExecution(executionId);
+        // Mark as cancelled in our tracking
+        this.activeTriggers.delete(executionId);
+        this.resourceManager.releaseLocks(executionId);
+
+        this.emit("triggerCancelled", {
+          executionId,
+          triggerId: activeContext.triggerId,
+          reason: "user_cancelled",
+        });
+
         return true;
       } catch (error) {
         logger.error("Failed to cancel active trigger execution", {
@@ -509,15 +503,26 @@ export class TriggerManager extends EventEmitter {
   ): Promise<void> {
     try {
       if (!context.triggerNodeId) {
-        throw new Error(`Trigger node ID is missing for trigger ${context.triggerId}`);
+        throw new Error(
+          `Trigger node ID is missing for trigger ${context.triggerId}`
+        );
       }
 
-      const result = await this.flowExecutionEngine.executeFromTrigger(
-        context.triggerNodeId,
+      // Use ExecutionService which handles database persistence and socket events
+      const result = await this.executionService.executeWorkflow(
         context.workflowId,
         context.userId,
         context.triggerData,
-        context.executionOptions
+        {
+          timeout: context.executionOptions?.timeout || 300000,
+          saveProgress: true,
+        },
+        context.triggerNodeId,
+        {
+          nodes: workflow.nodes,
+          connections: workflow.connections,
+          settings: workflow.settings,
+        }
       );
 
       await this.handleTriggerCompletion(context, result);
@@ -528,7 +533,7 @@ export class TriggerManager extends EventEmitter {
 
   private async handleTriggerCompletion(
     context: TriggerExecutionContext,
-    result: FlowExecutionResult
+    result: ExecutionResult
   ): Promise<void> {
     // Remove from active triggers
     this.activeTriggers.delete(context.executionId);
@@ -536,30 +541,8 @@ export class TriggerManager extends EventEmitter {
     // Release resources
     this.resourceManager.releaseLocks(context.executionId);
 
-    // Save execution to database
-    try {
-      await this.saveExecutionToDatabase(context, result);
-    } catch (error) {
-      logger.error("Failed to save execution to database", {
-        executionId: context.executionId,
-        error,
-      });
-    }
-
-    // Emit socket event for real-time updates
-    try {
-      this.socketService.emitToUser(context.userId, "executionCompleted", {
-        executionId: context.executionId,
-        workflowId: context.workflowId,
-        status: result.status,
-        duration: Date.now() - context.startTime,
-      });
-    } catch (error) {
-      logger.error("Failed to emit socket event", {
-        executionId: context.executionId,
-        error,
-      });
-    }
+    // ExecutionService already saved to database and emitted socket events
+    // No need to do it again here
 
     // Add to completed triggers
     const info: TriggerExecutionInfo = {
@@ -567,7 +550,7 @@ export class TriggerManager extends EventEmitter {
       triggerId: context.triggerId,
       triggerType: context.triggerType,
       workflowId: context.workflowId,
-      status: result.status === "completed" ? "completed" : "failed",
+      status: result.success ? "completed" : "failed",
       startTime: context.startTime,
       endTime: Date.now(),
       priority: context.priority,
@@ -589,7 +572,7 @@ export class TriggerManager extends EventEmitter {
     logger.info("Trigger execution completed", {
       executionId: context.executionId,
       triggerId: context.triggerId,
-      status: result.status,
+      status: result.success ? "success" : "failed",
       duration: Date.now() - context.startTime,
     });
   }
@@ -693,143 +676,6 @@ export class TriggerManager extends EventEmitter {
     } catch (error) {
       logger.error("Failed to load workflow", { workflowId, error });
       return null;
-    }
-  }
-
-  private setupEventHandlers(): void {
-    // Handle flow execution engine events
-    this.flowExecutionEngine.on("executionCancelled", (data) => {
-      const context = this.activeTriggers.get(data.executionId);
-      if (context) {
-        this.handleTriggerCompletion(context, {
-          executionId: data.executionId,
-          status: "cancelled",
-          executedNodes: [],
-          failedNodes: [],
-          executionPath: [],
-          totalDuration: Date.now() - context.startTime,
-          nodeResults: new Map(),
-        });
-      }
-    });
-  }
-
-  /**
-   * Save execution result to database
-   */
-  private async saveExecutionToDatabase(
-    context: TriggerExecutionContext,
-    result: FlowExecutionResult
-  ): Promise<void> {
-    try {
-      // Map flow status to execution status
-      let executionStatus: "SUCCESS" | "ERROR" | "CANCELLED" | "RUNNING";
-      switch (result.status) {
-        case "completed":
-          executionStatus = "SUCCESS";
-          break;
-        case "failed":
-          executionStatus = "ERROR";
-          break;
-        case "cancelled":
-          executionStatus = "CANCELLED";
-          break;
-        case "partial":
-          executionStatus = "ERROR"; // Partial completion is treated as error
-          break;
-        default:
-          executionStatus = "ERROR";
-      }
-
-      // Load workflow for snapshot
-      const workflow = await this.loadWorkflow(context.workflowId);
-
-      // Create main execution record with workflow snapshot
-      await this.prisma.execution.create({
-        data: {
-          id: result.executionId,
-          workflowId: context.workflowId,
-          status: executionStatus,
-          startedAt: new Date(context.startTime),
-          finishedAt: new Date(),
-          triggerData: context.triggerData || undefined,
-          workflowSnapshot: workflow
-            ? {
-                nodes: workflow.nodes,
-                connections: workflow.connections,
-                settings: workflow.settings,
-              }
-            : undefined,
-          error:
-            result.status === "failed" || result.status === "partial"
-              ? {
-                  message: "Flow execution failed",
-                  failedNodes: result.failedNodes,
-                  executionPath: result.executionPath,
-                }
-              : undefined,
-        },
-      });
-
-      // Create node execution records
-      for (const [nodeId, nodeResult] of result.nodeResults) {
-        let nodeStatus: "SUCCESS" | "ERROR" | "CANCELLED";
-        switch (nodeResult.status) {
-          case "completed":
-            nodeStatus = "SUCCESS";
-            break;
-          case "failed":
-            nodeStatus = "ERROR";
-            break;
-          case "cancelled":
-            nodeStatus = "CANCELLED";
-            break;
-          default:
-            nodeStatus = "ERROR";
-        }
-
-        // Serialize error properly for database storage
-        let errorData = undefined;
-        if (nodeResult.error) {
-          if (nodeResult.error instanceof Error) {
-            errorData = {
-              message: nodeResult.error.message,
-              name: nodeResult.error.name,
-              stack: nodeResult.error.stack,
-            };
-          } else if (typeof nodeResult.error === "object") {
-            errorData = nodeResult.error;
-          } else {
-            errorData = { message: String(nodeResult.error) };
-          }
-        }
-
-        await this.prisma.nodeExecution.create({
-          data: {
-            id: `${result.executionId}_${nodeId}`,
-            executionId: result.executionId,
-            nodeId: nodeId,
-            status: nodeStatus as any,
-            startedAt: new Date(context.startTime),
-            finishedAt: new Date(context.startTime + nodeResult.duration),
-            inputData: {},
-            outputData: nodeResult.data ? JSON.parse(JSON.stringify(nodeResult.data)) : undefined,
-            error: errorData,
-          },
-        });
-      }
-
-      logger.info("Execution saved to database", {
-        executionId: result.executionId,
-        workflowId: context.workflowId,
-        status: executionStatus,
-      });
-    } catch (error) {
-      logger.error("Failed to save execution to database", {
-        executionId: result.executionId,
-        error,
-      });
-      throw error;
     }
   }
 
