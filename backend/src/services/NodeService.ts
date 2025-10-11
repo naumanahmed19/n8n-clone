@@ -252,6 +252,7 @@ export class NodeService {
           outputs: nodeDefinition.outputs,
           properties: this.resolveProperties(nodeDefinition.properties || []),
           credentials: nodeDefinition.credentials, // Include credentials
+          credentialSelector: nodeDefinition.credentialSelector, // Include unified credential selector
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
           // Add execution metadata - use provided values or compute from group
@@ -346,6 +347,7 @@ export class NodeService {
           outputs: nodeDefinition.outputs,
           properties: this.resolveProperties(nodeDefinition.properties || []),
           credentials: nodeDefinition.credentials, // Include credentials
+          credentialSelector: nodeDefinition.credentialSelector, // Include unified credential selector
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
         };

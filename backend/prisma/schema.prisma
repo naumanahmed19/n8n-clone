@@ -151,23 +151,25 @@ enum VariableScope {
 }
 
 model NodeType {
-  id             String   @id @default(cuid())
-  type           String   @unique
-  displayName    String
-  name           String
-  group          String[]
-  version        Int      @default(1)
-  description    String
-  defaults       Json     @default("{}")
-  inputs         String[]
-  outputs        String[]
-  properties     Json     @default("[]")
-  icon           String?
-  color          String?
-  outputComponent String?  // Custom output component identifier for dynamic rendering
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  type               String   @unique
+  displayName        String
+  name               String
+  group              String[]
+  version            Int      @default(1)
+  description        String
+  defaults           Json     @default("{}")
+  inputs             String[]
+  outputs            String[]
+  properties         Json     @default("[]")
+  credentials        Json?    // Credential type definitions
+  credentialSelector Json?    // Unified credential selector configuration
+  icon               String?
+  color              String?
+  outputComponent    String?  // Custom output component identifier for dynamic rendering
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("node_types")
 }

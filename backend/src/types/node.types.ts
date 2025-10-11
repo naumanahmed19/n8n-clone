@@ -1,5 +1,13 @@
 // Node system type definitions
 
+export interface CredentialSelectorConfig {
+  displayName: string;
+  description?: string;
+  placeholder?: string;
+  allowedTypes: string[]; // Array of credential type names that can be selected
+  required?: boolean;
+}
+
 export interface NodeDefinition {
   type: string;
   displayName: string;
@@ -11,6 +19,7 @@ export interface NodeDefinition {
   inputs: string[];
   outputs: string[];
   credentials?: CredentialDefinition[];
+  credentialSelector?: CredentialSelectorConfig;
   properties: NodeProperty[] | (() => NodeProperty[]); // Support both static and dynamic properties
   execute: NodeExecuteFunction;
   hooks?: NodeHooks;
@@ -168,6 +177,7 @@ export interface NodeSchema {
   outputs: string[];
   properties: NodeProperty[];
   credentials?: CredentialDefinition[];
+  credentialSelector?: CredentialSelectorConfig;
   icon?: string;
   color?: string;
 }
@@ -215,6 +225,7 @@ export interface NodeTypeInfo {
   outputs: string[];
   properties: NodeProperty[];
   credentials?: CredentialDefinition[]; // Include credentials
+  credentialSelector?: CredentialSelectorConfig; // Include unified credential selector
   icon?: string;
   color?: string;
   // Execution metadata

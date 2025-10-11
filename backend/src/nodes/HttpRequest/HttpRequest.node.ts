@@ -124,6 +124,17 @@ export const HttpRequestNode: NodeDefinition = {
       ],
     },
   ],
+  credentialSelector: {
+    displayName: "Authentication",
+    description: "Select authentication method for HTTP requests",
+    placeholder: "Select authentication...",
+    allowedTypes: [
+      "httpBasicAuth",
+      "httpHeaderAuth",
+      "httpBearerAuth",
+      "apiKey",
+    ],
+  },
   properties: [
     {
       displayName: "Method",

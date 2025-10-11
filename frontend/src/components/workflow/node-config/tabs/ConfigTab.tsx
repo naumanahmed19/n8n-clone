@@ -1,12 +1,13 @@
 import { CredentialSelector } from '@/components/credential/CredentialSelector'
+import { UnifiedCredentialSelector } from '@/components/credential/UnifiedCredentialSelector'
 import { Card, CardContent } from '@/components/ui/card'
 import { createField, FormGenerator, getCustomComponent } from '@/components/ui/form-generator'
 import { useCredentialStore, useNodeConfigDialogStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-    AlertCircle,
-    CheckCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react'
 import { useEffect } from 'react'
 
@@ -88,8 +89,43 @@ export function ConfigTab({ node, nodeType, readOnly = false }: ConfigTabProps) 
   return (
     <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
       <div className="space-y-6 max-w-lg">
-        {/* Credentials */}
-        {nodeType.credentials && nodeType.credentials.length > 0 && (
+        {/* Unified Credential Selector - for nodes with credentialSelector defined */}
+        {nodeType.credentialSelector && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">{nodeType.credentialSelector.displayName || 'Credentials'}</h4>
+            <UnifiedCredentialSelector
+              allowedTypes={nodeType.credentialSelector.allowedTypes}
+              value={Object.values(credentials)[0]} // Get the first (and only) credential value
+              onChange={(credentialId) => {
+                // Clear all existing credentials first
+                const clearedCredentials: Record<string, string | undefined> = {}
+                nodeType.credentialSelector?.allowedTypes.forEach(type => {
+                  clearedCredentials[type] = undefined
+                })
+                
+                // If a credential is selected, find its type and set it
+                if (credentialId) {
+                  const selectedCred = useCredentialStore.getState().credentials.find(c => c.id === credentialId)
+                  if (selectedCred) {
+                    updateCredentials(selectedCred.type, credentialId)
+                  }
+                } else {
+                  // Clear all credentials
+                  Object.keys(clearedCredentials).forEach(type => {
+                    updateCredentials(type, undefined)
+                  })
+                }
+              }}
+              placeholder={nodeType.credentialSelector.placeholder}
+              description={nodeType.credentialSelector.description}
+              required={nodeType.credentialSelector.required}
+              disabled={readOnly}
+            />
+          </div>
+        )}
+
+        {/* Traditional Credentials - for nodes without credentialSelector */}
+        {!nodeType.credentialSelector && nodeType.credentials && nodeType.credentials.length > 0 && (
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Credentials</h4>
             {nodeType.credentials?.map((credentialDef) => (

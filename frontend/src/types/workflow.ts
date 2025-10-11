@@ -126,6 +126,13 @@ export interface NodeType {
   outputComponent?: string; // Optional custom output component identifier
   properties: NodeProperty[];
   credentials?: CredentialDefinition[];
+  credentialSelector?: {
+    displayName: string;
+    description?: string;
+    placeholder?: string;
+    allowedTypes: string[]; // Array of credential type names that can be selected
+    required?: boolean;
+  };
   active?: boolean; // Added for activation/deactivation functionality
   id?: string; // Optional database ID for custom nodes
   createdAt?: string; // Optional timestamp for custom nodes

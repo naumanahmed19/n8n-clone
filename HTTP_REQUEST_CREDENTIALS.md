@@ -11,20 +11,24 @@ The HTTP Request node now supports multiple authentication methods through crede
 Traditional HTTP Basic Authentication using username and password.
 
 **Configuration:**
+
 - **Username**: Your username for authentication
 - **Password**: Your password for authentication
 
 **How it works:**
+
 - Automatically encodes username:password in Base64
 - Adds `Authorization: Basic <encoded-credentials>` header
 - Compatible with most APIs that support Basic Auth
 
 **Example Use Cases:**
+
 - Legacy APIs
 - Simple authentication scenarios
 - Development/testing environments
 
 **Example:**
+
 ```
 Username: admin
 Password: secret123
@@ -39,18 +43,22 @@ Result Header: Authorization: Basic YWRtaW46c2VjcmV0MTIz
 Modern token-based authentication commonly used with OAuth 2.0 and JWT.
 
 **Configuration:**
+
 - **Token**: Your bearer token
 
 **How it works:**
+
 - Adds `Authorization: Bearer <token>` header
 - Supports JWT tokens, OAuth tokens, and custom bearer tokens
 
 **Example Use Cases:**
+
 - OAuth 2.0 APIs
 - JWT-based APIs
 - Modern REST APIs
 
 **Example:**
+
 ```
 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
@@ -64,19 +72,23 @@ Result Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Custom header-based authentication for flexible scenarios.
 
 **Configuration:**
+
 - **Header Name**: Name of the header (e.g., `Authorization`, `X-API-Key`, `X-Auth-Token`)
 - **Header Value**: Value to send in the header
 
 **How it works:**
+
 - Adds a custom header with the specified name and value
 - Flexible for any header-based authentication scheme
 
 **Example Use Cases:**
+
 - Custom authentication schemes
 - API keys in custom headers
 - Non-standard authentication
 
 **Example:**
+
 ```
 Header Name: X-API-Key
 Header Value: sk_live_1234567890abcdef
@@ -91,20 +103,24 @@ Result Header: X-API-Key: sk_live_1234567890abcdef
 API key authentication with flexible placement options.
 
 **Configuration:**
+
 - **API Key**: Your API key
 - **Add To**: Where to add the API key (`Header` or `Query String`)
 - **Key Name**: Name of the header/parameter (e.g., `api_key`, `apiKey`, `key`)
 
 **How it works:**
+
 - **Header mode**: Adds API key as a header
 - **Query String mode**: Appends API key to URL as query parameter
 
 **Example Use Cases:**
+
 - SaaS APIs (Stripe, SendGrid, etc.)
 - Cloud services
 - Third-party integrations
 
 **Example (Header mode):**
+
 ```
 API Key: sk_test_1234567890
 Add To: Header
@@ -114,9 +130,10 @@ Result Header: X-API-Key: sk_test_1234567890
 ```
 
 **Example (Query String mode):**
+
 ```
 API Key: abc123def456
-Add To: Query String  
+Add To: Query String
 Key Name: api_key
 URL: https://api.example.com/users
 
@@ -153,6 +170,7 @@ Result URL: https://api.example.com/users?api_key=abc123def456
 ## Security Best Practices
 
 ### ✅ Do:
+
 - Store sensitive credentials using the credential system (not in node parameters)
 - Use environment variables for credential values in production
 - Rotate credentials regularly
@@ -160,6 +178,7 @@ Result URL: https://api.example.com/users?api_key=abc123def456
 - Limit credential access to necessary team members
 
 ### ❌ Don't:
+
 - Hardcode credentials in node parameters
 - Share credentials in plain text
 - Use the same credentials across different environments (dev/prod)
@@ -255,12 +274,14 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ### Issue: Authentication Still Failing
 
 **Possible Causes:**
+
 1. Wrong credential type selected
 2. Expired or invalid credentials
 3. Incorrect header/parameter names
 4. URL encoding issues with special characters
 
 **Solutions:**
+
 - Verify the API documentation for the correct authentication method
 - Test credentials directly (e.g., using Postman or curl)
 - Check credential expiration dates
@@ -269,11 +290,13 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ### Issue: Credentials Not Applied
 
 **Possible Causes:**
+
 1. Credential not saved properly
 2. Wrong credential selected in dropdown
 3. Node cached old configuration
 
 **Solutions:**
+
 - Re-save the credential
 - Refresh the workflow editor
 - Check the execution logs for applied credentials
@@ -281,10 +304,12 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ### Issue: Multiple Authentication Headers
 
 **Possible Causes:**
+
 1. Headers set both in credentials and in the Headers parameter
 2. Multiple credential types configured
 
 **Solutions:**
+
 - Use credentials OR manual headers, not both
 - Configure only one authentication method
 
@@ -295,6 +320,7 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ### From Manual Headers to Credentials
 
 **Before:**
+
 ```javascript
 {
   "headers": {
@@ -304,6 +330,7 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ```
 
 **After:**
+
 ```javascript
 {
   "credentials": {
@@ -316,6 +343,7 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ```
 
 ### Benefits:
+
 - ✅ Secure storage
 - ✅ Reusable across nodes
 - ✅ Easy to update
@@ -337,6 +365,7 @@ Result URL: `https://api.weather.com/forecast?appid=abc123`
 ```
 
 This allows you to:
+
 - See authentication errors without stopping the workflow
 - Access error response bodies (e.g., "Invalid API key")
 - Build retry logic with different credentials
@@ -344,6 +373,7 @@ This allows you to:
 ### Using with Dynamic URLs
 
 Credentials work with dynamic URLs (using expressions):
+
 ```javascript
 {
   "url": "{{$json.apiEndpoint}}",
@@ -375,6 +405,7 @@ The credential will be applied to the resolved URL.
 ### Logging:
 
 The node logs when credentials are applied:
+
 ```
 INFO: Applied Bearer Token credentials
 INFO: Applied API Key to header: X-API-Key
