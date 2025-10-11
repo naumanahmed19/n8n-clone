@@ -26,6 +26,8 @@ export const HttpRequestNode: NodeDefinition = {
     timeout: 30000,
     followRedirects: true,
     maxRedirects: 5,
+    continueOnFail: false,
+    alwaysOutputData: false,
   },
   inputs: ["main"],
   outputs: ["main"],
@@ -102,6 +104,29 @@ export const HttpRequestNode: NodeDefinition = {
         },
       },
     },
+    {
+      displayName: "Continue On Fail",
+      name: "continueOnFail",
+      type: "boolean",
+      required: false,
+      default: false,
+      description:
+        "If enabled, the node will continue execution even if the request fails. The error information will be returned as output data instead of stopping the workflow.",
+    },
+    {
+      displayName: "Always Output Data",
+      name: "alwaysOutputData",
+      type: "boolean",
+      required: false,
+      default: false,
+      description:
+        "If enabled, the node will always output data, including error responses (like 4xx and 5xx status codes). Useful when you want to process error responses in your workflow.",
+      displayOptions: {
+        show: {
+          continueOnFail: [true],
+        },
+      },
+    },
   ],
   execute: async function (
     inputData: NodeInputData
@@ -114,6 +139,8 @@ export const HttpRequestNode: NodeDefinition = {
     const timeout = (this.getNodeParameter("timeout") as number) || 30000;
     const followRedirects = this.getNodeParameter("followRedirects") as boolean;
     const maxRedirects = (this.getNodeParameter("maxRedirects") as number) || 5;
+    const continueOnFail = (this.getNodeParameter("continueOnFail") as boolean) || false;
+    const alwaysOutputData = (this.getNodeParameter("alwaysOutputData") as boolean) || false;
 
     if (!url) {
       throw new Error("URL is required");
@@ -231,8 +258,9 @@ export const HttpRequestNode: NodeDefinition = {
 
             const responseTime = Date.now() - startTime;
 
-            // Check if response indicates an error that should be retried
-            if (!response.ok) {
+            // Check if response indicates an error
+            // If alwaysOutputData is enabled, treat error responses as successful and return them
+            if (!response.ok && !alwaysOutputData) {
               const httpError = HttpExecutionErrorFactory.createFromError(
                 new Error(`HTTP ${response.status} ${response.statusText}`),
                 sanitizedUrl,
@@ -337,6 +365,36 @@ export const HttpRequestNode: NodeDefinition = {
         errorStack: httpError.stack,
         fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       });
+
+      // If continueOnFail is enabled, return error information as output data
+      if (continueOnFail) {
+        this.logger.info("Continuing execution despite error (continueOnFail enabled)", {
+          method,
+          url: sanitizedUrl,
+          error: httpError.message,
+        });
+
+        // Return error details as output data so the workflow can continue
+        return [
+          {
+            main: [
+              {
+                json: {
+                  error: true,
+                  errorMessage: httpError.message || "Request failed",
+                  errorType: httpError.httpErrorType || "UNKNOWN_ERROR",
+                  statusCode: httpError.statusCode,
+                  url: sanitizedUrl,
+                  method,
+                  timestamp: new Date().toISOString(),
+                  // Include any additional error details
+                  details: httpError.details || {},
+                },
+              },
+            ],
+          },
+        ];
+      }
 
       // Throw user-friendly error message
       const userMessage =
