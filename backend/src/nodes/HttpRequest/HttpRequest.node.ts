@@ -31,6 +31,99 @@ export const HttpRequestNode: NodeDefinition = {
   },
   inputs: ["main"],
   outputs: ["main"],
+  credentials: [
+    {
+      name: "httpBasicAuth",
+      displayName: "Basic Auth",
+      properties: [
+        {
+          displayName: "Username",
+          name: "username",
+          type: "string",
+          required: true,
+          default: "",
+        },
+        {
+          displayName: "Password",
+          name: "password",
+          type: "string",
+          required: true,
+          default: "",
+        },
+      ],
+    },
+    {
+      name: "httpHeaderAuth",
+      displayName: "Header Auth",
+      properties: [
+        {
+          displayName: "Header Name",
+          name: "name",
+          type: "string",
+          required: true,
+          default: "Authorization",
+          description:
+            "The name of the header to send (e.g., Authorization, X-API-Key)",
+        },
+        {
+          displayName: "Header Value",
+          name: "value",
+          type: "string",
+          required: true,
+          default: "",
+          description: "The value to send in the header (e.g., Bearer token)",
+        },
+      ],
+    },
+    {
+      name: "httpBearerAuth",
+      displayName: "Bearer Token",
+      properties: [
+        {
+          displayName: "Token",
+          name: "token",
+          type: "string",
+          required: true,
+          default: "",
+          description: "The bearer token for authentication",
+        },
+      ],
+    },
+    {
+      name: "apiKey",
+      displayName: "API Key",
+      properties: [
+        {
+          displayName: "API Key",
+          name: "apiKey",
+          type: "string",
+          required: true,
+          default: "",
+          description: "The API key for authentication",
+        },
+        {
+          displayName: "Add To",
+          name: "addTo",
+          type: "options",
+          required: true,
+          default: "header",
+          options: [
+            { name: "Header", value: "header" },
+            { name: "Query String", value: "query" },
+          ],
+          description: "Where to add the API key",
+        },
+        {
+          displayName: "Key Name",
+          name: "keyName",
+          type: "string",
+          required: true,
+          default: "api_key",
+          description: "The name of the header or query parameter",
+        },
+      ],
+    },
+  ],
   properties: [
     {
       displayName: "Method",
@@ -160,14 +253,77 @@ export const HttpRequestNode: NodeDefinition = {
       parsedHeaders = headers;
     }
 
+    // Handle credentials if provided
+    let finalUrl = url;
+    try {
+      // Check for Basic Auth
+      const basicAuth = await this.getCredentials("httpBasicAuth");
+      if (basicAuth && basicAuth.username && basicAuth.password) {
+        const authString = Buffer.from(
+          `${basicAuth.username}:${basicAuth.password}`
+        ).toString("base64");
+        parsedHeaders["Authorization"] = `Basic ${authString}`;
+        this.logger.info("Applied Basic Auth credentials");
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
+    try {
+      // Check for Bearer Token
+      const bearerAuth = await this.getCredentials("httpBearerAuth");
+      if (bearerAuth && bearerAuth.token) {
+        parsedHeaders["Authorization"] = `Bearer ${bearerAuth.token}`;
+        this.logger.info("Applied Bearer Token credentials");
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
+    try {
+      // Check for Header Auth
+      const headerAuth = await this.getCredentials("httpHeaderAuth");
+      if (headerAuth && headerAuth.name && headerAuth.value) {
+        parsedHeaders[headerAuth.name as string] = headerAuth.value as string;
+        this.logger.info(`Applied Header Auth credentials: ${headerAuth.name}`);
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
+    try {
+      // Check for API Key
+      const apiKeyAuth = await this.getCredentials("apiKey");
+      if (apiKeyAuth && apiKeyAuth.apiKey) {
+        const addTo = apiKeyAuth.addTo || "header";
+        const keyName = apiKeyAuth.keyName || "api_key";
+
+        if (addTo === "header") {
+          parsedHeaders[keyName as string] = apiKeyAuth.apiKey as string;
+          this.logger.info(`Applied API Key to header: ${keyName}`);
+        } else if (addTo === "query") {
+          // Add API key to query string
+          const urlObj = new URL(finalUrl);
+          urlObj.searchParams.set(
+            keyName as string,
+            apiKeyAuth.apiKey as string
+          );
+          finalUrl = urlObj.toString();
+          this.logger.info(`Applied API Key to query parameter: ${keyName}`);
+        }
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
     // Security validation
-    const urlValidation = UrlSecurityValidator.validateUrl(url);
+    const urlValidation = UrlSecurityValidator.validateUrl(finalUrl);
     if (!urlValidation.isValid) {
       const errorMessages = urlValidation.errors
         .map((e) => e.message)
         .join("; ");
       this.logger.warn("HTTP Request blocked by security validation", {
-        url,
+        url: finalUrl,
         errors: urlValidation.errors,
         riskLevel: urlValidation.riskLevel,
       });
@@ -203,7 +359,7 @@ export const HttpRequestNode: NodeDefinition = {
     }
 
     // Use sanitized URL
-    const sanitizedUrl = urlValidation.sanitizedUrl || url;
+    const sanitizedUrl = urlValidation.sanitizedUrl || finalUrl;
 
     // Prepare request body
     let requestBody: string | undefined;
