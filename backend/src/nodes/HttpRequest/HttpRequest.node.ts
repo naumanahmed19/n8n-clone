@@ -341,12 +341,15 @@ export const HttpRequestNode: NodeDefinition = {
       // Throw user-friendly error message
       const userMessage =
         HttpExecutionErrorFactory.getUserFriendlyMessage(httpError);
-      
+
       // If we don't have a user message, throw the original error for debugging
-      if (!userMessage || userMessage === 'An unexpected error occurred while making the request.') {
+      if (
+        !userMessage ||
+        userMessage === "An unexpected error occurred while making the request."
+      ) {
         throw error;
       }
-      
+
       throw new Error(userMessage);
     }
   },

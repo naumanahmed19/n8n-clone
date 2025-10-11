@@ -223,22 +223,22 @@ const MAX_HISTORY_SIZE = 50;
  */
 function serializeError(error: any): string | undefined {
   if (!error) return undefined;
-  
-  if (typeof error === 'string') {
+
+  if (typeof error === "string") {
     return error;
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   // If it's an object, try to extract useful information
-  if (typeof error === 'object') {
+  if (typeof error === "object") {
     // Check for common error properties
     if (error.message) {
       return error.message;
     }
-    
+
     // If the object has useful information, stringify it
     try {
       return JSON.stringify(error, null, 2);
@@ -246,7 +246,7 @@ function serializeError(error: any): string | undefined {
       return String(error);
     }
   }
-  
+
   return String(error);
 }
 
