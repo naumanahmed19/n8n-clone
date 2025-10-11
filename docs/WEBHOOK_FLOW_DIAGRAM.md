@@ -1,6 +1,7 @@
 # Webhook System Flow Diagram
 
 ## Overview
+
 This document provides a comprehensive visual representation of how webhooks work in the n8n-clone system, from URL generation in the frontend to execution and persistence in the backend.
 
 ---
@@ -171,21 +172,21 @@ sequenceDiagram
     TriggerService->>TriggerManager: executeTrigger(trigger, data)
     TriggerManager->>TriggerManager: Check resource limits
     TriggerManager->>ExecutionService: executeWorkflow(workflowId, userId, triggerData)
-    
+
     ExecutionService->>Database: Create execution record
     ExecutionService->>SocketService: Emit executionStarted
     SocketService->>Frontend: Socket event: executionStarted
     Frontend->>User: Show "Execution Started"
-    
+
     ExecutionService->>FlowEngine: executeFromTrigger(workflowData)
     FlowEngine->>FlowEngine: Execute workflow nodes
     FlowEngine-->>ExecutionService: Execution result
-    
+
     ExecutionService->>Database: Save node executions
     ExecutionService->>SocketService: Emit executionCompleted
     SocketService->>Frontend: Socket event: executionCompleted
     Frontend->>User: Show execution results
-    
+
     ExecutionService-->>TriggerManager: ExecutionResult
     TriggerManager->>TriggerManager: Release resources
     TriggerManager-->>TriggerService: Success
@@ -362,13 +363,13 @@ graph TB
     C{Resource Available?}
     D{Workflow Valid?}
     E{Execution Success?}
-    
+
     F[Return 404: Trigger Not Found]
     G[Return 429: Too Many Requests]
     H[Return 500: Invalid Workflow]
     I[Return 500: Execution Error]
     J[Return 200: Success]
-    
+
     K[Save Error to Database]
     L[Emit Socket Error Event]
     M[Log Error to Console]
@@ -402,18 +403,22 @@ graph TB
 ## Key Design Decisions
 
 ### 1. **Singleton Pattern for TriggerService**
+
 - **Why**: Ensures single instance manages all triggers across the application
 - **Benefit**: Prevents duplicate trigger registrations and resource conflicts
 
 ### 2. **ExecutionService Reuse**
+
 - **Why**: Eliminates code duplication between manual and webhook executions
 - **Benefit**: Automatic database persistence, socket events, and execution history
 
 ### 3. **TriggerManager Resource Management**
+
 - **Why**: Prevents system overload from concurrent webhook executions
 - **Benefit**: Configurable limits, queuing, and conflict resolution strategies
 
 ### 4. **Automatic Trigger Sync**
+
 - **Why**: Ensures triggers are registered immediately when workflows are saved
 - **Benefit**: No manual trigger registration required, immediate webhook availability
 
@@ -421,16 +426,16 @@ graph TB
 
 ## Execution Path Comparison
 
-| Feature | Manual Execution (Frontend) | Webhook Execution (Trigger) |
-|---------|----------------------------|----------------------------|
-| Entry Point | Frontend UI Button | HTTP POST to /webhook/:id |
-| Service | ExecutionService.executeWorkflow() | ExecutionService.executeWorkflow() |
-| Engine | FlowExecutionEngine | FlowExecutionEngine |
-| DB Persistence | ✅ Automatic | ✅ Automatic |
-| Socket Events | ✅ Automatic | ✅ Automatic |
-| Execution History | ✅ Saved | ✅ Saved |
-| Resource Limits | None | ✅ TriggerManager |
-| Code Path | **Identical** | **Identical** |
+| Feature           | Manual Execution (Frontend)        | Webhook Execution (Trigger)        |
+| ----------------- | ---------------------------------- | ---------------------------------- |
+| Entry Point       | Frontend UI Button                 | HTTP POST to /webhook/:id          |
+| Service           | ExecutionService.executeWorkflow() | ExecutionService.executeWorkflow() |
+| Engine            | FlowExecutionEngine                | FlowExecutionEngine                |
+| DB Persistence    | ✅ Automatic                       | ✅ Automatic                       |
+| Socket Events     | ✅ Automatic                       | ✅ Automatic                       |
+| Execution History | ✅ Saved                           | ✅ Saved                           |
+| Resource Limits   | None                               | ✅ TriggerManager                  |
+| Code Path         | **Identical**                      | **Identical**                      |
 
 ---
 

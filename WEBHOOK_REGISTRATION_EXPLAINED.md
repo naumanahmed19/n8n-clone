@@ -1,11 +1,13 @@
 # Webhook Registration: How It Works
 
 ## Question
+
 "Where are we registering webhooks with ID? I don't see any table or column for that in the database."
 
 ## Answer: In-Memory Registration (Not in Database)
 
 Webhooks are **NOT stored in a separate database table**. Instead, they are:
+
 1. **Stored as JSON in the Workflow table** (in the `triggers` column)
 2. **Registered in-memory** when the server starts or workflow is saved
 
@@ -14,6 +16,7 @@ Webhooks are **NOT stored in a separate database table**. Instead, they are:
 ## Database Storage
 
 ### Workflow Table
+
 ```prisma
 model Workflow {
   id               String             @id @default(cuid())
@@ -34,6 +37,7 @@ model Workflow {
 ```
 
 ### Triggers JSON Format
+
 The `triggers` column stores an array of trigger definitions:
 
 ```json
@@ -44,7 +48,7 @@ The `triggers` column stores an array of trigger definitions:
     "nodeId": "webhook-node-xyz",
     "active": true,
     "settings": {
-      "webhookId": "550e8400-e29b-41d4-a716-446655440000",  // ⭐ The webhook UUID
+      "webhookId": "550e8400-e29b-41d4-a716-446655440000", // ⭐ The webhook UUID
       "webhookUrl": "550e8400-e29b-41d4-a716-446655440000",
       "httpMethod": "POST",
       "path": "/",
@@ -68,7 +72,7 @@ The `triggers` column stores an array of trigger definitions:
 export class TriggerService {
   // In-memory Map storing webhook ID -> Trigger mapping
   private webhookTriggers: Map<string, TriggerDefinition> = new Map();
-  
+
   // In-memory Map storing scheduled cron jobs
   private scheduledTasks: Map<string, cron.ScheduledTask> = new Map();
 }
@@ -77,6 +81,7 @@ export class TriggerService {
 ### Registration Flow
 
 #### 1. Server Startup
+
 ```
 Server Start
     ↓
@@ -99,6 +104,7 @@ For each workflow:
 ```
 
 #### 2. Workflow Save/Update
+
 ```
 User saves workflow
     ↓
@@ -121,6 +127,7 @@ For each trigger:
 ## Code Walkthrough
 
 ### 1. Frontend: Generate Webhook ID
+
 **File:** `frontend/src/components/workflow/node-config/custom-fields/WebhookUrlGenerator.tsx`
 
 ```typescript
@@ -135,6 +142,7 @@ const prodUrl = `${VITE_WEBHOOK_PROD_URL}/webhook/${webhookId}`;
 ```
 
 ### 2. Backend: Store in Workflow Triggers JSON
+
 **File:** `backend/src/services/WorkflowService.ts`
 
 ```typescript
@@ -157,6 +165,7 @@ async updateWorkflow(id: string, data: any) {
 ```
 
 ### 3. Backend: In-Memory Registration
+
 **File:** `backend/src/services/TriggerService.ts`
 
 ```typescript
@@ -182,12 +191,13 @@ private async activateWebhookTrigger(trigger: TriggerDefinition): Promise<void> 
 ```
 
 ### 4. Backend: Handle Incoming Webhook
+
 **File:** `backend/src/routes/webhook.ts`
 
 ```typescript
 router.all("/:webhookId", async (req, res) => {
   const { webhookId } = req.params;
-  
+
   // ⭐ LOOKUP IN-MEMORY: Find trigger by webhook ID
   const result = await triggerService.handleWebhook(webhookId, {
     method: req.method,
@@ -197,7 +207,7 @@ router.all("/:webhookId", async (req, res) => {
     body: req.body,
     ip: req.ip,
   });
-  
+
   res.json(result);
 });
 ```
@@ -243,12 +253,14 @@ async handleWebhook(webhookId: string, request: WebhookRequest) {
 ## Why In-Memory Registration?
 
 ### Advantages ✅
+
 1. **Fast Lookup**: O(1) constant time to find webhook by ID
 2. **No Database Queries**: No need to query database on every webhook request
 3. **Scalability**: Handles thousands of webhooks with minimal overhead
 4. **Simplicity**: No need for additional database tables or indexes
 
 ### Disadvantages ❌
+
 1. **Server Restart Required**: Webhooks only registered on startup or workflow save
 2. **Memory Usage**: All webhooks stored in RAM (acceptable for most use cases)
 3. **No Persistence**: Registration lost on server crash (but reloaded on restart)
@@ -329,9 +341,11 @@ async handleWebhook(webhookId: string, request: WebhookRequest) {
 ## Checking Registered Webhooks
 
 ### Debug Endpoint
+
 **URL:** `GET http://localhost:4000/webhook/debug/list`
 
 **Response:**
+
 ```json
 {
   "webhooks": [
@@ -348,7 +362,9 @@ async handleWebhook(webhookId: string, request: WebhookRequest) {
 ```
 
 ### Console Logs
+
 When server starts:
+
 ```
 [TriggerService] Initializing TriggerService...
 [TriggerService] Webhook trigger activated: 550e8400-e29b-41d4-a716-446655440000
@@ -356,12 +372,14 @@ When server starts:
 ```
 
 When workflow saved:
+
 ```
 [WorkflowService] Syncing triggers for workflow: workflow-abc-123
 [TriggerService] Webhook trigger activated: 550e8400-e29b-41d4-a716-446655440000
 ```
 
 When webhook received:
+
 ```
 📨 Webhook received: POST /webhook/550e8400-e29b-41d4-a716-446655440000
 [TriggerService] Handling webhook trigger: 550e8400-e29b-41d4-a716-446655440000
@@ -371,14 +389,14 @@ When webhook received:
 
 ## Summary
 
-| Aspect | Details |
-|--------|---------|
-| **Storage** | Workflow.triggers JSON column (database) |
-| **Registration** | In-memory Map (webhookTriggers) |
-| **Lookup** | O(1) constant time via Map.get() |
-| **Persistence** | JSON in database, reloaded on server start |
-| **When Registered** | Server startup + workflow save/update |
-| **Webhook ID** | UUID v4 generated in frontend |
+| Aspect              | Details                                    |
+| ------------------- | ------------------------------------------ |
+| **Storage**         | Workflow.triggers JSON column (database)   |
+| **Registration**    | In-memory Map (webhookTriggers)            |
+| **Lookup**          | O(1) constant time via Map.get()           |
+| **Persistence**     | JSON in database, reloaded on server start |
+| **When Registered** | Server startup + workflow save/update      |
+| **Webhook ID**      | UUID v4 generated in frontend              |
 
 **Key Point:** Webhooks are stored in the database as JSON within the Workflow table, but registered in-memory for fast lookup. There is no separate database table for webhooks.
 
