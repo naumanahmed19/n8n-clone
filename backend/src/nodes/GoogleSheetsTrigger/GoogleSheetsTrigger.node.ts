@@ -82,6 +82,13 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
       },
     },
   ],
+  credentialSelector: {
+    displayName: "Google Sheets Credentials",
+    description: "Authentication for accessing Google Sheets",
+    placeholder: "Select credentials...",
+    allowedTypes: ["googleSheetsOAuth2"],
+    required: true,
+  },
   properties: [
     {
       displayName: "Spreadsheet",

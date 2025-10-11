@@ -1,3 +1,3 @@
-export * from './CredentialSelector'
-export * from './CredentialModal'
-export * from './UnifiedCredentialSelector'
+export * from "./CredentialModal";
+export * from "./CredentialSelector";
+export * from "./UnifiedCredentialSelector";
