@@ -5,6 +5,7 @@ import {
   SpreadsheetSelector,
   TriggerAutocomplete,
   TriggerOnAutocomplete,
+  WebhookUrlGenerator,
   WorkflowAutocomplete,
 } from "@/components/workflow/node-config/custom-fields";
 
@@ -20,6 +21,7 @@ export const customFieldComponents: Record<string, any> = {
   TriggerOnAutocomplete,
   WorkflowAutocomplete,
   TriggerAutocomplete,
+  WebhookUrlGenerator,
 };
 
 /**

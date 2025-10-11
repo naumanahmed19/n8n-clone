@@ -59,6 +59,7 @@ export interface NodeExecutionState {
 
 export interface FlowExecutionResult {
   executionId: string;
+  workflowId: string; // Added to support workflow-level socket broadcasts
   status: "completed" | "failed" | "cancelled" | "partial";
   executedNodes: string[];
   failedNodes: string[];
@@ -683,6 +684,7 @@ export class FlowExecutionEngine extends EventEmitter {
 
         this.emit("nodeExecuted", {
           executionId: context.executionId,
+          workflowId: context.workflowId, // Include workflowId for socket broadcasts
           nodeId,
           status: result.status,
           result,
@@ -708,6 +710,7 @@ export class FlowExecutionEngine extends EventEmitter {
         // Emit nodeExecuted event for failed nodes too
         this.emit("nodeExecuted", {
           executionId: context.executionId,
+          workflowId: context.workflowId, // Include workflowId for socket broadcasts
           nodeId,
           status: FlowNodeStatus.FAILED,
           result,
@@ -728,6 +731,7 @@ export class FlowExecutionEngine extends EventEmitter {
 
     const result: FlowExecutionResult = {
       executionId: context.executionId,
+      workflowId: context.workflowId, // Include workflowId for socket broadcasts
       status: finalStatus,
       executedNodes,
       failedNodes,

@@ -26,6 +26,18 @@ export const WebhookTriggerNode: NodeDefinition = {
   outputs: ["main"],
   properties: [
     {
+      displayName: "Webhook URL",
+      name: "webhookUrl",
+      type: "custom",
+      required: false,
+      default: "",
+      description: "Generated webhook URL for test and production environments",
+      component: "WebhookUrlGenerator",
+      componentProps: {
+        mode: "test",
+      },
+    },
+    {
       displayName: "HTTP Method",
       name: "httpMethod",
       type: "options",

@@ -12,6 +12,7 @@ import {
 import { workflowService } from '@/services'
 import type { ExecutionDetails } from '@/services/execution'
 import { executionService } from '@/services/execution'
+import { socketService } from '@/services/socket'
 import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, Workflow } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
@@ -50,6 +51,68 @@ export function WorkflowEditorPage() {
   const handleSave = async () => {
     await saveWorkflow()
   }
+
+  // Subscribe to workflow socket events for real-time webhook execution updates
+  useEffect(() => {
+    if (!id || id === 'new') return
+
+    console.log('[WorkflowEditor] Subscribing to workflow:', id)
+    
+    // Subscribe to workflow updates
+    socketService.subscribeToWorkflow(id)
+
+    // Listen for execution events
+    const handleExecutionEvent = (event: any) => {
+      console.log('🟢 [WorkflowEditor] Execution event received:', {
+        type: event.type,
+        executionId: event.executionId,
+        nodeId: event.nodeId,
+        status: event.status,
+        timestamp: event.timestamp,
+        data: event.data
+      })
+    }
+
+    const handleExecutionProgress = (progress: any) => {
+      console.log('🔵 [WorkflowEditor] Execution progress:', {
+        executionId: progress.executionId,
+        completedNodes: progress.completedNodes,
+        totalNodes: progress.totalNodes,
+        status: progress.status
+      })
+    }
+
+    const handleNodeExecutionEvent = (nodeEvent: any) => {
+      console.log('🟡 [WorkflowEditor] Node execution event:', {
+        executionId: nodeEvent.executionId,
+        nodeId: nodeEvent.nodeId,
+        type: nodeEvent.type,
+        status: nodeEvent.status
+      })
+    }
+
+    const handleExecutionLog = (log: any) => {
+      console.log('📝 [WorkflowEditor] Execution log:', log)
+    }
+
+    // Register event listeners
+    socketService.on('execution-event', handleExecutionEvent)
+    socketService.on('execution-progress', handleExecutionProgress)
+    socketService.on('node-execution-event', handleNodeExecutionEvent)
+    socketService.on('execution-log', handleExecutionLog)
+
+    // Cleanup: unsubscribe and remove listeners when component unmounts or workflow changes
+    return () => {
+      console.log('[WorkflowEditor] Unsubscribing from workflow:', id)
+      socketService.unsubscribeFromWorkflow(id)
+      
+      // Remove event listeners
+      socketService.off('execution-event', handleExecutionEvent)
+      socketService.off('execution-progress', handleExecutionProgress)
+      socketService.off('node-execution-event', handleNodeExecutionEvent)
+      socketService.off('execution-log', handleExecutionLog)
+    }
+  }, [id])
 
   // Load node types from backend
   useEffect(() => {

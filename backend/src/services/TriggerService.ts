@@ -12,7 +12,7 @@ import { WorkflowService } from "./WorkflowService";
 
 export interface TriggerDefinition {
   id: string;
-  type: "webhook" | "schedule" | "manual";
+  type: "webhook" | "schedule" | "manual" | "workflow-called";
   workflowId: string;
   nodeId: string;
   settings: TriggerSettings;
@@ -24,6 +24,7 @@ export interface TriggerDefinition {
 export interface TriggerSettings {
   // Webhook settings
   webhookId?: string;
+  webhookUrl?: string; // The generated webhook ID from the frontend
   httpMethod?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path?: string;
   authentication?: {
@@ -46,7 +47,7 @@ export interface TriggerEvent {
   id: string;
   triggerId: string;
   workflowId: string;
-  type: "webhook" | "schedule" | "manual";
+  type: "webhook" | "schedule" | "manual" | "workflow-called";
   data: any;
   timestamp: Date;
   executionId?: string;
@@ -91,9 +92,7 @@ export class TriggerService {
     // Initialize TriggerManager with concurrent execution support
     this.triggerManager = new TriggerManager(
       prisma,
-      nodeService,
-      executionHistoryService,
-      socketService,
+      executionService,
       {
         maxConcurrentTriggers: parseInt(
           process.env.MAX_CONCURRENT_TRIGGERS || "10"
@@ -341,6 +340,9 @@ export class TriggerService {
     trigger: TriggerDefinition
   ): Promise<void> {
     try {
+      // Ensure trigger has workflowId set
+      trigger.workflowId = workflowId;
+
       switch (trigger.type) {
         case "webhook":
           await this.activateWebhookTrigger(trigger);
@@ -350,6 +352,13 @@ export class TriggerService {
           break;
         case "manual":
           // Manual triggers don't need activation
+          break;
+        case "workflow-called":
+          // Workflow-called triggers are passive - they don't need active listening
+          // They are triggered when another workflow explicitly calls them
+          logger.info(
+            `Workflow-called trigger ${trigger.id} registered (passive)`
+          );
           break;
         default:
           throw new AppError(
@@ -394,9 +403,17 @@ export class TriggerService {
   private async activateWebhookTrigger(
     trigger: TriggerDefinition
   ): Promise<void> {
-    // Generate webhook ID if not exists
+    // Use webhookUrl parameter as webhookId if provided, otherwise generate
     if (!trigger.settings.webhookId) {
-      trigger.settings.webhookId = uuidv4();
+      // Check if webhookUrl parameter contains the webhookId
+      if (
+        trigger.settings.webhookUrl &&
+        typeof trigger.settings.webhookUrl === "string"
+      ) {
+        trigger.settings.webhookId = trigger.settings.webhookUrl;
+      } else {
+        trigger.settings.webhookId = uuidv4();
+      }
     }
 
     // Store webhook trigger for lookup
@@ -939,5 +956,77 @@ export class TriggerService {
     this.webhookTriggers.clear();
 
     logger.info("TriggerService cleanup completed");
+  }
+
+  /**
+   * Get all registered webhooks for debugging
+   */
+  getRegisteredWebhooks(): Array<{
+    webhookId: string | undefined;
+    workflowId: string;
+    nodeId: string;
+    settings: any;
+  }> {
+    return Array.from(this.webhookTriggers.values()).map((trigger) => ({
+      webhookId: trigger.settings.webhookId,
+      workflowId: trigger.workflowId,
+      nodeId: trigger.nodeId,
+      settings: trigger.settings,
+    }));
+  }
+
+  /**
+   * Sync triggers for a specific workflow
+   * This should be called after workflow is saved/updated to register new triggers
+   */
+  async syncWorkflowTriggers(workflowId: string): Promise<void> {
+    try {
+      logger.info(`Syncing triggers for workflow ${workflowId}`);
+
+      // Get workflow with triggers
+      const workflow = await this.prisma.workflow.findUnique({
+        where: { id: workflowId },
+        select: {
+          id: true,
+          active: true,
+          triggers: true,
+        },
+      });
+
+      if (!workflow) {
+        logger.warn(`Workflow ${workflowId} not found for trigger sync`);
+        return;
+      }
+
+      const triggers = workflow.triggers as any[];
+
+      // Deactivate existing triggers for this workflow
+      const existingTriggers = [
+        ...Array.from(this.webhookTriggers.values()),
+        ...Array.from(this.scheduledTasks.keys()).map((id) => ({ id })),
+      ].filter((t) => (t as any).workflowId === workflowId);
+
+      for (const trigger of existingTriggers) {
+        await this.deactivateTrigger(trigger.id);
+      }
+
+      // Activate new triggers if workflow is active
+      if (workflow.active && triggers && triggers.length > 0) {
+        for (const trigger of triggers) {
+          if (trigger.active) {
+            await this.activateTrigger(workflowId, trigger);
+          }
+        }
+      }
+
+      logger.info(
+        `Successfully synced ${
+          triggers?.length || 0
+        } triggers for workflow ${workflowId}`
+      );
+    } catch (error) {
+      logger.error(`Error syncing triggers for workflow ${workflowId}:`, error);
+      throw error;
+    }
   }
 }
