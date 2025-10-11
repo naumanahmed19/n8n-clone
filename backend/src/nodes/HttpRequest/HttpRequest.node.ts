@@ -139,8 +139,10 @@ export const HttpRequestNode: NodeDefinition = {
     const timeout = (this.getNodeParameter("timeout") as number) || 30000;
     const followRedirects = this.getNodeParameter("followRedirects") as boolean;
     const maxRedirects = (this.getNodeParameter("maxRedirects") as number) || 5;
-    const continueOnFail = (this.getNodeParameter("continueOnFail") as boolean) || false;
-    const alwaysOutputData = (this.getNodeParameter("alwaysOutputData") as boolean) || false;
+    const continueOnFail =
+      (this.getNodeParameter("continueOnFail") as boolean) || false;
+    const alwaysOutputData =
+      (this.getNodeParameter("alwaysOutputData") as boolean) || false;
 
     if (!url) {
       throw new Error("URL is required");
@@ -368,11 +370,14 @@ export const HttpRequestNode: NodeDefinition = {
 
       // If continueOnFail is enabled, return error information as output data
       if (continueOnFail) {
-        this.logger.info("Continuing execution despite error (continueOnFail enabled)", {
-          method,
-          url: sanitizedUrl,
-          error: httpError.message,
-        });
+        this.logger.info(
+          "Continuing execution despite error (continueOnFail enabled)",
+          {
+            method,
+            url: sanitizedUrl,
+            error: httpError.message,
+          }
+        );
 
         // Return error details as output data so the workflow can continue
         return [

@@ -14,12 +14,14 @@ Added two new settings to the HTTP Request node to improve error handling and wo
 When enabled, the node will continue execution even if the request fails. Instead of stopping the workflow with an error, it returns error information as output data.
 
 **Use Cases:**
+
 - Want to handle errors in subsequent nodes
 - Need to log errors without stopping the workflow
 - Performing health checks where failures are expected
 - Bulk operations where some failures are acceptable
 
 **Output Format When Error Occurs:**
+
 ```json
 {
   "error": true,
@@ -40,12 +42,14 @@ When enabled, the node will continue execution even if the request fails. Instea
 When enabled (only available when Continue On Fail is enabled), the node treats error responses (4xx, 5xx) as successful responses and returns them as data.
 
 **Use Cases:**
+
 - Need to process error responses (e.g., validation errors from APIs)
 - Want to access error details from the API response body
 - Building error handling logic based on status codes
 - Testing error scenarios
 
 **Output Format for Error Response:**
+
 ```json
 {
   "status": 401,
@@ -69,6 +73,7 @@ When enabled (only available when Continue On Fail is enabled), the node treats 
 ### Changes to HttpRequest.node.ts
 
 1. **Added Properties:**
+
    ```typescript
    {
      displayName: "Continue On Fail",
@@ -92,6 +97,7 @@ When enabled (only available when Continue On Fail is enabled), the node treats 
    ```
 
 2. **Modified Error Handling:**
+
    - Check `alwaysOutputData` before throwing error on non-OK responses
    - If `continueOnFail` is enabled, catch errors and return structured error data
    - Log appropriate messages for debugging
@@ -108,10 +114,12 @@ When enabled (only available when Continue On Fail is enabled), the node treats 
 **Scenario:** Making a request to a webhook that might require authentication.
 
 **Configuration:**
+
 - Continue On Fail: ✅ Enabled
 - Always Output Data: ✅ Enabled
 
 **Workflow:**
+
 ```
 [HTTP Request] → [IF Node]
                     ├─ status === 401 → [Send Alert]
@@ -123,12 +131,14 @@ When enabled (only available when Continue On Fail is enabled), the node treats 
 **Scenario:** Try multiple API endpoints, continue even if some fail.
 
 **Configuration:**
+
 - Continue On Fail: ✅ Enabled
 - Always Output Data: ❌ Disabled
 
 **Workflow:**
+
 ```
-[HTTP Request 1] → [Check Error] 
+[HTTP Request 1] → [Check Error]
                       ├─ error === true → [HTTP Request 2]
                       └─ error === false → [Process Success]
 ```
@@ -138,10 +148,12 @@ When enabled (only available when Continue On Fail is enabled), the node treats 
 **Scenario:** Check service health without stopping workflow on failures.
 
 **Configuration:**
+
 - Continue On Fail: ✅ Enabled
 - Always Output Data: ✅ Enabled
 
 **Workflow:**
+
 ```
 [Schedule Trigger] → [HTTP Request] → [Log Status]
                                          ├─ ok === true → [Update: Healthy]
@@ -151,6 +163,7 @@ When enabled (only available when Continue On Fail is enabled), the node treats 
 ## Testing
 
 ### Test Case 1: Webhook with Authentication
+
 ```bash
 # Scenario: Request to webhook without auth credentials
 # Expected: With continueOnFail enabled, should return error data instead of failing
@@ -168,7 +181,7 @@ curl -X POST http://localhost:4000/api/executions/execute \
     }
   }'
 
-# Result: 
+# Result:
 # {
 #   "status": "completed",
 #   "data": {
@@ -179,6 +192,7 @@ curl -X POST http://localhost:4000/api/executions/execute \
 ```
 
 ### Test Case 2: Network Error
+
 ```bash
 # Scenario: Request to unreachable server
 # Expected: With continueOnFail enabled, should return error data
@@ -209,6 +223,7 @@ Parameters: {
 Existing workflows are not affected as both settings default to `false`, maintaining backward compatibility.
 
 To enable for existing HTTP Request nodes:
+
 1. Open node configuration
 2. Enable "Continue On Fail"
 3. Optionally enable "Always Output Data" for error response details
@@ -216,6 +231,7 @@ To enable for existing HTTP Request nodes:
 ## Future Enhancements
 
 Possible improvements:
+
 1. Add retry count configuration when continueOnFail is enabled
 2. Add conditional retry based on status codes
 3. Add option to output to separate error output port
