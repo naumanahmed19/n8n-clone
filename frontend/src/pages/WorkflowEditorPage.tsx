@@ -247,6 +247,12 @@ export function WorkflowEditorPage() {
 
   useEffect(() => {
     const loadWorkflow = async () => {
+      // Skip loading if we're in execution mode (executionId is present)
+      // The execution effect will handle loading the workflow snapshot
+      if (executionId) {
+        return
+      }
+
       if (!id) {
         // Create new workflow
         const newWorkflow: Workflow = {
@@ -313,7 +319,7 @@ export function WorkflowEditorPage() {
     }
 
     loadWorkflow()
-  }, [id, setWorkflow, setLoading])
+  }, [id, executionId, setWorkflow, setLoading])
 
   if (isLoading || isLoadingNodeTypes || isLoadingExecution) {
     return (
@@ -380,7 +386,7 @@ export function WorkflowEditorPage() {
         {executionId && execution ? (
           <ExecutionToolbar
             execution={execution}
-            onBack={() => navigate(`/workflows/${id}`)}
+            onBack={() =>  navigate(`/workflows/${id}`, { replace: true })}
           />
         ) : (
           <WorkflowToolbar
