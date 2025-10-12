@@ -19,13 +19,18 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
+import { useEnvironmentStore } from '@/stores/environment'
+import { getEnvironmentLabel } from '@/types/environment'
 import { validateImportFile } from '@/utils/errorHandling'
 import {
     AlertCircle,
+    ChevronDown,
     Download,
     Loader2,
     MoreHorizontal,
+    Package,
     Redo,
+    RefreshCw,
     Save,
     Settings,
     Terminal,
@@ -33,6 +38,9 @@ import {
     Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { EnvironmentSelector } from '../environment/EnvironmentSelector'
+import { ManualDeploymentDialog } from '../environment/ManualDeploymentDialog'
+import { UpdateEnvironmentDialog } from '../environment/UpdateEnvironmentDialog'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
 import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
@@ -56,6 +64,9 @@ export function WorkflowToolbar({
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [showDeployDialog, setShowDeployDialog] = useState(false)
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const { selectedEnvironment, summaries } = useEnvironmentStore()
   
   // Add Node Dialog store
   const { openDialog } = useAddNodeDialogStore()
@@ -249,6 +260,25 @@ export function WorkflowToolbar({
 
           <Separator orientation="vertical" className="h-4" />
 
+          {/* Environment Selector */}
+          {workflow?.id && (
+            <>
+              <EnvironmentSelector
+                workflowId={workflow.id}
+                onEnvironmentChange={(env) => {
+                  console.log('Environment changed:', env)
+                  // You can add logic here to filter executions or load environment-specific data
+                }}
+                onCreateEnvironment={(env) => {
+                  console.log('Create environment:', env)
+                  // This will open a dialog to create the environment
+                }}
+              />
+              
+              <Separator orientation="vertical" className="h-4" />
+            </>
+          )}
+
           {/* Edit actions */}
           <div className="flex items-center space-x-0.5">
             <Tooltip>
@@ -351,27 +381,91 @@ export function WorkflowToolbar({
         </Tooltip>
 
    
-        {/* Save Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || (!isDirty && !mainTitleDirty)}
-              variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
-              size="sm"
-              className="relative h-7 px-2.5 text-xs"
-            >
-              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              <span className="ml-1.5">{isSaving ? 'Saving...' : 'Save'}</span>
-              {(isDirty || mainTitleDirty) && !isSaving && (
-                <Badge variant="destructive" className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 p-0" />
+        {/* Save Button with Dropdown */}
+        <div className="flex items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || (!isDirty && !mainTitleDirty) || selectedEnvironment !== null}
+                variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
+                size="sm"
+                className="relative h-7 px-2.5 text-xs rounded-r-none border-r-0"
+              >
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                <span className="ml-1.5">
+                  {isSaving ? 'Saving...' : 'Save'}
+                </span>
+                {(isDirty || mainTitleDirty) && !isSaving && (
+                  <Badge variant="destructive" className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 p-0" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {selectedEnvironment 
+                  ? `Cannot save - viewing ${getEnvironmentLabel(selectedEnvironment)}. Use "Update ${getEnvironmentLabel(selectedEnvironment)}" instead.`
+                  : `Save Workflow (Ctrl+S)${(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}`}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                disabled={isSaving}
+                variant={(isDirty || mainTitleDirty) && !isSaving ? "default" : "secondary"}
+                size="sm"
+                className="h-7 px-1.5 rounded-l-none border-l border-l-background/10"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem 
+                onClick={handleSave}
+                disabled={isSaving || (!isDirty && !mainTitleDirty) || selectedEnvironment !== null}
+                className="text-xs"
+              >
+                <Save className="mr-2 h-3.5 w-3.5" />
+                Save Workflow
+                {selectedEnvironment && (
+                  <span className="ml-1 text-[10px] text-muted-foreground">(disabled)</span>
+                )}
+                {!selectedEnvironment && (
+                  <kbd className="ml-auto text-[10px] text-muted-foreground">Ctrl+S</kbd>
+                )}
+              </DropdownMenuItem>
+              
+              {workflow?.id && selectedEnvironment && summaries.find(s => s.environment === selectedEnvironment) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setShowUpdateDialog(true)}
+                    className="text-xs"
+                  >
+                    <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                    Update {getEnvironmentLabel(selectedEnvironment)}
+                  </DropdownMenuItem>
+                </>
               )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Save (Ctrl+S){(isDirty || mainTitleDirty) ? ' - Unsaved changes' : ' - No changes'}</p>
-          </TooltipContent>
-        </Tooltip>
+              
+              {/* Manual Deployment */}
+              {workflow?.id && summaries.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setShowDeployDialog(true)}
+                    className="text-xs"
+                  >
+                    <Package className="mr-2 h-3.5 w-3.5" />
+                    Deploy
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Settings Dropdown Menu */}
         <DropdownMenu>
@@ -431,6 +525,54 @@ export function WorkflowToolbar({
         </DropdownMenu>
       </div>
       </header>
+      
+      {/* Manual Deployment Dialog */}
+      {workflow?.id && (
+        <>
+          <ManualDeploymentDialog
+            workflowId={workflow.id}
+            open={showDeployDialog}
+            onOpenChange={setShowDeployDialog}
+            onSuccess={() => {
+              // Reload environment summaries after successful deployment
+              const { loadSummaries } = useEnvironmentStore.getState()
+              loadSummaries(workflow.id)
+            }}
+          />
+          
+          {selectedEnvironment && summaries.find(s => s.environment === selectedEnvironment) && (
+            <UpdateEnvironmentDialog
+              workflowId={workflow.id}
+              environment={selectedEnvironment}
+              currentVersion={summaries.find(s => s.environment === selectedEnvironment)!.version}
+              isOpen={showUpdateDialog}
+              onClose={() => setShowUpdateDialog(false)}
+              onSuccess={() => {
+                // Reload environment summaries after successful update
+                const { loadSummaries } = useEnvironmentStore.getState()
+                loadSummaries(workflow.id)
+              }}
+            />
+          )}
+        </>
+      )}
+      
+      {/* Confirm Dialog */}
+      <ConfirmDialog />
+      
+      {/* Workflow Settings Modal */}
+      {workflow && (
+        <WorkflowSettingsModal
+          isOpen={showSettingsModal}
+          workflow={workflow}
+          onClose={() => setShowSettingsModal(false)}
+          onSave={(updates) => {
+            updateWorkflow(updates)
+            setDirty(true)
+            setShowSettingsModal(false)
+          }}
+        />
+      )}
     </TooltipProvider>
   )
 }

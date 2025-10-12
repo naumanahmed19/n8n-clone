@@ -11,6 +11,7 @@ import { createServer } from "http";
 import { authRoutes } from "./routes/auth";
 import credentialRoutes from "./routes/credentials";
 import { customNodeRoutes } from "./routes/custom-nodes";
+import environmentRoutes from "./routes/environment";
 import executionControlRoutes from "./routes/execution-control";
 import executionHistoryRoutes from "./routes/execution-history";
 import executionRecoveryRoutes from "./routes/execution-recovery";
@@ -140,6 +141,7 @@ app.get("/", (req, res) => {
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/workflows", workflowRoutes);
+app.use("/api", environmentRoutes); // Environment routes are nested under workflows
 app.use("/api/executions", executionRoutes);
 app.use("/api/nodes", nodeRoutes);
 app.use("/api/node-types", nodeTypeRoutes);

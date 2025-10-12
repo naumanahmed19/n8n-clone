@@ -1,4 +1,5 @@
 import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
+import { GlobalToastProvider } from '@/components/providers/GlobalToastProvider'
 import { Toaster } from '@/components/ui/sonner'
 
 import { SidebarContextProvider, ThemeProvider } from '@/contexts'
@@ -96,6 +97,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
           <Toaster />
+          <GlobalToastProvider />
         </SidebarContextProvider>
         </ThemeProvider>
       </Router>

@@ -38,30 +38,97 @@ model Category {
 }
 
 model Workflow {
-  id               String             @id @default(cuid())
+  id               String                  @id @default(cuid())
   name             String
   description      String?
   category         String?
-  tags             String[]           @default([])
+  tags             String[]                @default([])
   userId           String
-  nodes            Json               @default("[]")
-  connections      Json               @default("[]")
-  triggers         Json               @default("[]")
-  settings         Json               @default("{}")
-  active           Boolean            @default(false)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  nodes            Json                    @default("[]")
+  connections      Json                    @default("[]")
+  triggers         Json                    @default("[]")
+  settings         Json                    @default("{}")
+  active           Boolean                 @default(false)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
   executionHistory ExecutionHistory[]
   executions       Execution[]
   variables        Variable[]
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  environments     WorkflowEnvironment[]
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("workflows")
+}
+
+model WorkflowEnvironment {
+  id             String                       @id @default(cuid())
+  workflowId     String
+  environment    EnvironmentType              @default(DEVELOPMENT)
+  version        String                       @default("1.0.0")
+  nodes          Json                         @default("[]")
+  connections    Json                         @default("[]")
+  triggers       Json                         @default("[]")
+  settings       Json                         @default("{}")
+  variables      Json                         @default("{}")
+  active         Boolean                      @default(false)
+  deployedAt     DateTime?
+  deployedBy     String?
+  deploymentNote String?
+  status         EnvironmentStatus            @default(DRAFT)
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+  workflow       Workflow                     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  deployments    WorkflowEnvironmentDeployment[]
+
+  @@unique([workflowId, environment])
+  @@index([workflowId])
+  @@index([environment])
+  @@index([status])
+  @@map("workflow_environments")
+}
+
+model WorkflowEnvironmentDeployment {
+  id                String              @id @default(cuid())
+  environmentId     String
+  version           String
+  deployedBy        String
+  deployedAt        DateTime            @default(now())
+  sourceEnvironment EnvironmentType?
+  deploymentNote    String?
+  snapshot          Json                // Complete snapshot of workflow state
+  status            DeploymentStatus    @default(SUCCESS)
+  rollbackFrom      String?             // ID of deployment this rolled back from
+  createdAt         DateTime            @default(now())
+  environment       WorkflowEnvironment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@index([environmentId])
+  @@index([deployedAt])
+  @@map("workflow_environment_deployments")
+}
+
+enum EnvironmentType {
+  DEVELOPMENT
+  STAGING
+  PRODUCTION
+}
+
+enum EnvironmentStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum DeploymentStatus {
+  SUCCESS
+  FAILED
+  ROLLBACK
 }
 
 model Execution {
   id                  String               @id @default(cuid())
   workflowId          String
+  environment         EnvironmentType      @default(DEVELOPMENT)
   status              ExecutionStatus      @default(RUNNING)
   startedAt           DateTime             @default(now())
   finishedAt          DateTime?
@@ -85,6 +152,7 @@ model Execution {
   flowExecutionStates FlowExecutionState[]
   nodeExecutions      NodeExecution[]
 
+  @@index([environment])
   @@map("executions")
 }
 
