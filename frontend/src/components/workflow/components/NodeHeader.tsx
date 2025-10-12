@@ -68,7 +68,7 @@ export function NodeHeader({
   }
   
   return (
-    <div className={`flex items-center justify-between p-3 ${showBorder ? 'border-b' : ''}`}>
+    <div className={`flex items-center justify-between p-3 ${showBorder ? 'border-b border-border' : ''}`}>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {/* Icon Component */}
         {icon && (

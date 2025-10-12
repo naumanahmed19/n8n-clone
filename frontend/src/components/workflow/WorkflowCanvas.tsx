@@ -57,7 +57,7 @@ export function WorkflowCanvas({
     
     // Change background pattern for disabled/read-only mode
     const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
-    const backgroundColor = isDisabled ? '#f8fafc' : undefined
+    const backgroundColor = isDisabled ? 'hsl(var(--muted))' : undefined
     
 
     return (

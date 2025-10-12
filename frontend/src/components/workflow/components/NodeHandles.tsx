@@ -45,8 +45,8 @@ export function NodeHandles({
                   left: '-6px'
                 }}
                 className={clsx(
-                  "w-3 h-3 border-2 border-white",
-                  disabled ? "!bg-gray-300" : "!bg-gray-400"
+                  "w-3 h-3 border-2 border-white dark:border-background",
+                  disabled ? "!bg-muted" : "!bg-muted-foreground"
                 )}
               />
             )
@@ -128,9 +128,9 @@ function OutputHandle({
           transform: 'none',
         }}
         className={clsx(
-          "w-3 h-3 border-2 border-white cursor-pointer transition-all duration-200",
+          "w-3 h-3 border-2 border-white dark:border-background cursor-pointer transition-all duration-200",
           isTrigger ? "rounded-full" : "",
-          disabled ? "!bg-gray-300" : "!bg-gray-400 hover:!bg-primary hover:scale-125"
+          disabled ? "!bg-muted" : "!bg-muted-foreground hover:!bg-primary hover:scale-125"
         )}
         onClick={onClick}
       />
