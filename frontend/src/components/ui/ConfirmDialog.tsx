@@ -64,34 +64,34 @@ export function ConfirmDialog({
   const getIcon = () => {
     switch (severity) {
       case 'danger':
-        return <AlertTriangle className="w-6 h-6 text-red-600" />
+        return <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
       case 'warning':
-        return <AlertCircle className="w-6 h-6 text-yellow-600" />
+        return <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
       case 'info':
-        return <Info className="w-6 h-6 text-blue-600" />
+        return <Info className="w-6 h-6 text-blue-600 dark:text-blue-400" />
     }
   }
 
   const getConfirmButtonClasses = () => {
-    const baseClasses = 'px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2'
+    const baseClasses = 'px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800'
     
     switch (severity) {
       case 'danger':
         return clsx(
           baseClasses,
-          'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+          'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600',
           (loading || disabled) && 'opacity-50 cursor-not-allowed'
         )
       case 'warning':
         return clsx(
           baseClasses,
-          'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500',
+          'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 dark:bg-yellow-500 dark:hover:bg-yellow-600',
           (loading || disabled) && 'opacity-50 cursor-not-allowed'
         )
       case 'info':
         return clsx(
           baseClasses,
-          'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+          'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600',
           (loading || disabled) && 'opacity-50 cursor-not-allowed'
         )
     }
@@ -115,7 +115,7 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black bg-opacity-50"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -124,7 +124,7 @@ export function ConfirmDialog({
       style={{ zIndex: 99999 }}
     >
       <div 
-        className="relative z-[100000] bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto pointer-events-auto" 
+        className="relative z-[100000] bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto pointer-events-auto" 
         style={{ zIndex: 100000 }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -137,7 +137,7 @@ export function ConfirmDialog({
             <div className="flex-1 min-w-0">
               <h3 
                 id="confirm-dialog-title"
-                className="text-lg font-medium text-gray-900"
+                className="text-lg font-medium text-gray-900 dark:text-gray-100"
               >
                 {title}
               </h3>
@@ -148,7 +148,7 @@ export function ConfirmDialog({
             onClick={handleCancel}
             disabled={loading}
             className={clsx(
-              'p-1 text-gray-400 hover:text-gray-600 transition-colors',
+              'p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors',
               loading && 'opacity-50 cursor-not-allowed'
             )}
             aria-label="Close dialog"
@@ -161,18 +161,18 @@ export function ConfirmDialog({
         <div className="px-6 pb-4">
           <p 
             id="confirm-dialog-description"
-            className="text-sm text-gray-700 leading-relaxed"
+            className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
           >
             {message}
           </p>
 
           {/* Details */}
           {details.length > 0 && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-md">
-              <ul className="text-sm text-gray-600 space-y-1">
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                 {details.map((detail, index) => (
                   <li key={index} className="flex items-start">
-                    <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0" />
+                    <span className="inline-block w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-2 flex-shrink-0" />
                     <span>{detail}</span>
                   </li>
                 ))}
@@ -182,7 +182,7 @@ export function ConfirmDialog({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+        <div className="flex items-center justify-end space-x-3 px-6 py-4 bg-gray-50 dark:bg-gray-900 rounded-b-lg">
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -191,7 +191,7 @@ export function ConfirmDialog({
             }}
             disabled={loading}
             className={clsx(
-              'relative z-[100001] px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors pointer-events-auto',
+              'relative z-[100001] px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-colors pointer-events-auto',
               loading && 'opacity-50 cursor-not-allowed'
             )}
           >
