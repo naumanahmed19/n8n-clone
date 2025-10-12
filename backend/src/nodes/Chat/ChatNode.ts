@@ -11,7 +11,7 @@ export const ChatNode: NodeDefinition = {
   group: ["communication", "ai"],
   version: 1,
   description:
-    "Interactive chat interface - Send messages and trigger workflows. Can be used as a trigger.",
+    "Interactive chat interface - Send messages and trigger workflows. Can be used as a trigger or accept input from other nodes.",
   icon: "💬",
   color: "#3b82f6",
   executionCapability: "trigger",
@@ -21,6 +21,13 @@ export const ChatNode: NodeDefinition = {
   inputs: [],
   outputs: ["main"],
   properties: [
+    {
+      displayName: "Accept Input from Other Nodes",
+      name: "acceptInput",
+      type: "boolean",
+      default: false,
+      description: "When enabled, this node can receive data from previous nodes in the workflow",
+    },
     {
       displayName: "User Message",
       name: "userMessage",
@@ -35,8 +42,19 @@ export const ChatNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    // For trigger nodes, create a default item if no input
-    const items = inputData.main?.[0] || [{ json: {} }];
+    // Check if node is configured to accept input
+    const acceptInput = this.getNodeParameter("acceptInput", 0) as boolean;
+
+    // Determine items based on input mode
+    let items;
+    if (acceptInput && inputData.main?.[0]?.length) {
+      // Use input from previous nodes
+      items = inputData.main[0];
+    } else {
+      // For trigger mode, create a default item if no input
+      items = [{ json: {} }];
+    }
+
     const results = [];
 
     for (let i = 0; i < items.length; i++) {
@@ -46,13 +64,17 @@ export const ChatNode: NodeDefinition = {
         // Get user message
         const userMessage = this.getNodeParameter("userMessage", i) as string;
 
-        // Build clean output with just the user message
-        // Don't spread item.json to avoid polluting output with execution metadata
+        // Build output
         const resultData: any = {
           message: userMessage,
           userMessage: userMessage,
           timestamp: new Date().toISOString(),
         };
+
+        // If accepting input, merge with incoming data
+        if (acceptInput && item.json) {
+          resultData.inputData = item.json;
+        }
 
         results.push({
           json: resultData,
