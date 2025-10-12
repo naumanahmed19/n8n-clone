@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, Copy, Globe, TestTube } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -24,7 +24,6 @@ export function WebhookUrlGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedTest, setCopiedTest] = useState(false);
   const [copiedProd, setCopiedProd] = useState(false);
-  const [selectedMode, setSelectedMode] = useState<"test" | "production">(mode);
 
   // Get base URLs from environment or use defaults
   const getBaseUrl = (environment: "test" | "production") => {
@@ -116,167 +115,98 @@ export function WebhookUrlGenerator({
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-sm font-medium mb-2 flex items-center gap-2">
-          <Globe className="w-4 h-4" />
-          Webhook URLs
-        </Label>
-        <p className="text-xs text-muted-foreground mb-3">
-          Use these URLs to trigger your workflow from external services
-        </p>
-      </div>
+    <Tabs defaultValue={mode} className="w-full">
+      <div className="space-y-3">
+        {/* Label and Tabs in one row */}
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Webhook URL</Label>
+          <TabsList className="inline-flex h-9">
+            <TabsTrigger value="test" className="text-xs" disabled={disabled}>
+              <TestTube className="w-3 h-3 mr-1" />
+              Test
+            </TabsTrigger>
+            <TabsTrigger value="production" className="text-xs" disabled={disabled}>
+              <Globe className="w-3 h-3 mr-1" />
+              Production
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      {/* Mode Selector */}
-      <div className="flex gap-2 mb-3">
-        <Button
-          type="button"
-          variant={selectedMode === "test" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedMode("test")}
-          disabled={disabled}
-          className="flex-1"
-        >
-          <TestTube className="w-3 h-3 mr-1" />
-          Test URL
-        </Button>
-        <Button
-          type="button"
-          variant={selectedMode === "production" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedMode("production")}
-          disabled={disabled}
-          className="flex-1"
-        >
-          <Globe className="w-3 h-3 mr-1" />
-          Production URL
-        </Button>
-      </div>
-
-      {/* Test Webhook URL */}
-      {selectedMode === "test" && (
-        <Card className="p-3 bg-blue-50 border-blue-200">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-blue-900 flex items-center gap-1">
-                <TestTube className="w-3 h-3" />
-                Test Environment
-              </Label>
-              <span className="text-xs text-blue-600 font-mono">localhost</span>
-            </div>
-            
-            <div className="flex gap-2">
-              <Input
-                value={testWebhookUrl}
-                readOnly
-                disabled={disabled}
-                className="font-mono text-xs bg-white border-blue-300"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(testWebhookUrl, "test")}
-                disabled={disabled || !webhookId}
-                className="shrink-0 border-blue-300 hover:bg-blue-100"
-              >
-                {copiedTest ? (
-                  <Check className="w-4 h-4 text-green-600" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-            
-            <p className="text-xs text-blue-700">
-              Use this URL for testing your webhook during development
-            </p>
+        {/* Test URL Content */}
+        <TabsContent value="test" className="mt-0">
+          <div className="flex gap-2">
+            <Input
+              value={testWebhookUrl}
+              readOnly
+              disabled={disabled}
+              className="font-mono text-xs h-9 bg-blue-50 border-blue-200"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => copyToClipboard(testWebhookUrl, "test")}
+              disabled={disabled || !webhookId}
+              className="shrink-0 h-9 w-9 p-0"
+            >
+              {copiedTest ? (
+                <Check className="w-3.5 h-3.5 text-green-600" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </Button>
           </div>
-        </Card>
-      )}
+        </TabsContent>
 
-      {/* Production Webhook URL */}
-      {selectedMode === "production" && (
-        <Card className="p-3 bg-green-50 border-green-200">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-green-900 flex items-center gap-1">
-                <Globe className="w-3 h-3" />
-                Production Environment
-              </Label>
-              <span className="text-xs text-green-600 font-mono">live</span>
-            </div>
-            
-            <div className="flex gap-2">
-              <Input
-                value={productionWebhookUrl}
-                readOnly
-                disabled={disabled}
-                className="font-mono text-xs bg-white border-green-300"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(productionWebhookUrl, "production")}
-                disabled={disabled || !webhookId}
-                className="shrink-0 border-green-300 hover:bg-green-100"
-              >
-                {copiedProd ? (
-                  <Check className="w-4 h-4 text-green-600" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-            
-            <p className="text-xs text-green-700">
-              Use this URL in production for live webhook triggers
-            </p>
+        {/* Production URL Content */}
+        <TabsContent value="production" className="mt-0">
+          <div className="flex gap-2">
+            <Input
+              value={productionWebhookUrl}
+              readOnly
+              disabled={disabled}
+              className="font-mono text-xs h-9 bg-green-50 border-green-200"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => copyToClipboard(productionWebhookUrl, "production")}
+              disabled={disabled || !webhookId}
+              className="shrink-0 h-9 w-9 p-0"
+            >
+              {copiedProd ? (
+                <Check className="w-3.5 h-3.5 text-green-600" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </Button>
           </div>
-        </Card>
-      )}
+        </TabsContent>
 
-      {/* Webhook ID Display */}
-      <div className="pt-2 border-t">
-        <Label className="text-xs font-medium text-muted-foreground">
-          Webhook ID
-        </Label>
-        <div className="flex gap-2 mt-1">
-          <Input
-            value={webhookId}
-            readOnly
-            disabled={disabled}
-            className="font-mono text-xs text-muted-foreground"
-          />
+        {/* Webhook ID Display */}
+        <div className="flex gap-1.5 items-end">
+          <div className="flex-1">
+            <Label className="text-xs text-muted-foreground mb-1">Webhook ID</Label>
+            <Input
+              value={webhookId}
+              readOnly
+              disabled={disabled}
+              className="font-mono text-xs h-8 text-muted-foreground"
+            />
+          </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={generateWebhookId}
             disabled={disabled || isGenerating}
-            className="shrink-0"
+            className="shrink-0 h-8 text-xs"
           >
-            {isGenerating ? "Generating..." : "Regenerate"}
+            {isGenerating ? "..." : "Regenerate"}
           </Button>
         </div>
-        <p className="text-xs text-amber-600 mt-1">
-          ⚠️ Regenerating will invalidate the old webhook URL
-        </p>
       </div>
-
-      {/* Info Box */}
-      <Card className="p-3 bg-muted/50">
-        <div className="space-y-1 text-xs text-muted-foreground">
-          <p className="font-medium text-foreground">How to use:</p>
-          <ol className="list-decimal list-inside space-y-0.5 ml-2">
-            <li>Copy the webhook URL for your environment</li>
-            <li>Configure it in your external service</li>
-            <li>Send HTTP requests to trigger this workflow</li>
-            <li>View execution results in the workflow history</li>
-          </ol>
-        </div>
-      </Card>
-    </div>
+    </Tabs>
   );
 }

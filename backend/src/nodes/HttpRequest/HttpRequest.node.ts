@@ -31,111 +31,22 @@ export const HttpRequestNode: NodeDefinition = {
   },
   inputs: ["main"],
   outputs: ["main"],
-  credentials: [
-    {
-      name: "httpBasicAuth",
-      displayName: "Basic Auth",
-      properties: [
-        {
-          displayName: "Username",
-          name: "username",
-          type: "string",
-          required: true,
-          default: "",
-        },
-        {
-          displayName: "Password",
-          name: "password",
-          type: "string",
-          required: true,
-          default: "",
-        },
-      ],
-    },
-    {
-      name: "httpHeaderAuth",
-      displayName: "Header Auth",
-      properties: [
-        {
-          displayName: "Header Name",
-          name: "name",
-          type: "string",
-          required: true,
-          default: "Authorization",
-          description:
-            "The name of the header to send (e.g., Authorization, X-API-Key)",
-        },
-        {
-          displayName: "Header Value",
-          name: "value",
-          type: "string",
-          required: true,
-          default: "",
-          description: "The value to send in the header (e.g., Bearer token)",
-        },
-      ],
-    },
-    {
-      name: "httpBearerAuth",
-      displayName: "Bearer Token",
-      properties: [
-        {
-          displayName: "Token",
-          name: "token",
-          type: "string",
-          required: true,
-          default: "",
-          description: "The bearer token for authentication",
-        },
-      ],
-    },
-    {
-      name: "apiKey",
-      displayName: "API Key",
-      properties: [
-        {
-          displayName: "API Key",
-          name: "apiKey",
-          type: "string",
-          required: true,
-          default: "",
-          description: "The API key for authentication",
-        },
-        {
-          displayName: "Add To",
-          name: "addTo",
-          type: "options",
-          required: true,
-          default: "header",
-          options: [
-            { name: "Header", value: "header" },
-            { name: "Query String", value: "query" },
-          ],
-          description: "Where to add the API key",
-        },
-        {
-          displayName: "Key Name",
-          name: "keyName",
-          type: "string",
-          required: true,
-          default: "api_key",
-          description: "The name of the header or query parameter",
-        },
-      ],
-    },
-  ],
-  credentialSelector: {
-    displayName: "Authentication",
-    description: "Select authentication method for HTTP requests",
-    placeholder: "Select authentication...",
-    allowedTypes: [
-      "httpBasicAuth",
-      "httpHeaderAuth",
-      "httpBearerAuth",
-      "apiKey",
-    ],
-  },
   properties: [
+    {
+      displayName: "Authentication",
+      name: "authentication",
+      type: "credential",
+      required: false,
+      default: "",
+      description: "Select authentication method for HTTP requests",
+      placeholder: "Select authentication...",
+      allowedTypes: [
+        "httpBasicAuth",
+        "httpHeaderAuth",
+        "httpBearerAuth",
+        "apiKey",
+      ],
+    },
     {
       displayName: "Method",
       name: "method",

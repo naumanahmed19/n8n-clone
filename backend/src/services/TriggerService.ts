@@ -3,6 +3,7 @@ import * as cron from "node-cron";
 import { v4 as uuidv4 } from "uuid";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { CredentialService } from "./CredentialService";
 import ExecutionHistoryService from "./ExecutionHistoryService";
 import { ExecutionService } from "./ExecutionService";
 import { NodeService } from "./NodeService";
@@ -83,6 +84,7 @@ export class TriggerService {
   private executionService: ExecutionService;
   private socketService: SocketService;
   private executionHistoryService: ExecutionHistoryService;
+  private credentialService: CredentialService;
   private triggerManager: TriggerManager;
   private scheduledTasks: Map<string, cron.ScheduledTask> = new Map();
   private webhookTriggers: Map<string, TriggerDefinition> = new Map();
@@ -93,13 +95,15 @@ export class TriggerService {
     executionService: ExecutionService,
     socketService: SocketService,
     nodeService: NodeService,
-    executionHistoryService: ExecutionHistoryService
+    executionHistoryService: ExecutionHistoryService,
+    credentialService: CredentialService
   ) {
     this.prisma = prisma;
     this.workflowService = workflowService;
     this.executionService = executionService;
     this.socketService = socketService;
     this.executionHistoryService = executionHistoryService;
+    this.credentialService = credentialService;
 
     // Initialize TriggerManager with concurrent execution support
     this.triggerManager = new TriggerManager(
@@ -501,11 +505,83 @@ export class TriggerService {
       }
 
       // Validate authentication if configured
-      // Handle both old format (authentication: "basic") and new format (authentication: { type: "basic", settings: {...} })
+      // Handle multiple formats:
+      // 1. New format: authentication is a credential ID (UUID or CUID string)
+      // 2. Old format: authentication is a type string ("basic", "header", etc.)
+      // 3. Legacy format: authentication is an object with type and settings
       let authConfig = trigger.settings.authentication;
 
+      // If authentication is a credential ID (UUID or CUID format), fetch the credential
+      // CUID format: starts with 'c' followed by alphanumeric characters (25 chars total)
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const cuidRegex = /^c[a-z0-9]{24}$/i;
+
+      const isCredentialId =
+        typeof authConfig === "string" &&
+        (uuidRegex.test(authConfig) || cuidRegex.test(authConfig));
+
+      if (isCredentialId) {
+        try {
+          // Fetch credential using CredentialService (with decryption)
+          const credential = await this.credentialService.getCredentialById(
+            authConfig as string
+          );
+
+          if (credential) {
+            // credentialData is already decrypted by CredentialService
+            const credentialData = credential.data;
+
+            switch (credential.type) {
+              case "httpBasicAuth":
+                authConfig = {
+                  type: "basic",
+                  settings: {
+                    username: credentialData.username,
+                    password: credentialData.password,
+                  },
+                };
+                break;
+
+              case "httpHeaderAuth":
+                authConfig = {
+                  type: "header",
+                  settings: {
+                    headerName: credentialData.name || "Authorization",
+                    expectedValue: credentialData.value,
+                  },
+                };
+                break;
+
+              case "webhookQueryAuth":
+                authConfig = {
+                  type: "query",
+                  settings: {
+                    queryParam: credentialData.paramName || "token",
+                    expectedValue: credentialData.value,
+                  },
+                };
+                break;
+
+              default:
+                logger.warn(`Unsupported credential type: ${credential.type}`);
+                authConfig = undefined;
+            }
+          } else {
+            logger.warn(`Credential not found for webhook ${webhookId}`);
+            authConfig = undefined;
+          }
+        } catch (error) {
+          logger.error(
+            `Error fetching credential for webhook ${webhookId}`,
+            error
+          );
+          authConfig = undefined;
+        }
+      }
       // If authentication is a string (old format), convert to new format
-      if (typeof authConfig === "string" && authConfig !== "none") {
+      else if (typeof authConfig === "string" && authConfig !== "none") {
         authConfig = {
           type: authConfig,
           settings: {
@@ -528,10 +604,10 @@ export class TriggerService {
           request
         );
         if (!isAuthenticated) {
-          logger.warn(`Authentication failed for webhook ${webhookId}`, {
+          logger.warn(`Webhook authentication failed`, {
+            webhookId,
             authType: authConfig.type,
             ip: request.ip,
-            userAgent: request.userAgent,
           });
           throw new AppError(
             "Webhook authentication failed",
@@ -539,9 +615,6 @@ export class TriggerService {
             "WEBHOOK_AUTH_FAILED"
           );
         }
-        logger.info(`Authentication successful for webhook ${webhookId}`, {
-          authType: authConfig.type,
-        });
       }
 
       // Create trigger execution request with webhook data
@@ -846,9 +919,6 @@ export class TriggerService {
         // Validate Basic Authentication (username:password)
         const authHeader = request.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Basic ")) {
-          logger.warn(
-            "Basic auth failed: Missing or invalid Authorization header"
-          );
           return false;
         }
 
@@ -865,25 +935,11 @@ export class TriggerService {
           const expectedPassword = auth.settings?.password;
 
           if (!expectedUsername || !expectedPassword) {
-            logger.warn(
-              "Basic auth failed: Username or password not configured in trigger"
-            );
             return false;
           }
 
           // Validate credentials
-          const isValid =
-            username === expectedUsername && password === expectedPassword;
-
-          if (!isValid) {
-            logger.warn(
-              `Basic auth failed: Invalid credentials (username: ${username})`
-            );
-          } else {
-            logger.info(`Basic auth successful for user: ${username}`);
-          }
-
-          return isValid;
+          return username === expectedUsername && password === expectedPassword;
         } catch (error) {
           logger.error("Basic auth failed: Error decoding credentials", error);
           return false;
@@ -895,24 +951,11 @@ export class TriggerService {
         const expectedValue = auth.settings?.expectedValue;
 
         if (!headerName || !expectedValue) {
-          logger.warn(
-            "Header auth failed: Header name or expected value not configured"
-          );
           return false;
         }
 
         const headerValue = request.headers[headerName.toLowerCase()];
-        const isHeaderValid = headerValue === expectedValue;
-
-        if (!isHeaderValid) {
-          logger.warn(
-            `Header auth failed: Invalid value for header '${headerName}'`
-          );
-        } else {
-          logger.info(`Header auth successful for header: ${headerName}`);
-        }
-
-        return isHeaderValid;
+        return headerValue === expectedValue;
 
       case "query":
         // Validate query parameter authentication
@@ -920,24 +963,11 @@ export class TriggerService {
         const expectedQueryValue = auth.settings?.expectedValue;
 
         if (!queryParam || !expectedQueryValue) {
-          logger.warn(
-            "Query auth failed: Query param or expected value not configured"
-          );
           return false;
         }
 
         const queryValue = request.query[queryParam];
-        const isQueryValid = queryValue === expectedQueryValue;
-
-        if (!isQueryValid) {
-          logger.warn(
-            `Query auth failed: Invalid value for param '${queryParam}'`
-          );
-        } else {
-          logger.info(`Query auth successful for param: ${queryParam}`);
-        }
-
-        return isQueryValid;
+        return queryValue === expectedQueryValue;
 
       case "none":
         // No authentication required

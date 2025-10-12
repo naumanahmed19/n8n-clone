@@ -197,6 +197,32 @@ export class CredentialService {
   }
 
   /**
+   * Get credential by ID for system use (e.g., webhooks, triggers)
+   * Does NOT check user ownership - use with caution
+   */
+  async getCredentialById(id: string): Promise<CredentialWithData | null> {
+    const credential = await this.prisma.credential.findUnique({
+      where: { id },
+    });
+
+    if (!credential) {
+      return null;
+    }
+
+    // Check if credential is expired
+    if (credential.expiresAt && credential.expiresAt < new Date()) {
+      throw new AppError("Credential has expired", 401);
+    }
+
+    const decryptedData = this.decryptData(credential.data);
+
+    return {
+      ...credential,
+      data: decryptedData,
+    };
+  }
+
+  /**
    * Get credentials for a user (without decrypted data)
    */
   async getCredentials(userId: string, type?: string) {

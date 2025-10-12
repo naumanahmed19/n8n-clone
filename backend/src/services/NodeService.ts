@@ -617,6 +617,8 @@ export class NodeService {
       "json",
       "dateTime",
       "collection",
+      "autocomplete", // Support for autocomplete fields
+      "credential", // Support for credential selector fields
       "custom", // Support for custom components
     ];
     if (!validTypes.includes(property.type)) {

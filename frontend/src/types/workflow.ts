@@ -162,6 +162,7 @@ export interface NodeProperty {
     | "json"
     | "dateTime"
     | "collection"
+    | "credential" // New: Support for credential selector
     | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
@@ -179,6 +180,8 @@ export interface NodeProperty {
   // New: Custom component configuration
   component?: string; // Component identifier/name to be registered
   componentProps?: Record<string, any>; // Additional props to pass to custom component (e.g., nested fields for collection)
+  // New: For credential type
+  allowedTypes?: string[]; // Array of credential type names that can be selected
 }
 
 export interface WorkflowEditorState {

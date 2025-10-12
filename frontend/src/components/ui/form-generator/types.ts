@@ -24,6 +24,7 @@ export interface FormFieldConfig {
     | "url"
     | "switch"
     | "autocomplete"
+    | "credential"
     | "custom";
   required?: boolean;
   default?: any;
@@ -55,6 +56,7 @@ export interface FormFieldConfig {
   readonly?: boolean;
   rows?: number; // for textarea
   step?: number; // for number inputs
+  allowedTypes?: string[]; // for credential type - array of credential type names
   customComponent?: (props: CustomFieldProps) => ReactNode;
 }
 

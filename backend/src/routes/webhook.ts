@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response, Router } from "express";
 import { createServer } from "http";
 import { asyncHandler } from "../middleware/asyncHandler";
+import { CredentialService } from "../services/CredentialService";
 import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import { ExecutionService } from "../services/ExecutionService";
 import { SocketService } from "../services/SocketService";
@@ -27,6 +28,7 @@ const getNodeService = () => {
 // Initialize non-dependent services immediately
 const workflowService = new WorkflowService(prisma);
 const executionHistoryService = new ExecutionHistoryService(prisma);
+const credentialService = new CredentialService();
 const httpServer = createServer();
 const socketService = new SocketService(httpServer);
 
@@ -54,7 +56,8 @@ const ensureTriggerServiceInitialized = async () => {
       getExecutionService(),
       socketService,
       getNodeService(),
-      executionHistoryService
+      executionHistoryService,
+      credentialService
     );
     triggerServiceInitialized = true;
   }

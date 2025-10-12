@@ -16,15 +16,23 @@ export const WebhookTriggerNode: NodeDefinition = {
   defaults: {
     httpMethod: "POST",
     path: "",
-    authentication: {
-      type: "none",
-    },
     responseMode: "onReceived",
     responseData: "firstEntryJson",
   },
   inputs: [],
   outputs: ["main"],
   properties: [
+    {
+      displayName: "Authentication",
+      name: "authentication",
+      type: "credential",
+      required: false,
+      default: "",
+      description:
+        "Require authentication for incoming webhook requests (optional)",
+      placeholder: "None (allow all requests)",
+      allowedTypes: ["httpBasicAuth", "httpHeaderAuth", "webhookQueryAuth"],
+    },
     {
       displayName: "Webhook URL",
       name: "webhookUrl",
@@ -59,85 +67,6 @@ export const WebhookTriggerNode: NodeDefinition = {
       required: false,
       default: "",
       description: "Optional path to append to the webhook URL",
-    },
-    {
-      displayName: "Authentication",
-      name: "authentication",
-      type: "options",
-      required: true,
-      default: "none",
-      description: "Authentication method for the webhook",
-      options: [
-        { name: "None", value: "none" },
-        { name: "Basic Auth", value: "basic" },
-        { name: "Header Auth", value: "header" },
-        { name: "Query Parameter", value: "query" },
-      ],
-    },
-    {
-      displayName: "Header Name",
-      name: "headerName",
-      type: "string",
-      required: true,
-      default: "Authorization",
-      description: "Name of the header to check",
-      displayOptions: {
-        show: {
-          authentication: ["header"],
-        },
-      },
-    },
-    {
-      displayName: "Expected Value",
-      name: "expectedValue",
-      type: "string",
-      required: true,
-      default: "",
-      description: "Expected value for authentication",
-      displayOptions: {
-        show: {
-          authentication: ["header", "query"],
-        },
-      },
-    },
-    {
-      displayName: "Query Parameter",
-      name: "queryParam",
-      type: "string",
-      required: true,
-      default: "token",
-      description: "Name of the query parameter to check",
-      displayOptions: {
-        show: {
-          authentication: ["query"],
-        },
-      },
-    },
-    {
-      displayName: "Username",
-      name: "username",
-      type: "string",
-      required: true,
-      default: "",
-      description: "Username for basic authentication",
-      displayOptions: {
-        show: {
-          authentication: ["basic"],
-        },
-      },
-    },
-    {
-      displayName: "Password",
-      name: "password",
-      type: "string",
-      required: true,
-      default: "",
-      description: "Password for basic authentication",
-      displayOptions: {
-        show: {
-          authentication: ["basic"],
-        },
-      },
     },
     {
       displayName: "Response Mode",

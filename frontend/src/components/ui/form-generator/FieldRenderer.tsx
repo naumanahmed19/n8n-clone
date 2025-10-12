@@ -1,3 +1,4 @@
+import { UnifiedCredentialSelector } from '@/components/credential/UnifiedCredentialSelector'
 import { AutoComplete, AutoCompleteOption } from '@/components/ui/autocomplete'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -161,6 +162,19 @@ export function FieldRenderer({
   }
 
   switch (field.type) {
+    case 'credential':
+      return (
+        <UnifiedCredentialSelector
+          allowedTypes={field.allowedTypes || []}
+          value={value}
+          onChange={handleChange}
+          placeholder={field.placeholder}
+          required={field.required}
+          error={error}
+          disabled={disabled || field.disabled}
+        />
+      )
+
     case 'string':
       return (
         <ExpressionInput

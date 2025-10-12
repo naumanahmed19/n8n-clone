@@ -51,6 +51,7 @@ export interface NodeProperty {
     | "dateTime"
     | "collection"
     | "autocomplete"
+    | "credential" // New: Support for credential selector
     | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
@@ -68,6 +69,8 @@ export interface NodeProperty {
   // New: Custom component configuration
   component?: string; // Component identifier/name
   componentProps?: Record<string, any>; // Additional props for custom component
+  // New: For credential type
+  allowedTypes?: string[]; // Array of credential type names that can be selected
 }
 
 export interface CredentialDefinition {

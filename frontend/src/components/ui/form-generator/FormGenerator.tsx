@@ -167,8 +167,8 @@ interface FormFieldLabelProps {
 }
 
 function FormFieldLabel({ field, showRequiredIndicator, requiredIndicator }: FormFieldLabelProps) {
-  // Don't show label for boolean and switch types as they have their own labels
-  if (field.type === 'boolean' || field.type === 'switch') {
+  // Don't show label for boolean, switch, and custom component types
+  if (field.type === 'boolean' || field.type === 'switch' || field.type === 'custom') {
     return null
   }
 

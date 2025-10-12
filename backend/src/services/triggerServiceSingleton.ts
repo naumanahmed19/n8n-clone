@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { CredentialService } from "./CredentialService";
 import ExecutionHistoryService from "./ExecutionHistoryService";
 import { ExecutionService } from "./ExecutionService";
 import { SocketService } from "./SocketService";
@@ -30,7 +31,8 @@ export async function initializeTriggerService(
   executionService: ExecutionService,
   socketService: SocketService,
   nodeService: any,
-  executionHistoryService: ExecutionHistoryService
+  executionHistoryService: ExecutionHistoryService,
+  credentialService: CredentialService
 ): Promise<TriggerService> {
   if (triggerServiceInstance) {
     return triggerServiceInstance;
@@ -42,7 +44,8 @@ export async function initializeTriggerService(
     executionService,
     socketService,
     nodeService,
-    executionHistoryService
+    executionHistoryService,
+    credentialService
   );
 
   await triggerServiceInstance.initialize();
