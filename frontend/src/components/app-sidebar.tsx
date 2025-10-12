@@ -50,7 +50,12 @@ const data = {
       icon: Home,
       isActive: false,
     },
-
+    {
+      title: "All Workflows",
+      url: "#",
+      icon: Workflow,
+      isActive: false,
+    },
     {
       title: "New Workflow",
       url: "/workflows/new", 
@@ -59,24 +64,7 @@ const data = {
     },
   ],
   workflowItems: [
-    {
-      title: "All Workflows",
-      url: "#",
-      icon: Workflow,
-      isActive: false,
-    },
-    {
-      title: "All Credentials",
-      url: "#",
-      icon: Key,
-      isActive: false,
-    },
-    {
-      title: "Variables",
-      url: "#",
-      icon: Variable,
-      isActive: false,
-    },
+
     {
       title: "Nodes",
       url: "#",
@@ -87,6 +75,20 @@ const data = {
       title: "Executions",
       url: "#",
       icon: Activity,
+      isActive: false,
+    },
+        {
+      title: "Variables",
+      url: "#",
+      icon: Variable,
+      isActive: false,
+    },
+  ],
+  bottomItems: [
+    {
+      title: "All Credentials",
+      url: "#",
+      icon: Key,
       isActive: false,
     },
     {
@@ -181,7 +183,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         children: item.title,
                         hidden: false,
                       }}
-                      onClick={() => handleNavigation(item.url)}
+                      onClick={() => {
+                        if (item.title === "All Workflows") {
+                          // Handle "All Workflows" like other workflow items
+                          if (activeWorkflowItem?.title === item.title) {
+                            setOpen(!open)
+                          } else {
+                            setActiveWorkflowItem(item)
+                            setOpen(true)
+                          }
+                        } else {
+                          handleNavigation(item.url)
+                        }
+                      }}
+                      isActive={item.title === "All Workflows" && activeWorkflowItem?.title === item.title}
                       className="px-2.5 md:px-2"
                     >
                       <item.icon />
@@ -199,6 +214,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
                 {data.workflowItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      tooltip={{
+                        children: item.title,
+                        hidden: false,
+                      }}
+                      onClick={() => {
+                        if (activeWorkflowItem?.title === item.title) {
+                          // Toggle sidebar if same item is clicked
+                          setOpen(!open)
+                        } else {
+                          // Set new item and open sidebar
+                          setActiveWorkflowItem(item)
+                          setOpen(true)
+                        }
+                      }}
+                      isActive={activeWorkflowItem?.title === item.title}
+                      className="px-2.5 md:px-2"
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Bottom Items */}
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                {data.bottomItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       tooltip={{
