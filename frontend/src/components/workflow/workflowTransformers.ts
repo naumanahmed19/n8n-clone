@@ -70,6 +70,20 @@ function getNodeOutputs(
 }
 
 /**
+ * Gets the dynamic inputs for a node based on its configuration
+ */
+function getNodeInputs(
+  node: WorkflowNode,
+  nodeTypeDefinition: NodeType | undefined
+): string[] {
+  // Chat node: dynamic inputs based on acceptInput parameter
+  if (node.type === "chat" && node.parameters?.acceptInput === true) {
+    return ["main"];
+  }
+  return nodeTypeDefinition?.inputs || [];
+}
+
+/**
  * Gets the custom style configuration for a node
  */
 function getNodeCustomStyle(
@@ -130,7 +144,7 @@ export function transformWorkflowNodesToReactFlow(
         disabled: node.disabled,
         locked: node.locked,
         status: nodeStatus,
-        inputs: nodeTypeDefinition?.inputs || [],
+        inputs: getNodeInputs(node, nodeTypeDefinition),
         outputs: getNodeOutputs(node, nodeTypeDefinition),
         position: node.position,
         dimensions: { width: 64, height: 64 },
