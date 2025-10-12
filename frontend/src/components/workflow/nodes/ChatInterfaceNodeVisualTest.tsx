@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChatInterfaceNode } from '@/components/workflow/nodes'
 import ReactFlow, { Background, Controls, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
+import '../reactflow-theme.css'
 
 const nodeTypes = {
   chatInterface: ChatInterfaceNode,

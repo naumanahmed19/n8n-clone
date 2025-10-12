@@ -1,8 +1,10 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
 import { useReactFlowUIStore } from '@/stores'
+import { useEffect, useState } from 'react'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
+import './reactflow-theme.css'
 
 const edgeTypes: EdgeTypes = {
     default: WorkflowEdge,
@@ -59,6 +61,24 @@ export function WorkflowCanvas({
     const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
     const backgroundColor = isDisabled ? 'hsl(var(--muted))' : undefined
     
+    // Detect dark mode and listen for changes
+    const [isDarkMode, setIsDarkMode] = useState(() => 
+        document.documentElement.classList.contains('dark')
+    )
+    
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setIsDarkMode(document.documentElement.classList.contains('dark'))
+        })
+        
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        })
+        
+        return () => observer.disconnect()
+    }, [])
+    
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
@@ -93,7 +113,15 @@ export function WorkflowCanvas({
                     }}
                 >
                     {showControls && <Controls />}
-                    {showMinimap && <MiniMap />}
+                    {showMinimap && (
+                        <MiniMap
+                            nodeColor={isDarkMode ? '#334155' : '#e2e8f0'}
+                            maskColor={isDarkMode ? 'rgba(28, 37, 51, 0.6)' : 'rgba(0, 0, 0, 0.1)'}
+                            style={{
+                                backgroundColor: isDarkMode ? 'hsl(var(--card))' : '#fff',
+                            }}
+                        />
+                    )}
                     {showBackground && (
                         <Background 
                             variant={displayBackgroundVariant} 
