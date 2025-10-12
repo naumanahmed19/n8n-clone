@@ -18,6 +18,8 @@ import { workflowService } from '@/services/workflow'
 import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { CreateCategoryModal } from './CreateCategoryModal'
+import { EnvironmentSelector } from '../environment/EnvironmentSelector'
+import type { EnvironmentType } from '@/types/environment'
 
 interface WorkflowBreadcrumbProps {
   category?: string
@@ -25,6 +27,11 @@ interface WorkflowBreadcrumbProps {
   onCategoryChange: (category: string) => void
   onTitleChange: (title: string) => void
   className?: string
+  // Environment props
+  workflowId?: string
+  showEnvironmentSelector?: boolean
+  onEnvironmentChange?: (environment: EnvironmentType) => void
+  onCreateEnvironment?: (environment: EnvironmentType) => void
 }
 
 export function WorkflowBreadcrumb({
@@ -33,6 +40,10 @@ export function WorkflowBreadcrumb({
   onCategoryChange,
   onTitleChange,
   className,
+  workflowId,
+  showEnvironmentSelector = false,
+  onEnvironmentChange,
+  onCreateEnvironment,
 }: WorkflowBreadcrumbProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [tempTitle, setTempTitle] = useState(title)
@@ -227,6 +238,20 @@ export function WorkflowBreadcrumb({
               </BreadcrumbPage>
             )}
           </BreadcrumbItem>
+
+          {/* Environment Selector as Breadcrumb Item */}
+          {showEnvironmentSelector && workflowId && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <EnvironmentSelector
+                  workflowId={workflowId}
+                  onEnvironmentChange={onEnvironmentChange}
+                  onCreateEnvironment={onCreateEnvironment}
+                />
+              </BreadcrumbItem>
+            </>
+          )}
         </BreadcrumbList>
       </Breadcrumb>
       </div>

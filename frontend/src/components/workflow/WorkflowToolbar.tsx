@@ -38,7 +38,6 @@ import {
     Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { EnvironmentSelector } from '../environment/EnvironmentSelector'
 import { ManualDeploymentDialog } from '../environment/ManualDeploymentDialog'
 import { UpdateEnvironmentDialog } from '../environment/UpdateEnvironmentDialog'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
@@ -243,7 +242,7 @@ export function WorkflowToolbar({
           {/* Sidebar Trigger - only show when sidebar is available */}
           <SidebarTrigger className="-ml-1 h-7 w-7" />
 
-          {/* Workflow Breadcrumb */}
+          {/* Workflow Breadcrumb with Environment Selector */}
           <div className="flex-shrink-0">
             <WorkflowBreadcrumb
               category={workflow?.category}
@@ -255,29 +254,20 @@ export function WorkflowToolbar({
                 }
               }}
               onTitleChange={handleTitleChange}
+              workflowId={workflow?.id}
+              showEnvironmentSelector={!!workflow?.id}
+              onEnvironmentChange={(env) => {
+                console.log('Environment changed:', env)
+                // You can add logic here to filter executions or load environment-specific data
+              }}
+              onCreateEnvironment={(env) => {
+                console.log('Create environment:', env)
+                // This will open a dialog to create the environment
+              }}
             />
           </div>
 
           <Separator orientation="vertical" className="h-4" />
-
-          {/* Environment Selector */}
-          {workflow?.id && (
-            <>
-              <EnvironmentSelector
-                workflowId={workflow.id}
-                onEnvironmentChange={(env) => {
-                  console.log('Environment changed:', env)
-                  // You can add logic here to filter executions or load environment-specific data
-                }}
-                onCreateEnvironment={(env) => {
-                  console.log('Create environment:', env)
-                  // This will open a dialog to create the environment
-                }}
-              />
-              
-              <Separator orientation="vertical" className="h-4" />
-            </>
-          )}
 
           {/* Edit actions */}
           <div className="flex items-center space-x-0.5">

@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +9,6 @@ import {
 import { useEnvironmentStore } from '@/stores/environment'
 import {
   EnvironmentType,
-  getEnvironmentColor,
   getEnvironmentIcon,
   getEnvironmentLabel,
   getStatusColor,
@@ -121,20 +119,6 @@ export function EnvironmentSelector({
     }
   }
 
-  const getEnvironmentBgColor = (environment: EnvironmentType) => {
-    const color = getEnvironmentColor(environment)
-    switch (color) {
-      case 'blue':
-        return 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30'
-      case 'yellow':
-        return 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
-      case 'green':
-        return 'bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30'
-      default:
-        return 'bg-muted hover:bg-muted/80 text-foreground border-border'
-    }
-  }
-
   const getStatusBadgeColor = (summary: EnvironmentSummary) => {
     if (!summary.active) return 'bg-muted text-muted-foreground'
     const color = getStatusColor(summary.status)
@@ -172,25 +156,24 @@ export function EnvironmentSelector({
     <>
       <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          className={`flex items-center gap-2  ${
-            currentSummary ? getEnvironmentBgColor(currentEnvironment!) : 'bg-background'
+        <button
+          className={`flex items-center gap-2 text-sm hover:text-foreground transition-colors cursor-pointer px-0 bg-transparent border-0 ${
+            currentSummary ? '' : 'text-muted-foreground'
           }`}
         >
           <EnvironmentIcon iconName={currentSummary ? getEnvironmentIcon(currentEnvironment!) : 'package'} />
           <span className="flex-1 text-left font-medium">
             {currentSummary
               ? getEnvironmentLabel(currentEnvironment!)
-              : ''}
+              : 'Select Environment'}
           </span>
           {currentSummary && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusBadgeColor(currentSummary)}`}>
               v{currentSummary.version}
             </span>
           )}
-          <ChevronDown className="w-4 h-4 ml-auto opacity-50" />
-        </Button>
+          <ChevronDown className="w-3 h-3 opacity-50" />
+        </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" className="w-[280px] bg-popover">
