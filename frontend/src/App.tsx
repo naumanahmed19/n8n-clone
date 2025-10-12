@@ -1,7 +1,7 @@
 import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
 import { Toaster } from '@/components/ui/sonner'
 
-import { SidebarContextProvider } from '@/contexts'
+import { SidebarContextProvider, ThemeProvider } from '@/contexts'
 import {
     CredentialsPage,
     CustomNodesPage,
@@ -17,7 +17,8 @@ function App() {
   return (
     <>
       <Router>
-        <SidebarContextProvider>
+        <ThemeProvider>
+          <SidebarContextProvider>
           <Routes>
           {/* Public routes */}
           <Route
@@ -94,9 +95,10 @@ function App() {
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
+          <Toaster />
         </SidebarContextProvider>
+        </ThemeProvider>
       </Router>
-      <Toaster />
     </>
   )
 }

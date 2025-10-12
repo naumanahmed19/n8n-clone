@@ -20,7 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { VariablesList } from "@/components/variable/VariablesList"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
-import { useSidebarContext } from "@/contexts"
+import { useSidebarContext, useTheme } from "@/contexts"
 import { useAuthStore, useWorkflowStore } from "@/stores"
 import {
   Activity,
@@ -28,8 +28,11 @@ import {
   Database,
   Home,
   Key,
+  Monitor,
+  Moon,
   Plus,
   Settings,
+  Sun,
   Variable,
   Workflow
 } from "lucide-react"
@@ -113,6 +116,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     detailSidebar,
     setDetailSidebar
   } = useSidebarContext()
+  
+  // Theme hook
+  const { theme, setTheme } = useTheme()
 
   // Get workflow state to check for unsaved changes
   const { isDirty, isTitleDirty } = useWorkflowStore()
@@ -344,6 +350,50 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   
                   {activeWorkflowItem?.title === "Settings" && (
                     <div className="p-4 space-y-4">
+                      {/* Theme Section */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3">Appearance</h4>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground mb-2 block">Theme</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              onClick={() => setTheme('light')}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:bg-sidebar-accent ${
+                                theme === 'light' 
+                                  ? 'border-sidebar-primary bg-sidebar-accent' 
+                                  : 'border-sidebar-border'
+                              }`}
+                            >
+                              <Sun className="w-5 h-5" />
+                              <span className="text-xs font-medium">Light</span>
+                            </button>
+                            <button
+                              onClick={() => setTheme('dark')}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:bg-sidebar-accent ${
+                                theme === 'dark' 
+                                  ? 'border-sidebar-primary bg-sidebar-accent' 
+                                  : 'border-sidebar-border'
+                              }`}
+                            >
+                              <Moon className="w-5 h-5" />
+                              <span className="text-xs font-medium">Dark</span>
+                            </button>
+                            <button
+                              onClick={() => setTheme('system')}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:bg-sidebar-accent ${
+                                theme === 'system' 
+                                  ? 'border-sidebar-primary bg-sidebar-accent' 
+                                  : 'border-sidebar-border'
+                              }`}
+                            >
+                              <Monitor className="w-5 h-5" />
+                              <span className="text-xs font-medium">System</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Workflow Settings */}
                       <div>
                         <h4 className="text-sm font-medium mb-2">Workflow Settings</h4>
                         <div className="space-y-2 text-sm">
