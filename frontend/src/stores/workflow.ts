@@ -1028,7 +1028,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
             // Clear execution logs but DON'T clear realTimeResults
             // We keep previous execution results so multiple triggers can maintain their outputs
             get().clearExecutionLogs();
-            
+
             // NOTE: We intentionally DON'T clear realTimeResults here anymore
             // This allows multiple triggers to maintain their execution outputs independently
             // Results will be updated/overwritten per node as new executions complete

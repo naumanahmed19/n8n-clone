@@ -1,7 +1,9 @@
 # Multiple Triggers Output Preservation Fix
 
 ## Problem Summary
+
 When having multiple trigger nodes (chat nodes, webhooks, etc.) in a workflow:
+
 - Triggering the first node → Execution 1 completes → Outputs stored
 - Triggering the second node → **Outputs from Execution 1 are cleared** → Connected nodes receive empty inputs
 - Result: Only the most recently triggered workflow path has outputs; previous paths lose their data
@@ -9,6 +11,7 @@ When having multiple trigger nodes (chat nodes, webhooks, etc.) in a workflow:
 ## Root Cause
 
 ### The Issue
+
 In `frontend/src/stores/workflow.ts`, when starting a new workflow execution, the code was clearing `realTimeResults`:
 
 ```typescript
@@ -22,12 +25,15 @@ if (mode === "workflow") {
 ### Why This Breaks Multiple Triggers
 
 #### Execution Timeline
+
 1. **User sends message in Chat Node 1**
+
    - Chat Node 1 executes → OpenAI node executes
    - Results stored: `realTimeResults.set("node-openai-1", { data: {...} })`
    - OpenAI output is available for display
 
 2. **User sends message in Chat Node 2**
+
    - `realTimeResults.clear()` is called ← **ALL PREVIOUS RESULTS DELETED**
    - Chat Node 2 executes → Anthropic node executes
    - Results stored: `realTimeResults.set("node-anthropic-1", { data: {...} })`
@@ -60,6 +66,7 @@ if (mode === "workflow") {
 ## Solution
 
 ### Code Change
+
 **File**: `frontend/src/stores/workflow.ts` (Line ~1030)
 
 ```typescript
@@ -68,7 +75,7 @@ if (mode === "workflow") {
   // Clear execution logs but DON'T clear realTimeResults
   // We keep previous execution results so multiple triggers can maintain their outputs
   get().clearExecutionLogs();
-  
+
   // NOTE: We intentionally DON'T clear realTimeResults here anymore
   // This allows multiple triggers to maintain their execution outputs independently
   // Results will be updated/overwritten per node as new executions complete
@@ -79,12 +86,15 @@ if (mode === "workflow") {
 ### How It Works Now
 
 #### New Execution Timeline
+
 1. **User sends message in Chat Node 1**
+
    - Chat Node 1 executes → OpenAI node executes
    - Results stored: `realTimeResults.set("node-openai-1", { data: {...} })`
    - ✅ OpenAI output is available
 
 2. **User sends message in Chat Node 2**
+
    - **Results from Chat Node 1 are PRESERVED** ✅
    - Chat Node 2 executes → Anthropic node executes
    - Results stored: `realTimeResults.set("node-anthropic-1", { data: {...} })`
@@ -126,41 +136,45 @@ getNodeExecutionResult: (nodeId: string) => {
   if (node.mockData && node.mockDataPinned) {
     return mockDataAsResult;
   }
-  
+
   // 2. Check realTimeResults (active/recent executions)
   const realTimeResult = get().realTimeResults.get(nodeId);
   if (realTimeResult) {
     return realTimeResult; // ✅ Now returns results from ANY execution
   }
-  
+
   // 3. Fall back to persistentNodeResults (old executions)
   const persistentResult = get().persistentNodeResults.get(nodeId);
   if (persistentResult) {
     return persistentResult;
   }
-  
+
   return undefined;
-}
+};
 ```
 
 ## Benefits
 
 ### ✅ Multiple Triggers Work Independently
+
 - Each trigger can execute its workflow path
 - Outputs from all triggers are maintained
 - No interference between different execution paths
 
 ### ✅ Connected Nodes Get Correct Inputs
+
 - When a node executes, it can find outputs from its connected source nodes
 - Input data gathering works across different trigger executions
 - No "empty input" errors
 
 ### ✅ UI Shows All Results
+
 - Chat nodes display their conversation histories correctly
 - All node execution results are visible
 - Status indicators reflect actual execution state
 
 ### ✅ Memory Management
+
 - Results naturally get overwritten when the same node executes again
 - Old results are moved to `persistentNodeResults` when execution completes
 - No memory leaks from accumulating results
@@ -168,41 +182,50 @@ getNodeExecutionResult: (nodeId: string) => {
 ## Edge Cases Handled
 
 ### Same Node Executed Multiple Times
+
 ```typescript
 // First execution of node-openai-1
-realTimeResults.set("node-openai-1", { data: "First response" })
+realTimeResults.set("node-openai-1", { data: "First response" });
 
 // Second execution of node-openai-1
-realTimeResults.set("node-openai-1", { data: "Second response" }) // Overwrites
+realTimeResults.set("node-openai-1", { data: "Second response" }); // Overwrites
 ```
+
 ✅ Latest execution result takes precedence
 
 ### Node in Multiple Execution Paths
+
 If a node is shared between multiple trigger paths:
+
 ```typescript
 Chat Node 1 → Shared Node → OpenAI
 Chat Node 2 → Shared Node → Anthropic
 ```
+
 ✅ Shared Node's most recent execution result is used by both paths
 
 ### Execution Cleanup
+
 When an execution completes and unsubscribes:
+
 ```typescript
 clearExecutionState: (preserveLogs = true) => {
   // Move realTimeResults to persistentNodeResults
   currentRealTimeResults.forEach((result, nodeId) => {
     updatedPersistentResults.set(nodeId, result);
   });
-  
+
   // Then clear realTimeResults
   set({ realTimeResults: new Map() });
-}
+};
 ```
+
 ✅ Results are preserved in `persistentNodeResults` before clearing
 
 ## Testing Scenarios
 
 ### ✅ Test 1: Two Chat Nodes with Different AI Providers
+
 1. Create workflow with Chat Node 1 → OpenAI
 2. Create workflow with Chat Node 2 → Anthropic
 3. Send message in Chat Node 1 → Verify OpenAI response appears
@@ -210,6 +233,7 @@ clearExecutionState: (preserveLogs = true) => {
 5. Check Chat Node 1 → **Verify OpenAI response is still there** ✅
 
 ### ✅ Test 2: Webhook Triggers with Different Endpoints
+
 1. Create Webhook 1 → Node A → Node B
 2. Create Webhook 2 → Node C → Node D
 3. Trigger Webhook 1 → Verify Node A and B execute and show outputs
@@ -217,6 +241,7 @@ clearExecutionState: (preserveLogs = true) => {
 5. Check Node A → **Verify output is still there** ✅
 
 ### ✅ Test 3: Manual Triggers
+
 1. Create Manual Trigger 1 → Transform Node 1
 2. Create Manual Trigger 2 → Transform Node 2
 3. Execute Trigger 1 → Verify Transform Node 1 output
@@ -226,6 +251,7 @@ clearExecutionState: (preserveLogs = true) => {
 ## Related Fixes
 
 This fix works in conjunction with:
+
 1. **CHAT_NODE_MULTIPLE_INSTANCES_FINAL_FIX.md** - Ensures chat nodes filter executions by `triggerNodeId`
 2. Backend trigger recognition - Chat nodes recognized as valid trigger nodes
 3. Infinite loop prevention - Processing flags prevent re-execution issues
@@ -239,11 +265,13 @@ This fix works in conjunction with:
 ## Migration Notes
 
 ### No Breaking Changes
+
 - Existing workflows continue to work
 - Results are still cleared when calling `clearExecutionState()`
 - Persistent results mechanism unchanged
 
 ### Memory Considerations
+
 - `realTimeResults` may contain more entries now (multiple execution paths)
 - This is expected and necessary for multiple triggers
 - Memory is managed through the existing `persistentNodeResults` mechanism
