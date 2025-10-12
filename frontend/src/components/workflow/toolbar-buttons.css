@@ -8,21 +8,19 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  
+
   /* Base styling for high contrast */
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(4px);
   color: hsl(var(--foreground));
-  
+
   /* Shadow for depth and visibility */
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06);
-  
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+
   /* Smooth transitions */
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* Ensure button is above other elements */
   z-index: 10;
 }
@@ -37,9 +35,7 @@
 /* Enhanced hover effects for better visual feedback */
 .toolbar-button:hover:not(:disabled) {
   transform: scale(1.15);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 1);
   border-color: rgba(0, 0, 0, 0.15);
 }
@@ -47,17 +43,13 @@
 .dark .toolbar-button:hover:not(:disabled) {
   background: rgba(31, 41, 55, 1);
   border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Active state for click feedback */
 .toolbar-button:active:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 /* Focus styles for accessibility */
@@ -90,9 +82,7 @@
 
 .toolbar-button:disabled:hover {
   transform: none;
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* State-based styling for execute button */
@@ -248,36 +238,36 @@
     background: #fff;
     color: #000;
   }
-  
+
   .toolbar-button:hover:not(:disabled) {
     background: #f0f0f0;
     border-color: #000;
   }
-  
+
   .toolbar-button:disabled {
     border-color: #666;
     background: #e0e0e0;
     color: #666;
   }
-  
+
   .toolbar-button.executing {
     background: #e6f3ff;
     border-color: #0066cc;
     color: #0066cc;
   }
-  
+
   .toolbar-button.success {
     background: #e6ffe6;
     border-color: #009900;
     color: #009900;
   }
-  
+
   .toolbar-button.error {
     background: #ffe6e6;
     border-color: #cc0000;
     color: #cc0000;
   }
-  
+
   .toolbar-button.error-retryable {
     background: #fff4e6;
     border-color: #cc8800;
@@ -290,11 +280,11 @@
   .toolbar-button {
     transition: none;
   }
-  
+
   .toolbar-button:hover:not(:disabled) {
     transform: none;
   }
-  
+
   .toolbar-button:active:not(:disabled) {
     transform: none;
   }
@@ -352,7 +342,7 @@
 }
 
 .toolbar-button[title]:hover::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -8px;
   left: 50%;
@@ -362,4 +352,3 @@
   z-index: 1000;
   pointer-events: none;
 }
-
