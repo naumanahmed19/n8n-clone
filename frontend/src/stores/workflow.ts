@@ -64,6 +64,9 @@ interface WorkflowStore extends WorkflowEditorState {
   realTimeResults: Map<string, NodeExecutionResult>;
   persistentNodeResults: Map<string, NodeExecutionResult>; // Preserved results for node config dialog
   executionLogs: ExecutionLogEntry[];
+  
+  // Read-only mode (for viewing past executions)
+  readOnly: boolean;
 
   // Flow execution state
   flowExecutionState: FlowExecutionState;
@@ -287,6 +290,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
       realTimeResults: new Map(),
       persistentNodeResults: new Map(),
       executionLogs: [],
+      
+      // Read-only mode state
+      readOnly: false,
 
       // Flow execution state
       flowExecutionState: {
@@ -2047,6 +2053,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         });
 
         set({
+          readOnly: false, // Clear read-only mode
           executionState: {
             status: "idle",
             progress: 0,
@@ -3196,6 +3203,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       // Execution mode control
       setExecutionMode: (enabled: boolean, executionId?: string) => {
         set({
+          readOnly: enabled, // Set read-only mode when viewing past execution
           executionState: {
             ...get().executionState,
             executionId: enabled ? executionId : undefined,

@@ -138,7 +138,10 @@ export function WorkflowEditor({
             lastExecutionResult
         )
 
-        const reactFlowEdges = transformWorkflowEdgesToReactFlow(workflow.connections)
+        // Create a key that changes when execution state changes to force edge re-renders
+        // This ensures edge buttons become visible after execution completes
+        const executionStateKey = `${executionState.status}-${executionState.executionId || 'none'}`
+        const reactFlowEdges = transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
 
         setNodes(reactFlowNodes)
         setEdges(reactFlowEdges)

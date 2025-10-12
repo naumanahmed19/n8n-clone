@@ -40,9 +40,8 @@ interface CustomNodeData {
 }
 
 export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
-  // Check if in execution mode (read-only)
-  const { executionState } = useWorkflowStore()
-  const isReadOnly = !!executionState.executionId
+  // Get read-only state from store (only true when viewing past execution)
+  const { readOnly } = useWorkflowStore()
   
   // Use custom hooks for node visual state
   const { nodeVisualState } = useNodeExecution(id, data.nodeType)
@@ -60,7 +59,7 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
       id={id}
       selected={selected}
       data={data}
-      isReadOnly={isReadOnly}
+      isReadOnly={readOnly}
       isExpanded={false}
       onToggleExpand={() => {}}
       canExpand={false}

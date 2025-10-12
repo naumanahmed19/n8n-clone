@@ -29,10 +29,10 @@ export function EdgeButton({
   onMouseLeave,
 }: EdgeButtonProps) {
   const { openDialog } = useAddNodeDialogStore();
-  const { workflow, removeConnection, executionState } = useWorkflowStore();
+  const { workflow, removeConnection, readOnly } = useWorkflowStore();
   
-  // Check if in read-only mode (execution view)
-  const isReadOnly = !!executionState.executionId;
+  // Don't render buttons in read-only mode (only when viewing past execution)
+  const isReadOnly = readOnly;
 
   const handleAddClick = useCallback(
     (e: React.MouseEvent) => {

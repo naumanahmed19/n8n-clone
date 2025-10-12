@@ -151,7 +151,8 @@ export function transformWorkflowNodesToReactFlow(
  * Transforms workflow connections into React Flow edge format
  */
 export function transformWorkflowEdgesToReactFlow(
-  connections: WorkflowConnection[]
+  connections: WorkflowConnection[],
+  executionStateKey?: string
 ) {
   return connections.map((conn) => ({
     id: conn.id,
@@ -162,6 +163,8 @@ export function transformWorkflowEdgesToReactFlow(
     type: "smoothstep",
     data: {
       label: conn.sourceOutput !== "main" ? conn.sourceOutput : undefined,
+      // Add execution state key to force edge re-render when execution completes
+      executionStateKey,
     },
   }));
 }
