@@ -184,7 +184,7 @@ export function WorkflowEditorPage() {
               saveManualExecutions: true,
               callerPolicy: 'workflowsFromSameOwner',
             },
-            active: workflowMetadata?.active !== undefined ? workflowMetadata.active : true,
+            active: workflowMetadata?.active !== undefined ? workflowMetadata.active : false,
             category: workflowMetadata?.category,
             tags: workflowMetadata?.tags || [],
             createdAt: workflowMetadata?.createdAt || new Date().toISOString(),
@@ -269,7 +269,7 @@ export function WorkflowEditorPage() {
             saveManualExecutions: true,
             callerPolicy: 'workflowsFromSameOwner'
           },
-          active: true, // New workflows should be active by default
+          active: false, // New workflows should be inactive by default
           category: undefined, // Explicitly set to undefined instead of leaving it unset
           tags: [],
           createdAt: new Date().toISOString(),
@@ -295,7 +295,7 @@ export function WorkflowEditorPage() {
             saveManualExecutions: true,
             callerPolicy: 'workflowsFromSameOwner'
           },
-          active: true, // New workflows should be active by default
+          active: false, // New workflows should be inactive by default
           category: undefined, // Explicitly set to undefined instead of leaving it unset
           tags: [],
           createdAt: new Date().toISOString(),
