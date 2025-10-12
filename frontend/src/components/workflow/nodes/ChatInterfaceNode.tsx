@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
-import { MessageCircle, Send, User } from 'lucide-react'
+import { MessageCircle, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NodeProps } from 'reactflow'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
@@ -50,6 +50,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   const [isTyping, setIsTyping] = useState(false)
   const [lastProcessedExecutionId, setLastProcessedExecutionId] = useState<string | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const processingRef = useRef(false) // Prevent infinite loops
 
   // Get stored messages from node parameters
@@ -215,10 +216,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
-      }
+      // Direct scroll without looking for nested elements
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
     }
   }, [displayMessages.length, isTyping])
 
@@ -231,6 +230,16 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       }
     }
   }, [isExecuting, isTyping, executionState.status, getConnectedNodeResponse])
+
+  // Refocus input after execution completes
+  useEffect(() => {
+    if (!isExecuting && !isTyping && isExpanded) {
+      // Small delay to ensure the input is enabled
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [isExecuting, isTyping, isExpanded])
 
   // Handle expand/collapse toggle
   const handleToggleExpand = useCallback(() => {
@@ -251,6 +260,11 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     const messageToSend = inputValue
     setInputValue('')
     setIsTyping(true)
+
+    // Refocus the input after clearing
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 0)
 
     try {
       updateNode(id, {
@@ -297,6 +311,16 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     }
   }, [handleSendMessage])
 
+  const handleClearChat = useCallback(() => {
+    // Clear conversation history
+    updateNode(id, {
+      parameters: {
+        ...data.parameters,
+        conversationHistory: []
+      }
+    })
+  }, [id, data.parameters, updateNode])
+
   // Prepare header info text
   const headerInfo = displayMessages.length > 0 
     ? `${displayMessages.length} message${displayMessages.length !== 1 ? 's' : ''}`
@@ -320,15 +344,10 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
             {displayMessages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-2 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                className={`flex flex-col gap-1 ${
+                  message.role === 'user' ? 'items-start' : 'items-end'
                 }`}
               >
-                {message.role === 'user' && (
-                  <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4 text-gray-600" />
-                  </div>
-                )}
                 <div
                   className={`rounded-lg px-3 py-2 max-w-[75%] ${
                     message.role === 'user'
@@ -337,13 +356,13 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                   }`}
                 >
                   <p className="text-xs whitespace-pre-wrap">{message.content}</p>
-                  <span className="text-[10px] opacity-70 mt-1 block">
-                    {new Date(message.timestamp).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground px-1">
+                  {new Date(message.timestamp).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
               </div>
             ))}
             {isTyping && (
@@ -362,28 +381,50 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       </div>
       
       {/* Input Area */}
-      <div className="flex gap-2 p-3 border-t bg-gray-50">
-        <Input
-          type="text"
-          placeholder={isExecuting ? 'Processing...' : placeholder}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={isTyping || isExecuting}
-          className="flex-1 h-9 text-sm"
-        />
-        <Button
-          size="sm"
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isTyping || isExecuting}
-          className="h-9 px-3"
-        >
-          {isExecuting ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </Button>
+      <div className="border-t ">
+        {/* Clear chat button - only show when there are messages */}
+        {displayMessages.length > 0 && (
+          <div className="px-3 pt-2 pb-1 flex justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleClearChat}
+              disabled={isExecuting}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Clear chat
+            </Button>
+          </div>
+        )}
+        
+        <div className="p-3 pt-2">
+          <div className="relative">
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder={isExecuting ? 'Processing...' : placeholder}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isTyping || isExecuting}
+              className="h-10 text-sm pr-10"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isTyping || isExecuting}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-accent"
+            >
+              {isExecuting ? (
+                <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5 text-primary" />
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     </>
   )

@@ -1025,9 +1025,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
             // For workflow mode, use the main workflow execution endpoint
             // This is essentially the same as executeWorkflow() but triggered from a specific node
 
-            // Clear previous execution data and states like main executeWorkflow
+            // Clear execution logs but DON'T clear realTimeResults
+            // We keep previous execution results so multiple triggers can maintain their outputs
             get().clearExecutionLogs();
-            set({ realTimeResults: new Map() });
+            
+            // NOTE: We intentionally DON'T clear realTimeResults here anymore
+            // This allows multiple triggers to maintain their execution outputs independently
+            // Results will be updated/overwritten per node as new executions complete
+            // set({ realTimeResults: new Map() }); // REMOVED - this was clearing all previous results
 
             // FIXED: Don't clear node visual states when starting a new execution
             // This preserves status icons from previous completed execution chains
