@@ -26,7 +26,8 @@ export const ChatNode: NodeDefinition = {
       name: "acceptInput",
       type: "boolean",
       default: false,
-      description: "When enabled, this node can receive data from previous nodes in the workflow",
+      description:
+        "When enabled, this node can receive data from previous nodes in the workflow",
     },
     {
       displayName: "User Message",
