@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Copy, Globe, TestTube } from "lucide-react";
+import { Check, Copy, Globe, RefreshCw, TestTube } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface WebhookUrlGeneratorProps {
@@ -201,9 +201,9 @@ export function WebhookUrlGenerator({
             size="sm"
             onClick={generateWebhookId}
             disabled={disabled || isGenerating}
-            className="shrink-0 h-8 text-xs"
+            className="shrink-0 h-8 w-8 p-0"
           >
-            {isGenerating ? "..." : "Regenerate"}
+            <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
