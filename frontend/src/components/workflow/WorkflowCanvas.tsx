@@ -1,6 +1,6 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
 import { useReactFlowUIStore } from '@/stores'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
@@ -79,6 +79,18 @@ export function WorkflowCanvas({
         return () => observer.disconnect()
     }, [])
     
+    // Edge styles based on theme
+    const edgeStyle = useMemo(() => ({
+        stroke: isDarkMode ? 'hsl(var(--border))' : '#b1b1b7',
+        strokeWidth: 2,
+    }), [isDarkMode])
+    
+    const connectionLineStyle = useMemo(() => ({
+        stroke: isDarkMode ? 'hsl(var(--primary))' : '#5865f2',
+        strokeWidth: 2,
+    }), [isDarkMode])
+
+    
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
@@ -103,6 +115,7 @@ export function WorkflowCanvas({
                     elementsSelectable={true}
                     panOnDrag={panOnDrag}
                     zoomOnScroll={zoomOnScroll}
+                    connectionLineStyle={connectionLineStyle}
                     fitView
                     attributionPosition="bottom-left"
                     edgeUpdaterRadius={isDisabled ? 0 : 10}
@@ -110,6 +123,7 @@ export function WorkflowCanvas({
                     defaultEdgeOptions={{
                         type: 'smoothstep',
                         animated: isExecuting,
+                        style: edgeStyle,
                     }}
                 >
                     {showControls && <Controls />}
