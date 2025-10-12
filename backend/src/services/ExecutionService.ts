@@ -156,10 +156,11 @@ export class ExecutionService {
       const workflowNodes = parsedWorkflow.nodes;
 
       // Find trigger nodes or determine starting point
+      // Include chat nodes as they can trigger workflows
       const triggerNodes = workflowNodes.filter(
         (node: any) =>
           node.type.includes("trigger") ||
-          ["manual-trigger", "workflow-called"].includes(node.type)
+          ["manual-trigger", "workflow-called", "chat"].includes(node.type)
       );
 
       let flowResult: FlowExecutionResult;
@@ -174,13 +175,20 @@ export class ExecutionService {
             (node: any) => node.id === triggerNodeId
           );
           if (!targetTriggerNode) {
-            return {
-              success: false,
-              error: {
-                message: `Specified trigger node ${triggerNodeId} not found in workflow`,
-                timestamp: new Date(),
-              },
-            };
+            // If the specified node is not in triggerNodes list, try to find it in all nodes
+            // This handles cases where a node might be used as a trigger even if it's not a typical trigger type
+            targetTriggerNode = workflowNodes.find(
+              (node: any) => node.id === triggerNodeId
+            );
+            if (!targetTriggerNode) {
+              return {
+                success: false,
+                error: {
+                  message: `Specified trigger node ${triggerNodeId} not found in workflow`,
+                  timestamp: new Date(),
+                },
+              };
+            }
           }
         } else {
           // Use first trigger node as fallback

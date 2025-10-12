@@ -244,6 +244,7 @@ export interface WorkflowExecutionResult {
   duration: number;
   nodeResults: NodeExecutionResult[];
   error?: string;
+  triggerNodeId?: string; // The node ID that triggered this execution
 }
 
 export interface NodeExecutionResult {

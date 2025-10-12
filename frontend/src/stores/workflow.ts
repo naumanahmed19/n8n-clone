@@ -1312,6 +1312,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 duration,
                 nodeResults: Array.from(get().realTimeResults.values()),
                 error: finalProgress.error?.message,
+                triggerNodeId: nodeId, // Track which node triggered this execution
               };
 
               // Set final execution state with lastExecutionResult

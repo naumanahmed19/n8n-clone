@@ -50,23 +50,19 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   const [isTyping, setIsTyping] = useState(false)
   const [lastProcessedExecutionId, setLastProcessedExecutionId] = useState<string | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const processingRef = useRef(false) // Prevent infinite loops
 
   // Get stored messages from node parameters
   const storedMessages = (data.parameters?.conversationHistory as Message[]) || []
 
   // Get connected node's output (e.g., OpenAI response)
   const getConnectedNodeResponse = useCallback(() => {
-    if (!workflow || !lastExecutionResult) {
-      console.log('ChatNode: No workflow or lastExecutionResult', { workflow: !!workflow, lastExecutionResult: !!lastExecutionResult })
-      return null
-    }
+    if (!workflow || !lastExecutionResult) return null
     
     // Find connections where this chat node is the source
     const outgoingConnections = workflow.connections.filter(
       conn => conn.sourceNodeId === id
     )
-    
-    console.log('ChatNode: Outgoing connections', outgoingConnections)
     
     if (outgoingConnections.length === 0) return null
     
@@ -76,55 +72,30 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       nr => nr.nodeId === connectedNodeId
     )
     
-    console.log('ChatNode: Connected node execution', { 
-      connectedNodeId, 
-      connectedNodeExecution,
-      allNodeResults: lastExecutionResult.nodeResults 
-    })
-    
     if (!connectedNodeExecution || !connectedNodeExecution.data) return null
     
     // Extract response from the execution data
-    // The data structure is: { main: [{ json: { response, message, etc } }] }
     let data = connectedNodeExecution.data
-    
-    console.log('ChatNode: Raw data from connected node', data)
     
     // If data has a 'main' output array, get the first item's json
     if (data.main && Array.isArray(data.main) && data.main.length > 0) {
       const mainOutput = data.main[0]
       if (mainOutput.json) {
         data = mainOutput.json
-        console.log('ChatNode: Extracted json from main output', data)
       }
     }
     
-    // OpenAI format
-    if (data.response) {
-      console.log('ChatNode: Found response in data.response')
-      return data.response
-    }
-    
-    // Generic message format
-    if (data.message) {
-      console.log('ChatNode: Found response in data.message')
-      return data.message
-    }
-    
-    // Text format
-    if (data.text) {
-      console.log('ChatNode: Found response in data.text')
-      return data.text
-    }
+    // Try different response formats
+    if (data.response) return data.response
+    if (data.message) return data.message
+    if (data.text) return data.text
     
     // If output is an array, get first item
     if (Array.isArray(data) && data.length > 0) {
       const firstItem = data[0]
-      console.log('ChatNode: Data is array, using first item', firstItem)
       return firstItem.response || firstItem.message || firstItem.text || JSON.stringify(firstItem)
     }
     
-    console.log('ChatNode: No response found in any expected format')
     return null
   }, [workflow, lastExecutionResult, id])
 
@@ -137,7 +108,29 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     // Don't process the same execution twice
     if (executionId === lastProcessedExecutionId) return
     
+    // Prevent infinite loops - if already processing, exit
+    if (processingRef.current) return
+    
+    // Only process execution results for THIS specific chat node
+    const triggerNodeId = lastExecutionResult.triggerNodeId
+    
+    // If triggerNodeId is set and doesn't match this node, ignore this execution
+    if (triggerNodeId && triggerNodeId !== id) return
+    
+    // Set processing flag
+    processingRef.current = true
+    
     const chatNodeResult = lastExecutionResult.nodeResults?.find(nr => nr.nodeId === id)
+    
+    if (!chatNodeResult) {
+      console.error(`ChatNode ${id}: Not found in execution results`, {
+        triggerNodeId,
+        executedNodes: lastExecutionResult.nodeResults?.map(nr => nr.nodeId)
+      })
+      setLastProcessedExecutionId(executionId)
+      processingRef.current = false
+      return
+    }
     
     if (chatNodeResult && chatNodeResult.data) {
       // Get user message from chat node's output
@@ -159,8 +152,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         const alreadyExists = currentMessages.some(msg => msg.id === userMsgId)
         
         if (alreadyExists) {
-          console.log('ChatNode: Messages already in history, skipping')
           setLastProcessedExecutionId(executionId)
+          processingRef.current = false
           return
         }
         
@@ -189,12 +182,6 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         // Append to conversation history
         const updatedHistory = [...currentMessages, ...newMessages]
         
-        console.log('ChatNode: Appending messages to history', { 
-          executionId, 
-          newMessages, 
-          totalMessages: updatedHistory.length 
-        })
-        
         // Update node parameters with new conversation history
         updateNode(id, {
           parameters: {
@@ -204,11 +191,23 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         })
         
         setLastProcessedExecutionId(executionId)
+        
+        // Clear processing flag after a short delay to prevent immediate re-trigger
+        setTimeout(() => {
+          processingRef.current = false
+        }, 100)
+      } else {
+        // Clear processing flag if no user message
+        processingRef.current = false
       }
+    } else {
+      // Clear processing flag if no chat result data
+      processingRef.current = false
     }
-    // Only depend on lastExecutionResult changes - not on data.parameters
+    // Only depend on lastExecutionResult changes - not on workflow or data.parameters
+    // We get workflow from the closure scope, don't need it as dependency
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastExecutionResult])
+  }, [lastExecutionResult, id])
 
   // Use stored conversation history for display
   const displayMessages: Message[] = storedMessages
