@@ -1,50 +1,50 @@
 import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuSub,
-    ContextMenuSubContent,
-    ContextMenuSubTrigger,
-    ContextMenuTrigger,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { useWorkflowOperations } from '@/hooks/workflow';
 import { useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores';
 import {
-    CheckCircle,
-    Download,
-    Eye,
-    EyeOff,
-    FileText,
-    Grid,
-    Grid3X3,
-    Hash,
-    History,
-    Lock,
-    Map,
-    Maximize,
-    Palette,
-    Play,
-    Plus,
-    Power,
-    PowerOff,
-    Redo,
-    Save,
-    Settings,
-    Undo,
-    Unlock,
-    Upload,
-    ZoomIn,
-    ZoomOut
+  CheckCircle,
+  Download,
+  Eye,
+  EyeOff,
+  FileText,
+  Grid,
+  Grid3X3,
+  Hash,
+  History,
+  Lock,
+  Map,
+  Maximize,
+  Palette,
+  Play,
+  Plus,
+  Power,
+  PowerOff,
+  Redo,
+  Save,
+  Settings,
+  Undo,
+  Unlock,
+  Upload,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode
   readOnly?: boolean
 }
 
-export function WorkflowCanvasContextMenu({
+export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu({
   children,
   readOnly = false
 }: WorkflowCanvasContextMenuProps) {
@@ -97,7 +97,15 @@ export function WorkflowCanvasContextMenu({
     toggleExecutionsPanel,
   } = useWorkflowToolbarStore()
 
-  const handleImportClick = () => {
+  // Memoize undo/redo state to prevent function calls on every render
+  const canUndoState = useMemo(() => canUndo(), [canUndo])
+  const canRedoState = useMemo(() => canRedo(), [canRedo])
+  
+  // Memoize workflow active state
+  const isWorkflowActive = useMemo(() => workflow?.active, [workflow?.active])
+
+  // Memoize import handler to prevent recreation
+  const handleImportClick = useCallback(() => {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
@@ -108,7 +116,13 @@ export function WorkflowCanvasContextMenu({
       }
     }
     input.click()
-  }
+  }, [handleImport])
+
+  // Memoize background variant handlers
+  const handleDotsPattern = useCallback(() => changeBackgroundVariant('dots'), [changeBackgroundVariant])
+  const handleLinesPattern = useCallback(() => changeBackgroundVariant('lines'), [changeBackgroundVariant])
+  const handleCrossPattern = useCallback(() => changeBackgroundVariant('cross'), [changeBackgroundVariant])
+  const handleNoPattern = useCallback(() => changeBackgroundVariant('none'), [changeBackgroundVariant])
 
   return (
     <ContextMenu>
@@ -157,7 +171,7 @@ export function WorkflowCanvasContextMenu({
         {/* Edit Operations */}
         <ContextMenuItem
           onClick={undo}
-          disabled={!canUndo() || readOnly}
+          disabled={!canUndoState || readOnly}
           className="cursor-pointer"
         >
           <Undo className="mr-2 h-4 w-4" />
@@ -165,7 +179,7 @@ export function WorkflowCanvasContextMenu({
         </ContextMenuItem>
         <ContextMenuItem
           onClick={redo}
-          disabled={!canRedo() || readOnly}
+          disabled={!canRedoState || readOnly}
           className="cursor-pointer"
         >
           <Redo className="mr-2 h-4 w-4" />
@@ -180,7 +194,7 @@ export function WorkflowCanvasContextMenu({
           disabled={readOnly}
           className="cursor-pointer"
         >
-          {workflow?.active ? (
+          {isWorkflowActive ? (
             <>
               <PowerOff className="mr-2 h-4 w-4" />
               Deactivate Workflow
@@ -331,19 +345,19 @@ export function WorkflowCanvasContextMenu({
                 Background Pattern
               </ContextMenuSubTrigger>
               <ContextMenuSubContent>
-                <ContextMenuItem onClick={() => changeBackgroundVariant('dots')}>
+                <ContextMenuItem onClick={handleDotsPattern}>
                   <Grid className="mr-2 h-4 w-4" />
                   Dots Pattern
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => changeBackgroundVariant('lines')}>
+                <ContextMenuItem onClick={handleLinesPattern}>
                   <Hash className="mr-2 h-4 w-4" />
                   Lines Pattern
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => changeBackgroundVariant('cross')}>
+                <ContextMenuItem onClick={handleCrossPattern}>
                   <Plus className="mr-2 h-4 w-4" />
                   Cross Pattern
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => changeBackgroundVariant('none')}>
+                <ContextMenuItem onClick={handleNoPattern}>
                   <EyeOff className="mr-2 h-4 w-4" />
                   No Pattern
                 </ContextMenuItem>
@@ -354,4 +368,4 @@ export function WorkflowCanvasContextMenu({
       </ContextMenuContent>
     </ContextMenu>
   )
-}
+})
