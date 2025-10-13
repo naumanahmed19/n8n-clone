@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { RefObject, useCallback, useEffect, useRef } from "react";
 import { ReactFlowInstance } from "reactflow";
 
 interface UseReactFlowAutoLayoutOptions {
@@ -6,6 +6,7 @@ interface UseReactFlowAutoLayoutOptions {
   nodesCount: number;
   enabled?: boolean;
   delay?: number;
+  additionalRef?: RefObject<HTMLDivElement> | null;
 }
 
 /**
@@ -17,14 +18,16 @@ interface UseReactFlowAutoLayoutOptions {
  * @param options.nodesCount - Number of nodes (to avoid unnecessary fitView calls)
  * @param options.enabled - Whether the auto-layout is enabled (default: true)
  * @param options.delay - Delay in ms before triggering fitView (default: 50)
+ * @param options.additionalRef - Additional ref to also assign the element to
  *
- * @returns containerRef - Ref to attach to the container element
+ * @returns combinedRef - Ref callback to attach to the container element
  */
 export function useReactFlowAutoLayout({
   reactFlowInstance,
   nodesCount,
   enabled = true,
   delay = 50,
+  additionalRef,
 }: UseReactFlowAutoLayoutOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +50,22 @@ export function useReactFlowAutoLayout({
     };
   }, [reactFlowInstance, nodesCount, enabled, delay]);
 
-  return containerRef;
+  // Create a combined ref callback that updates both refs
+  const combinedRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      // Update the container ref (use type assertion for mutable ref)
+      (containerRef as React.MutableRefObject<HTMLDivElement | null>).current =
+        element;
+
+      // Update the additional ref if provided
+      if (additionalRef && "current" in additionalRef) {
+        (additionalRef as any).current = element;
+      }
+    },
+    [additionalRef]
+  );
+
+  return combinedRef;
 }
 
 /**

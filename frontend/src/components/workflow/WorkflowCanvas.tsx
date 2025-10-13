@@ -57,11 +57,12 @@ export function WorkflowCanvas({
     
     // Use custom hooks for better code organization
     const { edgeStyle, connectionLineStyle, isDarkMode } = useReactFlowStyles()
-    const containerRef = useReactFlowAutoLayout({
+    const combinedRef = useReactFlowAutoLayout({
         reactFlowInstance,
         nodesCount: nodes.length,
         enabled: true,
-        delay: 50
+        delay: 50,
+        additionalRef: reactFlowWrapper
     })
     
     // Determine if interactions should be disabled
@@ -75,14 +76,7 @@ export function WorkflowCanvas({
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
-            <div className="h-full"  ref={(el) => {
-                if (reactFlowWrapper) {
-                    (reactFlowWrapper as any).current = el
-                }
-                if (el) {
-                    (containerRef as any).current = el
-                }
-            }} style={{ backgroundColor }}>
+            <div className="h-full" ref={combinedRef} style={{ backgroundColor }}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
