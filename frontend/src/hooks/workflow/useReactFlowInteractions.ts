@@ -19,7 +19,6 @@ import {
  */
 export function useReactFlowInteractions() {
   const {
-    workflow,
     selectedNodeId,
     addNode,
     updateNode,
@@ -44,6 +43,12 @@ export function useReactFlowInteractions() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Optimized: Use a selector to check node existence without subscribing to entire workflow
+  const checkNodeExists = useCallback((nodeId: string) => {
+    const workflow = useWorkflowStore.getState().workflow;
+    return workflow?.nodes.some((node) => node.id === nodeId) ?? false;
+  }, []);
+
   // Handle node selection
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
@@ -58,9 +63,7 @@ export function useReactFlowInteractions() {
         // This prevents the dialog from closing during execution state changes
         // while still allowing it to close when a node is actually removed or user clicks away
         if (showPropertyPanel && propertyPanelNodeId) {
-          const nodeExists = workflow?.nodes.find(
-            (node) => node.id === propertyPanelNodeId
-          );
+          const nodeExists = checkNodeExists(propertyPanelNodeId);
           if (!nodeExists) {
             closeNodeProperties();
           }
@@ -71,7 +74,7 @@ export function useReactFlowInteractions() {
       setSelectedNode,
       showPropertyPanel,
       propertyPanelNodeId,
-      workflow,
+      checkNodeExists,
       closeNodeProperties,
     ]
   );
