@@ -18,8 +18,6 @@ import {
 } from "../utils/nodeHelpers";
 import { CredentialService } from "./CredentialService";
 
-
-
 import { VariableService } from "./VariableService";
 
 export interface SecureExecutionOptions {
@@ -193,26 +191,30 @@ export class SecureExecutionService {
 
         // Resolve variables ($vars and $local) if value contains them
         // Support both: $local.key and {{$local.key}}
-        if (typeof value === "string" && (value.includes("$vars") || value.includes("$local"))) {
+        if (
+          typeof value === "string" &&
+          (value.includes("$vars") || value.includes("$local"))
+        ) {
           logger.info("Variable detected in parameter, resolving...", {
             parameterName,
             value,
           });
-          
+
           try {
             // First, replace variables in the text (handles both wrapped and unwrapped)
-            let resolvedValue = await this.variableService.replaceVariablesInText(
-              value,
-              userId,
-              workflowId
-            );
-            
+            let resolvedValue =
+              await this.variableService.replaceVariablesInText(
+                value,
+                userId,
+                workflowId
+              );
+
             logger.info("After variable text replacement", {
               parameterName,
               originalValue: value,
               afterReplacement: resolvedValue,
             });
-            
+
             // If the entire value is just {{resolved_value}}, unwrap it
             // This handles cases like {{$local.apiUrl}} -> {{https://...}} -> https://...
             const wrappedMatch = resolvedValue.match(/^\{\{(.+)\}\}$/);
@@ -222,18 +224,19 @@ export class SecureExecutionService {
                 wrappedValue: resolvedValue,
                 innerContent: wrappedMatch[1],
               });
-              
+
               // Check if the content is just a simple value (no operators or functions)
               const innerContent = wrappedMatch[1].trim();
               // Check for n8n expression syntax patterns (but not URL slashes)
               // Allow simple values and URLs to be unwrapped
-              const hasExpressionSyntax = /[+\-*%()[\]<>=!&|]/.test(innerContent) || 
-                                          innerContent.includes('{{') ||
-                                          innerContent.includes('json.') ||
-                                          innerContent.includes('$item') ||
-                                          innerContent.includes('$node') ||
-                                          innerContent.includes('$workflow');
-              
+              const hasExpressionSyntax =
+                /[+\-*%()[\]<>=!&|]/.test(innerContent) ||
+                innerContent.includes("{{") ||
+                innerContent.includes("json.") ||
+                innerContent.includes("$item") ||
+                innerContent.includes("$node") ||
+                innerContent.includes("$workflow");
+
               if (!hasExpressionSyntax) {
                 logger.info("Unwrapping simple value", {
                   parameterName,
@@ -242,19 +245,22 @@ export class SecureExecutionService {
                 });
                 resolvedValue = innerContent;
               } else {
-                logger.info("Keeping wrapped value (contains expression syntax)", {
-                  parameterName,
-                  value: resolvedValue,
-                });
+                logger.info(
+                  "Keeping wrapped value (contains expression syntax)",
+                  {
+                    parameterName,
+                    value: resolvedValue,
+                  }
+                );
               }
             }
-            
+
             logger.info("Variable resolved successfully", {
               parameterName,
               originalValue: value,
               resolvedValue,
             });
-            
+
             value = resolvedValue;
           } catch (error) {
             logger.warn("Failed to resolve variables in parameter", {
@@ -265,21 +271,26 @@ export class SecureExecutionService {
             // Continue with original value if variable resolution fails
           }
         }
-        
+
         // Also unwrap simple {{value}} patterns even without variables
         // This handles cases where variables were already resolved: {{https://...}} -> https://...
-        if (typeof value === "string" && !value.includes("$vars") && !value.includes("$local")) {
+        if (
+          typeof value === "string" &&
+          !value.includes("$vars") &&
+          !value.includes("$local")
+        ) {
           const wrappedMatch = value.match(/^\{\{(.+)\}\}$/);
           if (wrappedMatch) {
             const innerContent = wrappedMatch[1].trim();
             // Check for n8n expression syntax patterns (but not URL slashes)
-            const hasExpressionSyntax = /[+\-*%()[\]<>=!&|]/.test(innerContent) || 
-                                        innerContent.includes('{{') ||
-                                        innerContent.includes('json.') ||
-                                        innerContent.includes('$item') ||
-                                        innerContent.includes('$node') ||
-                                        innerContent.includes('$workflow');
-            
+            const hasExpressionSyntax =
+              /[+\-*%()[\]<>=!&|]/.test(innerContent) ||
+              innerContent.includes("{{") ||
+              innerContent.includes("json.") ||
+              innerContent.includes("$item") ||
+              innerContent.includes("$node") ||
+              innerContent.includes("$workflow");
+
             if (!hasExpressionSyntax) {
               logger.info("Unwrapping simple wrapped value (non-variable)", {
                 parameterName,

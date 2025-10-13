@@ -21,6 +21,7 @@ The `getNodeParameter` function in `SecureExecutionService` was **NOT resolving*
 ## Root Cause
 
 In `backend/src/services/SecureExecutionService.ts`, the `getNodeParameter` function only resolved:
+
 - `{{...}}` expressions for input data references
 - But **NOT** `$vars.*` or `$local.*` variable references
 
@@ -29,16 +30,18 @@ In `backend/src/services/SecureExecutionService.ts`, the `getNodeParameter` func
 ### Changes Made
 
 #### 1. Added VariableService Import
+
 ```typescript
 // SecureExecutionService.ts
 import { VariableService } from "./VariableService";
 ```
 
 #### 2. Added VariableService to Class
+
 ```typescript
 export class SecureExecutionService {
   private variableService: VariableService;
-  
+
   constructor(prisma: PrismaClient) {
     this.variableService = new VariableService();
     // ...
@@ -47,6 +50,7 @@ export class SecureExecutionService {
 ```
 
 #### 3. Updated createSecureContext Method
+
 - Added `workflowId?: string` parameter
 - Made `getNodeParameter` async (returns Promise)
 - Added variable resolution before input data resolution
@@ -95,6 +99,7 @@ async createSecureContext(
 ```
 
 #### 4. Updated NodeService.executeNode
+
 - Added `workflowId?: string` parameter
 - Passed `workflowId` to `createSecureContext`
 
@@ -123,6 +128,7 @@ async executeNode(
 ```
 
 #### 5. Updated ExecutionService Call
+
 ```typescript
 // backend/src/services/ExecutionService.ts
 nodeResult = await this.nodeService.executeNode(
@@ -138,6 +144,7 @@ nodeResult = await this.nodeService.executeNode(
 ```
 
 #### 6. Updated FlowExecutionEngine Call
+
 ```typescript
 // backend/src/services/FlowExecutionEngine.ts
 const nodeResult = await this.nodeService.executeNode(
@@ -155,6 +162,7 @@ const nodeResult = await this.nodeService.executeNode(
 ## How Variable Resolution Works
 
 ### Variable Service Logic
+
 ```typescript
 async replaceVariablesInText(
   text: string,
@@ -163,7 +171,7 @@ async replaceVariablesInText(
 ): Promise<string> {
   // 1. Get global variables for user
   const globalVariables = await this.getVariablesForExecution(userId);
-  
+
   // 2. Get local variables for workflow (if workflowId provided)
   const localVariables: Record<string, string> = {};
   if (workflowId) {
@@ -172,13 +180,13 @@ async replaceVariablesInText(
       localVariables[variable.key] = variable.value;
     }
   }
-  
+
   // 3. Replace patterns
   // $vars.variableName
   // $local.variableName
   // $vars['variable.name']
   // $local['variable.name']
-  
+
   return result;
 }
 ```
@@ -245,11 +253,13 @@ POST /api/variables
 ### 3. Execute Node
 
 Before the fix:
+
 ```
 URL sent: "$vars.api_endpoint/users/$local.user_id"  ❌ Literal string
 ```
 
 After the fix:
+
 ```
 URL sent: "https://api.example.com/users/12345"  ✅ Variables resolved!
 ```
@@ -258,35 +268,37 @@ URL sent: "https://api.example.com/users/12345"  ✅ Variables resolved!
 
 ```javascript
 // Global variables
-$vars.api_endpoint
-$vars.api_key
-$vars.db_connection
+$vars.api_endpoint;
+$vars.api_key;
+$vars.db_connection;
 
 // Local variables (workflow-specific)
-$local.user_id
-$local.session_token
-$local.temp_value
+$local.user_id;
+$local.session_token;
+$local.temp_value;
 
 // Variables with special characters (dots, spaces, etc.)
-$vars['config.timeout']
-$vars["api.key.secret"]
-$local['user.data']
-$local["temp.value"]
+$vars["config.timeout"];
+$vars["api.key.secret"];
+$local["user.data"];
+$local["temp.value"];
 
 // Combined with other text
-"$vars.api_endpoint/users"
-"Bearer $vars.api_key"
-"User: $local.user_id, Endpoint: $vars.api_endpoint"
+("$vars.api_endpoint/users");
+("Bearer $vars.api_key");
+("User: $local.user_id, Endpoint: $vars.api_endpoint");
 ```
 
 ## Priority
 
 When the same key exists in both scopes:
+
 ```
 Local variables > Global variables
 ```
 
 Example:
+
 ```javascript
 // If both exist:
 $vars.api_key = "global-key-123"
@@ -300,6 +312,7 @@ $local.api_key  → "local-key-456"  (takes precedence in workflow)
 ## Files Modified
 
 1. ✅ `backend/src/services/SecureExecutionService.ts`
+
    - Import VariableService
    - Add variableService instance
    - Update createSecureContext signature (add workflowId)
@@ -307,10 +320,12 @@ $local.api_key  → "local-key-456"  (takes precedence in workflow)
    - Add variable resolution logic
 
 2. ✅ `backend/src/services/NodeService.ts`
+
    - Update executeNode signature (add workflowId)
    - Pass workflowId to createSecureContext
 
 3. ✅ `backend/src/services/ExecutionService.ts`
+
    - Pass workflowId when calling executeNode
 
 4. ✅ `backend/src/services/FlowExecutionEngine.ts`
@@ -319,6 +334,7 @@ $local.api_key  → "local-key-456"  (takes precedence in workflow)
 ## Impact
 
 ### Positive
+
 - ✅ Variables now work in all nodes
 - ✅ Environment-specific configurations possible
 - ✅ Secure (variables resolved server-side)
@@ -326,6 +342,7 @@ $local.api_key  → "local-key-456"  (takes precedence in workflow)
 - ✅ No frontend changes needed
 
 ### Breaking Changes
+
 - ⚠️ `getNodeParameter` is now async (returns Promise)
 - ⚠️ Node implementations calling `this.getNodeParameter()` may need `await`
 - ⚠️ Most built-in nodes already handle this correctly
