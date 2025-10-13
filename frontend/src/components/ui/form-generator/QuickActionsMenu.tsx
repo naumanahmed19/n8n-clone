@@ -1,8 +1,8 @@
-import { cn } from '@/lib/utils'
 import type { QuickAction } from '@/data/quickActions'
-import { searchQuickActions, quickActions } from '@/data/quickActions'
-import { useEffect, useRef, useState } from 'react'
+import { quickActions, searchQuickActions } from '@/data/quickActions'
+import { cn } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 interface QuickActionsMenuProps {
   visible: boolean
