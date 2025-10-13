@@ -5,12 +5,15 @@ import { useWorkflowStore } from '@/stores'
 import type { Variable } from '@/types/variable'
 import { validateExpression, type ValidationResult } from '@/utils/expressionValidator'
 import { fuzzyFilter } from '@/utils/fuzzySearch'
+import type { QuickAction } from '@/data/quickActions'
+import { searchQuickActions, quickActions } from '@/data/quickActions'
 import { AlertCircle, Code2, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AutocompleteItem } from './ExpressionAutocomplete'
 import { ExpressionAutocomplete, defaultAutocompleteItems } from './ExpressionAutocomplete'
 import { ExpressionBackgroundHighlight } from './ExpressionBackgroundHighlight'
 import { ExpressionPreview } from './ExpressionPreview'
+import { QuickActionsMenu } from './QuickActionsMenu'
 
 interface ExpressionInputProps {
   value: string
@@ -44,6 +47,12 @@ export function ExpressionInput({
   const [autoHeight, setAutoHeight] = useState<number | undefined>(undefined)
   const [variables, setVariables] = useState<Variable[]>([])
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] })
+  
+  // Quick Actions Menu state
+  const [showQuickActions, setShowQuickActions] = useState(false)
+  const [quickActionsQuery, setQuickActionsQuery] = useState('')
+  const [quickActionsPosition, setQuickActionsPosition] = useState({ top: 0, left: 0 })
+  const [selectedActionIndex, setSelectedActionIndex] = useState(0)
   
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null)
 
@@ -138,7 +147,7 @@ export function ExpressionInput({
           Object.keys(obj).forEach(key => {
             const value = obj[key]
             const fieldPath = `${path}.${key}`
-            const fieldValue = `{{${fieldPath}}}`
+            const fieldValue = fieldPath // Raw value without {{}}
             
             // Add the field itself if not already added
             if (!seenFields.has(fieldValue)) {
@@ -159,7 +168,7 @@ export function ExpressionInput({
             
             // If value is an array with objects, show array accessor patterns
             if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-              const arrayAccessor = `{{${fieldPath}[0]}}`
+              const arrayAccessor = `${fieldPath}[0]` // Raw value without {{}}
               if (!seenFields.has(arrayAccessor)) {
                 seenFields.add(arrayAccessor)
                 fields.push({
@@ -174,7 +183,7 @@ export function ExpressionInput({
               // Add nested fields of first array item
               if (depth < 2) {
                 Object.keys(value[0]).forEach(nestedKey => {
-                  const nestedAccessor = `{{${fieldPath}[0].${nestedKey}}}`
+                  const nestedAccessor = `${fieldPath}[0].${nestedKey}` // Raw value without {{}}
                   if (!seenFields.has(nestedAccessor)) {
                     seenFields.add(nestedAccessor)
                     fields.push({
@@ -283,11 +292,27 @@ export function ExpressionInput({
     
     let shouldShowAutocomplete = false
     let searchText = ''
+    let contextPath = '' // The field path for method completion (e.g., "json.title")
     
     // Show autocomplete if inside {{ }}
     if (lastOpenBraces > lastCloseBraces) {
-      searchText = textBeforeCursor.substring(lastOpenBraces + 2).toLowerCase()
-      shouldShowAutocomplete = true
+      const expressionContent = textBeforeCursor.substring(lastOpenBraces + 2)
+      searchText = expressionContent.toLowerCase()
+      
+      // Check if user is trying to access methods on a field (e.g., "json.title.")
+      // Pattern: word characters, dots, and array accessors, ending with a dot
+      const methodAccessPattern = /^([\w$]+(?:\.[\w]+|\[\d+\])*)\.\s*(\w*)$/
+      const methodMatch = expressionContent.match(methodAccessPattern)
+      
+      if (methodMatch) {
+        // User is typing methods/properties on a field
+        contextPath = methodMatch[1] // e.g., "json.title" or "json.items[0]"
+        searchText = methodMatch[2].toLowerCase() // What they're typing after the dot
+        shouldShowAutocomplete = true
+      } else {
+        // Regular autocomplete (field names, variables, etc.)
+        shouldShowAutocomplete = true
+      }
     }
     // Show autocomplete if user typed $ for variables (and not inside completed expression)
     else if (lastDollarSign !== -1 && lastDollarSign > lastCloseBraces) {
@@ -306,9 +331,36 @@ export function ExpressionInput({
     }
     
     if (shouldShowAutocomplete) {
+      let itemsToFilter = dynamicAutocompleteItems
+      
+      // If we're in method completion context, filter and adapt the items
+      if (contextPath) {
+        // Get method/property suggestions
+        itemsToFilter = dynamicAutocompleteItems
+          .filter(item => {
+            // Show string methods for any field access
+            if (item.category === 'String Functions') return true
+            // Show array methods for array accessors
+            if (item.category === 'Array Functions' && contextPath.includes('[')) return true
+            // Show math methods if it might be numeric
+            if (item.category === 'Math Functions') return true
+            return false
+          })
+          .map(item => {
+            // Replace the placeholder "json.field" with the actual field path
+            const adaptedValue = item.value.replace(/json\.field|json\.array|json\.value/g, contextPath)
+            return {
+              ...item,
+              value: adaptedValue,
+              // Show just the method name in the label for clarity
+              label: item.label,
+            }
+          })
+      }
+      
       // Use fuzzy search for better autocomplete matching
       const filtered = fuzzyFilter(
-        dynamicAutocompleteItems,
+        itemsToFilter,
         searchText,
         (item) => [item.label, item.value, item.description || '']
       )
@@ -328,6 +380,54 @@ export function ExpressionInput({
     }
   }, [value, cursorPosition, mode, dynamicAutocompleteItems])
 
+  // Detect slash commands for Quick Actions Menu
+  useEffect(() => {
+    if (mode !== 'expression' || !value || showAutocomplete) {
+      setShowQuickActions(false)
+      return
+    }
+
+    const textBeforeCursor = value.substring(0, cursorPosition)
+    
+    // Find the last / that could be a command trigger
+    const lastSlash = textBeforeCursor.lastIndexOf('/')
+    
+    if (lastSlash === -1) {
+      setShowQuickActions(false)
+      return
+    }
+    
+    // Check if the / is inside {{ }} or after {{
+    const lastOpenBraces = textBeforeCursor.lastIndexOf('{{')
+    const lastCloseBraces = textBeforeCursor.lastIndexOf('}}')
+    
+    // Only show quick actions if we're inside {{ }} or at the start of an expression
+    const isInsideExpression = lastOpenBraces > lastCloseBraces
+    const textFromSlash = textBeforeCursor.substring(lastSlash + 1)
+    
+    // Check if there are any spaces or special characters after / (would indicate it's not a command)
+    const hasInvalidChars = /[\s{}]/.test(textFromSlash)
+    
+    if (isInsideExpression && !hasInvalidChars) {
+      // Extract the query (text after /)
+      setQuickActionsQuery(textFromSlash)
+      setSelectedActionIndex(0)
+      
+      // Calculate position
+      if (inputRef.current) {
+        const rect = inputRef.current.getBoundingClientRect()
+        setQuickActionsPosition({
+          top: rect.height + 4,
+          left: 0,
+        })
+      }
+      
+      setShowQuickActions(true)
+    } else {
+      setShowQuickActions(false)
+    }
+  }, [value, cursorPosition, mode, showAutocomplete])
+
   // Update autocomplete position
   const updateAutocompletePosition = () => {
     if (!inputRef.current) return
@@ -340,7 +440,7 @@ export function ExpressionInput({
     })
   }
 
-  // Handle keyboard navigation in autocomplete
+  // Handle keyboard navigation in autocomplete and quick actions
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Ctrl+Space or Cmd+Space to manually trigger autocomplete
     if (e.key === ' ' && (e.ctrlKey || e.metaKey) && mode === 'expression') {
@@ -352,6 +452,36 @@ export function ExpressionInput({
       updateAutocompletePosition()
       setShowAutocomplete(true)
       return
+    }
+    
+    // Handle quick actions keyboard events when quick actions menu is visible
+    if (showQuickActions) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedActionIndex(prev => prev + 1) // Menu component handles limit
+          return
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedActionIndex(prev => Math.max(0, prev - 1))
+          return
+        case 'Enter':
+        case 'Tab':
+          e.preventDefault()
+          // Get the selected action from the search results or top-level actions
+          const actions = quickActionsQuery 
+            ? searchQuickActions(quickActionsQuery).slice(0, 10)
+            : quickActions
+          const selectedAction = actions[selectedActionIndex]
+          if (selectedAction) {
+            handleQuickActionSelect(selectedAction)
+          }
+          return
+        case 'Escape':
+          e.preventDefault()
+          setShowQuickActions(false)
+          return
+      }
     }
     
     // Only handle autocomplete keyboard events when autocomplete is visible
@@ -403,36 +533,75 @@ export function ExpressionInput({
     const lastCloseBraces = textBeforeCursor.lastIndexOf('}}')
     const lastDollarSign = textBeforeCursor.lastIndexOf('$')
     
-    // Wrap variable values in {{}} for proper expression syntax
-    let insertValue = item.value
-    if (item.type === 'variable') {
-      insertValue = `{{${item.value}}}`
-    }
-    
     // Determine insertion strategy
     let newValue: string
     let newCursorPos: number
     
-    // If we're inside {{, replace from {{ onwards
+    // If we're inside {{, just insert the raw value (no wrapping)
     if (lastOpenBraces !== -1 && lastOpenBraces > lastCloseBraces) {
-      newValue = 
-        value.substring(0, lastOpenBraces) + 
-        insertValue + 
-        textAfterCursor
-      newCursorPos = lastOpenBraces + insertValue.length
+      const expressionContent = textBeforeCursor.substring(lastOpenBraces + 2)
+      
+      // Check if we're in method completion context (e.g., "json.title." with cursor after dot)
+      // Pattern: word characters, dots, and array accessors, ending with a dot
+      const methodAccessPattern = /^([\w$]+(?:\.[\w]+|\[\d+\])*)\.\s*(\w*)$/
+      const methodMatch = expressionContent.match(methodAccessPattern)
+      
+      if (methodMatch && (item.category === 'String Functions' || item.category === 'Array Functions' || item.category === 'Math Functions')) {
+        // We're completing a method on a field path
+        // The item.value already has the full path with method (e.g., "json.title.toUpperCase()")
+        // So we replace from {{ onwards
+        newValue = 
+          value.substring(0, lastOpenBraces + 2) + 
+          item.value + 
+          textAfterCursor
+        newCursorPos = lastOpenBraces + 2 + item.value.length
+      }
+      // Check if we're completing a partial variable name (e.g., {{$vars.api}} or {{$vars.}})
+      else if (item.type === 'variable') {
+        // Find where to replace from (either from $vars. or $local.)
+        const textInsideBraces = textBeforeCursor.substring(lastOpenBraces + 2)
+        const lastVarPrefix = Math.max(
+          textInsideBraces.lastIndexOf('$vars.'),
+          textInsideBraces.lastIndexOf('$local.')
+        )
+        
+        if (lastVarPrefix !== -1) {
+          // Replace from the $vars. or $local. position
+          const replaceFrom = lastOpenBraces + 2 + lastVarPrefix
+          newValue = 
+            value.substring(0, replaceFrom) + 
+            item.value + 
+            textAfterCursor
+          newCursorPos = replaceFrom + item.value.length
+        } else {
+          // No prefix found, just insert the value
+          newValue = 
+            value.substring(0, lastOpenBraces + 2) + 
+            item.value + 
+            textAfterCursor
+          newCursorPos = lastOpenBraces + 2 + item.value.length
+        }
+      } else {
+        // For non-variables (fields, functions), replace from {{ onwards
+        newValue = 
+          value.substring(0, lastOpenBraces + 2) + 
+          item.value + 
+          textAfterCursor
+        newCursorPos = lastOpenBraces + 2 + item.value.length
+      }
     }
-    // If user typed $ (not inside {{), replace from $ onwards
+    // If user typed $ (not inside {{), just replace from $ onwards (no wrapping)
     else if (lastDollarSign !== -1 && lastDollarSign > lastCloseBraces && item.type === 'variable') {
       newValue = 
         value.substring(0, lastDollarSign) + 
-        insertValue + 
+        item.value + 
         textAfterCursor
-      newCursorPos = lastDollarSign + insertValue.length
+      newCursorPos = lastDollarSign + item.value.length
     }
-    // Otherwise, just insert at cursor
+    // Otherwise, just insert the raw value (no wrapping)
     else {
-      newValue = textBeforeCursor + insertValue + textAfterCursor
-      newCursorPos = textBeforeCursor.length + insertValue.length
+      newValue = textBeforeCursor + item.value + textAfterCursor
+      newCursorPos = textBeforeCursor.length + item.value.length
     }
     
     onChange(newValue)
@@ -445,6 +614,85 @@ export function ExpressionInput({
         if ('setSelectionRange' in inputRef.current) {
           inputRef.current.setSelectionRange(newCursorPos, newCursorPos)
         }
+        inputRef.current.focus()
+      }
+    }, 0)
+  }
+
+  // Handle quick action selection
+  const handleQuickActionSelect = (action: QuickAction) => {
+    console.log('[QuickAction] Selected:', action.trigger, action.insert)
+    
+    // If action has no insert template (e.g., category), do nothing
+    if (!action.insert) {
+      console.log('[QuickAction] No insert template, skipping')
+      return
+    }
+    
+    const textBeforeCursor = value.substring(0, cursorPosition)
+    const textAfterCursor = value.substring(cursorPosition)
+    
+    console.log('[QuickAction] Text before cursor:', textBeforeCursor)
+    console.log('[QuickAction] Cursor position:', cursorPosition)
+    
+    // Find the / before cursor
+    const lastSlash = textBeforeCursor.lastIndexOf('/')
+    
+    console.log('[QuickAction] Last slash position:', lastSlash)
+    
+    if (lastSlash === -1) {
+      console.log('[QuickAction] No slash found, skipping')
+      return
+    }
+    
+    // Replace from / onwards with the action's insert template
+    const newValue = 
+      value.substring(0, lastSlash) + 
+      action.insert + 
+      textAfterCursor
+    
+    console.log('[QuickAction] New value:', newValue)
+    
+    // Calculate new cursor position
+    // If there are placeholders, position cursor at first placeholder
+    let newCursorPos: number
+    if (action.placeholders && action.placeholders.length > 0) {
+      // Find the first placeholder in the inserted text
+      const firstPlaceholder = action.placeholders[0]
+      const placeholderStart = action.insert.indexOf(firstPlaceholder)
+      if (placeholderStart !== -1) {
+        newCursorPos = lastSlash + placeholderStart
+        
+        console.log('[QuickAction] First placeholder:', firstPlaceholder, 'at position:', newCursorPos)
+        
+        // Select the placeholder text for easy replacement
+        onChange(newValue)
+        setShowQuickActions(false)
+        
+        setTimeout(() => {
+          if (inputRef.current && 'setSelectionRange' in inputRef.current) {
+            const selectionStart = newCursorPos
+            const selectionEnd = newCursorPos + firstPlaceholder.length
+            inputRef.current.setSelectionRange(selectionStart, selectionEnd)
+            inputRef.current.focus()
+          }
+        }, 0)
+        return
+      }
+    }
+    
+    // No placeholders, just position cursor at end of inserted text
+    newCursorPos = lastSlash + action.insert.length
+    
+    console.log('[QuickAction] No placeholders, cursor at:', newCursorPos)
+    
+    onChange(newValue)
+    setShowQuickActions(false)
+    
+    setTimeout(() => {
+      setCursorPosition(newCursorPos)
+      if (inputRef.current && 'setSelectionRange' in inputRef.current) {
+        inputRef.current.setSelectionRange(newCursorPos, newCursorPos)
         inputRef.current.focus()
       }
     }, 0)
@@ -591,6 +839,16 @@ export function ExpressionInput({
           onSelect={insertAutocompleteItem}
           onClose={() => setShowAutocomplete(false)}
         />
+
+        {/* Quick Actions Menu */}
+        <QuickActionsMenu
+          visible={showQuickActions}
+          query={quickActionsQuery}
+          position={quickActionsPosition}
+          selectedIndex={selectedActionIndex}
+          onSelect={handleQuickActionSelect}
+          onClose={() => setShowQuickActions(false)}
+        />
       </div>
 
       {/* Helper Text */}
@@ -600,7 +858,8 @@ export function ExpressionInput({
           <code className="px-1 py-0.5 bg-muted rounded">$vars</code> for variables,{' '}
           <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;&#125;&#125;</code> for expressions.
           Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd> or type{' '}
-          <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;</code> for suggestions
+          <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;</code> for suggestions,{' '}
+          <code className="px-1 py-0.5 bg-muted rounded">/</code> for quick actions
         </div>
       )}
 
