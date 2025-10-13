@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { useWorkflowStore } from '@/stores'
 import { Download, Image as ImageIcon, Maximize2, RefreshCw } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { NodeProps } from 'reactflow'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
@@ -30,7 +30,7 @@ interface ImagePreviewNodeData {
  * - Download and fullscreen capabilities
  * - Uses BaseNodeWrapper for consistent behavior
  */
-export function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewNodeData>) {
+export const ImagePreviewNode = memo(function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewNodeData>) {
   const { updateNode, workflow, lastExecutionResult } = useWorkflowStore()
   const isReadOnly = false
   
@@ -148,28 +148,35 @@ export function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewN
   }, [isFullscreen])
 
   // Prepare header info text
-  const headerInfo = imageUrl ? 'Image loaded' : 'Waiting for image'
+  const headerInfo = useMemo(() => 
+    imageUrl ? 'Image loaded' : 'Waiting for image',
+    [imageUrl]
+  )
 
-  // Collapsed content (small preview)
-  const collapsedContent = imageUrl && !imageError ? (
-    <div className="relative w-full h-20 bg-gray-100 rounded overflow-hidden">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-      <img
-        src={imageUrl}
-        alt="Preview"
-        className="w-full h-full object-cover"
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-      />
-    </div>
-  ) : null
+  // Collapsed content (small preview) - memoized
+  const collapsedContent = useMemo(() => {
+    if (!imageUrl || imageError) return null
+    
+    return (
+      <div className="relative w-full h-20 bg-gray-100 rounded overflow-hidden">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+        <img
+          src={imageUrl}
+          alt="Preview"
+          className="w-full h-full object-cover"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+      </div>
+    )
+  }, [imageUrl, imageError, isLoading, handleImageLoad, handleImageError])
 
-  // Expanded content (full image preview)
-  const expandedContent = (
+  // Expanded content (full image preview) - memoized
+  const expandedContent = useMemo(() => (
     <>
       {/* Image Display Area */}
       <div className="p-3">
@@ -258,7 +265,7 @@ export function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewN
         </div>
       )}
     </>
-  )
+  ), [imageUrl, imageError, isLoading, imagePlaceholder, handleImageLoad, handleImageError, handleFullscreen, handleDownload, isFullscreen])
 
   return (
     <BaseNodeWrapper
@@ -281,6 +288,5 @@ export function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewN
       outputHandleColor="!bg-purple-500"
     />
   )
-}
+})
 
-ImagePreviewNode.displayName = 'ImagePreviewNode'

@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react'
+import { memo } from 'react'
 
 interface NodeIconProps {
   /** Lucide icon component */
@@ -38,7 +39,7 @@ interface NodeIconProps {
  * <NodeIcon Icon={Database} iconColor="bg-purple-500" isExecuting={true} />
  * ```
  */
-export function NodeIcon({
+export const NodeIcon = memo(function NodeIcon({
   Icon,
   iconColor = 'bg-blue-500',
   config,
@@ -103,8 +104,8 @@ export function NodeIcon({
     )
   }
   
+  
   // Mode 3: No icon
   return null
-}
+})
 
-NodeIcon.displayName = 'NodeIcon'
