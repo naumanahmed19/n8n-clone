@@ -1534,7 +1534,9 @@ export class ExecutionService {
             nodeInputData,
             credentialsMapping,
             `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            userId // Pass the actual userId so credentials can be looked up
+            userId, // Pass the actual userId so credentials can be looked up
+            undefined, // options
+            workflowId // Pass workflowId for variable resolution
           );
 
           const endTime = Date.now();

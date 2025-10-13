@@ -36,7 +36,7 @@ export const SetNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    const values = this.getNodeParameter("values") as Array<{
+    const values = await this.getNodeParameter("values") as Array<{
       name: string;
       value: any;
     }>;

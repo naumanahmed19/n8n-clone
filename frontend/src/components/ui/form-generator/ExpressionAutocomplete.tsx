@@ -81,6 +81,9 @@ export function ExpressionAutocomplete({
   // Define category order for consistent display
   // Dynamic input node categories will appear first, followed by standard categories
   const standardCategories = [
+    'Variables',
+    'Variables (Global)',
+    'Variables (Local)',
     'JSON Data',
     'Item Data',
     'Node Data',

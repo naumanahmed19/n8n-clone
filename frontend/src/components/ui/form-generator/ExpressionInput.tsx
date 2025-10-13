@@ -1,6 +1,8 @@
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { variableService } from '@/services'
 import { useWorkflowStore } from '@/stores'
+import type { Variable } from '@/types/variable'
 import { Code2, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AutocompleteItem } from './ExpressionAutocomplete'
@@ -38,11 +40,25 @@ export function ExpressionInput({
   const [selectedItemIndex, setSelectedItemIndex] = useState(0)
   const [cursorPosition, setCursorPosition] = useState(0)
   const [autoHeight, setAutoHeight] = useState<number | undefined>(undefined)
+  const [variables, setVariables] = useState<Variable[]>([])
   
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null)
 
   // Always use textarea for auto-expanding input
   const isMultiline = true
+
+  // Fetch variables on mount
+  useEffect(() => {
+    const fetchVariables = async () => {
+      try {
+        const fetchedVariables = await variableService.getVariables()
+        setVariables(fetchedVariables)
+      } catch (error) {
+        console.error('Error fetching variables:', error)
+      }
+    }
+    fetchVariables()
+  }, [])
 
   // Extract available fields from input data with node information
   const extractFieldsFromData = (nodeId: string | undefined): AutocompleteItem[] => {
@@ -176,16 +192,67 @@ export function ExpressionInput({
 
   // Get input data from workflow store if nodeId is provided
   const workflowStore = useWorkflowStore()
+
+  // Convert variables to autocomplete items
+  const getVariableAutocompleteItems = (): AutocompleteItem[] => {
+    const items: AutocompleteItem[] = []
+    
+    // Add $vars and $local base items
+    items.push({
+      type: 'variable',
+      label: 'Global Variables',
+      value: '$vars',
+      description: 'Access global variables',
+      category: 'Variables',
+    })
+    items.push({
+      type: 'variable',
+      label: 'Local Variables',
+      value: '$local',
+      description: 'Access workflow-local variables',
+      category: 'Variables',
+    })
+    
+    // Group variables by scope
+    const globalVars = variables.filter(v => v.scope === 'GLOBAL')
+    const localVars = variables.filter(v => v.scope === 'LOCAL')
+    
+    // Add global variables
+    globalVars.forEach(variable => {
+      items.push({
+        type: 'variable',
+        label: variable.key,
+        value: `$vars.${variable.key}`,
+        description: variable.description || `Global: ${variable.value.substring(0, 50)}${variable.value.length > 50 ? '...' : ''}`,
+        category: 'Variables (Global)',
+      })
+    })
+    
+    // Add local variables
+    localVars.forEach(variable => {
+      items.push({
+        type: 'variable',
+        label: variable.key,
+        value: `$local.${variable.key}`,
+        description: variable.description || `Local: ${variable.value.substring(0, 50)}${variable.value.length > 50 ? '...' : ''}`,
+        category: 'Variables (Local)',
+      })
+    })
+    
+    return items
+  }
   
   // Generate dynamic autocomplete items based on available input data
   const dynamicAutocompleteItems = useMemo(() => {
     // Extract fields from connected nodes (categorized by node name)
     const inputFields = extractFieldsFromData(nodeId)
     
-    // Combine default items with dynamic input fields
-    // Put input fields first for better visibility
-    return [...inputFields, ...defaultAutocompleteItems]
-  }, [nodeId, workflowStore])
+    // Get variable items
+    const variableItems = getVariableAutocompleteItems()
+    
+    // Combine all items: variables first, then input fields, then default items
+    return [...variableItems, ...inputFields, ...defaultAutocompleteItems]
+  }, [nodeId, workflowStore, variables])
 
   // Detect when to show autocomplete
   useEffect(() => {
@@ -196,14 +263,36 @@ export function ExpressionInput({
 
     const textBeforeCursor = value.substring(0, cursorPosition)
     
-    // Check if user typed {{ or is inside an expression
+    // Check if user typed {{ or $ for variables
     const lastOpenBraces = textBeforeCursor.lastIndexOf('{{')
     const lastCloseBraces = textBeforeCursor.lastIndexOf('}}')
+    const lastDollarSign = textBeforeCursor.lastIndexOf('$')
+    
+    let shouldShowAutocomplete = false
+    let searchText = ''
     
     // Show autocomplete if inside {{ }}
     if (lastOpenBraces > lastCloseBraces) {
-      const searchText = textBeforeCursor.substring(lastOpenBraces + 2).toLowerCase()
+      searchText = textBeforeCursor.substring(lastOpenBraces + 2).toLowerCase()
+      shouldShowAutocomplete = true
+    }
+    // Show autocomplete if user typed $ for variables (and not inside completed expression)
+    else if (lastDollarSign !== -1 && lastDollarSign > lastCloseBraces) {
+      // Check if there's a space after the last word boundary (indicating start of new expression)
+      const textBeforeDollar = textBeforeCursor.substring(0, lastDollarSign)
+      const lastSpace = textBeforeDollar.lastIndexOf(' ')
+      const lastNewline = textBeforeDollar.lastIndexOf('\n')
+      const lastBoundary = Math.max(lastSpace, lastNewline, -1)
       
+      // Only show if $ is at start or after whitespace, and no {{ before it
+      if (lastBoundary === lastDollarSign - 1 || lastDollarSign === 0 || 
+          (lastOpenBraces === -1 || lastOpenBraces < lastBoundary)) {
+        searchText = textBeforeCursor.substring(lastDollarSign).toLowerCase()
+        shouldShowAutocomplete = true
+      }
+    }
+    
+    if (shouldShowAutocomplete) {
       // Filter items based on search text - use dynamic items
       const filtered = dynamicAutocompleteItems.filter(item =>
         item.label.toLowerCase().includes(searchText) ||
@@ -284,21 +373,48 @@ export function ExpressionInput({
     const textBeforeCursor = value.substring(0, cursorPosition)
     const textAfterCursor = value.substring(cursorPosition)
     
-    // Find the {{ before cursor
+    // Find the {{ before cursor or $ sign
     const lastOpenBraces = textBeforeCursor.lastIndexOf('{{')
+    const lastCloseBraces = textBeforeCursor.lastIndexOf('}}')
+    const lastDollarSign = textBeforeCursor.lastIndexOf('$')
     
-    // Replace from {{ to cursor with the autocomplete value
-    const newValue = 
-      value.substring(0, lastOpenBraces) + 
-      item.value + 
-      textAfterCursor
+    // Wrap variable values in {{}} for proper expression syntax
+    let insertValue = item.value
+    if (item.type === 'variable') {
+      insertValue = `{{${item.value}}}`
+    }
+    
+    // Determine insertion strategy
+    let newValue: string
+    let newCursorPos: number
+    
+    // If we're inside {{, replace from {{ onwards
+    if (lastOpenBraces !== -1 && lastOpenBraces > lastCloseBraces) {
+      newValue = 
+        value.substring(0, lastOpenBraces) + 
+        insertValue + 
+        textAfterCursor
+      newCursorPos = lastOpenBraces + insertValue.length
+    }
+    // If user typed $ (not inside {{), replace from $ onwards
+    else if (lastDollarSign !== -1 && lastDollarSign > lastCloseBraces && item.type === 'variable') {
+      newValue = 
+        value.substring(0, lastDollarSign) + 
+        insertValue + 
+        textAfterCursor
+      newCursorPos = lastDollarSign + insertValue.length
+    }
+    // Otherwise, just insert at cursor
+    else {
+      newValue = textBeforeCursor + insertValue + textAfterCursor
+      newCursorPos = textBeforeCursor.length + insertValue.length
+    }
     
     onChange(newValue)
     setShowAutocomplete(false)
     
     // Set cursor position after inserted value
     setTimeout(() => {
-      const newCursorPos = lastOpenBraces + item.value.length
       setCursorPosition(newCursorPos)
       if (inputRef.current) {
         if ('setSelectionRange' in inputRef.current) {
@@ -455,8 +571,10 @@ export function ExpressionInput({
       {/* Helper Text */}
       {mode === 'expression' && (
         <div className="mt-1 text-xs text-muted-foreground">
-          Use <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;&#125;&#125;</code> to access variables,
-          press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd> or type{' '}
+          Use <code className="px-1 py-0.5 bg-muted rounded">$local</code> or{' '}
+          <code className="px-1 py-0.5 bg-muted rounded">$vars</code> for variables,{' '}
+          <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;&#125;&#125;</code> for expressions.
+          Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd> or type{' '}
           <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;</code> for suggestions
         </div>
       )}

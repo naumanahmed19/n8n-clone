@@ -1,5 +1,8 @@
+import { variableService } from '@/services'
 import { useWorkflowStore } from '@/stores'
+import type { Variable } from '@/types/variable'
 import { Eye } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface ExpressionPreviewProps {
   value: string
@@ -8,12 +11,49 @@ interface ExpressionPreviewProps {
 
 export function ExpressionPreview({ value, nodeId }: ExpressionPreviewProps) {
   const workflowStore = useWorkflowStore()
+  const [variables, setVariables] = useState<Variable[]>([])
+
+  // Fetch variables on mount
+  useEffect(() => {
+    const fetchVariables = async () => {
+      try {
+        const fetchedVariables = await variableService.getVariables()
+        setVariables(fetchedVariables)
+      } catch (error) {
+        console.error('Error fetching variables for preview:', error)
+      }
+    }
+    fetchVariables()
+  }, [])
 
   // Function to resolve expression values
   const resolveExpression = (expression: string): string => {
-    if (!nodeId) return expression
-
     try {
+      // First, check if it's a variable expression ($vars.* or $local.*)
+      const varsMatch = expression.match(/^\$vars\.(.+)$/)
+      const localMatch = expression.match(/^\$local\.(.+)$/)
+      
+      if (varsMatch) {
+        const varKey = varsMatch[1]
+        const variable = variables.find(v => v.key === varKey && v.scope === 'GLOBAL')
+        if (variable) {
+          return variable.value
+        }
+        return `[Variable not found: $vars.${varKey}]`
+      }
+      
+      if (localMatch) {
+        const varKey = localMatch[1]
+        const variable = variables.find(v => v.key === varKey && v.scope === 'LOCAL')
+        if (variable) {
+          return variable.value
+        }
+        return `[Variable not found: $local.${varKey}]`
+      }
+
+      // If not a variable, check if it's a json.* expression (from connected nodes)
+      if (!nodeId) return expression
+
       const { workflow } = workflowStore
       if (!workflow) return expression
 
@@ -111,6 +151,38 @@ export function ExpressionPreview({ value, nodeId }: ExpressionPreviewProps) {
     // Find all {{...}} expressions and replace them with actual values
     const resolvedText = value.replace(/\{\{([^}]+)\}\}/g, (_match, expression) => {
       const trimmedExpr = expression.trim()
+      
+      // Check if it's a complex expression (contains operators or function calls)
+      const isComplexExpression = /[+\-*/%()[\]<>=!&|]/.test(trimmedExpr)
+      
+      if (isComplexExpression) {
+        // For complex expressions, replace variables within them first
+        let resolvedExpression = trimmedExpr
+        
+        // Replace $vars.* variables
+        resolvedExpression = resolvedExpression.replace(/\$vars\.(\w+)/g, (_m: string, varKey: string) => {
+          const variable = variables.find(v => v.key === varKey && v.scope === 'GLOBAL')
+          return variable ? JSON.stringify(variable.value) : `"[Variable not found: $vars.${varKey}]"`
+        })
+        
+        // Replace $local.* variables
+        resolvedExpression = resolvedExpression.replace(/\$local\.(\w+)/g, (_m: string, varKey: string) => {
+          const variable = variables.find(v => v.key === varKey && v.scope === 'LOCAL')
+          return variable ? JSON.stringify(variable.value) : `"[Variable not found: $local.${varKey}]"`
+        })
+        
+        // Try to evaluate the expression
+        try {
+          // eslint-disable-next-line no-eval
+          const result = eval(resolvedExpression)
+          return String(result)
+        } catch (error) {
+          // If evaluation fails, return the resolved expression as-is
+          return `[Expression: ${resolvedExpression}]`
+        }
+      }
+      
+      // For simple expressions, use the existing resolveExpression function
       const resolvedValue = resolveExpression(trimmedExpr)
       return resolvedValue
     })

@@ -145,9 +145,9 @@ export const IfNode: NodeDefinition = {
       }
 
       // Get parameters with automatic resolution for this specific item
-      const value1 = this.getNodeParameter("value1", i) as string;
-      const operation = this.getNodeParameter("operation", i) as string;
-      const value2 = this.getNodeParameter("value2", i) as string;
+      const value1 = await this.getNodeParameter("value1", i) as string;
+      const operation = await this.getNodeParameter("operation", i) as string;
+      const value2 = await this.getNodeParameter("value2", i) as string;
 
       const conditionResult = evaluateCondition(value1, operation, value2);
 
