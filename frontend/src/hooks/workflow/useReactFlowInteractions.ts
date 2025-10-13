@@ -84,6 +84,8 @@ export function useReactFlowInteractions() {
     (changes) => {
       onNodesChange(changes);
 
+      console.log("Node changes:", changes);
+
       // Update workflow store with position changes
       changes.forEach((change) => {
         if (change.type === "position" && change.position) {

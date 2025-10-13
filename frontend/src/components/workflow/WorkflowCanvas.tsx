@@ -2,11 +2,13 @@ import { useReactFlowAutoLayout } from '@/hooks/useReactFlowAutoLayout'
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowInteractions } from '@/hooks/workflow'
 import { useReactFlowUIStore } from '@/stores'
+import { useMemo } from 'react'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
 import './reactflow-theme.css'
 
+// Define edge types once outside component to prevent re-creation
 const edgeTypes: EdgeTypes = {
     default: WorkflowEdge,
     smoothstep: WorkflowEdge,
@@ -68,11 +70,64 @@ export function WorkflowCanvas({
     // Determine if interactions should be disabled
     const isDisabled = readOnly || executionMode
     
-    // Change background pattern for disabled/read-only mode
-    const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
-    const backgroundColor = isDisabled ? 'hsl(var(--muted))' : undefined
-
+    // Memoize background variant to prevent unnecessary recalculations
+    const displayBackgroundVariant = useMemo(() => 
+        isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any),
+        [isDisabled, backgroundVariant]
+    )
     
+    const backgroundColor = useMemo(() => 
+        isDisabled ? 'hsl(var(--muted))' : undefined,
+        [isDisabled]
+    )
+
+    // Memoize defaultEdgeOptions to prevent ReactFlow re-initialization
+    const defaultEdgeOptions = useMemo(() => ({
+        type: 'smoothstep' as const,
+        animated: isExecuting,
+        style: edgeStyle,
+    }), [isExecuting, edgeStyle])
+
+    // Memoize MiniMap style to prevent object re-creation
+    const miniMapStyle = useMemo(() => ({
+        backgroundColor: isDarkMode ? 'hsl(var(--card))' : '#fff',
+    }), [isDarkMode])
+
+    // Memoize disabled handlers (undefined) vs enabled handlers
+    const nodesChangeHandler = useMemo(() => 
+        isDisabled ? undefined : handleNodesChange,
+        [isDisabled, handleNodesChange]
+    )
+    
+    const edgesChangeHandler = useMemo(() => 
+        isDisabled ? undefined : handleEdgesChange,
+        [isDisabled, handleEdgesChange]
+    )
+    
+    const connectHandler = useMemo(() => 
+        isDisabled ? undefined : handleConnect,
+        [isDisabled, handleConnect]
+    )
+    
+    const connectStartHandler = useMemo(() => 
+        isDisabled ? undefined : handleConnectStart,
+        [isDisabled, handleConnectStart]
+    )
+    
+    const connectEndHandler = useMemo(() => 
+        isDisabled ? undefined : handleConnectEnd,
+        [isDisabled, handleConnectEnd]
+    )
+    
+    const dropHandler = useMemo(() => 
+        isDisabled ? undefined : handleDrop,
+        [isDisabled, handleDrop]
+    )
+    
+    const dragOverHandler = useMemo(() => 
+        isDisabled ? undefined : handleDragOver,
+        [isDisabled, handleDragOver]
+    )
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
@@ -80,14 +135,14 @@ export function WorkflowCanvas({
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
-                    onNodesChange={isDisabled ? undefined : handleNodesChange}
-                    onEdgesChange={isDisabled ? undefined : handleEdgesChange}
-                    onConnect={isDisabled ? undefined : handleConnect}
-                    onConnectStart={isDisabled ? undefined : handleConnectStart}
-                    onConnectEnd={isDisabled ? undefined : handleConnectEnd}
+                    onNodesChange={nodesChangeHandler}
+                    onEdgesChange={edgesChangeHandler}
+                    onConnect={connectHandler}
+                    onConnectStart={connectStartHandler}
+                    onConnectEnd={connectEndHandler}
                     onInit={onInit}
-                    onDrop={isDisabled ? undefined : handleDrop}
-                    onDragOver={isDisabled ? undefined : handleDragOver}
+                    onDrop={dropHandler}
+                    onDragOver={dragOverHandler}
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     nodeTypes={nodeTypes}
@@ -102,20 +157,14 @@ export function WorkflowCanvas({
                     attributionPosition="bottom-left"
                     edgeUpdaterRadius={isDisabled ? 0 : 10}
                     connectionRadius={isDisabled ? 0 : 20}
-                    defaultEdgeOptions={{
-                        type: 'smoothstep',
-                        animated: isExecuting,
-                        style: edgeStyle,
-                    }}
+                    defaultEdgeOptions={defaultEdgeOptions}
                 >
                     {showControls && <Controls />}
                     {showMinimap && (
                         <MiniMap
                             nodeColor={isDarkMode ? '#334155' : '#e2e8f0'}
                             maskColor={isDarkMode ? 'rgba(28, 37, 51, 0.6)' : 'rgba(0, 0, 0, 0.1)'}
-                            style={{
-                                backgroundColor: isDarkMode ? 'hsl(var(--card))' : '#fff',
-                            }}
+                            style={miniMapStyle}
                         />
                     )}
                     {showBackground && (
