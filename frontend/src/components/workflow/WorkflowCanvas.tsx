@@ -1,6 +1,7 @@
+import { useReactFlowAutoLayout } from '@/hooks/useReactFlowAutoLayout'
+import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowInteractions } from '@/hooks/workflow'
 import { useReactFlowUIStore } from '@/stores'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
@@ -54,64 +55,21 @@ export function WorkflowCanvas({
     // Get panOnDrag and zoomOnScroll settings from store
     const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
     
+    // Use custom hooks for better code organization
+    const { edgeStyle, connectionLineStyle, isDarkMode } = useReactFlowStyles()
+    const containerRef = useReactFlowAutoLayout({
+        reactFlowInstance,
+        nodesCount: nodes.length,
+        enabled: true,
+        delay: 50
+    })
+    
     // Determine if interactions should be disabled
     const isDisabled = readOnly || executionMode
     
     // Change background pattern for disabled/read-only mode
     const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
     const backgroundColor = isDisabled ? 'hsl(var(--muted))' : undefined
-    
-    // Detect dark mode and listen for changes
-    const [isDarkMode, setIsDarkMode] = useState(() => 
-        document.documentElement.classList.contains('dark')
-    )
-    
-    // Add resize observer to handle container dimension changes
-    const containerRef = useRef<HTMLDivElement>(null)
-    
-    useEffect(() => {
-        const observer = new MutationObserver(() => {
-            setIsDarkMode(document.documentElement.classList.contains('dark'))
-        })
-        
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class']
-        })
-        
-        return () => observer.disconnect()
-    }, [])
-    
-    // Add ResizeObserver to handle layout changes
-    useEffect(() => {
-        if (!containerRef.current || !reactFlowInstance) return
-        
-        const resizeObserver = new ResizeObserver(() => {
-          // Delay slightly to ensure DOM has updated
-          setTimeout(() => {
-            if (reactFlowInstance && nodes.length > 0) {
-              reactFlowInstance.fitView({ padding: 0.1, duration: 0 })
-            }
-          }, 50)
-        })
-        
-        resizeObserver.observe(containerRef.current)
-        
-        return () => {
-          resizeObserver.disconnect()
-        }
-    }, [reactFlowInstance, nodes.length])
-    
-    // Edge styles based on theme
-    const edgeStyle = useMemo(() => ({
-        stroke: isDarkMode ? 'hsl(var(--border))' : '#b1b1b7',
-        strokeWidth: 2,
-    }), [isDarkMode])
-    
-    const connectionLineStyle = useMemo(() => ({
-        stroke: isDarkMode ? 'hsl(var(--primary))' : '#5865f2',
-        strokeWidth: 2,
-    }), [isDarkMode])
 
     
 

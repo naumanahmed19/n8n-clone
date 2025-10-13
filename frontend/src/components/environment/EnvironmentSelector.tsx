@@ -6,8 +6,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useEnvironmentSwitcher } from '@/hooks/useEnvironmentSwitcher'
 import { useEnvironmentStore } from '@/stores/environment'
-import { useReactFlowUIStore } from '@/stores'
 import {
   EnvironmentType,
   getEnvironmentIcon,
@@ -47,13 +47,16 @@ export function EnvironmentSelector({
   onCreateEnvironment,
   showCreateOption = true,
 }: EnvironmentSelectorProps) {
-  const { summaries = [], loadSummaries, isLoading, selectedEnvironment: storeSelected, selectEnvironment, error } =
+  const { summaries = [], loadSummaries, isLoading, selectedEnvironment: storeSelected, error } =
     useEnvironmentStore()
 
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [environmentToCreate, setEnvironmentToCreate] = useState<EnvironmentType | null>(null)
 
   const currentEnvironment = selectedEnvironment || storeSelected
+
+  // Use the custom hook for environment switching
+  const { switchToEnvironment, exitEnvironmentView } = useEnvironmentSwitcher(workflowId)
 
   useEffect(() => {
     if (workflowId) {
@@ -62,41 +65,11 @@ export function EnvironmentSelector({
   }, [workflowId, loadSummaries])
 
   const handleEnvironmentSelect = async (environment: EnvironmentType) => {
-    selectEnvironment(environment)
-    onEnvironmentChange?.(environment)
-    
-    // Load the environment workflow when selected
-    if (workflowId) {
-      try {
-        const { loadEnvironmentWorkflow } = useEnvironmentStore.getState()
-        const { workflow: currentWorkflow, setWorkflow } = await import('@/stores/workflow').then(m => ({ 
-          workflow: m.useWorkflowStore.getState().workflow,
-          setWorkflow: m.useWorkflowStore.getState().setWorkflow 
-        }))
-        
-        const envData = await loadEnvironmentWorkflow(workflowId, environment)
-        if (envData && currentWorkflow) {
-          // Merge environment data with original workflow metadata
-          // Only override environment-specific data: nodes, connections, settings, active
-          setWorkflow({
-            ...currentWorkflow,  // Keep original: name, description, category, tags, userId, createdAt, updatedAt, etc.
-            nodes: envData.nodes || [],  // Override with environment nodes
-            connections: envData.connections || [],  // Override with environment connections
-            settings: envData.settings || {},  // Override with environment settings
-            active: envData.active,  // Override with environment active state
-          })
-          
-          // Trigger ReactFlow to recalculate layout after environment switch
-          setTimeout(() => {
-            const { reactFlowInstance } = useReactFlowUIStore.getState()
-            if (reactFlowInstance) {
-              reactFlowInstance.fitView({ padding: 0.1, duration: 200 })
-            }
-          }, 100)
-        }
-      } catch (error) {
-        console.error('Failed to load environment workflow:', error)
-      }
+    try {
+      await switchToEnvironment(environment)
+      onEnvironmentChange?.(environment)
+    } catch (error) {
+      // Error is already logged in the hook
     }
   }
 
@@ -107,32 +80,10 @@ export function EnvironmentSelector({
   }
 
   const handleExitEnvironmentView = async () => {
-    // Clear the selected environment
-    selectEnvironment(null as any)
-    
-    // Reload the main workflow from the server to get the latest data
-    if (workflowId) {
-      try {
-        const { setWorkflow } = await import('@/stores/workflow').then(m => ({ 
-          setWorkflow: m.useWorkflowStore.getState().setWorkflow 
-        }))
-        const { workflowService } = await import('@/services')
-        
-        const mainWorkflow = await workflowService.getWorkflow(workflowId)
-        setWorkflow(mainWorkflow)
-        
-        // Trigger ReactFlow to recalculate layout after exiting environment view
-        setTimeout(() => {
-          const { reactFlowInstance } = useReactFlowUIStore.getState()
-          if (reactFlowInstance) {
-            reactFlowInstance.fitView({ padding: 0.1, duration: 200 })
-          }
-        }, 100)
-      } catch (error) {
-        console.error('Failed to reload main workflow:', error)
-        // Fallback to page reload if API call fails
-        window.location.reload()
-      }
+    try {
+      await exitEnvironmentView()
+    } catch (error) {
+      // Error is already logged in the hook
     }
   }
 
