@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
 import { MessageCircle, Send, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NodeProps } from 'reactflow'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
@@ -32,21 +32,21 @@ interface ChatInterfaceNodeData {
   color?: string
 }
 
-export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfaceNodeData>) {
+export const ChatInterfaceNode = memo(function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfaceNodeData>) {
   const { executionState, updateNode, workflow, lastExecutionResult } = useWorkflowStore()
   const { executeWorkflow } = useExecutionControls()
   // For chat nodes, only set read-only during actual execution, not just when execution ID exists
   const isReadOnly = false // Chat should always be interactive
   const isExecuting = executionState.status === 'running'
   
-  // Ensure we have valid parameters object
-  const parameters = data.parameters || {}
+  // Memoize parameters object to prevent recreation on every render
+  const parameters = useMemo(() => data.parameters || {}, [data.parameters])
   
   // Track expanded state (stored in node parameters to persist)
   const [isExpanded, setIsExpanded] = useState(parameters.isExpanded ?? false)
   
   // Get parameters from node configuration
-  const placeholder = parameters.placeholder || 'Type a message...'
+  const placeholder = useMemo(() => parameters.placeholder || 'Type a message...', [parameters.placeholder])
   
   // State for input and UI
   const [inputValue, setInputValue] = useState('')
@@ -56,8 +56,11 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   const inputRef = useRef<HTMLInputElement>(null)
   const processingRef = useRef(false) // Prevent infinite loops
 
-  // Get stored messages from node parameters
-  const storedMessages = (parameters.conversationHistory as Message[]) || []
+  // Memoize stored messages to prevent unnecessary recalculations
+  const storedMessages = useMemo(() => 
+    (parameters.conversationHistory as Message[]) || [],
+    [parameters.conversationHistory]
+  )
 
   // Get connected node's output (e.g., OpenAI response)
   const getConnectedNodeResponse = useCallback(() => {
@@ -202,8 +205,8 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastExecutionResult, id])
 
-  // Use stored conversation history for display
-  const displayMessages: Message[] = storedMessages
+  // Memoize display messages array reference
+  const displayMessages: Message[] = useMemo(() => storedMessages, [storedMessages])
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -310,13 +313,16 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     })
   }, [id, parameters, updateNode])
 
-  // Prepare header info text
-  const headerInfo = displayMessages.length > 0 
-    ? `${displayMessages.length} message${displayMessages.length !== 1 ? 's' : ''}`
-    : undefined
+  // Memoize header info to prevent recalculation
+  const headerInfo = useMemo(() => 
+    displayMessages.length > 0 
+      ? `${displayMessages.length} message${displayMessages.length !== 1 ? 's' : ''}`
+      : undefined,
+    [displayMessages.length]
+  )
 
-  // Expanded content (chat interface)
-  const expandedContent = (
+  // Memoize expanded content JSX to prevent recreation on every render
+  const expandedContent = useMemo(() => (
     <>
       {/* Chat Messages Area */}
       <div
@@ -420,7 +426,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         </div>
       </div>
     </>
-  )
+  ), [displayMessages, isTyping, isExecuting, placeholder, inputValue, handleKeyPress, handleSendMessage, handleClearChat])
 
   return (
     <BaseNodeWrapper
@@ -442,6 +448,4 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       outputHandleColor="!bg-green-500"
     />
   )
-}
-
-ChatInterfaceNode.displayName = 'ChatInterfaceNode'
+})
