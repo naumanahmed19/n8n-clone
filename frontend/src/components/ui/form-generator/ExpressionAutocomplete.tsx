@@ -1,12 +1,13 @@
 import { cn } from '@/lib/utils'
 import { Code2, Database, Variable } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export interface AutocompleteItem {
   type: 'variable' | 'function' | 'property'
   label: string
   value: string
   description?: string
+  example?: string // Example usage
   icon?: React.ReactNode
   category?: string // Optional category for grouping
 }
@@ -29,6 +30,8 @@ export function ExpressionAutocomplete({
   selectedIndex,
 }: ExpressionAutocompleteProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [hoveredItem, setHoveredItem] = useState<AutocompleteItem | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
 
   useEffect(() => {
     if (!visible) return
@@ -140,26 +143,58 @@ export function ExpressionAutocomplete({
             {/* Category Items */}
             {groupedItems[category].map((item) => {
               const currentIndex = flatIndex++
+              const isHovered = hoveredItem === item
+              
               return (
-                <button
-                  key={`${item.type}-${item.value}-${currentIndex}`}
-                  type="button"
-                  data-selected={currentIndex === selectedIndex}
-                  onClick={() => onSelect(item)}
-                  className={cn(
-                    'w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-muted transition-colors',
-                    currentIndex === selectedIndex && 'bg-muted'
-                  )}
-                >
-                  <div className="mt-0.5">{item.icon || getIcon(item.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{item.label}</div>
-                    {item.description && (
-                      <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                <div key={`${item.type}-${item.value}-${currentIndex}`} className="relative">
+                  <button
+                    type="button"
+                    data-selected={currentIndex === selectedIndex}
+                    onClick={() => onSelect(item)}
+                    onMouseEnter={(e) => {
+                      setHoveredItem(item)
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setTooltipPosition({ top: rect.top, left: rect.right + 8 })
+                    }}
+                    onMouseLeave={() => setHoveredItem(null)}
+                    className={cn(
+                      'w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-muted transition-colors',
+                      currentIndex === selectedIndex && 'bg-muted'
                     )}
-                    <code className="text-xs text-blue-600 dark:text-blue-400">{item.value}</code>
-                  </div>
-                </button>
+                  >
+                    <div className="mt-0.5">{item.icon || getIcon(item.type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{item.label}</div>
+                      {item.description && (
+                        <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                      )}
+                      <code className="text-xs text-blue-600 dark:text-blue-400">{item.value}</code>
+                    </div>
+                  </button>
+                  
+                  {/* Enhanced tooltip on hover */}
+                  {isHovered && item.example && (
+                    <div
+                      className="fixed z-[60] bg-popover border rounded-md shadow-lg p-3 max-w-xs"
+                      style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
+                    >
+                      <div className="space-y-2">
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase">Example</div>
+                          <code className="text-xs text-foreground block mt-1 p-2 bg-muted rounded">
+                            {item.example}
+                          </code>
+                        </div>
+                        {item.description && (
+                          <div>
+                            <div className="text-xs font-semibold text-muted-foreground uppercase">Description</div>
+                            <p className="text-xs text-foreground mt-1">{item.description}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -177,6 +212,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'JSON Data',
     value: '{{json}}',
     description: 'Access all input data',
+    example: '{{json}} → { "name": "John", "age": 30 }',
     category: 'JSON Data',
   },
   {
@@ -184,6 +220,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Field from JSON',
     value: '{{json.fieldName}}',
     description: 'Access a specific field',
+    example: '{{json.email}} → "john@example.com"',
     category: 'JSON Data',
   },
   {
@@ -191,6 +228,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Nested Field',
     value: '{{json.parent.child}}',
     description: 'Access nested properties',
+    example: '{{json.user.address.city}} → "New York"',
     category: 'JSON Data',
   },
   {
@@ -198,6 +236,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Array Item',
     value: '{{json.items[0]}}',
     description: 'Access array elements',
+    example: '{{json.items[0].name}} → "First Item"',
     category: 'JSON Data',
   },
   
@@ -207,6 +246,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Item Index',
     value: '{{$item.index}}',
     description: 'Current item index',
+    example: '{{$item.index}} → 0, 1, 2...',
     category: 'Item Data',
   },
   {
@@ -214,6 +254,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Item Binary',
     value: '{{$item.binary}}',
     description: 'Binary data of current item',
+    example: '{{$item.binary.data}}',
     category: 'Item Data',
   },
   
@@ -264,6 +305,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Current Date',
     value: '{{$now}}',
     description: 'Current date and time',
+    example: '{{$now}} → "2025-10-13T12:30:45.000Z"',
     category: 'Date & Time',
   },
   {
@@ -271,6 +313,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Today',
     value: '{{$today}}',
     description: "Today's date",
+    example: '{{$today}} → "2025-10-13"',
     category: 'Date & Time',
   },
   
@@ -280,6 +323,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'Random Number',
     value: '{{$randomInt(min, max)}}',
     description: 'Random integer',
+    example: '{{$randomInt(1, 100)}} → 42',
     category: 'Utility Functions',
   },
   {
@@ -287,6 +331,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
     label: 'UUID',
     value: '{{$uuid()}}',
     description: 'Generate a UUID',
+    example: '{{$uuid()}} → "a1b2c3d4-..."',
     category: 'Utility Functions',
   },
   

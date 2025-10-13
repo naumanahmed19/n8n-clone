@@ -3,7 +3,9 @@ import { cn } from '@/lib/utils'
 import { variableService } from '@/services'
 import { useWorkflowStore } from '@/stores'
 import type { Variable } from '@/types/variable'
-import { Code2, Type } from 'lucide-react'
+import { validateExpression, type ValidationResult } from '@/utils/expressionValidator'
+import { fuzzyFilter } from '@/utils/fuzzySearch'
+import { AlertCircle, Code2, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AutocompleteItem } from './ExpressionAutocomplete'
 import { ExpressionAutocomplete, defaultAutocompleteItems } from './ExpressionAutocomplete'
@@ -41,6 +43,7 @@ export function ExpressionInput({
   const [cursorPosition, setCursorPosition] = useState(0)
   const [autoHeight, setAutoHeight] = useState<number | undefined>(undefined)
   const [variables, setVariables] = useState<Variable[]>([])
+  const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] })
   
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null)
 
@@ -59,6 +62,16 @@ export function ExpressionInput({
     }
     fetchVariables()
   }, [])
+
+  // Validate expression syntax when value changes in expression mode
+  useEffect(() => {
+    if (mode === 'expression' && value) {
+      const result = validateExpression(value)
+      setValidation(result)
+    } else {
+      setValidation({ isValid: true, errors: [], warnings: [] })
+    }
+  }, [value, mode])
 
   // Extract available fields from input data with node information
   const extractFieldsFromData = (nodeId: string | undefined): AutocompleteItem[] => {
@@ -293,11 +306,11 @@ export function ExpressionInput({
     }
     
     if (shouldShowAutocomplete) {
-      // Filter items based on search text - use dynamic items
-      const filtered = dynamicAutocompleteItems.filter(item =>
-        item.label.toLowerCase().includes(searchText) ||
-        item.value.toLowerCase().includes(searchText) ||
-        (item.description && item.description.toLowerCase().includes(searchText))
+      // Use fuzzy search for better autocomplete matching
+      const filtered = fuzzyFilter(
+        dynamicAutocompleteItems,
+        searchText,
+        (item) => [item.label, item.value, item.description || '']
       )
       
       setFilteredItems(filtered)
@@ -329,6 +342,18 @@ export function ExpressionInput({
 
   // Handle keyboard navigation in autocomplete
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Ctrl+Space or Cmd+Space to manually trigger autocomplete
+    if (e.key === ' ' && (e.ctrlKey || e.metaKey) && mode === 'expression') {
+      e.preventDefault()
+      
+      // Get all items without filtering
+      setFilteredItems(dynamicAutocompleteItems)
+      setSelectedItemIndex(0)
+      updateAutocompletePosition()
+      setShowAutocomplete(true)
+      return
+    }
+    
     // Only handle autocomplete keyboard events when autocomplete is visible
     if (showAutocomplete) {
       switch (e.key) {
@@ -468,11 +493,11 @@ export function ExpressionInput({
         if (lastOpenBraces > lastCloseBraces) {
           const searchText = textBeforeCursor.substring(lastOpenBraces + 2).toLowerCase()
           
-          // Filter items based on search text
-          const filtered = dynamicAutocompleteItems.filter(item =>
-            item.label.toLowerCase().includes(searchText) ||
-            item.value.toLowerCase().includes(searchText) ||
-            (item.description && item.description.toLowerCase().includes(searchText))
+          // Use fuzzy search for filtering
+          const filtered = fuzzyFilter(
+            dynamicAutocompleteItems,
+            searchText,
+            (item) => [item.label, item.value, item.description || '']
           )
           
           setFilteredItems(filtered)
@@ -576,6 +601,30 @@ export function ExpressionInput({
           <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;&#125;&#125;</code> for expressions.
           Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd> or type{' '}
           <code className="px-1 py-0.5 bg-muted rounded">&#123;&#123;</code> for suggestions
+        </div>
+      )}
+
+      {/* Validation Errors */}
+      {mode === 'expression' && !validation.isValid && validation.errors.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {validation.errors.map((error, index) => (
+            <div key={index} className="flex items-start gap-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <span>{error.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Validation Warnings */}
+      {mode === 'expression' && validation.warnings.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {validation.warnings.map((warning, index) => (
+            <div key={index} className="flex items-start gap-2 text-xs text-yellow-600 dark:text-yellow-500">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+              <span>{warning.message}</span>
+            </div>
+          ))}
         </div>
       )}
 
