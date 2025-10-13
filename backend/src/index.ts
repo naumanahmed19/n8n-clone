@@ -1,5 +1,6 @@
 // Main entry point for the n8n clone backend
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -15,10 +16,13 @@ import executionHistoryRoutes from "./routes/execution-history";
 import executionRecoveryRoutes from "./routes/execution-recovery";
 import { executionRoutes } from "./routes/executions";
 import flowExecutionRoutes from "./routes/flow-execution";
+import googleRoutes from "./routes/google";
 import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
+import oauthRoutes from "./routes/oauth";
 import triggerRoutes from "./routes/triggers";
 import variableRoutes from "./routes/variables";
+import webhookRoutes from "./routes/webhook";
 import { workflowRoutes } from "./routes/workflows";
 
 // Import middleware
@@ -82,6 +86,7 @@ app.use(
   })
 );
 app.use(compression());
+app.use(cookieParser()); // Parse cookies
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -118,12 +123,15 @@ app.get("/", (req, res) => {
       credentials: "/api/credentials",
       variables: "/api/variables",
       triggers: "/api/triggers",
-      webhooks: "/api/triggers/webhooks",
+      webhooks: "/webhook/{webhookId}",
+      webhookTest: "/webhook/{webhookId}/test",
       customNodes: "/api/custom-nodes",
       flowExecution: "/api/flow-execution",
       executionControl: "/api/execution-control",
       executionHistory: "/api/execution-history",
       executionRecovery: "/api/execution-recovery",
+      oauth: "/api/oauth",
+      google: "/api/google",
       health: "/health",
     },
   });
@@ -143,6 +151,11 @@ app.use("/api/flow-execution", flowExecutionRoutes);
 app.use("/api/execution-control", executionControlRoutes);
 app.use("/api/execution-history", executionHistoryRoutes);
 app.use("/api/execution-recovery", executionRecoveryRoutes);
+app.use("/api/oauth", oauthRoutes);
+app.use("/api/google", googleRoutes);
+
+// Webhook routes (public endpoints without /api prefix for easier external integration)
+app.use("/webhook", webhookRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -164,8 +177,9 @@ httpServer.listen(PORT, async () => {
   console.log(`   - Credentials: http://localhost:${PORT}/api/credentials`);
   console.log(`   - Variables: http://localhost:${PORT}/api/variables`);
   console.log(`   - Triggers: http://localhost:${PORT}/api/triggers`);
-  console.log(`   - Webhooks: http://localhost:${PORT}/api/triggers/webhooks`);
   console.log(`   - Custom Nodes: http://localhost:${PORT}/api/custom-nodes`);
+  console.log(`📨 Webhook endpoint (public):`);
+  console.log(`   - http://localhost:${PORT}/webhook/{webhookId}`);
 
   // Initialize node systems after server starts
   await initializeNodeSystems();

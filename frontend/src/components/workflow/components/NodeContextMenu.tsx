@@ -1,22 +1,28 @@
 import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
 } from '@/components/ui/context-menu'
-import { Copy, Play, Settings, Trash2 } from 'lucide-react'
+import { Copy, Lock, Play, Settings, Trash2, Unlock } from 'lucide-react'
 
 interface NodeContextMenuProps {
   onOpenProperties: () => void
   onExecute: () => void
   onDuplicate: () => void
   onDelete: () => void
+  onToggleLock: () => void
+  isLocked: boolean
+  readOnly?: boolean
 }
 
 export function NodeContextMenu({
   onOpenProperties,
   onExecute,
   onDuplicate,
-  onDelete
+  onDelete,
+  onToggleLock,
+  isLocked,
+  readOnly = false
 }: NodeContextMenuProps) {
   return (
     <ContextMenuContent className="w-48">
@@ -30,6 +36,7 @@ export function NodeContextMenu({
 
       <ContextMenuItem
         onClick={onExecute}
+        disabled={readOnly}
         className="cursor-pointer"
       >
         <Play className="mr-2 h-4 w-4" />
@@ -39,7 +46,28 @@ export function NodeContextMenu({
       <ContextMenuSeparator />
 
       <ContextMenuItem
+        onClick={onToggleLock}
+        disabled={readOnly}
+        className="cursor-pointer"
+      >
+        {isLocked ? (
+          <>
+            <Unlock className="mr-2 h-4 w-4" />
+            Unlock Node
+          </>
+        ) : (
+          <>
+            <Lock className="mr-2 h-4 w-4" />
+            Lock Node
+          </>
+        )}
+      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
+      <ContextMenuItem
         onClick={onDuplicate}
+        disabled={readOnly}
         className="cursor-pointer"
       >
         <Copy className="mr-2 h-4 w-4" />
@@ -50,6 +78,7 @@ export function NodeContextMenu({
       
       <ContextMenuItem
         onClick={onDelete}
+        disabled={readOnly}
         className="cursor-pointer text-red-600 focus:text-red-600"
       >
         <Trash2 className="mr-2 h-4 w-4" />

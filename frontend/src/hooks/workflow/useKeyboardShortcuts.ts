@@ -7,6 +7,7 @@ interface UseKeyboardShortcutsProps {
   onRedo: () => void;
   onDelete: () => void;
   onAddNode?: () => void;
+  disabled?: boolean;
 }
 
 /**
@@ -19,12 +20,16 @@ export function useKeyboardShortcuts({
   onRedo,
   onDelete,
   onAddNode,
+  disabled = false,
 }: UseKeyboardShortcutsProps) {
   const { selectedNodeId, removeNode, closeNodeProperties } =
     useWorkflowStore();
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // Don't process shortcuts if disabled (e.g., in read-only mode)
+      if (disabled) return;
+
       if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
           case "z":
@@ -55,16 +60,17 @@ export function useKeyboardShortcuts({
         onDelete();
       }
     },
-    [onSave, onUndo, onRedo, onDelete, onAddNode, selectedNodeId]
+    [onSave, onUndo, onRedo, onDelete, onAddNode, selectedNodeId, disabled]
   );
 
   // Delete action handler
   const handleDelete = useCallback(() => {
+    if (disabled) return; // Don't delete in read-only mode
     if (selectedNodeId) {
       removeNode(selectedNodeId);
       closeNodeProperties();
     }
-  }, [selectedNodeId, removeNode, closeNodeProperties]);
+  }, [selectedNodeId, removeNode, closeNodeProperties, disabled]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);

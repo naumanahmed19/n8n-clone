@@ -19,6 +19,7 @@ import {
     FileText,
     Globe,
     MoreHorizontal,
+    RefreshCw,
     Trash2,
     Variable as VariableIcon,
     Workflow,
@@ -38,6 +39,7 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
   
   const [variables, setVariables] = useState<Variable[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [localSearchTerm, setLocalSearchTerm] = useState("")
   const [scopeFilter, setScopeFilter] = useState<'all' | 'global' | 'local'>('all')
@@ -126,22 +128,31 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
     }
   }
 
-  useEffect(() => {
-    const fetchVariables = async () => {
-      try {
+  const fetchVariables = async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) {
+        setIsRefreshing(true)
+      } else {
         setIsLoading(true)
-        setError(null)
-        
-        const fetchedVariables = await variableService.getVariables(localSearchTerm)
-        setVariables(fetchedVariables)
-      } catch (err) {
-        console.error('Failed to fetch variables:', err)
-        setError('Failed to load variables')
-      } finally {
-        setIsLoading(false)
       }
+      setError(null)
+      
+      const fetchedVariables = await variableService.getVariables(localSearchTerm)
+      setVariables(fetchedVariables)
+    } catch (err) {
+      console.error('Failed to fetch variables:', err)
+      setError('Failed to load variables')
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
     }
+  }
 
+  const handleRefresh = () => {
+    fetchVariables(true)
+  }
+
+  useEffect(() => {
     fetchVariables()
   }, [localSearchTerm])
 
@@ -175,14 +186,16 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
           <div className="text-sm text-muted-foreground">
             {filteredVariables.length} variable{filteredVariables.length !== 1 ? 's' : ''}
           </div>
-          <Button 
-            size="sm" 
-            onClick={handleCreateVariable}
-            className="h-7"
-          >
-            <VariableIcon className="h-3 w-3 mr-1" />
-            New Variable
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button 
+              size="sm" 
+              onClick={handleCreateVariable}
+              className="h-7"
+            >
+              <VariableIcon className="h-3 w-3 mr-1" />
+              New Variable
+            </Button>
+          </div>
         </div>
         <div className="flex gap-2">
           <Select value={scopeFilter} onValueChange={(value: 'all' | 'global' | 'local') => setScopeFilter(value)}>
@@ -196,14 +209,25 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
             </SelectContent>
           </Select>
         </div>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search variables..."
-            value={localSearchTerm}
-            onChange={(e) => setLocalSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border rounded-md bg-background"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search variables..."
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
+              className="w-full pl-3 pr-3 py-1.5 text-sm border rounded-md bg-background h-8"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
     )
@@ -212,7 +236,7 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, filteredVariables.length, localSearchTerm, scopeFilter, setScopeFilter, handleCreateVariable])
+  }, [setHeaderSlot, filteredVariables.length, localSearchTerm, scopeFilter, setScopeFilter, handleCreateVariable, isRefreshing])
 
   const handleVariableAction = (action: string, variableId: string, event: React.MouseEvent) => {
     event.stopPropagation()

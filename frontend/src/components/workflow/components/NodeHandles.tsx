@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import { Handle, Position } from 'reactflow'
+import { calculateHandlePosition } from '../utils/handlePositioning'
 
 interface NodeHandlesProps {
   inputs?: string[]
@@ -10,6 +11,7 @@ interface NodeHandlesProps {
   onOutputMouseEnter: (output: string) => void
   onOutputMouseLeave: () => void
   onOutputClick: (event: React.MouseEvent<HTMLDivElement>, output: string) => void
+  readOnly?: boolean
 }
 
 export function NodeHandles({
@@ -20,7 +22,8 @@ export function NodeHandles({
   hoveredOutput,
   onOutputMouseEnter,
   onOutputMouseLeave,
-  onOutputClick
+  onOutputClick,
+  readOnly = false
 }: NodeHandlesProps) {
   return (
     <>
@@ -28,11 +31,7 @@ export function NodeHandles({
       {inputs && inputs.length > 0 && (
         <>
           {inputs.map((input, index) => {
-            const totalInputs = inputs.length
-            const isSingleInput = totalInputs === 1
-            const top = isSingleInput 
-              ? '50%' 
-              : `${((index + 1) / (totalInputs + 1)) * 100}%`
+            const top = calculateHandlePosition(index, inputs.length)
             
             return (
               <Handle
@@ -46,8 +45,8 @@ export function NodeHandles({
                   left: '-6px'
                 }}
                 className={clsx(
-                  "w-3 h-3 border-2 border-white",
-                  disabled ? "!bg-gray-300" : "!bg-gray-400"
+                  "w-3 h-3 border-2 border-white dark:border-background",
+                  disabled ? "!bg-muted" : "!bg-muted-foreground"
                 )}
               />
             )
@@ -59,12 +58,7 @@ export function NodeHandles({
       {outputs && outputs.length > 0 && (
         <>
           {outputs.map((output, index) => {
-            const totalOutputs = outputs.length
-            const isSingleOutput = totalOutputs === 1
-            const top = isSingleOutput 
-              ? '50%' 
-              : `${((index + 1) / (totalOutputs + 1)) * 100}%`
-            
+            const top = calculateHandlePosition(index, outputs.length)
             const isHovered = hoveredOutput === output
             
             return (
@@ -75,6 +69,7 @@ export function NodeHandles({
                 isHovered={isHovered}
                 disabled={disabled}
                 isTrigger={isTrigger}
+                readOnly={readOnly}
                 onMouseEnter={() => onOutputMouseEnter(output)}
                 onMouseLeave={onOutputMouseLeave}
                 onClick={(e) => onOutputClick(e, output)}
@@ -93,6 +88,7 @@ interface OutputHandleProps {
   isHovered: boolean
   disabled: boolean
   isTrigger: boolean
+  readOnly: boolean
   onMouseEnter: () => void
   onMouseLeave: () => void
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void
@@ -104,6 +100,7 @@ function OutputHandle({
   isHovered,
   disabled,
   isTrigger,
+  readOnly,
   onMouseEnter,
   onMouseLeave,
   onClick
@@ -131,15 +128,15 @@ function OutputHandle({
           transform: 'none',
         }}
         className={clsx(
-          "w-3 h-3 border-2 border-white cursor-pointer transition-all duration-200",
+          "w-3 h-3 border-2 border-white dark:border-background cursor-pointer transition-all duration-200",
           isTrigger ? "rounded-full" : "",
-          disabled ? "!bg-gray-300" : "!bg-gray-400 hover:!bg-primary hover:scale-125"
+          disabled ? "!bg-muted" : "!bg-muted-foreground hover:!bg-primary hover:scale-125"
         )}
         onClick={onClick}
       />
       
       {/* Plus icon on hover */}
-      {isHovered && !disabled && (
+      {isHovered && !disabled && !readOnly && (
         <div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           style={{ zIndex: 10 }}

@@ -1,11 +1,14 @@
+import { useTheme } from "@/contexts"
 import { Toaster as Sonner } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { effectiveTheme } = useTheme()
+  
   return (
     <Sonner
-      theme="light" // You can change this to "dark" or "system" based on your app's theme
+      theme={effectiveTheme}
       className="toaster group"
       toastOptions={{
         classNames: {

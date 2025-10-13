@@ -260,19 +260,6 @@ class WorkflowService {
     return response.data;
   }
 
-  async getWorkspaceAnalytics(): Promise<{
-    totalWorkflows: number;
-    activeWorkflows: number;
-    totalExecutions: number;
-    popularWorkflows: Workflow[];
-    recentActivity: any[];
-  }> {
-    const response = await api.get<ApiResponse<any>>(
-      "/workflows/workspace/analytics"
-    );
-    return response.data;
-  }
-
   // Tags and categories
   async getAvailableTags(): Promise<string[]> {
     const response = await api.get<ApiResponse<string[]>>("/workflows/tags");
@@ -312,6 +299,25 @@ class WorkflowService {
       { tags }
     );
     return response.data;
+  }
+
+  // WorkflowTrigger node specific methods
+  async getWorkflowsForTrigger(): Promise<
+    ApiResponse<import("@/types/workflow").WorkflowOption[]>
+  > {
+    const response = await api.get<import("@/types/workflow").WorkflowOption[]>(
+      "/workflows/for-trigger"
+    );
+    return response;
+  }
+
+  async getWorkflowTriggers(
+    workflowId: string
+  ): Promise<ApiResponse<import("@/types/workflow").TriggerOption[]>> {
+    const response = await api.get<import("@/types/workflow").TriggerOption[]>(
+      `/workflows/${workflowId}/triggers`
+    );
+    return response;
   }
 }
 

@@ -156,9 +156,11 @@ export class ExecutionService {
       const workflowNodes = parsedWorkflow.nodes;
 
       // Find trigger nodes or determine starting point
+      // Include chat nodes as they can trigger workflows
       const triggerNodes = workflowNodes.filter(
         (node: any) =>
-          node.type.includes("trigger") || node.type === "manual-trigger"
+          node.type.includes("trigger") ||
+          ["manual-trigger", "workflow-called", "chat"].includes(node.type)
       );
 
       let flowResult: FlowExecutionResult;
@@ -173,13 +175,20 @@ export class ExecutionService {
             (node: any) => node.id === triggerNodeId
           );
           if (!targetTriggerNode) {
-            return {
-              success: false,
-              error: {
-                message: `Specified trigger node ${triggerNodeId} not found in workflow`,
-                timestamp: new Date(),
-              },
-            };
+            // If the specified node is not in triggerNodes list, try to find it in all nodes
+            // This handles cases where a node might be used as a trigger even if it's not a typical trigger type
+            targetTriggerNode = workflowNodes.find(
+              (node: any) => node.id === triggerNodeId
+            );
+            if (!targetTriggerNode) {
+              return {
+                success: false,
+                error: {
+                  message: `Specified trigger node ${triggerNodeId} not found in workflow`,
+                  timestamp: new Date(),
+                },
+              };
+            }
           }
         } else {
           // Use first trigger node as fallback
@@ -238,7 +247,15 @@ export class ExecutionService {
         flowResult,
         workflowId,
         userId,
-        triggerData
+        triggerData,
+        // Pass workflow snapshot
+        parsedWorkflow
+          ? {
+              nodes: parsedWorkflow.nodes,
+              connections: parsedWorkflow.connections,
+              settings: parsedWorkflow.settings,
+            }
+          : undefined
       );
 
       // Collect error information from failed nodes
@@ -364,7 +381,15 @@ export class ExecutionService {
         flowResult,
         workflowId,
         userId,
-        inputData
+        inputData,
+        // Pass workflow snapshot
+        parsedWorkflow
+          ? {
+              nodes: parsedWorkflow.nodes,
+              connections: parsedWorkflow.connections,
+              settings: parsedWorkflow.settings,
+            }
+          : undefined
       );
 
       // Collect error information from failed nodes
@@ -980,32 +1005,37 @@ export class ExecutionService {
     this.flowExecutionEngine.on("flowExecutionCompleted", (flowResult) => {
       logger.debug("Flow execution completed:", flowResult);
 
-      // Broadcast flow completion event
+      // Broadcast flow completion event to BOTH execution room and workflow room
       if (global.socketService) {
-        global.socketService.broadcastExecutionEvent(flowResult.executionId, {
-          executionId: flowResult.executionId,
-          type: "completed",
-          timestamp: new Date(),
-          data: {
-            status: flowResult.status,
-            executedNodes: flowResult.executedNodes,
-            failedNodes: flowResult.failedNodes,
-            duration: flowResult.totalDuration,
+        global.socketService.broadcastExecutionEvent(
+          flowResult.executionId,
+          {
+            executionId: flowResult.executionId,
+            type: "completed",
+            timestamp: new Date(),
+            data: {
+              status: flowResult.status,
+              executedNodes: flowResult.executedNodes,
+              failedNodes: flowResult.failedNodes,
+              duration: flowResult.totalDuration,
+            },
           },
-        });
+          flowResult.workflowId // Pass workflowId to broadcast to workflow room
+        );
       }
     });
 
-    this.flowExecutionEngine.on("nodeExecuted", (nodeEventData) => {
+    this.flowExecutionEngine.on("nodeExecuted", (nodeEventData: any) => {
       logger.info("Flow node executed event received:", nodeEventData);
       console.log("=== NODE EXECUTED EVENT ===", {
         executionId: nodeEventData.executionId,
+        workflowId: nodeEventData.workflowId,
         nodeId: nodeEventData.nodeId,
         status: nodeEventData.status,
         error: nodeEventData.result?.error,
       });
 
-      // Broadcast node execution updates for flow
+      // Broadcast node execution updates for flow to BOTH execution room and workflow room
       if (global.socketService) {
         // Determine if node succeeded or failed - fix the logic here
         const eventType =
@@ -1016,6 +1046,7 @@ export class ExecutionService {
 
         logger.info("Broadcasting node execution event via socket", {
           executionId: nodeEventData.executionId,
+          workflowId: nodeEventData.workflowId,
           nodeId: nodeEventData.nodeId,
           eventType,
           status: nodeEventData.status,
@@ -1039,7 +1070,8 @@ export class ExecutionService {
             data: nodeEventData.result,
             error: nodeEventData.result?.error,
             timestamp: new Date(),
-          }
+          },
+          nodeEventData.workflowId // Pass workflowId to broadcast to workflow room
         );
       } else {
         logger.warn(
@@ -1267,7 +1299,11 @@ export class ExecutionService {
       }
 
       // Handle execution based on mode
-      const triggerNodeTypes = ["manual-trigger", "webhook-trigger"];
+      const triggerNodeTypes = [
+        "manual-trigger",
+        "webhook-trigger",
+        "workflow-called",
+      ];
       const isTriggerNode = triggerNodeTypes.includes(node.type);
 
       if (mode === "workflow" && !isTriggerNode) {
@@ -1442,13 +1478,63 @@ export class ExecutionService {
             mode: "single",
           });
 
+          // Build credentials mapping: need to map credential types to IDs
+          // node.credentials is an array of credential IDs like ["cred_123"]
+          // We need to figure out which type each credential is
+          let credentialsMapping: Record<string, string> | undefined;
+
+          if (node.credentials && node.credentials.length > 0) {
+            credentialsMapping = {};
+
+            // Get all node types and find the one we need
+            const allNodeTypes = await this.nodeService.getNodeTypes();
+            const nodeTypeInfo = allNodeTypes.find(
+              (nt) => nt.type === node.type
+            );
+
+            logger.info(`Building credentials mapping - Step 1`, {
+              nodeId,
+              nodeType: node.type,
+              rawCredentials: node.credentials,
+              foundNodeType: !!nodeTypeInfo,
+              nodeTypeCredentials: nodeTypeInfo?.credentials,
+            });
+
+            if (nodeTypeInfo && nodeTypeInfo.credentials) {
+              // For each credential definition in the node type
+              for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
+                const credDef = nodeTypeInfo.credentials[i];
+                // Map the credential type to the credential ID from the node
+                if (node.credentials[i]) {
+                  credentialsMapping[credDef.name] = node.credentials[i];
+                  logger.info(`Mapped credential`, {
+                    index: i,
+                    credentialType: credDef.name,
+                    credentialId: node.credentials[i],
+                  });
+                }
+              }
+            }
+
+            logger.info(
+              `Credentials mapping for single node execution - Final`,
+              {
+                nodeId,
+                nodeType: node.type,
+                rawCredentials: node.credentials,
+                credentialsMapping,
+              }
+            );
+          }
+
           // Execute the actual node
           nodeResult = await this.nodeService.executeNode(
             node.type,
             nodeParameters,
             nodeInputData,
-            node.credentials ? {} : undefined, // TODO: Load actual credentials
-            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            credentialsMapping,
+            `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId // Pass the actual userId so credentials can be looked up
           );
 
           const endTime = Date.now();
@@ -1474,6 +1560,18 @@ export class ExecutionService {
               startedAt: new Date(startTime),
               finishedAt: new Date(endTime),
               triggerData: nodeInputData || undefined,
+              // Save workflow snapshot for single node execution too
+              workflowSnapshot: workflowData
+                ? {
+                    nodes: workflowData.nodes,
+                    connections: workflowData.connections || [],
+                    settings: workflowData.settings || {},
+                  }
+                : {
+                    nodes: workflowNodes,
+                    connections: [], // We don't have connections in this context
+                    settings: {},
+                  },
               error: nodeResult.success
                 ? undefined
                 : {
@@ -1501,7 +1599,9 @@ export class ExecutionService {
               startedAt: new Date(startTime),
               finishedAt: new Date(endTime),
               inputData: nodeInputData || {},
-              outputData: nodeResult.data || {},
+              outputData: nodeResult.data
+                ? JSON.parse(JSON.stringify(nodeResult.data))
+                : {},
               error: nodeResult.success
                 ? undefined
                 : nodeResult.error
@@ -1646,7 +1746,8 @@ export class ExecutionService {
     flowResult: FlowExecutionResult,
     workflowId: string,
     userId: string,
-    triggerData?: any
+    triggerData?: any,
+    workflowSnapshot?: { nodes: any[]; connections: any[]; settings?: any }
   ): Promise<any> {
     try {
       // Map flow status to execution status
@@ -1668,7 +1769,7 @@ export class ExecutionService {
           executionStatus = ExecutionStatus.ERROR;
       }
 
-      // Create main execution record
+      // Create main execution record with workflow snapshot
       const execution = await this.prisma.execution.create({
         data: {
           id: flowResult.executionId,
@@ -1677,6 +1778,7 @@ export class ExecutionService {
           startedAt: new Date(Date.now() - flowResult.totalDuration),
           finishedAt: new Date(),
           triggerData: triggerData || undefined,
+          workflowSnapshot: workflowSnapshot || undefined, // Store workflow state at execution time
           error:
             flowResult.status === "failed" || flowResult.status === "partial"
               ? {
@@ -1705,6 +1807,22 @@ export class ExecutionService {
             nodeStatus = "ERROR";
         }
 
+        // Serialize error properly for database storage
+        let errorData = undefined;
+        if (nodeResult.error) {
+          if (nodeResult.error instanceof Error) {
+            errorData = {
+              message: nodeResult.error.message,
+              name: nodeResult.error.name,
+              stack: nodeResult.error.stack,
+            };
+          } else if (typeof nodeResult.error === "object") {
+            errorData = nodeResult.error;
+          } else {
+            errorData = { message: String(nodeResult.error) };
+          }
+        }
+
         await this.prisma.nodeExecution.create({
           data: {
             id: `${flowResult.executionId}_${nodeId}`,
@@ -1715,7 +1833,7 @@ export class ExecutionService {
             finishedAt: new Date(Date.now() + nodeResult.duration),
             inputData: {}, // TODO: Add actual input data
             outputData: nodeResult.data || undefined,
-            error: nodeResult.error || undefined,
+            error: errorData,
           },
         });
       }

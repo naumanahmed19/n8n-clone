@@ -1,14 +1,14 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  VisuallyHidden,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+    VisuallyHidden,
 } from '@/components/ui/dialog'
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { useCredentialStore, useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
@@ -24,9 +24,10 @@ interface NodeConfigDialogProps {
   nodeType: NodeType
   isOpen: boolean
   onClose: () => void
+  readOnly?: boolean
 }
 
-export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfigDialogProps) {
+export function NodeConfigDialog({ node, nodeType, isOpen, onClose, readOnly = false }: NodeConfigDialogProps) {
   const { 
     updateNode, 
     removeNode, 
@@ -74,6 +75,9 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
   // Save changes to store (called on blur, dialog close, or explicit save)
   const saveChangesToStore = () => {
+    // Don't save changes in read-only mode
+    if (readOnly) return
+    
     if (hasUnsavedChanges) {
       updateNode(node.id, { 
         parameters, 
@@ -89,12 +93,17 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
   // Handle dialog close - save changes before closing
   const handleClose = () => {
-    saveChangesToStore()
+    if (!readOnly) {
+      saveChangesToStore()
+    }
     closeDialog()
     onClose()
   }
 
   const handleDelete = () => {
+    // Prevent deletion in read-only mode
+    if (readOnly) return
+    
     if (confirm('Are you sure you want to delete this node?')) {
       removeNode(node.id)
       handleClose()
@@ -102,6 +111,9 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
   }
 
   const handleExecuteFromHere = async () => {
+    // Prevent execution in read-only mode
+    if (readOnly) return
+    
     // Prevent execution during workflow execution
     if (executionState.status === 'running') {
       console.warn('Cannot execute individual node while workflow is running')
@@ -136,7 +148,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
           <ResizablePanelGroup direction="horizontal" className="flex-1">
             {/* Left Column - Inputs */}
             <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
-              <InputsColumn node={node} />
+              <InputsColumn node={node} readOnly={readOnly} />
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -148,6 +160,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
                 nodeType={nodeType} 
                 onDelete={handleDelete}
                 onExecute={handleExecuteFromHere}
+                readOnly={readOnly}
               />
             </ResizablePanel>
 
@@ -155,7 +168,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose }: NodeConfig
 
             {/* Right Column - Outputs */}
             <ResizablePanel defaultSize={35} minSize={20} maxSize={50}>
-              <OutputColumn node={node} />
+              <OutputColumn node={node} readOnly={readOnly} />
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>

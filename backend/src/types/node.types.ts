@@ -1,5 +1,13 @@
 // Node system type definitions
 
+export interface CredentialSelectorConfig {
+  displayName: string;
+  description?: string;
+  placeholder?: string;
+  allowedTypes: string[]; // Array of credential type names that can be selected
+  required?: boolean;
+}
+
 export interface NodeDefinition {
   type: string;
   displayName: string;
@@ -11,11 +19,17 @@ export interface NodeDefinition {
   inputs: string[];
   outputs: string[];
   credentials?: CredentialDefinition[];
+  credentialSelector?: CredentialSelectorConfig;
   properties: NodeProperty[] | (() => NodeProperty[]); // Support both static and dynamic properties
   execute: NodeExecuteFunction;
   hooks?: NodeHooks;
   icon?: string;
   color?: string;
+  outputComponent?: string; // Optional custom output component identifier
+  // Execution metadata (optional - will be computed from group if not provided)
+  executionCapability?: "trigger" | "action" | "transform" | "condition";
+  canExecuteIndividually?: boolean;
+  canBeDisabled?: boolean;
 }
 
 export interface NodePropertyOption {
@@ -36,10 +50,13 @@ export interface NodeProperty {
     | "json"
     | "dateTime"
     | "collection"
+    | "autocomplete"
+    | "credential" // New: Support for credential selector
     | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
   description?: string;
+  placeholder?: string; // Placeholder text for input fields
   options?: NodePropertyOption[];
   displayOptions?: {
     show?: Record<string, any[]>;
@@ -52,6 +69,8 @@ export interface NodeProperty {
   // New: Custom component configuration
   component?: string; // Component identifier/name
   componentProps?: Record<string, any>; // Additional props for custom component
+  // New: For credential type
+  allowedTypes?: string[]; // Array of credential type names that can be selected
 }
 
 export interface CredentialDefinition {
@@ -97,6 +116,12 @@ export interface NodeExecutionContext {
   getInputData(inputName?: string): NodeInputData;
   helpers: NodeHelpers;
   logger: NodeLogger;
+  // Utility functions for common node operations
+  resolveValue: (value: string | any, item: any) => any;
+  resolvePath: (obj: any, path: string) => any;
+  extractJsonData: (items: any[]) => any[];
+  wrapJsonData: (items: any[]) => any[];
+  normalizeInputItems: (items: any[] | any[][]) => any[];
 }
 
 export interface NodeHelpers {
@@ -155,6 +180,7 @@ export interface NodeSchema {
   outputs: string[];
   properties: NodeProperty[];
   credentials?: CredentialDefinition[];
+  credentialSelector?: CredentialSelectorConfig;
   icon?: string;
   color?: string;
 }
@@ -185,6 +211,9 @@ export enum BuiltInNodeTypes {
   WEBHOOK_TRIGGER = "webhook-trigger",
   SCHEDULE_TRIGGER = "schedule-trigger",
   MANUAL_TRIGGER = "manual-trigger",
+  WORKFLOW_CALLED = "workflow-called",
+  OPENAI = "openai",
+  ANTHROPIC = "anthropic",
 }
 
 export interface NodeTypeInfo {
@@ -198,6 +227,12 @@ export interface NodeTypeInfo {
   inputs: string[];
   outputs: string[];
   properties: NodeProperty[];
+  credentials?: CredentialDefinition[]; // Include credentials
+  credentialSelector?: CredentialSelectorConfig; // Include unified credential selector
   icon?: string;
   color?: string;
+  // Execution metadata
+  executionCapability?: "trigger" | "action" | "transform" | "condition";
+  canExecuteIndividually?: boolean;
+  canBeDisabled?: boolean;
 }

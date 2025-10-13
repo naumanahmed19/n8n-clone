@@ -1,13 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
+import { ExecutionResult } from "../types/database";
 import { logger } from "../utils/logger";
-import ExecutionHistoryService from "./ExecutionHistoryService";
-import {
-  FlowExecutionEngine,
-  FlowExecutionResult,
-} from "./FlowExecutionEngine";
-import { NodeService } from "./NodeService";
-import { SocketService } from "./SocketService";
+import { ExecutionService } from "./ExecutionService";
 import {
   TriggerExecutionContext,
   TriggerExecutionContextFactory,
@@ -18,7 +13,7 @@ import {
 
 export interface TriggerExecutionRequest {
   triggerId: string;
-  triggerType: "webhook" | "schedule" | "manual";
+  triggerType: "webhook" | "schedule" | "manual" | "workflow-called";
   workflowId: string;
   userId: string;
   triggerNodeId: string;
@@ -63,8 +58,7 @@ export interface ConflictResolutionStrategy {
  */
 export class TriggerManager extends EventEmitter {
   private prisma: PrismaClient;
-  private flowExecutionEngine: FlowExecutionEngine;
-  private socketService: SocketService;
+  private executionService: ExecutionService;
   private resourceManager: TriggerResourceManager;
 
   private activeTriggers: Map<string, TriggerExecutionContext> = new Map();
@@ -76,20 +70,13 @@ export class TriggerManager extends EventEmitter {
 
   constructor(
     prisma: PrismaClient,
-    nodeService: NodeService,
-    executionHistoryService: ExecutionHistoryService,
-    socketService: SocketService,
+    executionService: ExecutionService,
     config: Partial<ConcurrencyConfig> = {},
     conflictStrategy: ConflictResolutionStrategy = { type: "queue" }
   ) {
     super();
     this.prisma = prisma;
-    this.flowExecutionEngine = new FlowExecutionEngine(
-      prisma,
-      nodeService,
-      executionHistoryService
-    );
-    this.socketService = socketService;
+    this.executionService = executionService;
     this.resourceManager = new TriggerResourceManager();
 
     this.config = {
@@ -103,8 +90,6 @@ export class TriggerManager extends EventEmitter {
     };
 
     this.conflictStrategy = conflictStrategy;
-
-    this.setupEventHandlers();
   }
 
   /**
@@ -251,7 +236,16 @@ export class TriggerManager extends EventEmitter {
 
     if (activeContext) {
       try {
-        await this.flowExecutionEngine.cancelExecution(executionId);
+        // Mark as cancelled in our tracking
+        this.activeTriggers.delete(executionId);
+        this.resourceManager.releaseLocks(executionId);
+
+        this.emit("triggerCancelled", {
+          executionId,
+          triggerId: activeContext.triggerId,
+          reason: "user_cancelled",
+        });
+
         return true;
       } catch (error) {
         logger.error("Failed to cancel active trigger execution", {
@@ -508,12 +502,27 @@ export class TriggerManager extends EventEmitter {
     workflow: any
   ): Promise<void> {
     try {
-      const result = await this.flowExecutionEngine.executeFromTrigger(
-        context.triggerId,
+      if (!context.triggerNodeId) {
+        throw new Error(
+          `Trigger node ID is missing for trigger ${context.triggerId}`
+        );
+      }
+
+      // Use ExecutionService which handles database persistence and socket events
+      const result = await this.executionService.executeWorkflow(
         context.workflowId,
         context.userId,
         context.triggerData,
-        context.executionOptions
+        {
+          timeout: context.executionOptions?.timeout || 300000,
+          saveProgress: true,
+        },
+        context.triggerNodeId,
+        {
+          nodes: workflow.nodes,
+          connections: workflow.connections,
+          settings: workflow.settings,
+        }
       );
 
       await this.handleTriggerCompletion(context, result);
@@ -524,7 +533,7 @@ export class TriggerManager extends EventEmitter {
 
   private async handleTriggerCompletion(
     context: TriggerExecutionContext,
-    result: FlowExecutionResult
+    result: ExecutionResult
   ): Promise<void> {
     // Remove from active triggers
     this.activeTriggers.delete(context.executionId);
@@ -532,13 +541,16 @@ export class TriggerManager extends EventEmitter {
     // Release resources
     this.resourceManager.releaseLocks(context.executionId);
 
+    // ExecutionService already saved to database and emitted socket events
+    // No need to do it again here
+
     // Add to completed triggers
     const info: TriggerExecutionInfo = {
       executionId: context.executionId,
       triggerId: context.triggerId,
       triggerType: context.triggerType,
       workflowId: context.workflowId,
-      status: result.status === "completed" ? "completed" : "failed",
+      status: result.success ? "completed" : "failed",
       startTime: context.startTime,
       endTime: Date.now(),
       priority: context.priority,
@@ -560,7 +572,7 @@ export class TriggerManager extends EventEmitter {
     logger.info("Trigger execution completed", {
       executionId: context.executionId,
       triggerId: context.triggerId,
-      status: result.status,
+      status: result.success ? "success" : "failed",
       duration: Date.now() - context.startTime,
     });
   }
@@ -665,24 +677,6 @@ export class TriggerManager extends EventEmitter {
       logger.error("Failed to load workflow", { workflowId, error });
       return null;
     }
-  }
-
-  private setupEventHandlers(): void {
-    // Handle flow execution engine events
-    this.flowExecutionEngine.on("executionCancelled", (data) => {
-      const context = this.activeTriggers.get(data.executionId);
-      if (context) {
-        this.handleTriggerCompletion(context, {
-          executionId: data.executionId,
-          status: "cancelled",
-          executedNodes: [],
-          failedNodes: [],
-          executionPath: [],
-          totalDuration: Date.now() - context.startTime,
-          nodeResults: new Map(),
-        });
-      }
-    });
   }
 
   /**

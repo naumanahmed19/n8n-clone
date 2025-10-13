@@ -6,7 +6,7 @@ import { WorkflowNode } from "@/types/workflow";
 
 export interface TriggerDefinition {
   id: string;
-  type: "webhook" | "schedule" | "manual";
+  type: "webhook" | "schedule" | "manual" | "workflow-called";
   nodeId: string;
   settings: Record<string, any>;
 }
@@ -39,7 +39,7 @@ export function extractTriggersFromNodes(
  */
 function getTriggerTypeFromNodeType(
   nodeType: string
-): "webhook" | "schedule" | "manual" | null {
+): "webhook" | "schedule" | "manual" | "workflow-called" | null {
   switch (nodeType) {
     case "webhook-trigger":
       return "webhook";
@@ -47,6 +47,8 @@ function getTriggerTypeFromNodeType(
       return "schedule";
     case "manual-trigger":
       return "manual";
+    case "workflow-called":
+      return "workflow-called";
     default:
       return null;
   }

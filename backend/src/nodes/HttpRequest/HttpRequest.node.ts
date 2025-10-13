@@ -26,10 +26,27 @@ export const HttpRequestNode: NodeDefinition = {
     timeout: 30000,
     followRedirects: true,
     maxRedirects: 5,
+    continueOnFail: false,
+    alwaysOutputData: false,
   },
   inputs: ["main"],
   outputs: ["main"],
   properties: [
+    {
+      displayName: "Authentication",
+      name: "authentication",
+      type: "credential",
+      required: false,
+      default: "",
+      description: "Select authentication method for HTTP requests",
+      placeholder: "Select authentication...",
+      allowedTypes: [
+        "httpBasicAuth",
+        "httpHeaderAuth",
+        "httpBearerAuth",
+        "apiKey",
+      ],
+    },
     {
       displayName: "Method",
       name: "method",
@@ -102,6 +119,29 @@ export const HttpRequestNode: NodeDefinition = {
         },
       },
     },
+    {
+      displayName: "Continue On Fail",
+      name: "continueOnFail",
+      type: "boolean",
+      required: false,
+      default: false,
+      description:
+        "If enabled, the node will continue execution even if the request fails. The error information will be returned as output data instead of stopping the workflow.",
+    },
+    {
+      displayName: "Always Output Data",
+      name: "alwaysOutputData",
+      type: "boolean",
+      required: false,
+      default: false,
+      description:
+        "If enabled, the node will always output data, including error responses (like 4xx and 5xx status codes). Useful when you want to process error responses in your workflow.",
+      displayOptions: {
+        show: {
+          continueOnFail: [true],
+        },
+      },
+    },
   ],
   execute: async function (
     inputData: NodeInputData
@@ -114,6 +154,10 @@ export const HttpRequestNode: NodeDefinition = {
     const timeout = (this.getNodeParameter("timeout") as number) || 30000;
     const followRedirects = this.getNodeParameter("followRedirects") as boolean;
     const maxRedirects = (this.getNodeParameter("maxRedirects") as number) || 5;
+    const continueOnFail =
+      (this.getNodeParameter("continueOnFail") as boolean) || false;
+    const alwaysOutputData =
+      (this.getNodeParameter("alwaysOutputData") as boolean) || false;
 
     if (!url) {
       throw new Error("URL is required");
@@ -131,14 +175,77 @@ export const HttpRequestNode: NodeDefinition = {
       parsedHeaders = headers;
     }
 
+    // Handle credentials if provided
+    let finalUrl = url;
+    try {
+      // Check for Basic Auth
+      const basicAuth = await this.getCredentials("httpBasicAuth");
+      if (basicAuth && basicAuth.username && basicAuth.password) {
+        const authString = Buffer.from(
+          `${basicAuth.username}:${basicAuth.password}`
+        ).toString("base64");
+        parsedHeaders["Authorization"] = `Basic ${authString}`;
+        this.logger.info("Applied Basic Auth credentials");
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
+    try {
+      // Check for Bearer Token
+      const bearerAuth = await this.getCredentials("httpBearerAuth");
+      if (bearerAuth && bearerAuth.token) {
+        parsedHeaders["Authorization"] = `Bearer ${bearerAuth.token}`;
+        this.logger.info("Applied Bearer Token credentials");
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
+    try {
+      // Check for Header Auth
+      const headerAuth = await this.getCredentials("httpHeaderAuth");
+      if (headerAuth && headerAuth.name && headerAuth.value) {
+        parsedHeaders[headerAuth.name as string] = headerAuth.value as string;
+        this.logger.info(`Applied Header Auth credentials: ${headerAuth.name}`);
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
+    try {
+      // Check for API Key
+      const apiKeyAuth = await this.getCredentials("apiKey");
+      if (apiKeyAuth && apiKeyAuth.apiKey) {
+        const addTo = apiKeyAuth.addTo || "header";
+        const keyName = apiKeyAuth.keyName || "api_key";
+
+        if (addTo === "header") {
+          parsedHeaders[keyName as string] = apiKeyAuth.apiKey as string;
+          this.logger.info(`Applied API Key to header: ${keyName}`);
+        } else if (addTo === "query") {
+          // Add API key to query string
+          const urlObj = new URL(finalUrl);
+          urlObj.searchParams.set(
+            keyName as string,
+            apiKeyAuth.apiKey as string
+          );
+          finalUrl = urlObj.toString();
+          this.logger.info(`Applied API Key to query parameter: ${keyName}`);
+        }
+      }
+    } catch (error) {
+      // Credential not configured, skip
+    }
+
     // Security validation
-    const urlValidation = UrlSecurityValidator.validateUrl(url);
+    const urlValidation = UrlSecurityValidator.validateUrl(finalUrl);
     if (!urlValidation.isValid) {
       const errorMessages = urlValidation.errors
         .map((e) => e.message)
         .join("; ");
       this.logger.warn("HTTP Request blocked by security validation", {
-        url,
+        url: finalUrl,
         errors: urlValidation.errors,
         riskLevel: urlValidation.riskLevel,
       });
@@ -174,7 +281,7 @@ export const HttpRequestNode: NodeDefinition = {
     }
 
     // Use sanitized URL
-    const sanitizedUrl = urlValidation.sanitizedUrl || url;
+    const sanitizedUrl = urlValidation.sanitizedUrl || finalUrl;
 
     // Prepare request body
     let requestBody: string | undefined;
@@ -231,8 +338,9 @@ export const HttpRequestNode: NodeDefinition = {
 
             const responseTime = Date.now() - startTime;
 
-            // Check if response indicates an error that should be retried
-            if (!response.ok) {
+            // Check if response indicates an error
+            // If alwaysOutputData is enabled, treat error responses as successful and return them
+            if (!response.ok && !alwaysOutputData) {
               const httpError = HttpExecutionErrorFactory.createFromError(
                 new Error(`HTTP ${response.status} ${response.statusText}`),
                 sanitizedUrl,
@@ -334,11 +442,55 @@ export const HttpRequestNode: NodeDefinition = {
         errorType: httpError.httpErrorType,
         statusCode: httpError.statusCode,
         error: httpError.message,
+        errorStack: httpError.stack,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
       });
+
+      // If continueOnFail is enabled, return error information as output data
+      if (continueOnFail) {
+        this.logger.info(
+          "Continuing execution despite error (continueOnFail enabled)",
+          {
+            method,
+            url: sanitizedUrl,
+            error: httpError.message,
+          }
+        );
+
+        // Return error details as output data so the workflow can continue
+        return [
+          {
+            main: [
+              {
+                json: {
+                  error: true,
+                  errorMessage: httpError.message || "Request failed",
+                  errorType: httpError.httpErrorType || "UNKNOWN_ERROR",
+                  statusCode: httpError.statusCode,
+                  url: sanitizedUrl,
+                  method,
+                  timestamp: new Date().toISOString(),
+                  // Include any additional error details
+                  details: httpError.details || {},
+                },
+              },
+            ],
+          },
+        ];
+      }
 
       // Throw user-friendly error message
       const userMessage =
         HttpExecutionErrorFactory.getUserFriendlyMessage(httpError);
+
+      // If we don't have a user message, throw the original error for debugging
+      if (
+        !userMessage ||
+        userMessage === "An unexpected error occurred while making the request."
+      ) {
+        throw error;
+      }
+
       throw new Error(userMessage);
     }
   },

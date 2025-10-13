@@ -5,6 +5,10 @@ import {
   UpdateWorkflowRequest,
   WorkflowQueryRequest,
 } from "../types/api";
+import {
+  getTriggerService,
+  isTriggerServiceInitialized,
+} from "./triggerServiceSingleton";
 
 interface ValidationResult {
   isValid: boolean;
@@ -26,8 +30,115 @@ export class WorkflowService {
     this.prisma = prisma;
   }
 
+  /**
+   * Extract triggers from trigger nodes in the workflow
+   */
+  private extractTriggersFromNodes(nodes: any[]): any[] {
+    if (!Array.isArray(nodes)) {
+      return [];
+    }
+
+    const triggerNodeTypes: Record<string, string> = {
+      "manual-trigger": "manual",
+      "webhook-trigger": "webhook",
+      "schedule-trigger": "schedule",
+      "workflow-called": "workflow-called",
+    };
+
+    return nodes
+      .filter((node) => node.type && triggerNodeTypes[node.type])
+      .map((node) => {
+        const triggerType = triggerNodeTypes[node.type];
+        return {
+          id: `trigger-${node.id}`,
+          type: triggerType,
+          nodeId: node.id,
+          active: !node.disabled, // Active if node is not disabled
+          settings: {
+            description:
+              node.parameters?.description || `${triggerType} trigger`,
+            ...node.parameters,
+          },
+        };
+      });
+  }
+
+  /**
+   * Normalize triggers to ensure they have the active property set
+   */
+  private normalizeTriggers(triggers: any[]): any[] {
+    if (!Array.isArray(triggers)) {
+      return [];
+    }
+
+    return triggers.map((trigger) => ({
+      ...trigger,
+      // Set active to true if not explicitly set
+      active: trigger.active !== undefined ? trigger.active : true,
+    }));
+  }
+
+  /**
+   * Migrate existing workflows to ensure triggers have active property
+   */
+  async migrateTriggersActiveProperty(): Promise<{ updated: number }> {
+    try {
+      // Get all workflows
+      const workflows = await this.prisma.workflow.findMany({
+        select: {
+          id: true,
+          triggers: true,
+        },
+      });
+
+      let updatedCount = 0;
+
+      for (const workflow of workflows) {
+        const triggers = workflow.triggers as any[];
+        if (Array.isArray(triggers) && triggers.length > 0) {
+          // Check if any trigger is missing the active property
+          const needsUpdate = triggers.some(
+            (trigger) => trigger.active === undefined
+          );
+
+          if (needsUpdate) {
+            const normalizedTriggers = this.normalizeTriggers(triggers);
+
+            await this.prisma.workflow.update({
+              where: { id: workflow.id },
+              data: {
+                triggers: normalizedTriggers,
+                updatedAt: new Date(),
+              },
+            });
+
+            updatedCount++;
+          }
+        }
+      }
+
+      return { updated: updatedCount };
+    } catch (error) {
+      console.error("Error migrating triggers active property:", error);
+      throw new AppError(
+        "Failed to migrate triggers",
+        500,
+        "TRIGGER_MIGRATION_ERROR"
+      );
+    }
+  }
+
   async createWorkflow(userId: string, data: CreateWorkflowRequest) {
     try {
+      // Extract triggers from nodes if triggers array is empty or not provided
+      let triggersToSave = data.triggers || [];
+      if (data.nodes && triggersToSave.length === 0) {
+        triggersToSave = this.extractTriggersFromNodes(data.nodes);
+      }
+
+      // Normalize triggers to ensure they have active property
+      const normalizedTriggers = this.normalizeTriggers(triggersToSave);
+
       const workflow = await this.prisma.workflow.create({
         data: {
           name: data.name,
@@ -37,7 +148,7 @@ export class WorkflowService {
           userId,
           nodes: data.nodes,
           connections: data.connections,
-          triggers: data.triggers,
+          triggers: normalizedTriggers,
           settings: data.settings,
           active: data.active,
         },
@@ -90,10 +201,16 @@ export class WorkflowService {
 
       // Validate workflow data if nodes or connections are being updated
       if (data.nodes || data.connections) {
+        // Extract triggers from nodes if triggers array is empty or not provided
+        let triggersToValidate = data.triggers;
+        if (data.nodes && (!data.triggers || data.triggers.length === 0)) {
+          triggersToValidate = this.extractTriggersFromNodes(data.nodes);
+        }
+
         const workflowData = {
           nodes: data.nodes,
           connections: data.connections,
-          triggers: data.triggers,
+          triggers: triggersToValidate,
           settings: data.settings,
         };
 
@@ -110,6 +227,17 @@ export class WorkflowService {
         }
       }
 
+      // Extract triggers from nodes if triggers array is empty or not provided
+      let triggersToSave = data.triggers;
+      if (data.nodes && (!data.triggers || data.triggers.length === 0)) {
+        triggersToSave = this.extractTriggersFromNodes(data.nodes);
+      }
+
+      // Normalize triggers if they are being updated
+      const normalizedTriggers = triggersToSave
+        ? this.normalizeTriggers(triggersToSave)
+        : undefined;
+
       const workflow = await this.prisma.workflow.update({
         where: { id },
         data: {
@@ -121,12 +249,25 @@ export class WorkflowService {
           ...(data.tags !== undefined && { tags: data.tags }),
           ...(data.nodes && { nodes: data.nodes }),
           ...(data.connections && { connections: data.connections }),
-          ...(data.triggers && { triggers: data.triggers }),
+          ...(normalizedTriggers && { triggers: normalizedTriggers }),
           ...(data.settings && { settings: data.settings }),
           ...(data.active !== undefined && { active: data.active }),
           updatedAt: new Date(),
         },
       });
+
+      // Sync triggers with TriggerService if triggers or active status changed
+      if (
+        isTriggerServiceInitialized() &&
+        (normalizedTriggers || data.active !== undefined)
+      ) {
+        try {
+          await getTriggerService().syncWorkflowTriggers(id);
+        } catch (error) {
+          console.error(`Error syncing triggers for workflow ${id}:`, error);
+          // Don't fail the update if trigger sync fails
+        }
+      }
 
       return workflow;
     } catch (error) {

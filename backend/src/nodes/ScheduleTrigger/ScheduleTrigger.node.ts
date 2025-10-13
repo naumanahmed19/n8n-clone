@@ -12,7 +12,7 @@ export const ScheduleTriggerNode: NodeDefinition = {
   version: 1,
   description:
     "Triggers workflow execution on a schedule using cron expressions",
-  icon: "",
+  icon: "⏰",
   color: "#9C27B0",
   defaults: {
     cronExpression: "0 0 * * *",

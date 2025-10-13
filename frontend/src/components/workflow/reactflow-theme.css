@@ -1,0 +1,120 @@
+/* ReactFlow Dark Theme Overrides */
+
+/* Controls buttons in dark mode */
+.dark .react-flow__controls {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .react-flow__controls-button {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.dark .react-flow__controls-button:hover {
+  background: hsl(var(--accent));
+}
+
+.dark .react-flow__controls-button svg {
+  fill: hsl(var(--foreground));
+}
+
+/* MiniMap in dark mode */
+.dark .react-flow__minimap {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+.dark .react-flow__minimap-mask {
+  fill: hsl(var(--background));
+  fill-opacity: 0.6;
+}
+
+.dark .react-flow__minimap-node {
+  fill: hsl(var(--muted));
+  stroke: hsl(var(--border));
+}
+
+/* Attribution in dark mode */
+.dark .react-flow__attribution {
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  border-top: 1px solid hsl(var(--border));
+}
+
+.dark .react-flow__attribution a {
+  color: hsl(var(--primary));
+}
+
+/* Panel in dark mode */
+.dark .react-flow__panel {
+  color: hsl(var(--foreground));
+}
+
+/* Edges in dark mode */
+.dark .react-flow__edge-path {
+  stroke: hsl(var(--border));
+  stroke-width: 2;
+}
+
+.dark .react-flow__edge-path:hover {
+  stroke: hsl(var(--primary));
+}
+
+.dark .react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--primary));
+  stroke-width: 2.5;
+}
+
+.dark .react-flow__edge.animated .react-flow__edge-path {
+  stroke: hsl(var(--primary));
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+/* Edge interaction path (wider invisible area for hover) */
+.dark .react-flow__edge-interaction {
+  stroke: transparent;
+}
+
+/* Edge buttons in dark mode */
+.dark .react-flow__edge-textbg {
+  fill: hsl(var(--card));
+}
+
+.dark .react-flow__edge-text {
+  fill: hsl(var(--foreground));
+}
+
+/* Connection line while dragging */
+.dark .react-flow__connection-path {
+  stroke: hsl(var(--primary));
+  stroke-width: 2;
+  stroke-dasharray: 5;
+}
+
+/* Edge markers (arrows) in dark mode */
+.dark .react-flow__arrowhead,
+.dark .react-flow__edge-marker {
+  fill: hsl(var(--border));
+}
+
+.dark .react-flow__edge.selected .react-flow__arrowhead,
+.dark .react-flow__edge.selected .react-flow__edge-marker {
+  fill: hsl(var(--primary));
+}
+
+.dark .react-flow__edge.animated .react-flow__arrowhead,
+.dark .react-flow__edge.animated .react-flow__edge-marker {
+  fill: hsl(var(--primary));
+}
+
+/* Animation for edge flow */
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}

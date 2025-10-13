@@ -1,16 +1,16 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -18,17 +18,17 @@ import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-  AlertCircle,
-  Database,
-  FileText,
-  Info,
-  Loader2,
-  MoreVertical,
-  Play,
-  Settings,
-  ToggleLeft,
-  ToggleRight,
-  Trash2
+    AlertCircle,
+    Database,
+    FileText,
+    Info,
+    Loader2,
+    MoreVertical,
+    Play,
+    Settings,
+    ToggleLeft,
+    ToggleRight,
+    Trash2
 } from 'lucide-react'
 import { ConfigTab } from './tabs/ConfigTab'
 import { DocsTab } from './tabs/DocsTab'
@@ -40,9 +40,10 @@ interface MiddleColumnProps {
   nodeType: NodeType
   onDelete: () => void
   onExecute: () => void
+  readOnly?: boolean
 }
 
-export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColumnProps) {
+export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = false }: MiddleColumnProps) {
   const { 
     nodeName, 
     isDisabled, 
@@ -91,7 +92,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
               {nodeType.icon || nodeType.displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              {isEditingName ? (
+              {isEditingName && !readOnly ? (
                 <Input
                   value={nodeName}
                   onChange={(e) => updateNodeName(e.target.value)}
@@ -109,8 +110,10 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
                 />
               ) : (
                 <div
-                  onClick={() => setIsEditingName(true)}
-                  className="text-sm font-semibold cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors"
+                  onClick={() => !readOnly && setIsEditingName(true)}
+                  className={`text-sm font-semibold px-1 py-0.5 rounded transition-colors ${
+                    readOnly ? '' : 'cursor-pointer hover:bg-gray-100'
+                  }`}
                 >
                   {nodeName || nodeType.displayName}
                 </div>
@@ -124,20 +127,22 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Execute Node Button */}
-            <Button
-              onClick={onExecute}
-              disabled={isExecuting || executionState.status === 'running' || validationErrors.length > 0}
-              size="sm"
-              className="flex items-center space-x-1"
-            >
-              {isExecuting ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Play className="w-3 h-3" />
-              )}
-              <span className="text-xs">Run Node</span>
-            </Button>
+            {/* Execute Node Button - Hidden in read-only mode */}
+            {!readOnly && (
+              <Button
+                onClick={onExecute}
+                disabled={isExecuting || executionState.status === 'running' || validationErrors.length > 0}
+                size="sm"
+                className="flex items-center space-x-1"
+              >
+                {isExecuting ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Play className="w-3 h-3" />
+                )}
+                <span className="text-xs">Run Node</span>
+              </Button>
+            )}
             
             {/* Node Status Badge */}
             {nodeExecutionResult && getNodeStatusBadge(nodeExecutionResult.status)}
@@ -168,35 +173,37 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
               </HoverCardContent>
             </HoverCard>
             
-            {/* More Actions Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem 
-                  onClick={() => updateDisabled(!isDisabled)}
-                  className="flex items-center space-x-2"
-                >
-                  {isDisabled ? (
-                    <ToggleRight className="w-4 h-4" />
-                  ) : (
-                    <ToggleLeft className="w-4 h-4" />
-                  )}
-                  <span>{isDisabled ? 'Enable Node' : 'Disable Node'}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={onDelete}
-                  className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete Node</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* More Actions Dropdown - Hidden in read-only mode */}
+            {!readOnly && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => updateDisabled(!isDisabled)}
+                    className="flex items-center space-x-2"
+                  >
+                    {isDisabled ? (
+                      <ToggleRight className="w-4 h-4" />
+                    ) : (
+                      <ToggleLeft className="w-4 h-4" />
+                    )}
+                    <span>{isDisabled ? 'Enable Node' : 'Disable Node'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={onDelete}
+                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Node</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
@@ -239,7 +246,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute }: MiddleColu
 
         <div className="flex-1 overflow-hidden">
           <TabsContent value="config" className="h-full mt-0">
-            <ConfigTab node={node} nodeType={nodeType} />
+            <ConfigTab node={node} nodeType={nodeType} readOnly={readOnly} />
           </TabsContent>
 
           <TabsContent value="test" className="h-full mt-0">

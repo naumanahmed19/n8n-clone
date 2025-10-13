@@ -205,6 +205,8 @@ export function NodeTypesList({}: NodeTypesListProps) {
         nodeCount={activeNodeTypes.length}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        onRefresh={refetchNodeTypes}
+        isRefreshing={isLoading}
       />
     )
     
@@ -212,7 +214,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, activeTab, setActiveTab, activeNodeTypes.length, searchTerm, setSearchTerm])
+  }, [setHeaderSlot, activeTab, setActiveTab, activeNodeTypes.length, searchTerm, setSearchTerm, refetchNodeTypes, isLoading])
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
@@ -368,7 +370,7 @@ export function NodeTypesList({}: NodeTypesListProps) {
                 
                 const nodeElement = (
                   <div
-                    className={`bg-white hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors ${
+                    className={`bg-card hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors ${
                       (nodeType as ExtendedNodeType).active === false ? 'opacity-50 bg-muted/30' : ''
                     }`}
                     style={{ userSelect: 'none', WebkitUserSelect: 'none' }}

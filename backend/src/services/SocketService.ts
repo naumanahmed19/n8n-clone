@@ -286,7 +286,8 @@ export class SocketService {
    */
   public broadcastExecutionEvent(
     executionId: string,
-    eventData: ExecutionEventData
+    eventData: ExecutionEventData,
+    workflowId?: string // Optional workflow ID to also broadcast to workflow room
   ): void {
     logger.debug(
       `Broadcasting execution event for ${executionId}:`,
@@ -307,6 +308,17 @@ export class SocketService {
     this.io
       .to(`execution:${executionId}`)
       .emit("execution-event", eventWithTimestamp);
+
+    // ALSO emit to workflow room if workflowId provided
+    // This allows users viewing the workflow to see webhook executions in real-time
+    if (workflowId) {
+      logger.debug(
+        `Also broadcasting execution event to workflow room: workflow:${workflowId}`
+      );
+      this.io
+        .to(`workflow:${workflowId}`)
+        .emit("execution-event", eventWithTimestamp);
+    }
   }
 
   /**

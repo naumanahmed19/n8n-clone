@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 import { Workflow } from "../types/database";
-import { NodeInputData, NodeOutputData } from "../types/node.types";
+import { NodeInputData, StandardizedNodeOutput } from "../types/node.types";
 import { logger } from "../utils/logger";
 import { DependencyResolver } from "./DependencyResolver";
 import ExecutionHistoryService from "./ExecutionHistoryService";
@@ -52,13 +52,14 @@ export interface NodeExecutionState {
   progress?: number;
   error?: any;
   inputData?: NodeInputData;
-  outputData?: NodeOutputData[];
+  outputData?: StandardizedNodeOutput; // Changed from NodeOutputData[] to StandardizedNodeOutput
   dependencies: string[];
   dependents: string[];
 }
 
 export interface FlowExecutionResult {
   executionId: string;
+  workflowId: string; // Added to support workflow-level socket broadcasts
   status: "completed" | "failed" | "cancelled" | "partial";
   executedNodes: string[];
   failedNodes: string[];
@@ -70,7 +71,7 @@ export interface FlowExecutionResult {
 export interface NodeExecutionResult {
   nodeId: string;
   status: FlowNodeStatus;
-  data?: NodeOutputData[];
+  data?: StandardizedNodeOutput; // Changed from NodeOutputData[] to StandardizedNodeOutput
   error?: any;
   duration: number;
 }
@@ -683,6 +684,7 @@ export class FlowExecutionEngine extends EventEmitter {
 
         this.emit("nodeExecuted", {
           executionId: context.executionId,
+          workflowId: context.workflowId, // Include workflowId for socket broadcasts
           nodeId,
           status: result.status,
           result,
@@ -708,6 +710,7 @@ export class FlowExecutionEngine extends EventEmitter {
         // Emit nodeExecuted event for failed nodes too
         this.emit("nodeExecuted", {
           executionId: context.executionId,
+          workflowId: context.workflowId, // Include workflowId for socket broadcasts
           nodeId,
           status: FlowNodeStatus.FAILED,
           result,
@@ -728,6 +731,7 @@ export class FlowExecutionEngine extends EventEmitter {
 
     const result: FlowExecutionResult = {
       executionId: context.executionId,
+      workflowId: context.workflowId, // Include workflowId for socket broadcasts
       status: finalStatus,
       executedNodes,
       failedNodes,
@@ -773,19 +777,51 @@ export class FlowExecutionEngine extends EventEmitter {
       );
       nodeState.inputData = inputData;
 
+      // Build credentials mapping: need to map credential types to IDs
+      // node.credentials is an array of credential IDs like ["cred_123"]
+      // We need to figure out which type each credential is
+      let credentialsMapping: Record<string, string> | undefined;
+
+      if (node.credentials && node.credentials.length > 0) {
+        credentialsMapping = {};
+
+        // Get all node types and find the one we need
+        const allNodeTypes = await this.nodeService.getNodeTypes();
+        const nodeTypeInfo = allNodeTypes.find((nt) => nt.type === node.type);
+
+        if (nodeTypeInfo && nodeTypeInfo.credentials) {
+          // For each credential definition in the node type
+          for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
+            const credDef = nodeTypeInfo.credentials[i];
+            // Map the credential type to the credential ID from the node
+            if (node.credentials[i]) {
+              credentialsMapping[credDef.name] = node.credentials[i];
+            }
+          }
+        }
+
+        logger.info(`FlowExecutionEngine - Credentials mapping for node`, {
+          nodeId,
+          nodeType: node.type,
+          rawCredentials: node.credentials,
+          credentialsMapping,
+        });
+      }
+
       const nodeResult = await this.nodeService.executeNode(
         node.type,
         node.parameters,
         inputData,
-        node.credentials ? {} : undefined, // TODO: Load actual credentials
-        context.executionId
+        credentialsMapping,
+        context.executionId,
+        context.userId // Pass the userId from context
       );
 
       if (!nodeResult.success) {
         throw new Error(nodeResult.error?.message || "Node execution failed");
       }
 
-      const outputData = nodeResult.data || [];
+      const outputData = nodeResult.data; // StandardizedNodeOutput | undefined
 
       const result: NodeExecutionResult = {
         nodeId,
@@ -929,7 +965,9 @@ export class FlowExecutionEngine extends EventEmitter {
 
     if (incomingConnections.length === 0) {
       if (context.triggerData) {
-        inputData.main = [[context.triggerData]];
+        // Wrap trigger data in the proper format for node execution
+        // The trigger data should be wrapped as { json: data }
+        inputData.main = [[{ json: context.triggerData }]];
       }
       return inputData;
     }
@@ -937,16 +975,27 @@ export class FlowExecutionEngine extends EventEmitter {
     const collectedData: any[] = [];
     for (const connection of incomingConnections) {
       const sourceNodeState = context.nodeStates.get(connection.sourceNodeId);
+
       if (sourceNodeState && sourceNodeState.outputData) {
-        // sourceNodeState.outputData is an array of NodeOutputData
-        // Each NodeOutputData can have multiple outputs like { main: [...], secondary: [...] }
-        if (Array.isArray(sourceNodeState.outputData)) {
-          // Find the output object that contains the requested output
-          const outputData = sourceNodeState.outputData.find(
-            (output) => output && output[connection.sourceOutput]
+        // outputData is now standardized format: { main: [...], metadata: {...}, branches?: {...} }
+        const outputData = sourceNodeState.outputData as any;
+
+        // Check if this is the standardized format (has metadata)
+        if (outputData.metadata) {
+          // Standardized format
+          const sourceOutput = outputData[connection.sourceOutput];
+          if (Array.isArray(sourceOutput)) {
+            collectedData.push(...sourceOutput);
+          } else if (sourceOutput) {
+            collectedData.push(sourceOutput);
+          }
+        } else if (Array.isArray(outputData)) {
+          // Legacy format: array of output objects [{main: [...]}, {secondary: [...]}]
+          const output = outputData.find(
+            (o) => o && o[connection.sourceOutput]
           );
-          if (outputData && outputData[connection.sourceOutput]) {
-            const sourceOutput = outputData[connection.sourceOutput];
+          if (output && output[connection.sourceOutput]) {
+            const sourceOutput = output[connection.sourceOutput];
             if (Array.isArray(sourceOutput)) {
               collectedData.push(...sourceOutput);
             } else {
@@ -954,22 +1003,12 @@ export class FlowExecutionEngine extends EventEmitter {
             }
           }
         } else {
-          // If outputData is not an array, handle it directly
-          // This might happen if there's inconsistent data structure
-          logger.warn("OutputData is not an array, attempting direct access", {
-            nodeId: connection.sourceNodeId,
-            outputData: sourceNodeState.outputData,
-            expectedOutput: connection.sourceOutput,
-          });
-
-          const directOutput = sourceNodeState.outputData as any;
-          if (directOutput[connection.sourceOutput]) {
-            const sourceOutput = directOutput[connection.sourceOutput];
-            if (Array.isArray(sourceOutput)) {
-              collectedData.push(...sourceOutput);
-            } else {
-              collectedData.push(sourceOutput);
-            }
+          // Fallback: direct object access
+          const sourceOutput = outputData[connection.sourceOutput];
+          if (Array.isArray(sourceOutput)) {
+            collectedData.push(...sourceOutput);
+          } else if (sourceOutput) {
+            collectedData.push(sourceOutput);
           }
         }
       }

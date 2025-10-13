@@ -3,6 +3,7 @@ import * as cron from "node-cron";
 import { v4 as uuidv4 } from "uuid";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { CredentialService } from "./CredentialService";
 import ExecutionHistoryService from "./ExecutionHistoryService";
 import { ExecutionService } from "./ExecutionService";
 import { NodeService } from "./NodeService";
@@ -12,7 +13,7 @@ import { WorkflowService } from "./WorkflowService";
 
 export interface TriggerDefinition {
   id: string;
-  type: "webhook" | "schedule" | "manual";
+  type: "webhook" | "schedule" | "manual" | "workflow-called";
   workflowId: string;
   nodeId: string;
   settings: TriggerSettings;
@@ -24,12 +25,25 @@ export interface TriggerDefinition {
 export interface TriggerSettings {
   // Webhook settings
   webhookId?: string;
+  webhookUrl?: string; // The generated webhook ID from the frontend
   httpMethod?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path?: string;
-  authentication?: {
-    type: "none" | "basic" | "header" | "query";
-    settings?: Record<string, any>;
-  };
+
+  // Authentication settings (old format - stored at settings level)
+  authentication?:
+    | "none"
+    | "basic"
+    | "header"
+    | "query"
+    | {
+        type: "none" | "basic" | "header" | "query";
+        settings?: Record<string, any>;
+      };
+  username?: string; // For basic auth (old format)
+  password?: string; // For basic auth (old format)
+  headerName?: string; // For header auth (old format)
+  queryParam?: string; // For query auth (old format)
+  expectedValue?: string; // For header/query auth (old format)
 
   // Schedule settings
   cronExpression?: string;
@@ -46,7 +60,7 @@ export interface TriggerEvent {
   id: string;
   triggerId: string;
   workflowId: string;
-  type: "webhook" | "schedule" | "manual";
+  type: "webhook" | "schedule" | "manual" | "workflow-called";
   data: any;
   timestamp: Date;
   executionId?: string;
@@ -70,6 +84,7 @@ export class TriggerService {
   private executionService: ExecutionService;
   private socketService: SocketService;
   private executionHistoryService: ExecutionHistoryService;
+  private credentialService: CredentialService;
   private triggerManager: TriggerManager;
   private scheduledTasks: Map<string, cron.ScheduledTask> = new Map();
   private webhookTriggers: Map<string, TriggerDefinition> = new Map();
@@ -80,20 +95,20 @@ export class TriggerService {
     executionService: ExecutionService,
     socketService: SocketService,
     nodeService: NodeService,
-    executionHistoryService: ExecutionHistoryService
+    executionHistoryService: ExecutionHistoryService,
+    credentialService: CredentialService
   ) {
     this.prisma = prisma;
     this.workflowService = workflowService;
     this.executionService = executionService;
     this.socketService = socketService;
     this.executionHistoryService = executionHistoryService;
+    this.credentialService = credentialService;
 
     // Initialize TriggerManager with concurrent execution support
     this.triggerManager = new TriggerManager(
       prisma,
-      nodeService,
-      executionHistoryService,
-      socketService,
+      executionService,
       {
         maxConcurrentTriggers: parseInt(
           process.env.MAX_CONCURRENT_TRIGGERS || "10"
@@ -341,6 +356,9 @@ export class TriggerService {
     trigger: TriggerDefinition
   ): Promise<void> {
     try {
+      // Ensure trigger has workflowId set
+      trigger.workflowId = workflowId;
+
       switch (trigger.type) {
         case "webhook":
           await this.activateWebhookTrigger(trigger);
@@ -350,6 +368,13 @@ export class TriggerService {
           break;
         case "manual":
           // Manual triggers don't need activation
+          break;
+        case "workflow-called":
+          // Workflow-called triggers are passive - they don't need active listening
+          // They are triggered when another workflow explicitly calls them
+          logger.info(
+            `Workflow-called trigger ${trigger.id} registered (passive)`
+          );
           break;
         default:
           throw new AppError(
@@ -394,9 +419,17 @@ export class TriggerService {
   private async activateWebhookTrigger(
     trigger: TriggerDefinition
   ): Promise<void> {
-    // Generate webhook ID if not exists
+    // Use webhookUrl parameter as webhookId if provided, otherwise generate
     if (!trigger.settings.webhookId) {
-      trigger.settings.webhookId = uuidv4();
+      // Check if webhookUrl parameter contains the webhookId
+      if (
+        trigger.settings.webhookUrl &&
+        typeof trigger.settings.webhookUrl === "string"
+      ) {
+        trigger.settings.webhookId = trigger.settings.webhookUrl;
+      } else {
+        trigger.settings.webhookId = uuidv4();
+      }
     }
 
     // Store webhook trigger for lookup
@@ -472,15 +505,110 @@ export class TriggerService {
       }
 
       // Validate authentication if configured
+      // Handle multiple formats:
+      // 1. New format: authentication is a credential ID (UUID or CUID string)
+      // 2. Old format: authentication is a type string ("basic", "header", etc.)
+      // 3. Legacy format: authentication is an object with type and settings
+      let authConfig = trigger.settings.authentication;
+
+      // If authentication is a credential ID (UUID or CUID format), fetch the credential
+      // CUID format: starts with 'c' followed by alphanumeric characters (25 chars total)
+      // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const cuidRegex = /^c[a-z0-9]{24}$/i;
+
+      const isCredentialId =
+        typeof authConfig === "string" &&
+        (uuidRegex.test(authConfig) || cuidRegex.test(authConfig));
+
+      if (isCredentialId) {
+        try {
+          // Fetch credential using CredentialService (with decryption)
+          const credential = await this.credentialService.getCredentialById(
+            authConfig as string
+          );
+
+          if (credential) {
+            // credentialData is already decrypted by CredentialService
+            const credentialData = credential.data;
+
+            switch (credential.type) {
+              case "httpBasicAuth":
+                authConfig = {
+                  type: "basic",
+                  settings: {
+                    username: credentialData.username,
+                    password: credentialData.password,
+                  },
+                };
+                break;
+
+              case "httpHeaderAuth":
+                authConfig = {
+                  type: "header",
+                  settings: {
+                    headerName: credentialData.name || "Authorization",
+                    expectedValue: credentialData.value,
+                  },
+                };
+                break;
+
+              case "webhookQueryAuth":
+                authConfig = {
+                  type: "query",
+                  settings: {
+                    queryParam: credentialData.paramName || "token",
+                    expectedValue: credentialData.value,
+                  },
+                };
+                break;
+
+              default:
+                logger.warn(`Unsupported credential type: ${credential.type}`);
+                authConfig = undefined;
+            }
+          } else {
+            logger.warn(`Credential not found for webhook ${webhookId}`);
+            authConfig = undefined;
+          }
+        } catch (error) {
+          logger.error(
+            `Error fetching credential for webhook ${webhookId}`,
+            error
+          );
+          authConfig = undefined;
+        }
+      }
+      // If authentication is a string (old format), convert to new format
+      else if (typeof authConfig === "string" && authConfig !== "none") {
+        authConfig = {
+          type: authConfig,
+          settings: {
+            username: trigger.settings.username,
+            password: trigger.settings.password,
+            headerName: trigger.settings.headerName,
+            expectedValue: trigger.settings.expectedValue,
+            queryParam: trigger.settings.queryParam,
+          },
+        };
+      }
+
       if (
-        trigger.settings.authentication &&
-        trigger.settings.authentication.type !== "none"
+        authConfig &&
+        typeof authConfig === "object" &&
+        authConfig.type !== "none"
       ) {
         const isAuthenticated = await this.validateWebhookAuthentication(
-          trigger.settings.authentication,
+          authConfig,
           request
         );
         if (!isAuthenticated) {
+          logger.warn(`Webhook authentication failed`, {
+            webhookId,
+            authType: authConfig.type,
+            ip: request.ip,
+          });
           throw new AppError(
             "Webhook authentication failed",
             401,
@@ -654,7 +782,8 @@ export class TriggerService {
       );
       const triggers = (workflow.triggers as any[]) || [];
       const trigger = triggers.find(
-        (t) => t.id === triggerId && t.type === "manual"
+        (t) =>
+          t.id === triggerId && ["manual", "workflow-called"].includes(t.type)
       );
 
       if (!trigger) {
@@ -787,34 +916,66 @@ export class TriggerService {
   ): Promise<boolean> {
     switch (auth.type) {
       case "basic":
-        // Implement basic auth validation
+        // Validate Basic Authentication (username:password)
         const authHeader = request.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Basic ")) {
           return false;
         }
-        // Add actual validation logic here
-        return true;
+
+        try {
+          // Extract base64 encoded credentials
+          const base64Credentials = authHeader.substring(6); // Remove "Basic " prefix
+          const credentials = Buffer.from(base64Credentials, "base64").toString(
+            "utf-8"
+          );
+          const [username, password] = credentials.split(":");
+
+          // Get expected credentials from trigger settings
+          const expectedUsername = auth.settings?.username;
+          const expectedPassword = auth.settings?.password;
+
+          if (!expectedUsername || !expectedPassword) {
+            return false;
+          }
+
+          // Validate credentials
+          return username === expectedUsername && password === expectedPassword;
+        } catch (error) {
+          logger.error("Basic auth failed: Error decoding credentials", error);
+          return false;
+        }
 
       case "header":
-        // Implement header-based auth validation
+        // Validate custom header authentication
         const headerName = auth.settings?.headerName;
         const expectedValue = auth.settings?.expectedValue;
+
         if (!headerName || !expectedValue) {
           return false;
         }
-        return request.headers[headerName.toLowerCase()] === expectedValue;
+
+        const headerValue = request.headers[headerName.toLowerCase()];
+        return headerValue === expectedValue;
 
       case "query":
-        // Implement query parameter auth validation
+        // Validate query parameter authentication
         const queryParam = auth.settings?.queryParam;
         const expectedQueryValue = auth.settings?.expectedValue;
+
         if (!queryParam || !expectedQueryValue) {
           return false;
         }
-        return request.query[queryParam] === expectedQueryValue;
+
+        const queryValue = request.query[queryParam];
+        return queryValue === expectedQueryValue;
+
+      case "none":
+        // No authentication required
+        return true;
 
       default:
-        return true;
+        logger.warn(`Unknown authentication type: ${auth.type}`);
+        return true; // Default to allowing if unknown type
     }
   }
 
@@ -938,5 +1099,77 @@ export class TriggerService {
     this.webhookTriggers.clear();
 
     logger.info("TriggerService cleanup completed");
+  }
+
+  /**
+   * Get all registered webhooks for debugging
+   */
+  getRegisteredWebhooks(): Array<{
+    webhookId: string | undefined;
+    workflowId: string;
+    nodeId: string;
+    settings: any;
+  }> {
+    return Array.from(this.webhookTriggers.values()).map((trigger) => ({
+      webhookId: trigger.settings.webhookId,
+      workflowId: trigger.workflowId,
+      nodeId: trigger.nodeId,
+      settings: trigger.settings,
+    }));
+  }
+
+  /**
+   * Sync triggers for a specific workflow
+   * This should be called after workflow is saved/updated to register new triggers
+   */
+  async syncWorkflowTriggers(workflowId: string): Promise<void> {
+    try {
+      logger.info(`Syncing triggers for workflow ${workflowId}`);
+
+      // Get workflow with triggers
+      const workflow = await this.prisma.workflow.findUnique({
+        where: { id: workflowId },
+        select: {
+          id: true,
+          active: true,
+          triggers: true,
+        },
+      });
+
+      if (!workflow) {
+        logger.warn(`Workflow ${workflowId} not found for trigger sync`);
+        return;
+      }
+
+      const triggers = workflow.triggers as any[];
+
+      // Deactivate existing triggers for this workflow
+      const existingTriggers = [
+        ...Array.from(this.webhookTriggers.values()),
+        ...Array.from(this.scheduledTasks.keys()).map((id) => ({ id })),
+      ].filter((t) => (t as any).workflowId === workflowId);
+
+      for (const trigger of existingTriggers) {
+        await this.deactivateTrigger(trigger.id);
+      }
+
+      // Activate new triggers if workflow is active
+      if (workflow.active && triggers && triggers.length > 0) {
+        for (const trigger of triggers) {
+          if (trigger.active) {
+            await this.activateTrigger(workflowId, trigger);
+          }
+        }
+      }
+
+      logger.info(
+        `Successfully synced ${
+          triggers?.length || 0
+        } triggers for workflow ${workflowId}`
+      );
+    } catch (error) {
+      logger.error(`Error syncing triggers for workflow ${workflowId}:`, error);
+      throw error;
+    }
   }
 }

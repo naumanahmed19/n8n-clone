@@ -8,40 +8,48 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  
+
   /* Base styling for high contrast */
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(4px);
-  
+  color: hsl(var(--foreground));
+
   /* Shadow for depth and visibility */
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06);
-  
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+
   /* Smooth transitions */
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* Ensure button is above other elements */
   z-index: 10;
+}
+
+/* Dark theme base styles */
+.dark .toolbar-button {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: hsl(var(--foreground));
 }
 
 /* Enhanced hover effects for better visual feedback */
 .toolbar-button:hover:not(:disabled) {
   transform: scale(1.15);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 1);
   border-color: rgba(0, 0, 0, 0.15);
+}
+
+.dark .toolbar-button:hover:not(:disabled) {
+  background: rgba(31, 41, 55, 1);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Active state for click feedback */
 .toolbar-button:active:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 /* Focus styles for accessibility */
@@ -49,6 +57,11 @@
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
   background: rgba(255, 255, 255, 1);
+}
+
+.dark .toolbar-button:focus {
+  outline-color: #60a5fa;
+  background: rgba(31, 41, 55, 1);
 }
 
 /* Disabled state with proper contrast */
@@ -61,11 +74,15 @@
   transform: none;
 }
 
+.dark .toolbar-button:disabled {
+  background: rgba(55, 65, 81, 0.9);
+  color: #6b7280;
+  border-color: rgba(75, 85, 99, 0.8);
+}
+
 .toolbar-button:disabled:hover {
   transform: none;
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* State-based styling for execute button */
@@ -74,6 +91,12 @@
   border-color: rgba(59, 130, 246, 0.3);
   color: #3b82f6;
   cursor: not-allowed;
+}
+
+.dark .toolbar-button.executing {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
 }
 
 .toolbar-button.executing:hover {
@@ -87,6 +110,12 @@
   color: #10b981;
 }
 
+.dark .toolbar-button.success {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
 .toolbar-button.success:hover {
   background: rgba(16, 185, 129, 0.15);
   transform: scale(1.1);
@@ -96,6 +125,12 @@
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
   color: #ef4444;
+}
+
+.dark .toolbar-button.error {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
 }
 
 .toolbar-button.error:hover {
@@ -108,6 +143,12 @@
   border-color: rgba(245, 158, 11, 0.3);
   color: #f59e0b;
   cursor: pointer;
+}
+
+.dark .toolbar-button.error-retryable {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
 }
 
 .toolbar-button.error-retryable:hover {
@@ -147,6 +188,12 @@
   color: #9ca3af;
 }
 
+.dark .toolbar-button.disabled-node {
+  background: rgba(156, 163, 175, 0.2);
+  border-color: rgba(156, 163, 175, 0.4);
+  color: #9ca3af;
+}
+
 .toolbar-button.disabled-node:hover {
   background: rgba(156, 163, 175, 0.15);
 }
@@ -157,55 +204,30 @@
   color: #6b7280;
 }
 
+.dark .toolbar-button.enabled-node {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: rgba(156, 163, 175, 0.3);
+  color: #9ca3af;
+}
+
 .toolbar-button.enabled-node:hover {
   background: rgba(255, 255, 255, 1);
   color: #374151;
 }
 
-/* Dark theme compatibility */
-@media (prefers-color-scheme: dark) {
-  .toolbar-button {
-    background: rgba(31, 41, 55, 0.95);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #e5e7eb;
-  }
-  
-  .toolbar-button:hover:not(:disabled) {
-    background: rgba(31, 41, 55, 1);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: #f9fafb;
-  }
-  
-  .toolbar-button:focus {
-    outline-color: #60a5fa;
-    background: rgba(31, 41, 55, 1);
-  }
-  
-  .toolbar-button:disabled {
-    background: rgba(55, 65, 81, 0.9);
-    color: #6b7280;
-    border-color: rgba(75, 85, 99, 0.8);
-  }
-  
-  .toolbar-button.executing {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-  
-  .toolbar-button.success {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
-  }
-  
-  .toolbar-button.error {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
-  }
-  
-  .toolbar-button.error-retryable {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.4);
-  }
+.dark .toolbar-button.enabled-node:hover {
+  background: rgba(31, 41, 55, 1);
+  color: #d1d5db;
+}
+
+/* Tooltip dark theme */
+.dark .toolbar-button[title]:hover::after {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+}
+
+.dark .toolbar-button[title]:hover::before {
+  border-bottom-color: rgba(255, 255, 255, 0.9);
 }
 
 /* High contrast mode support */
@@ -216,36 +238,36 @@
     background: #fff;
     color: #000;
   }
-  
+
   .toolbar-button:hover:not(:disabled) {
     background: #f0f0f0;
     border-color: #000;
   }
-  
+
   .toolbar-button:disabled {
     border-color: #666;
     background: #e0e0e0;
     color: #666;
   }
-  
+
   .toolbar-button.executing {
     background: #e6f3ff;
     border-color: #0066cc;
     color: #0066cc;
   }
-  
+
   .toolbar-button.success {
     background: #e6ffe6;
     border-color: #009900;
     color: #009900;
   }
-  
+
   .toolbar-button.error {
     background: #ffe6e6;
     border-color: #cc0000;
     color: #cc0000;
   }
-  
+
   .toolbar-button.error-retryable {
     background: #fff4e6;
     border-color: #cc8800;
@@ -258,11 +280,11 @@
   .toolbar-button {
     transition: none;
   }
-  
+
   .toolbar-button:hover:not(:disabled) {
     transform: none;
   }
-  
+
   .toolbar-button:active:not(:disabled) {
     transform: none;
   }
@@ -320,7 +342,7 @@
 }
 
 .toolbar-button[title]:hover::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -8px;
   left: 50%;
@@ -329,16 +351,4 @@
   border-bottom-color: rgba(0, 0, 0, 0.9);
   z-index: 1000;
   pointer-events: none;
-}
-
-/* Dark theme tooltip */
-@media (prefers-color-scheme: dark) {
-  .toolbar-button[title]:hover::after {
-    background: rgba(255, 255, 255, 0.9);
-    color: #1f2937;
-  }
-  
-  .toolbar-button[title]:hover::before {
-    border-bottom-color: rgba(255, 255, 255, 0.9);
-  }
 }

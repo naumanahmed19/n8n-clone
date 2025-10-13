@@ -20,7 +20,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { VariablesList } from "@/components/variable/VariablesList"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
-import { useSidebarContext } from "@/contexts"
+import { useSidebarContext, useTheme } from "@/contexts"
 import { useAuthStore, useWorkflowStore } from "@/stores"
 import {
   Activity,
@@ -28,8 +28,11 @@ import {
   Database,
   Home,
   Key,
+  Monitor,
+  Moon,
   Plus,
   Settings,
+  Sun,
   Variable,
   Workflow
 } from "lucide-react"
@@ -50,7 +53,12 @@ const data = {
       icon: Home,
       isActive: false,
     },
-
+    {
+      title: "All Workflows",
+      url: "#",
+      icon: Workflow,
+      isActive: false,
+    },
     {
       title: "New Workflow",
       url: "/workflows/new", 
@@ -59,24 +67,7 @@ const data = {
     },
   ],
   workflowItems: [
-    {
-      title: "All Workflows",
-      url: "#",
-      icon: Workflow,
-      isActive: false,
-    },
-    {
-      title: "All Credentials",
-      url: "#",
-      icon: Key,
-      isActive: false,
-    },
-    {
-      title: "Variables",
-      url: "#",
-      icon: Variable,
-      isActive: false,
-    },
+
     {
       title: "Nodes",
       url: "#",
@@ -87,6 +78,20 @@ const data = {
       title: "Executions",
       url: "#",
       icon: Activity,
+      isActive: false,
+    },
+        {
+      title: "Variables",
+      url: "#",
+      icon: Variable,
+      isActive: false,
+    },
+  ],
+  bottomItems: [
+    {
+      title: "All Credentials",
+      url: "#",
+      icon: Key,
       isActive: false,
     },
     {
@@ -111,6 +116,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     detailSidebar,
     setDetailSidebar
   } = useSidebarContext()
+  
+  // Theme hook
+  const { theme, setTheme } = useTheme()
 
   // Get workflow state to check for unsaved changes
   const { isDirty, isTitleDirty } = useWorkflowStore()
@@ -181,7 +189,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         children: item.title,
                         hidden: false,
                       }}
-                      onClick={() => handleNavigation(item.url)}
+                      onClick={() => {
+                        if (item.title === "All Workflows") {
+                          // Handle "All Workflows" like other workflow items
+                          if (activeWorkflowItem?.title === item.title) {
+                            setOpen(!open)
+                          } else {
+                            setActiveWorkflowItem(item)
+                            setOpen(true)
+                          }
+                        } else {
+                          handleNavigation(item.url)
+                        }
+                      }}
+                      isActive={item.title === "All Workflows" && activeWorkflowItem?.title === item.title}
                       className="px-2.5 md:px-2"
                     >
                       <item.icon />
@@ -199,6 +220,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
                 {data.workflowItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      tooltip={{
+                        children: item.title,
+                        hidden: false,
+                      }}
+                      onClick={() => {
+                        if (activeWorkflowItem?.title === item.title) {
+                          // Toggle sidebar if same item is clicked
+                          setOpen(!open)
+                        } else {
+                          // Set new item and open sidebar
+                          setActiveWorkflowItem(item)
+                          setOpen(true)
+                        }
+                      }}
+                      isActive={activeWorkflowItem?.title === item.title}
+                      className="px-2.5 md:px-2"
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Bottom Items */}
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupContent className="px-1.5 md:px-0">
+              <SidebarMenu>
+                {data.bottomItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       tooltip={{
@@ -296,6 +350,50 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   
                   {activeWorkflowItem?.title === "Settings" && (
                     <div className="p-4 space-y-4">
+                      {/* Theme Section */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3">Appearance</h4>
+                        <div className="space-y-2">
+                          <label className="text-sm text-muted-foreground mb-2 block">Theme</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              onClick={() => setTheme('light')}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:bg-sidebar-accent ${
+                                theme === 'light' 
+                                  ? 'border-sidebar-primary bg-sidebar-accent' 
+                                  : 'border-sidebar-border'
+                              }`}
+                            >
+                              <Sun className="w-5 h-5" />
+                              <span className="text-xs font-medium">Light</span>
+                            </button>
+                            <button
+                              onClick={() => setTheme('dark')}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:bg-sidebar-accent ${
+                                theme === 'dark' 
+                                  ? 'border-sidebar-primary bg-sidebar-accent' 
+                                  : 'border-sidebar-border'
+                              }`}
+                            >
+                              <Moon className="w-5 h-5" />
+                              <span className="text-xs font-medium">Dark</span>
+                            </button>
+                            <button
+                              onClick={() => setTheme('system')}
+                              className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all hover:bg-sidebar-accent ${
+                                theme === 'system' 
+                                  ? 'border-sidebar-primary bg-sidebar-accent' 
+                                  : 'border-sidebar-border'
+                              }`}
+                            >
+                              <Monitor className="w-5 h-5" />
+                              <span className="text-xs font-medium">System</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Workflow Settings */}
                       <div>
                         <h4 className="text-sm font-medium mb-2">Workflow Settings</h4>
                         <div className="space-y-2 text-sm">

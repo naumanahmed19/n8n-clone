@@ -6,6 +6,7 @@ export interface WorkflowNode {
   position: { x: number; y: number };
   credentials?: string[];
   disabled: boolean;
+  locked?: boolean;
   mockData?: any;
   mockDataPinned?: boolean;
 }
@@ -122,12 +123,24 @@ export interface NodeType {
   outputs: string[];
   icon?: string;
   color?: string;
+  outputComponent?: string; // Optional custom output component identifier
   properties: NodeProperty[];
   credentials?: CredentialDefinition[];
+  credentialSelector?: {
+    displayName: string;
+    description?: string;
+    placeholder?: string;
+    allowedTypes: string[]; // Array of credential type names that can be selected
+    required?: boolean;
+  };
   active?: boolean; // Added for activation/deactivation functionality
   id?: string; // Optional database ID for custom nodes
   createdAt?: string; // Optional timestamp for custom nodes
   updatedAt?: string; // Optional timestamp for custom nodes
+  // Execution metadata from backend
+  executionCapability?: "trigger" | "action" | "transform" | "condition";
+  canExecuteIndividually?: boolean;
+  canBeDisabled?: boolean;
 }
 
 export interface CredentialDefinition {
@@ -149,6 +162,7 @@ export interface NodeProperty {
     | "json"
     | "dateTime"
     | "collection"
+    | "credential" // New: Support for credential selector
     | "custom"; // New: Support for custom components
   required?: boolean;
   default?: any;
@@ -166,6 +180,8 @@ export interface NodeProperty {
   // New: Custom component configuration
   component?: string; // Component identifier/name to be registered
   componentProps?: Record<string, any>; // Additional props to pass to custom component (e.g., nested fields for collection)
+  // New: For credential type
+  allowedTypes?: string[]; // Array of credential type names that can be selected
 }
 
 export interface WorkflowEditorState {
@@ -228,6 +244,7 @@ export interface WorkflowExecutionResult {
   duration: number;
   nodeResults: NodeExecutionResult[];
   error?: string;
+  triggerNodeId?: string; // The node ID that triggered this execution
 }
 
 export interface NodeExecutionResult {
@@ -238,5 +255,23 @@ export interface NodeExecutionResult {
   endTime: number;
   duration: number;
   data?: any;
+  /** Error message or serialized error object as string */
   error?: string;
+}
+
+// Types for WorkflowTrigger node
+export interface TriggerOption {
+  id: string;
+  type: "webhook" | "schedule" | "manual";
+  nodeId: string;
+  description?: string;
+  settings?: Record<string, any>;
+}
+
+export interface WorkflowOption {
+  id: string;
+  name: string;
+  description?: string;
+  active: boolean;
+  triggers: TriggerOption[];
 }

@@ -1,24 +1,6 @@
-import { NodeType } from "@/types";
-import { isTriggerNode } from "@/utils/nodeTypeClassification";
+import { NodeType, WorkflowConnection, WorkflowNode } from "@/types";
 
 // Type definitions for workflow data
-type WorkflowNode = {
-  id: string;
-  name: string;
-  type: string;
-  position: { x: number; y: number };
-  parameters?: Record<string, any>;
-  disabled?: boolean;
-};
-
-type WorkflowConnection = {
-  id: string;
-  sourceNodeId: string;
-  targetNodeId: string;
-  sourceOutput: string;
-  targetInput: string;
-};
-
 type NodeExecutionResult = {
   nodeId: string;
   status: "idle" | "running" | "success" | "error" | "skipped";
@@ -88,20 +70,34 @@ function getNodeOutputs(
 }
 
 /**
+ * Gets the dynamic inputs for a node based on its configuration
+ */
+function getNodeInputs(
+  node: WorkflowNode,
+  nodeTypeDefinition: NodeType | undefined
+): string[] {
+  // Chat node: dynamic inputs based on acceptInput parameter
+  if (node.type === "chat" && node.parameters?.acceptInput === true) {
+    return ["main"];
+  }
+  return nodeTypeDefinition?.inputs || [];
+}
+
+/**
  * Gets the custom style configuration for a node
  */
 function getNodeCustomStyle(
   node: WorkflowNode,
   nodeTypeDefinition: NodeType | undefined
 ) {
-  const isTriggerId = isTriggerNode(node.type);
+  const isTrigger = nodeTypeDefinition?.executionCapability === "trigger";
 
   return {
     backgroundColor: nodeTypeDefinition?.color || "#666",
     borderColor: undefined, // Will be handled by CSS based on selection state
     borderWidth: 2,
-    borderRadius: isTriggerId ? 32 : 8,
-    shape: isTriggerId ? ("trigger" as const) : ("rectangle" as const),
+    borderRadius: isTrigger ? 32 : 8,
+    shape: isTrigger ? ("trigger" as const) : ("rectangle" as const),
     opacity: node.disabled ? 0.5 : 1.0,
   };
 }
@@ -128,17 +124,27 @@ export function transformWorkflowNodesToReactFlow(
       (nt) => nt.type === node.type
     );
 
+    // Use specific node type for special nodes with custom renderers, otherwise use 'custom'
+    const reactFlowNodeType =
+      node.type === "chat"
+        ? "chat"
+        : node.type === "image-preview"
+        ? "image-preview"
+        : "custom";
+
     return {
       id: node.id,
-      type: "custom",
+      type: reactFlowNodeType,
       position: node.position,
+      draggable: !node.locked,
       data: {
         label: node.name,
         nodeType: node.type,
         parameters: node.parameters,
         disabled: node.disabled,
+        locked: node.locked,
         status: nodeStatus,
-        inputs: nodeTypeDefinition?.inputs || [],
+        inputs: getNodeInputs(node, nodeTypeDefinition),
         outputs: getNodeOutputs(node, nodeTypeDefinition),
         position: node.position,
         dimensions: { width: 64, height: 64 },
@@ -147,6 +153,9 @@ export function transformWorkflowNodesToReactFlow(
         lastExecutionData: lastExecutionResult?.nodeResults.find(
           (nr) => nr.nodeId === node.id
         ),
+        // Add node type definition and execution capability
+        nodeTypeDefinition,
+        executionCapability: nodeTypeDefinition?.executionCapability,
       },
     };
   });
@@ -156,7 +165,8 @@ export function transformWorkflowNodesToReactFlow(
  * Transforms workflow connections into React Flow edge format
  */
 export function transformWorkflowEdgesToReactFlow(
-  connections: WorkflowConnection[]
+  connections: WorkflowConnection[],
+  executionStateKey?: string
 ) {
   return connections.map((conn) => ({
     id: conn.id,
@@ -167,6 +177,8 @@ export function transformWorkflowEdgesToReactFlow(
     type: "smoothstep",
     data: {
       label: conn.sourceOutput !== "main" ? conn.sourceOutput : undefined,
+      // Add execution state key to force edge re-render when execution completes
+      executionStateKey,
     },
   }));
 }

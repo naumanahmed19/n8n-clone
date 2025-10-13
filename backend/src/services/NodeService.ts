@@ -15,6 +15,13 @@ import {
 } from "../types/node.types";
 import { logger } from "../utils/logger";
 import {
+  extractJsonData,
+  normalizeInputItems,
+  resolvePath,
+  resolveValue,
+  wrapJsonData,
+} from "../utils/nodeHelpers";
+import {
   SecureExecutionOptions,
   SecureExecutionService,
 } from "./SecureExecutionService";
@@ -151,6 +158,7 @@ export class NodeService {
             properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
+            outputComponent: nodeDefinition.outputComponent, // Save custom output component
             // Preserve existing active status instead of overriding to true
             active: existingNode.active,
           },
@@ -171,6 +179,7 @@ export class NodeService {
             properties: resolvedProperties as any,
             icon: nodeDefinition.icon,
             color: nodeDefinition.color,
+            outputComponent: nodeDefinition.outputComponent, // Save custom output component
             active: true,
           },
         });
@@ -242,8 +251,18 @@ export class NodeService {
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs,
           properties: this.resolveProperties(nodeDefinition.properties || []),
+          credentials: nodeDefinition.credentials, // Include credentials
+          credentialSelector: nodeDefinition.credentialSelector, // Include unified credential selector
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
+          // Add execution metadata - use provided values or compute from group
+          executionCapability:
+            nodeDefinition.executionCapability ||
+            this.getExecutionCapability(nodeDefinition),
+          canExecuteIndividually:
+            nodeDefinition.canExecuteIndividually ??
+            this.canExecuteIndividually(nodeDefinition),
+          canBeDisabled: nodeDefinition.canBeDisabled ?? true, // Default to true if not specified
         });
       }
 
@@ -309,6 +328,9 @@ export class NodeService {
    */
   async getNodeSchema(nodeType: string): Promise<NodeSchema | null> {
     try {
+      // Wait for built-in nodes to be initialized before accessing registry
+      await this.waitForInitialization();
+
       // First, try to get from in-memory registry
       const nodeDefinition = this.nodeRegistry.get(nodeType);
 
@@ -324,6 +346,8 @@ export class NodeService {
           inputs: nodeDefinition.inputs,
           outputs: nodeDefinition.outputs,
           properties: this.resolveProperties(nodeDefinition.properties || []),
+          credentials: nodeDefinition.credentials, // Include credentials
+          credentialSelector: nodeDefinition.credentialSelector, // Include unified credential selector
           icon: nodeDefinition.icon,
           color: nodeDefinition.color,
         };
@@ -374,13 +398,20 @@ export class NodeService {
     inputData: NodeInputData,
     credentials?: Record<string, any>,
     executionId?: string,
+    userId?: string,
     options?: SecureExecutionOptions
   ): Promise<NodeExecutionResult> {
     const execId =
       executionId ||
       `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Use provided userId or fallback to "system" for backward compatibility
+    const executingUserId = userId || "system";
+
     try {
+      // Wait for built-in nodes to be initialized before executing
+      await this.waitForInitialization();
+
       const nodeDefinition = this.nodeRegistry.get(nodeType);
       if (!nodeDefinition) {
         throw new Error(`Node type not found: ${nodeType}`);
@@ -396,12 +427,12 @@ export class NodeService {
       }
 
       // Create secure execution context
-      const credentialIds = credentials ? Object.keys(credentials) : [];
+      // credentials is already a mapping of type -> id (e.g., { "googleSheetsOAuth2": "cred_123" })
       const context = await this.secureExecutionService.createSecureContext(
         parameters,
         inputValidation.sanitizedData!,
-        credentialIds,
-        "system",
+        credentials || {},
+        executingUserId,
         execId,
         options
       );
@@ -586,6 +617,8 @@ export class NodeService {
       "json",
       "dateTime",
       "collection",
+      "autocomplete", // Support for autocomplete fields
+      "credential", // Support for credential selector fields
       "custom", // Support for custom components
     ];
     if (!validTypes.includes(property.type)) {
@@ -623,7 +656,26 @@ export class NodeService {
   ): NodeExecutionContext {
     return {
       getNodeParameter: (parameterName: string, itemIndex?: number) => {
-        return parameters[parameterName];
+        const value = parameters[parameterName];
+
+        // Auto-resolve placeholders if value is a string with {{...}} patterns
+        if (typeof value === "string" && value.includes("{{")) {
+          // Normalize and extract input items
+          const items = normalizeInputItems(inputData.main || []);
+          const processedItems = extractJsonData(items);
+
+          if (processedItems.length > 0) {
+            // Use specified itemIndex or default to first item (0)
+            const targetIndex = itemIndex ?? 0;
+            const itemToUse = processedItems[targetIndex];
+
+            if (itemToUse) {
+              return resolveValue(value, itemToUse);
+            }
+          }
+        }
+
+        return value;
       },
       getCredentials: async (type: string) => {
         return credentials?.[type] || {};
@@ -667,6 +719,12 @@ export class NodeService {
         warn: (message: string, extra?: any) => logger.warn(message, extra),
         error: (message: string, extra?: any) => logger.error(message, extra),
       },
+      // Utility functions for common node operations
+      resolveValue,
+      resolvePath,
+      extractJsonData,
+      wrapJsonData,
+      normalizeInputItems,
     };
   }
 
@@ -915,5 +973,31 @@ export class NodeService {
         updated: 0,
       };
     }
+  }
+
+  /**
+   * Determine execution capability based on node group
+   */
+  private getExecutionCapability(
+    nodeDefinition: NodeDefinition
+  ): "trigger" | "action" | "transform" | "condition" {
+    const group = nodeDefinition.group;
+
+    if (group.includes("trigger")) {
+      return "trigger";
+    } else if (group.includes("condition")) {
+      return "condition";
+    } else if (group.includes("transform")) {
+      return "transform";
+    } else {
+      return "action";
+    }
+  }
+
+  /**
+   * Determine if node can execute individually (only trigger nodes)
+   */
+  private canExecuteIndividually(nodeDefinition: NodeDefinition): boolean {
+    return nodeDefinition.group.includes("trigger");
   }
 }

@@ -78,6 +78,18 @@ export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
     ...initialState,
 
     openDialog: (node: WorkflowNode, nodeType: NodeType) => {
+      // Map credential IDs to their types using nodeType.credentials
+      const credentialsMap: Record<string, string> = {};
+      if (node.credentials && Array.isArray(node.credentials)) {
+        node.credentials.forEach((credId, index) => {
+          // Get the credential type from nodeType.credentials at the same index
+          if (nodeType.credentials && nodeType.credentials[index]) {
+            const credentialType = nodeType.credentials[index].name;
+            credentialsMap[credentialType] = credId;
+          }
+        });
+      }
+
       set({
         isOpen: true,
         node,
@@ -85,10 +97,7 @@ export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
         parameters: node.parameters,
         nodeName: node.name,
         isDisabled: node.disabled,
-        credentials: (node.credentials || []).reduce(
-          (acc, cred) => ({ ...acc, [cred]: cred }),
-          {}
-        ),
+        credentials: credentialsMap,
         mockData: node.mockData || null,
         mockDataPinned: node.mockDataPinned || false,
         hasUnsavedChanges: false,

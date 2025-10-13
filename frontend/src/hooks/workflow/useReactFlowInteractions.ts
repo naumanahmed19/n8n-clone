@@ -1,7 +1,8 @@
-import { useWorkflowStore } from "@/stores";
+import { useAddNodeDialogStore, useWorkflowStore } from "@/stores";
 import { NodeType, WorkflowConnection, WorkflowNode } from "@/types";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
+  Connection,
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
@@ -31,7 +32,11 @@ export function useReactFlowInteractions() {
     closeNodeProperties,
   } = useWorkflowStore();
 
+  const { openDialog } = useAddNodeDialogStore();
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [connectionInProgress, setConnectionInProgress] =
+    useState<Connection | null>(null);
 
   // Use the useReactFlow hook to get the ReactFlow instance directly
   const reactFlowInstance = useReactFlow();
@@ -195,6 +200,79 @@ export function useReactFlowInteractions() {
     [openNodeProperties]
   );
 
+  // Handle connection start - track the connection being created
+  const handleConnectStart = useCallback(
+    (
+      _event: React.MouseEvent | React.TouchEvent,
+      params: {
+        nodeId: string | null;
+        handleId: string | null;
+        handleType: string | null;
+      }
+    ) => {
+      if (params.nodeId && params.handleType === "source") {
+        setConnectionInProgress({
+          source: params.nodeId,
+          sourceHandle: params.handleId,
+          target: null,
+          targetHandle: null,
+        });
+      }
+    },
+    []
+  );
+
+  // Handle connection end - if dropped on canvas, show add node dialog
+  const handleConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      if (!connectionInProgress || !reactFlowInstance) {
+        setConnectionInProgress(null);
+        return;
+      }
+
+      const targetIsPane = (event.target as HTMLElement).classList.contains(
+        "react-flow__pane"
+      );
+
+      if (targetIsPane && connectionInProgress.source) {
+        // Connection was dropped on the canvas (not on a node)
+        // Get the mouse position
+        const clientX =
+          "clientX" in event
+            ? event.clientX
+            : (event as TouchEvent).touches[0].clientX;
+        const clientY =
+          "clientY" in event
+            ? event.clientY
+            : (event as TouchEvent).touches[0].clientY;
+
+        const reactFlowBounds =
+          reactFlowWrapper.current?.getBoundingClientRect();
+        if (!reactFlowBounds) {
+          setConnectionInProgress(null);
+          return;
+        }
+
+        // Convert screen coordinates to flow coordinates
+        const position = reactFlowInstance.project({
+          x: clientX - reactFlowBounds.left,
+          y: clientY - reactFlowBounds.top,
+        });
+
+        // Open the add node dialog at the drop position with source connection context
+        openDialog(position, {
+          sourceNodeId: connectionInProgress.source,
+          targetNodeId: "", // Empty target since we're adding a new node
+          sourceOutput: connectionInProgress.sourceHandle || undefined,
+          targetInput: undefined,
+        });
+      }
+
+      setConnectionInProgress(null);
+    },
+    [connectionInProgress, reactFlowInstance, openDialog]
+  );
+
   // ReactFlow control functions
   const handleZoomIn = useCallback(() => {
     if (reactFlowInstance) {
@@ -236,6 +314,8 @@ export function useReactFlowInteractions() {
     handleNodesChange,
     handleEdgesChange,
     handleConnect,
+    handleConnectStart,
+    handleConnectEnd,
     handleDragOver,
     handleDrop,
     handleNodeDoubleClick,

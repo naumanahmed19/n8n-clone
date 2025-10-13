@@ -106,11 +106,11 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
 
   const getLogLevelBadgeColor = (level: string) => {
     switch (level) {
-      case 'error': return 'bg-red-100 text-red-800 border-red-200'
-      case 'warn': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'info': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'debug': return 'bg-gray-100 text-gray-600 border-gray-200'
-      default: return 'bg-gray-100 text-gray-600 border-gray-200'
+      case 'error': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'
+      case 'warn': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800'
+      case 'info': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800'
+      case 'debug': return 'bg-muted text-muted-foreground border-border'
+      default: return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -123,31 +123,31 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
     }, 0)
     
     const colors = [
-      'bg-purple-100 text-purple-800 border-purple-200',
-      'bg-green-100 text-green-800 border-green-200',
-      'bg-indigo-100 text-indigo-800 border-indigo-200',
-      'bg-pink-100 text-pink-800 border-pink-200',
-      'bg-orange-100 text-orange-800 border-orange-200',
-      'bg-cyan-100 text-cyan-800 border-cyan-200',
+      'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800',
+      'bg-green-100 text-green-800 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800',
+      'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800',
+      'bg-pink-100 text-pink-800 border-pink-200 dark:bg-pink-950/30 dark:text-pink-400 dark:border-pink-800',
+      'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800',
+      'bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-800',
     ]
     
     return colors[Math.abs(hash) % colors.length]
   }
 
   return (
-   <div >
+   <div className="bg-background">
       {/* Controls Bar */}
-      <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+      <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
         <div className="flex items-center space-x-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <input
               type="text"
               placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="pl-8 pr-3 py-1 text-sm border border-input rounded bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring"
             />
           </div>
 
@@ -155,7 +155,7 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center space-x-1 px-2 py-1 text-xs rounded transition-colors ${
-              showFilters ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              showFilters ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             <Filter className="w-3 h-3" />
@@ -167,7 +167,7 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
           {onClearLogs && executionLogs.length > 0 && (
             <button
               onClick={onClearLogs}
-              className="flex items-center space-x-1 px-2 py-1 text-xs rounded transition-colors bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600"
+              className="flex items-center space-x-1 px-2 py-1 text-xs rounded transition-colors bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               title="Clear all logs"
             >
               <Trash2 className="w-3 h-3" />
@@ -178,11 +178,11 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
 
         {/* Sort options */}
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-500">Sort by:</span>
+          <span className="text-xs text-muted-foreground">Sort by:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="text-xs border border-input rounded px-2 py-1 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="time-desc">Latest first</option>
             <option value="time-asc">Oldest first</option>
@@ -194,14 +194,14 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
 
       {/* Advanced Filters Panel */}
       {showFilters && (
-        <div className="p-3 border-b bg-gray-50 space-y-2">
+        <div className="p-3 border-b border-border bg-muted/30 space-y-2">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-medium text-gray-700">Log Level:</span>
+              <span className="text-xs font-medium text-foreground">Log Level:</span>
               <select
                 value={filterLevel}
                 onChange={(e) => setFilterLevel(e.target.value as FilterOption)}
-                className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="text-xs border border-input rounded px-2 py-1 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="all">All levels</option>
                 <option value="error">Error</option>
@@ -212,11 +212,11 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
             </div>
 
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-medium text-gray-700">Node:</span>
+              <span className="text-xs font-medium text-foreground">Node:</span>
               <select
                 value={filterNode}
                 onChange={(e) => setFilterNode(e.target.value)}
-                className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="text-xs border border-input rounded px-2 py-1 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="all">All nodes</option>
                 {uniqueNodeIds.map(nodeId => (
@@ -230,17 +230,17 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
 
       {/* Logs Content */}
    
-    <div className="h-[calc(100dvh-540px)] overflow-y-auto p-4">
+    <div className="h-[calc(100dvh-540px)] overflow-y-auto p-4 bg-background">
           {filteredAndSortedLogs.length === 0 ? (
-            <div className="text-gray-500 text-center py-8">
+            <div className="text-muted-foreground text-center py-8">
               {executionLogs.length === 0 ? 'No logs available' : 'No logs match your filters'}
             </div>
           ) : (
             <div className="p-3 space-y-2">
               {filteredAndSortedLogs.map((log, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-2 rounded hover:bg-gray-50 border-l-2 border-l-transparent hover:border-l-blue-200">
+                  <div key={index} className="flex items-start space-x-3 p-2 rounded hover:bg-accent border-l-2 border-l-transparent hover:border-l-primary transition-colors">
                     {/* Timestamp */}
-                    <span className="text-gray-400 text-xs w-16 flex-shrink-0 font-mono">
+                    <span className="text-muted-foreground text-xs w-16 flex-shrink-0 font-mono">
                       {formatTimestamp(log.timestamp)}
                     </span>
 
@@ -259,15 +259,15 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
 
                     {/* Message */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm break-words">
+                      <div className="text-sm break-words text-foreground">
                         {log.message}
                       </div>
                       {log.data && (
                         <details className="mt-2">
-                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                          <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
                             View data
                           </summary>
-                          <pre className="mt-1 text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32 border">
+                          <pre className="mt-1 text-xs bg-muted/50 p-2 rounded overflow-auto max-h-32 border border-border">
                             {JSON.stringify(log.data, null, 2)}
                           </pre>
                         </details>
@@ -282,7 +282,7 @@ export function LogsTabContent({ executionLogs, isActive, onClearLogs }: LogsTab
    
 
       {/* Summary Footer */}
-      <div className="border-t bg-gray-50 px-3 py-2 text-xs text-gray-600">
+      <div className="border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
         Showing {filteredAndSortedLogs.length} of {executionLogs.length} logs
         {uniqueNodeIds.length > 0 && (
           <span className="ml-2">• {uniqueNodeIds.length} nodes</span>

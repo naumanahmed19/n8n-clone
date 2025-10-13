@@ -23,6 +23,8 @@ export interface FormFieldConfig {
     | "email"
     | "url"
     | "switch"
+    | "autocomplete"
+    | "credential"
     | "custom";
   required?: boolean;
   default?: any;
@@ -54,6 +56,7 @@ export interface FormFieldConfig {
   readonly?: boolean;
   rows?: number; // for textarea
   step?: number; // for number inputs
+  allowedTypes?: string[]; // for credential type - array of credential type names
   customComponent?: (props: CustomFieldProps) => ReactNode;
 }
 
@@ -63,6 +66,10 @@ export interface CustomFieldProps {
   field: FormFieldConfig;
   error?: string;
   disabled?: boolean;
+  allValues?: Record<string, any>;
+  allFields?: FormFieldConfig[];
+  onFieldUpdate?: (fieldName: string, value: any) => void; // Update other fields
+  credentialId?: string; // Credential ID for custom components that need API access
 }
 
 export interface FormGeneratorProps {
@@ -76,6 +83,7 @@ export interface FormGeneratorProps {
   fieldClassName?: string;
   showRequiredIndicator?: boolean;
   requiredIndicator?: ReactNode;
+  nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
 }
 
 export interface FieldVisibilityOptions {
@@ -92,6 +100,8 @@ export interface FormFieldRendererProps {
   disabled?: boolean;
   allValues: Record<string, any>;
   allFields: FormFieldConfig[];
+  onFieldChange?: (fieldName: string, value: any) => void; // For updating other fields
+  nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
 }
 
 export interface RepeatingFieldItem {

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Folder, List, Search } from 'lucide-react'
+import { Folder, List, RefreshCw, Search } from 'lucide-react'
 
 interface WorkflowsHeaderProps {
   viewMode: 'list' | 'categorized'
@@ -8,6 +8,8 @@ interface WorkflowsHeaderProps {
   workflowCount: number
   searchTerm: string
   setSearchTerm: (term: string) => void
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
 export function WorkflowsHeader({ 
@@ -15,7 +17,9 @@ export function WorkflowsHeader({
   setViewMode, 
   workflowCount,
   searchTerm,
-  setSearchTerm 
+  setSearchTerm,
+  onRefresh,
+  isRefreshing = false
 }: WorkflowsHeaderProps) {
   return (
     <div className="space-y-3">
@@ -44,15 +48,28 @@ export function WorkflowsHeader({
         </div>
       </div>
       
-      {/* Search input */}
-      <div className="relative">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search workflows..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-8"
-        />
+      {/* Search input with refresh button */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search workflows..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        {onRefresh && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -32,6 +32,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-visually-hidden": "^1.2.3",
     "@types/multer": "^2.0.0",
+    "@xyflow/react": "^12.8.6",
     "adm-zip": "^0.5.16",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.1",

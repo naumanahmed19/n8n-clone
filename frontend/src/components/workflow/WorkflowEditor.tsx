@@ -21,9 +21,11 @@ import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkfl
 import { NodeType } from '@/types'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 
+import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
+import { ChatInterfaceNode, ImagePreviewNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {
@@ -34,20 +36,31 @@ import {
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
+    chat: ChatInterfaceNode,
+    'image-preview': ImagePreviewNode,
 }
 
 interface WorkflowEditorProps {
     nodeTypes: NodeType[]
+    readOnly?: boolean
+    executionMode?: boolean
 }
 
-export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditorProps) {
+export function WorkflowEditor({ 
+    nodeTypes: availableNodeTypes,
+    readOnly = false,
+    executionMode = false
+}: WorkflowEditorProps) {
     const {
         workflow,
         showPropertyPanel,
         propertyPanelNodeId,
+        showChatDialog,
+        chatDialogNodeId,
         undo,
         redo,
         closeNodeProperties,
+        closeChatDialog,
     } = useWorkflowStore()
 
     // Command dialog state
@@ -103,13 +116,14 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
         setReactFlowInstance(instance)
     }, [setReactFlowInstance])
 
-    // Keyboard shortcuts
+    // Keyboard shortcuts - disabled in read-only mode
     useKeyboardShortcuts({
         onSave: saveWorkflow,
         onUndo: undo,
         onRedo: redo,
         onDelete: () => {}, // Will be set by the hook
         onAddNode: () => openDialog(),
+        disabled: readOnly
     })
 
     // Convert workflow data to React Flow format with real execution status
@@ -124,7 +138,10 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
             lastExecutionResult
         )
 
-        const reactFlowEdges = transformWorkflowEdgesToReactFlow(workflow.connections)
+        // Create a key that changes when execution state changes to force edge re-renders
+        // This ensures edge buttons become visible after execution completes
+        const executionStateKey = `${executionState.status}-${executionState.executionId || 'none'}`
+        const reactFlowEdges = transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
 
         setNodes(reactFlowNodes)
         setEdges(reactFlowEdges)
@@ -133,6 +150,10 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
     // Get selected node data for config panel
     const selectedNode = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
     const selectedNodeType = selectedNode ? availableNodeTypes.find(nt => nt.type === selectedNode.type) : null
+    
+    // Get chat node data for chat dialog
+    const chatNode = workflow?.nodes.find(node => node.id === chatDialogNodeId)
+    const chatNodeName = chatNode?.name || 'Chat'
 
     return (
         <div className="flex flex-col h-full w-full">
@@ -140,8 +161,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                 {/* Main Content Area with Resizable Panels */}
                 <div className="flex-1 flex h-full">
                     <ResizablePanelGroup direction="horizontal" className="flex-1">
-                        {/* Main Editor Area */}
-                        <ResizablePanel defaultSize={showNodePalette ? 80 : 100} minSize={50}>
+                        {/* Main Editor Area - Full Width in Execution Mode */}
+                        <ResizablePanel defaultSize={(readOnly || !showNodePalette) ? 100 : 80} minSize={50}>
                             {/* Resizable Layout for Canvas and Execution Panel */}
                             <ResizablePanelGroup direction="vertical" className="h-full">
                                 {/* React Flow Canvas */}
@@ -160,6 +181,8 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                                         backgroundVariant={backgroundVariant}
                                         onInit={handleReactFlowInit}
                                         isExecuting={executionState.status === 'running'}
+                                        readOnly={readOnly}
+                                        executionMode={executionMode}
                                     />
                                 </ResizablePanel>
 
@@ -200,17 +223,30 @@ export function WorkflowEditor({ nodeTypes: availableNodeTypes }: WorkflowEditor
                     nodeType={selectedNodeType}
                     isOpen={showPropertyPanel}
                     onClose={closeNodeProperties}
+                    readOnly={readOnly}
+                />
+            )}
+            
+            {/* Chat Dialog */}
+            {chatDialogNodeId && (
+                <ChatDialog
+                    nodeId={chatDialogNodeId}
+                    nodeName={chatNodeName}
+                    isOpen={showChatDialog}
+                    onClose={closeChatDialog}
                 />
             )}
 
       
 
-            {/* Add Node Command Dialog */}
-            <AddNodeCommandDialog
-                open={showAddNodeDialog}
-                onOpenChange={closeDialog}
-                position={position}
-            />
+            {/* Add Node Command Dialog - Hidden in read-only mode */}
+            {!readOnly && (
+                <AddNodeCommandDialog
+                    open={showAddNodeDialog}
+                    onOpenChange={closeDialog}
+                    position={position}
+                />
+            )}
         </div>
     )
 }

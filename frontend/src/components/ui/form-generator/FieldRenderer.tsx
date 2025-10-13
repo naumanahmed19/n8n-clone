@@ -1,3 +1,5 @@
+import { UnifiedCredentialSelector } from '@/components/credential/UnifiedCredentialSelector'
+import { AutoComplete, AutoCompleteOption } from '@/components/ui/autocomplete'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
@@ -10,6 +12,8 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays } from 'lucide-react'
+import { getCustomComponent } from './CustomComponentRegistry'
+import { ExpressionInput } from './ExpressionInput'
 import { RepeatingField } from './RepeatingField'
 import { FormFieldRendererProps } from './types'
 
@@ -20,6 +24,10 @@ export function FieldRenderer({
   onChange,
   onBlur,
   disabled,
+  allValues,
+  allFields,
+  onFieldChange,
+  nodeId,
 }: FormFieldRendererProps) {
   const handleChange = (newValue: any) => {
     onChange(newValue)
@@ -31,15 +39,101 @@ export function FieldRenderer({
     }
   }
 
-  // Custom field component
-  if (field.type === 'custom' && field.customComponent) {
-    return field.customComponent({
-      value,
-      onChange: handleChange,
-      field,
-      error,
-      disabled,
-    })
+  // Custom field component - support both inline and registry-based components
+  if (field.type === 'custom') {
+    // First check for inline custom component
+    if (field.customComponent) {
+      // Extract credentials from allValues for inline components too
+      const credentials = allValues?.__credentials || {}
+      const credentialId = Object.values(credentials)[0] as string | undefined
+      
+      // Extract dependsOn fields (same logic as registry-based components)
+      const dependsOn = field.componentProps?.dependsOn
+      const dependsOnValues: Record<string, any> = {}
+      
+      if (dependsOn) {
+        if (Array.isArray(dependsOn)) {
+          // dependsOn is an array: ["spreadsheetId", "sheetName"]
+          dependsOn.forEach((key) => {
+            dependsOnValues[key] = allValues?.[key]
+          })
+        } else if (typeof dependsOn === 'string') {
+          // dependsOn is a string: "spreadsheetId"
+          dependsOnValues[dependsOn] = allValues?.[dependsOn]
+        }
+      }
+      
+      return field.customComponent({
+        value,
+        onChange: handleChange,
+        field,
+        error,
+        disabled,
+        allValues,
+        allFields,
+        onFieldUpdate: onFieldChange,
+        credentialId, // Pass credential ID to inline custom components
+        ...dependsOnValues, // Pass dependent field values
+      })
+    }
+    
+    // Then check for registry-based component
+    if (field.component) {
+      const CustomComponent = getCustomComponent(field.component)
+      
+      if (CustomComponent) {
+        // Extract credentials from allValues
+        const credentials = allValues?.__credentials || {}
+        
+        // Get the first credential ID (most nodes have only one credential type)
+        const credentialId = Object.values(credentials)[0] as string | undefined
+        
+        // Extract dependsOn fields
+        const dependsOn = field.componentProps?.dependsOn
+        const dependsOnValues: Record<string, any> = {}
+        
+        if (dependsOn) {
+          if (Array.isArray(dependsOn)) {
+            // dependsOn is an array: ["spreadsheetId", "sheetName"]
+            dependsOn.forEach((key) => {
+              dependsOnValues[key] = allValues?.[key]
+            })
+          } else if (typeof dependsOn === 'string') {
+            // dependsOn is a string: "spreadsheetId"
+            dependsOnValues[dependsOn] = allValues?.[dependsOn]
+          }
+        }
+        
+        // Filter out dependsOn from componentProps to avoid passing it as a prop
+        const { dependsOn: _, ...componentPropsWithoutDependsOn } = field.componentProps || {}
+        
+        // Merge field.options with componentProps if options exist at field level
+        const finalProps = {
+          ...componentPropsWithoutDependsOn,
+          // If options exist at field level and not in componentProps, add them
+          ...(field.options && !componentPropsWithoutDependsOn.options ? { options: field.options } : {}),
+        };
+        
+        return (
+          <CustomComponent
+            value={value}
+            onChange={handleChange}
+            disabled={disabled}
+            error={error}
+            credentialId={credentialId} // Pass credential ID to custom components
+            {...finalProps}
+            {...dependsOnValues} // Pass dependent field values
+          />
+        )
+      }
+    }
+    
+    // Fallback for unknown custom component
+    return (
+      <div className="text-sm text-amber-600">
+        Custom component "{field.component || 'unknown'}" not found
+      </div>
+    )
   }
 
   // Collection type with multipleValues - use RepeatingField
@@ -68,16 +162,29 @@ export function FieldRenderer({
   }
 
   switch (field.type) {
+    case 'credential':
+      return (
+        <UnifiedCredentialSelector
+          allowedTypes={field.allowedTypes || []}
+          value={value}
+          onChange={handleChange}
+          placeholder={field.placeholder}
+          required={field.required}
+          error={error}
+          disabled={disabled || field.disabled}
+        />
+      )
+
     case 'string':
       return (
-        <Input
-          type="text"
+        <ExpressionInput
           value={value || ''}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           placeholder={field.placeholder}
           disabled={disabled || field.disabled || field.readonly}
-          className={error ? 'border-destructive' : ''}
+          error={!!error}
+          nodeId={nodeId}
         />
       )
 
@@ -141,14 +248,14 @@ export function FieldRenderer({
 
     case 'textarea':
       return (
-        <Textarea
+        <ExpressionInput
           value={value || ''}
-          onChange={(e) => handleChange(e.target.value)}
+          onChange={handleChange}
           onBlur={handleBlur}
           placeholder={field.placeholder}
           disabled={disabled || field.disabled || field.readonly}
-          rows={field.rows || 4}
-          className={error ? 'border-destructive' : ''}
+          error={!!error}
+          nodeId={nodeId}
         />
       )
 
@@ -214,6 +321,53 @@ export function FieldRenderer({
           </SelectContent>
         </Select>
       )
+
+    case 'autocomplete': {
+      // Convert field options to AutoComplete format
+      const autocompleteOptions: AutoCompleteOption[] = (field.options || []).map((option) => ({
+        id: String(option.value),
+        label: option.name,
+        value: String(option.value),
+        metadata: {
+          subtitle: option.description,
+        },
+      }));
+
+      console.log('FieldRenderer autocomplete:', {
+        fieldName: field.name,
+        fieldDisplayName: field.displayName,
+        value,
+        optionsCount: autocompleteOptions.length,
+        options: autocompleteOptions,
+      });
+
+      return (
+        <AutoComplete
+          value={String(value || '')}
+          onChange={(selectedValue) => handleChange(selectedValue)}
+          options={autocompleteOptions}
+          placeholder={field.placeholder || `Select ${field.displayName}`}
+          searchPlaceholder={`Search ${field.displayName.toLowerCase()}...`}
+          emptyMessage={`No ${field.displayName.toLowerCase()} available`}
+          noOptionsMessage="No matching results"
+          disabled={disabled || field.disabled}
+          error={error}
+          clearable={!field.required}
+          refreshable={false}
+          searchable={true}
+          renderOption={(option) => (
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{option.label}</p>
+              {option.metadata?.subtitle && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {option.metadata.subtitle}
+                </p>
+              )}
+            </div>
+          )}
+        />
+      );
+    }
 
     case 'multiOptions':
       return (

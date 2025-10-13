@@ -1,7 +1,10 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
-import ReactFlow, { Background, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
+import { useReactFlowUIStore } from '@/stores'
+import { useEffect, useMemo, useState } from 'react'
+import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
+import './reactflow-theme.css'
 
 const edgeTypes: EdgeTypes = {
     default: WorkflowEdge,
@@ -18,6 +21,8 @@ interface WorkflowCanvasProps {
     backgroundVariant: string
     onInit: (instance: any) => void
     isExecuting?: boolean
+    readOnly?: boolean
+    executionMode?: boolean
 }
 
 export function WorkflowCanvas({
@@ -30,46 +35,115 @@ export function WorkflowCanvas({
     backgroundVariant,
     onInit,
     isExecuting = false,
+    readOnly = false,
+    executionMode = false,
 }: WorkflowCanvasProps) {
     const {
         reactFlowWrapper,
         handleNodesChange,
         handleEdgesChange,
         handleConnect,
+        handleConnectStart,
+        handleConnectEnd,
         handleDrop,
         handleDragOver,
         handleSelectionChange,
         handleNodeDoubleClick,
     } = useReactFlowInteractions()
     
+    // Get panOnDrag and zoomOnScroll settings from store
+    const { panOnDrag, zoomOnScroll } = useReactFlowUIStore()
+    
+    // Determine if interactions should be disabled
+    const isDisabled = readOnly || executionMode
+    
+    // Change background pattern for disabled/read-only mode
+    const displayBackgroundVariant = isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any)
+    const backgroundColor = isDisabled ? 'hsl(var(--muted))' : undefined
+    
+    // Detect dark mode and listen for changes
+    const [isDarkMode, setIsDarkMode] = useState(() => 
+        document.documentElement.classList.contains('dark')
+    )
+    
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setIsDarkMode(document.documentElement.classList.contains('dark'))
+        })
+        
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        })
+        
+        return () => observer.disconnect()
+    }, [])
+    
+    // Edge styles based on theme
+    const edgeStyle = useMemo(() => ({
+        stroke: isDarkMode ? 'hsl(var(--border))' : '#b1b1b7',
+        strokeWidth: 2,
+    }), [isDarkMode])
+    
+    const connectionLineStyle = useMemo(() => ({
+        stroke: isDarkMode ? 'hsl(var(--primary))' : '#5865f2',
+        strokeWidth: 2,
+    }), [isDarkMode])
+
+    
+
     return (
-        <WorkflowCanvasContextMenu>
-            <div className="h-full" ref={reactFlowWrapper}>
+        <WorkflowCanvasContextMenu readOnly={isDisabled}>
+            <div className="h-full" ref={reactFlowWrapper} style={{ backgroundColor }}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
-                    onNodesChange={handleNodesChange}
-                    onEdgesChange={handleEdgesChange}
-                    onConnect={handleConnect}
+                    onNodesChange={isDisabled ? undefined : handleNodesChange}
+                    onEdgesChange={isDisabled ? undefined : handleEdgesChange}
+                    onConnect={isDisabled ? undefined : handleConnect}
+                    onConnectStart={isDisabled ? undefined : handleConnectStart}
+                    onConnectEnd={isDisabled ? undefined : handleConnectEnd}
                     onInit={onInit}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
+                    onDrop={isDisabled ? undefined : handleDrop}
+                    onDragOver={isDisabled ? undefined : handleDragOver}
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
+                    nodesDraggable={!isDisabled}
+                    nodesConnectable={!isDisabled}
+                    elementsSelectable={true}
+                    panOnDrag={panOnDrag}
+                    zoomOnScroll={zoomOnScroll}
+                    connectionLineStyle={connectionLineStyle}
                     fitView
                     attributionPosition="bottom-left"
-                    edgeUpdaterRadius={10}
-                    connectionRadius={20}
+                    edgeUpdaterRadius={isDisabled ? 0 : 10}
+                    connectionRadius={isDisabled ? 0 : 20}
                     defaultEdgeOptions={{
                         type: 'smoothstep',
                         animated: isExecuting,
+                        style: edgeStyle,
                     }}
                 >
                     {showControls && <Controls />}
-                    {showMinimap && <MiniMap />}
-                    {showBackground && <Background variant={backgroundVariant as any} gap={12} size={1} />}
+                    {showMinimap && (
+                        <MiniMap
+                            nodeColor={isDarkMode ? '#334155' : '#e2e8f0'}
+                            maskColor={isDarkMode ? 'rgba(28, 37, 51, 0.6)' : 'rgba(0, 0, 0, 0.1)'}
+                            style={{
+                                backgroundColor: isDarkMode ? 'hsl(var(--card))' : '#fff',
+                            }}
+                        />
+                    )}
+                    {showBackground && (
+                        <Background 
+                            variant={displayBackgroundVariant} 
+                            gap={isDisabled ? 20 : 12} 
+                            size={isDisabled ? 2 : 1}
+                            color={isDisabled ? '#cbd5e1' : undefined}
+                        />
+                    )}
                 </ReactFlow>
             </div>
         </WorkflowCanvasContextMenu>

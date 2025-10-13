@@ -4,22 +4,27 @@ import { JsonEditor } from '@/components/ui/json-editor'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
+import { useNodeTypesStore } from '@/stores/nodeTypes'
 import { WorkflowNode } from '@/types'
 import {
-  Copy,
-  Database,
-  Edit,
-  Pin,
-  PinOff
+    Copy,
+    Database,
+    Edit,
+    Pin,
+    PinOff
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ImagePreviewOutput } from './output-components/ImagePreviewOutput'
+import { getOutputComponent } from './output-components/OutputComponentRegistry'
 
 interface OutputColumnProps {
   node: WorkflowNode
+  readOnly?: boolean
 }
 
 export function OutputColumn({ node }: OutputColumnProps) {
   const { getNodeExecutionResult } = useWorkflowStore()
+  const { getNodeTypeById } = useNodeTypesStore()
   const {
     mockData,
     mockDataPinned,
@@ -32,6 +37,15 @@ export function OutputColumn({ node }: OutputColumnProps) {
   } = useNodeConfigDialogStore()
 
   const nodeExecutionResult = getNodeExecutionResult(node.id)
+  const nodeTypeDefinition = getNodeTypeById(node.type)
+  
+  // Get custom output component if defined
+  // Temporary: Check node type directly until database migration is complete
+  const CustomOutputComponent = nodeTypeDefinition?.outputComponent 
+    ? getOutputComponent(nodeTypeDefinition.outputComponent)
+    : node.type === 'image-preview' 
+      ? ImagePreviewOutput
+      : undefined
 
   const handleMockDataSave = () => {
     try {
@@ -290,13 +304,25 @@ export function OutputColumn({ node }: OutputColumnProps) {
                       </div>
                     </div>
 
-                    <div className="rounded-md border bg-muted/30 p-3 flex-1 min-h-0">
-                      <ScrollArea className="h-full w-full">
-                        <pre className="text-xs font-mono whitespace-pre-wrap break-all">
-                          {JSON.stringify(displayData, null, 2)}
-                        </pre>
-                      </ScrollArea>
-                    </div>
+                    {/* Render custom output component if available, otherwise show JSON */}
+                    {CustomOutputComponent ? (
+                      <div className="flex-1 min-h-0">
+                        <CustomOutputComponent 
+                          data={displayData}
+                          nodeType={node.type}
+                          executionStatus={nodeExecutionResult?.status}
+                        />
+                      </div>
+                    ) : (
+                      /* Regular JSON output for nodes without custom output component */
+                      <div className="rounded-md border bg-muted/30 p-3 flex-1 min-h-0">
+                        <ScrollArea className="h-full w-full">
+                          <pre className="text-xs font-mono whitespace-pre-wrap break-all">
+                            {JSON.stringify(displayData, null, 2)}
+                          </pre>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </div>
                 )
               ) : (

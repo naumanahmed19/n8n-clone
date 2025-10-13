@@ -1,29 +1,25 @@
-import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { isTriggerNode } from '@/utils/nodeTypeClassification'
-import { clsx } from 'clsx'
-import { useState } from 'react'
+import { useWorkflowStore } from '@/stores'
+import type { NodeType } from '@/types'
+import { getNodeIcon } from '@/utils/nodeIconMap'
 import { NodeProps } from 'reactflow'
-import { NodeContent } from './components/NodeContent'
-import { NodeContextMenu } from './components/NodeContextMenu'
-import { NodeHandles } from './components/NodeHandles'
 import { NodeMetadata } from './components/NodeMetadata'
-import { NodeToolbarContent } from './components/NodeToolbarContent'
-import { useNodeActions } from './hooks/useNodeActions'
 import { useNodeExecution } from './hooks/useNodeExecution'
-import './node-animations.css'
-import { getAnimationClasses, getNodeColor, getStatusIcon } from './utils/nodeStyles'
+import { BaseNodeWrapper } from './nodes/BaseNodeWrapper'
 
 interface CustomNodeData {
   label: string
   nodeType: string
   parameters: Record<string, any>
   disabled: boolean
+  locked?: boolean
   status?: 'idle' | 'running' | 'success' | 'error'
   icon?: string
   color?: string
   // Node definition properties
   inputs?: string[]
   outputs?: string[]
+  nodeTypeDefinition?: NodeType  // Add full node type definition
+  executionCapability?: 'trigger' | 'action' | 'transform' | 'condition'  // Add capability
   // Position and style properties
   position?: { x: number; y: number }
   dimensions?: { width: number; height: number }
@@ -32,7 +28,7 @@ interface CustomNodeData {
     borderColor?: string
     borderWidth?: number
     borderRadius?: number
-    shape?: 'rectangle' | 'circle' | 'diamond' | 'trigger'
+    shape?: 'rectangle' | 'trigger'
     opacity?: number
   }
   // Additional properties for node toolbar
@@ -44,104 +40,45 @@ interface CustomNodeData {
 }
 
 export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
-  // Use custom hooks
-  const { 
-    nodeExecutionState, 
-    executionState, 
-    nodeVisualState, 
-    handleExecuteNode, 
-    handleRetryNode 
-  } = useNodeExecution(id, data.nodeType)
+  // Get read-only state from store (only true when viewing past execution)
+  const { readOnly } = useWorkflowStore()
   
-  const {
-    handleToggleDisabled,
-    handleOpenProperties,
-    handleExecuteFromContext,
-    handleDuplicate,
-    handleDelete,
-    handleOutputClick
-  } = useNodeActions(id)
-
-  // Local state for tracking which output connector is hovered
-  const [hoveredOutput, setHoveredOutput] = useState<string | null>(null)
+  // Use custom hooks for node visual state
+  const { nodeVisualState } = useNodeExecution(id, data.nodeType)
 
   // Check if this is a trigger node
-  const isTrigger = isTriggerNode(data.nodeType)
+  const isTrigger = data.executionCapability === 'trigger'
 
-  // Get styling
-  const statusIcon = getStatusIcon(nodeVisualState, nodeExecutionState, data.status)
-  const nodeColor = getNodeColor(data.disabled, selected, nodeVisualState, nodeExecutionState, data.status)
-  const animationClasses = getAnimationClasses(nodeVisualState)
+  // Get icon from map if not provided in data
+  const iconConfig = getNodeIcon(data.nodeType)
+  const nodeIcon = data.icon || iconConfig.icon
+  const nodeColor = data.color || iconConfig.color
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div className="flex flex-col items-center">
-          {/* Main Node Container */}
-          <div
-            className={clsx(
-              'p-3 shadow-md border-2 transition-all duration-200 relative',
-              isTrigger 
-                ? 'rounded-l-full rounded-r-none w-16 h-16' 
-                : 'rounded-md w-16 h-16',
-              nodeColor,
-              animationClasses,
-              data.disabled && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {/* Handles */}
-            <NodeHandles
-              inputs={data.inputs}
-              outputs={data.outputs}
-              disabled={data.disabled}
-              isTrigger={isTrigger}
-              hoveredOutput={hoveredOutput}
-              onOutputMouseEnter={setHoveredOutput}
-              onOutputMouseLeave={() => setHoveredOutput(null)}
-              onOutputClick={handleOutputClick}
-            />
-
-            {/* Node Content */}
-            <NodeContent
-              icon={data.icon}
-              color={data.color}
-              nodeType={data.nodeType}
-              disabled={data.disabled}
-              isTrigger={isTrigger}
-              statusIcon={statusIcon}
-            />
-
-            {/* Node Toolbar */}
-            <NodeToolbarContent
-              nodeId={id}
-              nodeType={data.nodeType}
-              nodeLabel={data.label}
-              disabled={data.disabled}
-              isExecuting={nodeExecutionState.isExecuting}
-              hasError={nodeExecutionState.hasError}
-              hasSuccess={nodeExecutionState.hasSuccess}
-              executionError={nodeExecutionState.executionError}
-              workflowExecutionStatus={executionState.status}
-              onExecute={handleExecuteNode}
-              onRetry={handleRetryNode}
-              onToggleDisabled={handleToggleDisabled}
-            />
-          </div>
-
-          {/* Node Metadata */}
-          <NodeMetadata
-            label={data.label}
-            nodeVisualState={nodeVisualState}
-          />
-        </div>
-      </ContextMenuTrigger>
-      
-      <NodeContextMenu
-        onOpenProperties={handleOpenProperties}
-        onExecute={handleExecuteFromContext}
-        onDuplicate={handleDuplicate}
-        onDelete={handleDelete}
-      />
-    </ContextMenu>
+    <BaseNodeWrapper
+      id={id}
+      selected={selected}
+      data={data}
+      isReadOnly={readOnly}
+      isExpanded={false}
+      onToggleExpand={() => {}}
+      canExpand={false}
+      nodeConfig={{
+        icon: nodeIcon,
+        color: nodeColor,
+        isTrigger,
+        inputs: data.inputs,
+        outputs: data.outputs,
+        imageUrl: data.parameters?.imageUrl as string,
+      }}
+      customMetadata={
+        <NodeMetadata
+          nodeVisualState={nodeVisualState}
+        />
+      }
+      toolbar={{
+        showToolbar: true,
+      }}
+    />
   )
 }

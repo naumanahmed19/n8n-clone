@@ -85,7 +85,7 @@ export const Header: React.FC = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-1">
-              <Link to="/workspace" className={navLinkClass('/workspace')}>
+              <Link to="/workflows" className={navLinkClass('/workflows')}>
                 <Workflow className="w-4 h-4" />
                 <span>Workflows</span>
               </Link>
@@ -217,8 +217,8 @@ export const Header: React.FC = () => {
           {/* Mobile Navigation Links */}
           <nav className="px-4 py-2 space-y-1">
             <Link
-              to="/workspace"
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${isActiveRoute('/workspace')
+              to="/workflows"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${isActiveRoute('/workflows')
                   ? 'text-primary-600 bg-primary-50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}

@@ -16,6 +16,7 @@ export function FormGenerator({
   fieldClassName,
   showRequiredIndicator = true,
   requiredIndicator = <span className="text-destructive ml-1">*</span>,
+  nodeId,
 }: FormGeneratorProps) {
   const [internalErrors, setInternalErrors] = useState<Record<string, string>>({})
   
@@ -126,6 +127,8 @@ export function FormGenerator({
                 disabled={disabled}
                 allValues={values}
                 allFields={fields}
+                onFieldChange={handleFieldChange}
+                nodeId={nodeId}
               />
             </div>
             <FormFieldDescription field={field} />
@@ -164,8 +167,8 @@ interface FormFieldLabelProps {
 }
 
 function FormFieldLabel({ field, showRequiredIndicator, requiredIndicator }: FormFieldLabelProps) {
-  // Don't show label for boolean and switch types as they have their own labels
-  if (field.type === 'boolean' || field.type === 'switch') {
+  // Don't show label for boolean, switch, and custom component types
+  if (field.type === 'boolean' || field.type === 'switch' || field.type === 'custom') {
     return null
   }
 

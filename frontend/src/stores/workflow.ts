@@ -65,6 +65,9 @@ interface WorkflowStore extends WorkflowEditorState {
   persistentNodeResults: Map<string, NodeExecutionResult>; // Preserved results for node config dialog
   executionLogs: ExecutionLogEntry[];
 
+  // Read-only mode (for viewing past executions)
+  readOnly: boolean;
+
   // Flow execution state
   flowExecutionState: FlowExecutionState;
   progressTracker: ProgressTracker;
@@ -75,6 +78,10 @@ interface WorkflowStore extends WorkflowEditorState {
   contextMenuVisible: boolean;
   contextMenuPosition: { x: number; y: number } | null;
   contextMenuNodeId: string | null;
+
+  // Chat dialog state
+  showChatDialog: boolean;
+  chatDialogNodeId: string | null;
 
   // Actions
   setWorkflow: (workflow: Workflow | null) => void;
@@ -165,12 +172,22 @@ interface WorkflowStore extends WorkflowEditorState {
   toggleWorkflowActive: () => void;
   setWorkflowActive: (active: boolean) => void;
 
+  // Node lock/unlock
+  toggleNodeLock: (nodeId: string) => void;
+
   // Validation
   validateWorkflow: () => { isValid: boolean; errors: string[] };
   validateConnection: (sourceId: string, targetId: string) => boolean;
 
   // Helper functions
   gatherInputDataFromConnectedNodes: (nodeId: string) => any;
+
+  // Execution mode control
+  setExecutionMode: (enabled: boolean, executionId?: string) => void;
+  setNodeExecutionResult: (
+    nodeId: string,
+    result: Partial<NodeExecutionResult>
+  ) => void;
 
   // Node interaction actions
   setShowPropertyPanel: (show: boolean) => void;
@@ -179,6 +196,10 @@ interface WorkflowStore extends WorkflowEditorState {
   hideContextMenu: () => void;
   openNodeProperties: (nodeId: string) => void;
   closeNodeProperties: () => void;
+
+  // Chat dialog actions
+  openChatDialog: (nodeId: string) => void;
+  closeChatDialog: () => void;
 
   // Error handling
   handleError: (
@@ -198,6 +219,39 @@ interface WorkflowStore extends WorkflowEditorState {
 }
 
 const MAX_HISTORY_SIZE = 50;
+
+/**
+ * Helper function to serialize error for display
+ * Converts error objects to properly formatted strings
+ */
+function serializeError(error: any): string | undefined {
+  if (!error) return undefined;
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  // If it's an object, try to extract useful information
+  if (typeof error === "object") {
+    // Check for common error properties
+    if (error.message) {
+      return error.message;
+    }
+
+    // If the object has useful information, stringify it
+    try {
+      return JSON.stringify(error, null, 2);
+    } catch (e) {
+      return String(error);
+    }
+  }
+
+  return String(error);
+}
 
 export const useWorkflowStore = create<WorkflowStore>()(
   devtools(
@@ -237,6 +291,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
       persistentNodeResults: new Map(),
       executionLogs: [],
 
+      // Read-only mode state
+      readOnly: false,
+
       // Flow execution state
       flowExecutionState: {
         activeExecutions: new Map(),
@@ -253,6 +310,10 @@ export const useWorkflowStore = create<WorkflowStore>()(
       contextMenuVisible: false,
       contextMenuPosition: null,
       contextMenuNodeId: null,
+
+      // Chat dialog state
+      showChatDialog: false,
+      chatDialogNodeId: null,
 
       // Actions
       setWorkflow: (workflow) => {
@@ -281,6 +342,8 @@ export const useWorkflowStore = create<WorkflowStore>()(
           contextMenuVisible: false,
           contextMenuPosition: null,
           contextMenuNodeId: null,
+          showChatDialog: false,
+          chatDialogNodeId: null,
         });
         if (processedWorkflow) {
           get().saveToHistory("Load workflow");
@@ -968,9 +1031,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
             // For workflow mode, use the main workflow execution endpoint
             // This is essentially the same as executeWorkflow() but triggered from a specific node
 
-            // Clear previous execution data and states like main executeWorkflow
+            // Clear execution logs but DON'T clear realTimeResults
+            // We keep previous execution results so multiple triggers can maintain their outputs
             get().clearExecutionLogs();
-            set({ realTimeResults: new Map() });
+
+            // NOTE: We intentionally DON'T clear realTimeResults here anymore
+            // This allows multiple triggers to maintain their execution outputs independently
+            // Results will be updated/overwritten per node as new executions complete
+            // set({ realTimeResults: new Map() }); // REMOVED - this was clearing all previous results
 
             // FIXED: Don't clear node visual states when starting a new execution
             // This preserves status icons from previous completed execution chains
@@ -1177,7 +1245,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
                 get().updateNodeExecutionState(nodeExec.nodeId, visualStatus, {
                   progress: nodeStatus === "success" ? 100 : undefined,
-                  error: nodeExec.error,
+                  error: serializeError(nodeExec.error),
                   outputData: nodeExec.outputData,
                   startTime: nodeExec.startedAt
                     ? new Date(nodeExec.startedAt).getTime()
@@ -1206,7 +1274,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                         new Date(nodeExec.startedAt).getTime()
                       : 0,
                   data: nodeExec.outputData,
-                  error: nodeExec.error,
+                  error: serializeError(nodeExec.error),
                 });
               });
 
@@ -1245,7 +1313,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 },
               });
 
-              // Set final execution state
+              // Create execution result with all node results
+              const executionResult: WorkflowExecutionResult = {
+                executionId: executionResponse.executionId,
+                workflowId: workflow.id,
+                status: finalStatus,
+                startTime,
+                endTime,
+                duration,
+                nodeResults: Array.from(get().realTimeResults.values()),
+                error: finalProgress.error?.message,
+                triggerNodeId: nodeId, // Track which node triggered this execution
+              };
+
+              // Set final execution state with lastExecutionResult
               set({
                 executionState: {
                   status: finalStatus,
@@ -1255,6 +1336,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                   error: finalProgress.error?.message,
                   executionId: executionResponse.executionId,
                 },
+                lastExecutionResult: executionResult,
               });
 
               console.log(
@@ -1337,13 +1419,33 @@ export const useWorkflowStore = create<WorkflowStore>()(
             const { NodeValidator } = await import("@/utils/nodeValidation");
 
             let filteredParameters = node.parameters;
+            let nodeTypeDefinition: any;
             try {
               const nodeTypes = await workflowService.getNodeTypes();
-              const nodeTypeDefinition = nodeTypes.find(
+              nodeTypeDefinition = nodeTypes.find(
                 (nt) => nt.type === node.type
               );
 
               if (nodeTypeDefinition && nodeTypeDefinition.properties) {
+                // Validate required parameters before execution
+                const validation = NodeValidator.validateNode(
+                  node,
+                  nodeTypeDefinition.properties
+                );
+
+                if (!validation.isValid) {
+                  const errorMessage = NodeValidator.formatValidationMessage(
+                    validation.errors
+                  );
+                  const detailedErrors = validation.errors
+                    .map((e) => `- ${e.message}`)
+                    .join("\n");
+
+                  throw new Error(
+                    `Cannot execute node: ${errorMessage}\n\n${detailedErrors}`
+                  );
+                }
+
                 // Filter parameters to only include visible fields
                 filteredParameters = NodeValidator.filterVisibleParameters(
                   node.parameters,
@@ -1352,6 +1454,13 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 console.log("Filtered parameters:", filteredParameters);
               }
             } catch (error) {
+              // Re-throw validation errors
+              if (
+                error instanceof Error &&
+                error.message.includes("Cannot execute node")
+              ) {
+                throw error;
+              }
               console.warn("Failed to filter parameters, using all:", error);
               // Continue with unfiltered parameters if filtering fails
             }
@@ -1392,7 +1501,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
               if (nodeExecution) {
                 nodeOutputData = nodeExecution.outputData;
-                nodeError = nodeExecution.error;
+                nodeError = serializeError(nodeExecution.error);
               }
             } catch (error) {
               console.warn(
@@ -1584,7 +1693,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                       new Date(nodeExec.startedAt).getTime()
                     : 0,
                 data: nodeExec.outputData,
-                error: nodeExec.error,
+                error: serializeError(nodeExec.error),
               };
 
               // Update real-time results
@@ -1601,7 +1710,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
               get().updateNodeExecutionState(nodeExec.nodeId, visualStatus, {
                 progress: nodeStatus === "success" ? 100 : undefined,
-                error: nodeExec.error,
+                error: serializeError(nodeExec.error),
                 outputData: nodeExec.outputData,
                 startTime: nodeExec.startedAt
                   ? new Date(nodeExec.startedAt).getTime()
@@ -1944,6 +2053,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         });
 
         set({
+          readOnly: false, // Clear read-only mode
           executionState: {
             status: "idle",
             progress: 0,
@@ -2835,6 +2945,26 @@ export const useWorkflowStore = create<WorkflowStore>()(
         }
       },
 
+      // Node lock/unlock
+      toggleNodeLock: (nodeId: string) => {
+        const { workflow } = get();
+        if (!workflow) return;
+
+        const node = workflow.nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+
+        const newLockedState = !node.locked;
+        get().updateNode(nodeId, { locked: newLockedState });
+
+        get().addExecutionLog({
+          timestamp: new Date().toISOString(),
+          level: "info",
+          message: `Node "${node.name}" ${
+            newLockedState ? "locked" : "unlocked"
+          }`,
+        });
+      },
+
       // Validation
       validateWorkflow: () => {
         const { workflow } = get();
@@ -3070,6 +3200,34 @@ export const useWorkflowStore = create<WorkflowStore>()(
         });
       },
 
+      // Execution mode control
+      setExecutionMode: (enabled: boolean, executionId?: string) => {
+        set({
+          readOnly: enabled, // Set read-only mode when viewing past execution
+          executionState: {
+            ...get().executionState,
+            executionId: enabled ? executionId : undefined,
+          },
+        });
+      },
+
+      setNodeExecutionResult: (
+        nodeId: string,
+        result: Partial<NodeExecutionResult>
+      ) => {
+        const { persistentNodeResults } = get();
+        const newPersistentResults = new Map(persistentNodeResults);
+
+        // Merge with existing result if present
+        const existing = newPersistentResults.get(nodeId);
+        newPersistentResults.set(nodeId, {
+          ...existing,
+          ...result,
+        } as NodeExecutionResult);
+
+        set({ persistentNodeResults: newPersistentResults });
+      },
+
       showContextMenu: (nodeId: string, position: { x: number; y: number }) => {
         set({
           contextMenuVisible: true,
@@ -3101,6 +3259,21 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set({
           showPropertyPanel: false,
           propertyPanelNodeId: null,
+        });
+      },
+
+      // Chat dialog actions
+      openChatDialog: (nodeId: string) => {
+        set({
+          showChatDialog: true,
+          chatDialogNodeId: nodeId,
+        });
+      },
+
+      closeChatDialog: () => {
+        set({
+          showChatDialog: false,
+          chatDialogNodeId: null,
         });
       },
 

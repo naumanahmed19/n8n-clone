@@ -469,6 +469,15 @@ export class ExecutionEngine extends EventEmitter {
         });
       }
 
+      // For workflow-called triggers, add additional context
+      if (node.type === "workflow-called") {
+        logger.info(`Executing workflow-called trigger node ${nodeId}`, {
+          executionId,
+          triggerDataSize: JSON.stringify(context.triggerData || {}).length,
+          nodeParameters: Object.keys(node.parameters || {}),
+        });
+      }
+
       const result = await this.nodeService.executeNode(
         node.type,
         node.parameters,
@@ -535,6 +544,19 @@ export class ExecutionEngine extends EventEmitter {
           triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
           nodeParameters: Object.keys(node.parameters || {}),
         });
+      }
+
+      // Enhanced error handling for workflow-called triggers
+      if (node && node.type === "workflow-called") {
+        logger.error(
+          `Workflow-called trigger node ${nodeId} execution failed`,
+          {
+            executionId,
+            error: error instanceof Error ? error.message : "Unknown error",
+            triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
+            nodeParameters: Object.keys(node.parameters || {}),
+          }
+        );
       }
 
       await this.handleNodeExecutionError(
@@ -668,8 +690,16 @@ export class ExecutionEngine extends EventEmitter {
 
       const node = graph.nodes.get(nodeId);
       if (!node || node.disabled) {
+        logger.info(
+          `Skipping node ${nodeId}: ${!node ? "not found" : "disabled"}`
+        );
         continue;
       }
+
+      logger.info(`Executing node ${nodeId} (${node.type})`, {
+        nodeType: node.type,
+        nodeName: node.name,
+      });
 
       // Prepare input data for the node
       const inputData = this.prepareNodeInputData(nodeId, graph, context);
@@ -684,6 +714,8 @@ export class ExecutionEngine extends EventEmitter {
 
       // Wait for node execution to complete
       await this.waitForNodeCompletion(context.executionId, nodeId);
+
+      logger.info(`Node ${nodeId} completed execution`);
     }
   }
 
@@ -716,6 +748,21 @@ export class ExecutionEngine extends EventEmitter {
           triggerDataKeys: Object.keys(triggerInput),
           triggerDataSize: JSON.stringify(triggerInput).length,
         });
+
+        inputData.main = [[{ json: triggerInput }]];
+      } else if (node && node.type === "workflow-called") {
+        // For workflow-called triggers, pass the trigger data as the first item
+        // Similar to manual triggers but specifically for workflow-to-workflow calls
+        const triggerInput = context.triggerData || {};
+
+        // Log trigger data for debugging
+        logger.debug(
+          `Preparing workflow-called trigger input data for node ${nodeId}`,
+          {
+            triggerDataKeys: Object.keys(triggerInput),
+            triggerDataSize: JSON.stringify(triggerInput).length,
+          }
+        );
 
         inputData.main = [[{ json: triggerInput }]];
       } else {
@@ -993,9 +1040,12 @@ export class ExecutionEngine extends EventEmitter {
     const triggerNodes = nodes.filter(
       (node) =>
         node.type.includes("trigger") ||
-        ["manual-trigger", "webhook-trigger", "schedule-trigger"].includes(
-          node.type
-        )
+        [
+          "manual-trigger",
+          "webhook-trigger",
+          "schedule-trigger",
+          "workflow-called",
+        ].includes(node.type)
     );
 
     if (triggerNodes.length === 0) {
@@ -1010,6 +1060,8 @@ export class ExecutionEngine extends EventEmitter {
       return "webhook";
     } else if (firstTrigger.type === "schedule-trigger") {
       return "schedule";
+    } else if (firstTrigger.type === "workflow-called") {
+      return "workflow-called";
     }
 
     return firstTrigger.type;

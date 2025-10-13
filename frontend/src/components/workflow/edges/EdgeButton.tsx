@@ -1,8 +1,8 @@
-import { CSSProperties, useCallback } from 'react';
-import { EdgeLabelRenderer } from 'reactflow';
 import { Button } from '@/components/ui/button';
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores';
 import { Trash2 } from 'lucide-react';
+import { CSSProperties, useCallback } from 'react';
+import { EdgeLabelRenderer } from 'reactflow';
 
 interface EdgeButtonProps {
   x: number;
@@ -29,7 +29,10 @@ export function EdgeButton({
   onMouseLeave,
 }: EdgeButtonProps) {
   const { openDialog } = useAddNodeDialogStore();
-  const { workflow, removeConnection } = useWorkflowStore();
+  const { workflow, removeConnection, readOnly } = useWorkflowStore();
+  
+  // Don't render buttons in read-only mode (only when viewing past execution)
+  const isReadOnly = readOnly;
 
   const handleAddClick = useCallback(
     (e: React.MouseEvent) => {
@@ -70,6 +73,11 @@ export function EdgeButton({
     },
     [workflow, removeConnection, source, target, sourceHandleId, targetHandleId]
   );
+
+  // Don't render buttons in read-only mode
+  if (isReadOnly) {
+    return null;
+  }
 
   return (
     <EdgeLabelRenderer>

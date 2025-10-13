@@ -1,26 +1,26 @@
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
 } from '@/components/ui/tooltip'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types/workflow'
 import {
-    ChevronDown,
-    Clock,
-    Globe,
-    Hand,
-    Loader2,
-    Play,
-    Zap
+  ChevronDown,
+  Clock,
+  Globe,
+  Hand,
+  Loader2,
+  Play,
+  Zap
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -37,6 +37,7 @@ const triggerIcons = {
   'schedule-trigger': Clock,
   'cron-trigger': Clock,
   'timer-trigger': Clock,
+  'workflow-called': Zap,
   default: Zap
 }
 
@@ -47,6 +48,7 @@ const triggerDisplayNames = {
   'schedule-trigger': 'Schedule Trigger',
   'cron-trigger': 'Cron Trigger',
   'timer-trigger': 'Timer Trigger',
+  'workflow-called': 'Called by Workflow',
   default: 'Trigger'
 }
 
@@ -64,7 +66,7 @@ export function WorkflowExecuteButton({
     
     return workflow.nodes.filter((node: WorkflowNode) => 
       node.type.includes('trigger') || 
-      ['manual-trigger', 'webhook-trigger', 'schedule-trigger', 'cron-trigger', 'timer-trigger'].includes(node.type)
+      ['manual-trigger', 'webhook-trigger', 'schedule-trigger', 'cron-trigger', 'timer-trigger', 'workflow-called'].includes(node.type)
     )
   }, [workflow?.nodes])
 

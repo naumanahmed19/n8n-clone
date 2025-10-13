@@ -12,6 +12,10 @@ interface ReactFlowUIState {
   showControls: boolean;
   backgroundVariant: "dots" | "lines" | "cross";
 
+  // Canvas interaction settings
+  panOnDrag: boolean;
+  zoomOnScroll: boolean;
+
   // Execution panel state
   showExecutionPanel: boolean;
   executionPanelSize: number;
@@ -20,6 +24,8 @@ interface ReactFlowUIState {
   toggleMinimap: () => void;
   toggleBackground: () => void;
   toggleControls: () => void;
+  togglePanOnDrag: () => void;
+  toggleZoomOnScroll: () => void;
   changeBackgroundVariant: (
     variant: "dots" | "lines" | "cross" | "none"
   ) => void;
@@ -46,6 +52,8 @@ export const useReactFlowUIStore = create<ReactFlowUIState>((set, get) => ({
   showBackground: true,
   showControls: true,
   backgroundVariant: "dots",
+  panOnDrag: true,
+  zoomOnScroll: true,
   showExecutionPanel: false,
   executionPanelSize: 4,
 
@@ -57,6 +65,9 @@ export const useReactFlowUIStore = create<ReactFlowUIState>((set, get) => ({
   toggleBackground: () =>
     set((state) => ({ showBackground: !state.showBackground })),
   toggleControls: () => set((state) => ({ showControls: !state.showControls })),
+  togglePanOnDrag: () => set((state) => ({ panOnDrag: !state.panOnDrag })),
+  toggleZoomOnScroll: () =>
+    set((state) => ({ zoomOnScroll: !state.zoomOnScroll })),
 
   changeBackgroundVariant: (variant) => {
     if (variant === "none") {

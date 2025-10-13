@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import axios from "axios";
 import * as crypto from "crypto";
 import { AppError } from "../utils/errors";
 import { logger } from "../utils/logger";
@@ -196,6 +197,32 @@ export class CredentialService {
   }
 
   /**
+   * Get credential by ID for system use (e.g., webhooks, triggers)
+   * Does NOT check user ownership - use with caution
+   */
+  async getCredentialById(id: string): Promise<CredentialWithData | null> {
+    const credential = await this.prisma.credential.findUnique({
+      where: { id },
+    });
+
+    if (!credential) {
+      return null;
+    }
+
+    // Check if credential is expired
+    if (credential.expiresAt && credential.expiresAt < new Date()) {
+      throw new AppError("Credential has expired", 401);
+    }
+
+    const decryptedData = this.decryptData(credential.data);
+
+    return {
+      ...credential,
+      data: decryptedData,
+    };
+  }
+
+  /**
    * Get credentials for a user (without decrypted data)
    */
   async getCredentials(userId: string, type?: string) {
@@ -360,6 +387,8 @@ export class CredentialService {
         return this.testApiKey(data);
       case "oauth2":
         return this.testOAuth2(data);
+      case "googleSheetsOAuth2":
+        return this.testGoogleSheetsOAuth2(data);
       case "bearerToken":
         return this.testBearerToken(data);
       default:
@@ -556,6 +585,48 @@ export class CredentialService {
         color: "#7C3AED",
         testable: true,
       },
+      {
+        name: "googleSheetsOAuth2",
+        displayName: "Google Sheets OAuth2",
+        description: "OAuth2 credentials for Google Sheets API",
+        properties: [
+          {
+            displayName: "OAuth Redirect URL",
+            name: "oauthCallbackUrl",
+            type: "string",
+            required: false,
+            description:
+              "Copy this URL and add it to 'Authorized redirect URIs' in your Google Cloud Console OAuth2 credentials",
+            placeholder: `${
+              process.env.FRONTEND_URL || "http://localhost:3000"
+            }/oauth/callback`,
+            default: `${
+              process.env.FRONTEND_URL || "http://localhost:3000"
+            }/oauth/callback`,
+          },
+          {
+            displayName: "Client ID",
+            name: "clientId",
+            type: "string",
+            required: true,
+            description: "OAuth2 Client ID from Google Cloud Console",
+            placeholder: "123456789-abc123.apps.googleusercontent.com",
+          },
+          {
+            displayName: "Client Secret",
+            name: "clientSecret",
+            type: "password",
+            required: true,
+            description: "OAuth2 Client Secret from Google Cloud Console",
+            placeholder: "GOCSPX-***",
+          },
+          // Note: accessToken and refreshToken are stored in the credential
+          // but not shown in the form - they're automatically filled via OAuth
+        ],
+        icon: "📊",
+        color: "#0F9D58",
+        testable: true,
+      },
     ];
   }
 
@@ -673,8 +744,155 @@ export class CredentialService {
       };
     }
 
-    // In a real implementation, you might test the OAuth2 flow
-    return { success: true, message: "OAuth2 credentials are valid" };
+    // Check if access token is present
+    if (!data.accessToken) {
+      return {
+        success: false,
+        message:
+          "No access token found. Please complete the OAuth2 authorization flow.",
+      };
+    }
+
+    // Check if token is expired (if tokenObtainedAt and expiresIn are available)
+    if (data.tokenObtainedAt && data.expiresIn) {
+      const obtainedDate = new Date(data.tokenObtainedAt);
+      const expiresAt = new Date(
+        obtainedDate.getTime() + data.expiresIn * 1000
+      );
+
+      if (new Date() > expiresAt) {
+        if (!data.refreshToken) {
+          return {
+            success: false,
+            message:
+              "Access token has expired and no refresh token is available. Please re-authorize.",
+          };
+        }
+        return {
+          success: false,
+          message: "Access token has expired. Please refresh the token.",
+        };
+      }
+    }
+
+    return {
+      success: true,
+      message: "OAuth2 credentials are configured correctly",
+    };
+  }
+
+  /**
+   * Test Google Sheets OAuth2 credentials by making a real API call
+   */
+  private async testGoogleSheetsOAuth2(
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
+    // First do basic validation
+    if (!data.clientId || !data.clientSecret) {
+      return {
+        success: false,
+        message: "Client ID and Client Secret are required",
+      };
+    }
+
+    // Check if access token is present
+    if (!data.accessToken) {
+      return {
+        success: false,
+        message:
+          "No access token found. Please complete the OAuth2 authorization flow first.",
+      };
+    }
+
+    // Check if token is expired
+    if (data.tokenObtainedAt && data.expiresIn) {
+      const obtainedDate = new Date(data.tokenObtainedAt);
+      const expiresAt = new Date(
+        obtainedDate.getTime() + data.expiresIn * 1000
+      );
+
+      if (new Date() > expiresAt) {
+        return {
+          success: false,
+          message:
+            "Access token has expired. Please refresh the token or re-authorize.",
+        };
+      }
+    }
+
+    // Test the token by making a real API call to Google
+    try {
+      // Test with Google Drive API to list files (lightweight call)
+      const response = await axios.get(
+        "https://www.googleapis.com/drive/v3/about?fields=user",
+        {
+          headers: {
+            Authorization: `Bearer ${data.accessToken}`,
+          },
+          timeout: 10000, // 10 second timeout
+        }
+      );
+
+      if (response.status === 200 && response.data.user) {
+        return {
+          success: true,
+          message: `Connected successfully as ${
+            response.data.user.emailAddress || "Google user"
+          }`,
+        };
+      }
+
+      return {
+        success: true,
+        message: "Connection successful",
+      };
+    } catch (error: any) {
+      // Handle specific error cases
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 401) {
+          return {
+            success: false,
+            message: "Access token is invalid or expired. Please re-authorize.",
+          };
+        } else if (status === 403) {
+          return {
+            success: false,
+            message:
+              "Access forbidden. Please check OAuth2 scopes and permissions.",
+          };
+        } else if (status === 429) {
+          return {
+            success: false,
+            message: "Rate limit exceeded. Please try again later.",
+          };
+        } else {
+          return {
+            success: false,
+            message: `Google API error (${status}): ${
+              error.response.data?.error?.message || error.message
+            }`,
+          };
+        }
+      } else if (error.code === "ECONNABORTED") {
+        return {
+          success: false,
+          message: "Connection timeout. Please check your internet connection.",
+        };
+      } else if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+        return {
+          success: false,
+          message:
+            "Cannot reach Google servers. Please check your internet connection.",
+        };
+      } else {
+        return {
+          success: false,
+          message: `Connection test failed: ${error.message}`,
+        };
+      }
+    }
   }
 
   /**

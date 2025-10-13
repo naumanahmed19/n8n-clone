@@ -1,41 +1,41 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
 } from '@/components/ui/tabs'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import { getNodeExecutionCapability } from '@/utils/nodeTypeClassification'
 import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronRight,
-  Code,
-  FolderOpen,
-  GitBranch,
-  Info,
-  Settings,
-  Table,
-  Zap
+    ArrowLeft,
+    ChevronDown,
+    ChevronRight,
+    Code,
+    FolderOpen,
+    GitBranch,
+    Info,
+    Settings,
+    Table,
+    Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -45,6 +45,7 @@ import { useEffect, useMemo, useState } from 'react'
  */
 interface InputsColumnProps {
   node: WorkflowNode
+  readOnly?: boolean
 }
 
 /**
@@ -432,10 +433,18 @@ export function InputsColumn({ node }: InputsColumnProps) {
   const [activeTab, setActiveTab] = useState<'schema' | 'json' | 'table'>('schema')
 
   // Get connected input nodes - these are nodes that feed data into current node
-  const inputConnections = workflow?.connections.filter(conn => conn.targetNodeId === node.id) || []
-  const inputNodes = inputConnections.map(conn => 
-    workflow?.nodes.find(n => n.id === conn.sourceNodeId)
-  ).filter(Boolean) as WorkflowNode[]
+  // Memoize to prevent recreating arrays on every render
+  const inputConnections = useMemo(() => 
+    workflow?.connections.filter(conn => conn.targetNodeId === node.id) || [],
+    [workflow?.connections, node.id]
+  )
+  
+  const inputNodes = useMemo(() => 
+    inputConnections.map(conn => 
+      workflow?.nodes.find(n => n.id === conn.sourceNodeId)
+    ).filter(Boolean) as WorkflowNode[],
+    [inputConnections, workflow?.nodes]
+  )
 
   // Create node items with connections
   const nodeItems = useMemo(() => {
@@ -456,7 +465,8 @@ export function InputsColumn({ node }: InputsColumnProps) {
     if (Object.keys(initialExpanded).length > 0) {
       setExpandedCategories(prev => ({ ...prev, ...initialExpanded }))
     }
-  }, [nodeItems, expandedCategories])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeItems]) // Only depend on nodeItems, not expandedCategories to prevent infinite loop
 
   const getNodeStatusBadge = (status?: string) => {
     switch (status) {

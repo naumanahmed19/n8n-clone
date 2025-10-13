@@ -53,7 +53,7 @@ export function ExecutionPanel({
   }
 
   return (
-    <div className="h-full bg-white flex flex-col">
+    <div className="h-full bg-background flex flex-col border-l border-border">
       <ExecutionPanelHeader
         executionState={executionState}
         isExpanded={isExpanded}

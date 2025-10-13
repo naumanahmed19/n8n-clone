@@ -1,21 +1,21 @@
-import { CredentialSelector } from '@/components/credential/CredentialSelector'
 import { Card, CardContent } from '@/components/ui/card'
-import { createField, FormGenerator } from '@/components/ui/form-generator'
+import { createField, FormGenerator, getCustomComponent } from '@/components/ui/form-generator'
 import { useCredentialStore, useNodeConfigDialogStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-  AlertCircle,
-  CheckCircle
+    AlertCircle,
+    CheckCircle
 } from 'lucide-react'
 import { useEffect } from 'react'
 
 interface ConfigTabProps {
   node: WorkflowNode
   nodeType: NodeType
+  readOnly?: boolean
 }
 
-export function ConfigTab({ node, nodeType }: ConfigTabProps) {
+export function ConfigTab({ node, nodeType, readOnly = false }: ConfigTabProps) {
   const { fetchCredentials, fetchCredentialTypes } = useCredentialStore()
   const {
     parameters,
@@ -42,8 +42,8 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
   }, [node.id, nodeName, parameters, credentials, nodeType.properties, setValidationErrors])
 
   // Convert all node properties to FormFieldConfig for use with FormGenerator
-  const formFields = nodeType.properties?.map(property => 
-    createField({
+  const formFields = nodeType.properties?.map(property => {
+    const fieldConfig = createField({
       name: property.name,
       displayName: property.displayName,
       type: property.type as any,
@@ -56,8 +56,19 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
       typeOptions: property.typeOptions, // For collection with multipleValues
       component: property.component, // For custom components
       componentProps: property.componentProps, // For nested fields in collection
+      allowedTypes: property.allowedTypes, // For credential type
     })
-  ) || []
+
+    // If this is a custom component, set the customComponent function
+    if (property.type === 'custom' && property.component) {
+      const customComponent = getCustomComponent(property.component)
+      if (customComponent) {
+        fieldConfig.customComponent = customComponent
+      }
+    }
+
+    return fieldConfig
+  }) || []
 
   // Get validation errors in the format expected by FormGenerator
   const formErrors = validationErrors.reduce((acc, error) => {
@@ -65,46 +76,78 @@ export function ConfigTab({ node, nodeType }: ConfigTabProps) {
     return acc
   }, {} as Record<string, string>)
 
+  // Handle parameter changes, filtering out internal keys like __credentials
+  const handleParameterChange = (fieldName: string, value: any) => {
+    // Don't save internal keys like __credentials
+    if (fieldName === '__credentials') {
+      return
+    }
+    
+    // Check if this field is a credential type
+    const field = nodeType.properties?.find(p => p.name === fieldName)
+    
+    if (field?.type === 'credential') {
+      // Store the credential ID in parameters (new approach)
+      updateParameters(fieldName, value)
+      
+      // Also update the credentials object for backward compatibility
+      // Clear all existing credentials for this field's allowed types first
+      const allowedTypes = field.allowedTypes || []
+      allowedTypes.forEach(type => {
+        updateCredentials(type, undefined)
+      })
+      
+      // If a credential is selected, find its type and set it
+      if (value) {
+        const selectedCred = useCredentialStore.getState().credentials.find(c => c.id === value)
+        if (selectedCred) {
+          updateCredentials(selectedCred.type, value)
+        }
+      }
+      return
+    }
+    
+    updateParameters(fieldName, value)
+  }
+
   return (
     <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
       <div className="space-y-6 max-w-lg">
-        {/* Credentials */}
-        {nodeType.credentials && nodeType.credentials.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Credentials</h4>
-            {nodeType.credentials?.map((credentialDef) => (
-              <div key={credentialDef.name}>
-                <label className="block text-sm font-medium mb-2">
-                  {credentialDef.displayName}
-                  {credentialDef.required && <span className="text-red-500 ml-1">*</span>}
-                </label>
-                <CredentialSelector
-                  credentialType={credentialDef.name}
-                  value={credentials[credentialDef.name]}
-                  onChange={(credentialId) => updateCredentials(credentialDef.name, credentialId)}
-                  required={credentialDef.required}
-                />
-                {credentialDef.description && (
-                  <p className="text-xs text-gray-500 mt-1">{credentialDef.description}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Node Properties */}
-        {nodeType.properties && nodeType.properties.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Properties</h4>
-            <FormGenerator
-              fields={formFields}
-              values={parameters}
-              errors={formErrors}
-              onChange={updateParameters}
-              showRequiredIndicator={true}
-              fieldClassName="space-y-2"
-            />
-          </div>
+        {/* Unified Form - includes all properties (including credential fields) */}
+        {formFields.length > 0 && (
+          <FormGenerator
+            fields={formFields}
+            values={{
+              ...parameters,
+              // Add credential field values - check parameters first, then credentials object
+              ...Object.fromEntries(
+                formFields
+                  .filter(f => f.type === 'credential')
+                  .map(f => {
+                    // If already in parameters, use that
+                    if (parameters[f.name]) {
+                      return [f.name, parameters[f.name]]
+                    }
+                    // Otherwise, find credential from credentials object by matching allowed types
+                    const allowedTypes = f.allowedTypes || []
+                    for (const type of allowedTypes) {
+                      if (credentials[type]) {
+                        return [f.name, credentials[type]]
+                      }
+                    }
+                    return [f.name, '']
+                  })
+              ),
+              // Include credentials so custom components can access them
+              __credentials: credentials,
+            }}
+            errors={formErrors}
+            onChange={handleParameterChange}
+            showRequiredIndicator={true}
+            fieldClassName="space-y-2"
+            nodeId={node.id}
+            disabled={readOnly}
+          />
         )}
 
         {/* Validation Summary */}

@@ -12,16 +12,16 @@ export function ProgressTabContent({ executionState }: ProgressTabContentProps) 
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-background">
       {executionState.status === 'running' && (
         <div className="mb-4">
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
+          <div className="flex justify-between text-sm text-muted-foreground mb-1">
             <span>Progress</span>
             <span>{executionState.progress || 0}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-secondary rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${executionState.progress || 0}%` }}
             />
           </div>
@@ -31,15 +31,15 @@ export function ProgressTabContent({ executionState }: ProgressTabContentProps) 
       {executionState.startTime && (
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">Started:</span>
-            <div className="font-medium">
+            <span className="text-muted-foreground">Started:</span>
+            <div className="font-medium text-foreground">
               {new Date(executionState.startTime).toLocaleString()}
             </div>
           </div>
           {executionState.endTime && (
             <div>
-              <span className="text-gray-500">Duration:</span>
-              <div className="font-medium">
+              <span className="text-muted-foreground">Duration:</span>
+              <div className="font-medium text-foreground">
                 {formatDuration(new Date(executionState.endTime).getTime() - new Date(executionState.startTime).getTime())}
               </div>
             </div>
@@ -48,9 +48,9 @@ export function ProgressTabContent({ executionState }: ProgressTabContentProps) 
       )}
 
       {executionState.status === 'error' && executionState.error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-          <div className="text-red-800 font-medium">Error</div>
-          <div className="text-red-700 text-sm mt-1">{executionState.error}</div>
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded">
+          <div className="text-red-800 dark:text-red-400 font-medium">Error</div>
+          <div className="text-red-700 dark:text-red-300 text-sm mt-1">{executionState.error}</div>
         </div>
       )}
     </div>

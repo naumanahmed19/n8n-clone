@@ -1,28 +1,28 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { WorkflowsHeader } from '@/components/workflow/WorkflowsHeader'
 import { useSidebarContext } from '@/contexts'
 import { workflowService } from '@/services'
 import type { Workflow } from '@/types'
 import {
-  Activity,
-  Calendar,
-  ChevronDown,
-  ChevronRight,
-  FolderOpen,
-  MoreHorizontal,
-  Workflow as WorkflowIcon
+    Activity,
+    Calendar,
+    ChevronDown,
+    ChevronRight,
+    FolderOpen,
+    MoreHorizontal,
+    Workflow as WorkflowIcon
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -43,6 +43,7 @@ export function WorkflowsList({}: WorkflowsListProps) {
   } = useSidebarContext()
   
   const [isLoading, setIsLoading] = useState(!isWorkflowsLoaded)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'categorized'>('list')
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [searchTerm, setSearchTerm] = useState("")
@@ -54,30 +55,39 @@ export function WorkflowsList({}: WorkflowsListProps) {
     return pathMatch ? pathMatch[1] : null
   }, [location.pathname])
 
-  useEffect(() => {
-    const fetchWorkflows = async () => {
-      // Don't fetch if we already have data loaded
-      if (isWorkflowsLoaded && workflows.length > 0) {
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        setIsLoading(true)
-        setError(null)
-        
-        // Fetch fresh data
-        const response = await workflowService.getWorkflows()
-        setWorkflows(response.data)
-        setIsWorkflowsLoaded(true)
-      } catch (err) {
-        console.error('Failed to fetch workflows:', err)
-        setError('Failed to load workflows')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchWorkflows = async (forceRefresh = false) => {
+    // Don't fetch if we already have data loaded (unless force refresh)
+    if (!forceRefresh && isWorkflowsLoaded && workflows.length > 0) {
+      setIsLoading(false)
+      return
     }
 
+    try {
+      if (forceRefresh) {
+        setIsRefreshing(true)
+      } else {
+        setIsLoading(true)
+      }
+      setError(null)
+      
+      // Fetch fresh data
+      const response = await workflowService.getWorkflows()
+      setWorkflows(response.data)
+      setIsWorkflowsLoaded(true)
+    } catch (err) {
+      console.error('Failed to fetch workflows:', err)
+      setError('Failed to load workflows')
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleRefresh = () => {
+    fetchWorkflows(true)
+  }
+
+  useEffect(() => {
     fetchWorkflows()
   }, [isWorkflowsLoaded, setWorkflows, setIsWorkflowsLoaded, setError])
 
@@ -140,6 +150,8 @@ export function WorkflowsList({}: WorkflowsListProps) {
         workflowCount={filteredWorkflows.length}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
       />
     )
     
@@ -147,7 +159,7 @@ export function WorkflowsList({}: WorkflowsListProps) {
     return () => {
       setHeaderSlot(null)
     }
-  }, [setHeaderSlot, viewMode, setViewMode, filteredWorkflows.length, searchTerm, setSearchTerm])
+  }, [setHeaderSlot, viewMode, setViewMode, filteredWorkflows.length, searchTerm, setSearchTerm, isRefreshing])
 
   const handleWorkflowClick = (workflowId: string) => {
     // Use replace to avoid adding to history stack and help with component reuse

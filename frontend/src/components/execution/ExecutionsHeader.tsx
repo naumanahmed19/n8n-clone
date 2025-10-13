@@ -2,14 +2,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { RotateCcw, Search } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Circle, Pause, RefreshCw, RotateCcw, Search, XCircle } from 'lucide-react'
 
 interface ExecutionsHeaderProps {
   executionCount: number
@@ -22,6 +22,8 @@ interface ExecutionsHeaderProps {
   currentWorkflowId: string | null
   workflowExecutionCount: number
   allExecutionCount: number
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
 export function ExecutionsHeader({
@@ -34,7 +36,9 @@ export function ExecutionsHeader({
   setActiveTab,
   currentWorkflowId,
   workflowExecutionCount,
-  allExecutionCount
+  allExecutionCount,
+  onRefresh,
+  isRefreshing = false
 }: ExecutionsHeaderProps) {
   const handleClearFilters = () => {
     setSearchTerm('')
@@ -48,16 +52,16 @@ export function ExecutionsHeader({
       {/* Tabs for Current Workflow vs All */}
       {currentWorkflowId && currentWorkflowId !== 'new' && (
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "workflow" | "all")} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-8">
-            <TabsTrigger value="workflow" className="text-xs">
-              Current Workflow
-              <Badge variant="secondary" className="ml-1 text-xs h-4 px-1">
+          <TabsList className="grid w-full grid-cols-2 h-9 bg-muted/50">
+            <TabsTrigger value="workflow" className="text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <span className="mr-1.5">Current Workflow</span>
+              <Badge variant="secondary" className="text-xs h-5 px-1.5 bg-background/80 dark:bg-background/50">
                 {workflowExecutionCount}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="all" className="text-xs">
-              All Executions
-              <Badge variant="secondary" className="ml-1 text-xs h-4 px-1">
+            <TabsTrigger value="all" className="text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <span className="mr-1.5">All Executions</span>
+              <Badge variant="secondary" className="text-xs h-5 px-1.5 bg-background/80 dark:bg-background/50">
                 {allExecutionCount}
               </Badge>
             </TabsTrigger>
@@ -67,15 +71,28 @@ export function ExecutionsHeader({
 
       {/* Search and Filters */}
       <div className="space-y-2">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search executions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 h-9"
-          />
+        {/* Search Input with refresh button */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search executions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
         </div>
 
         {/* Status Filter */}
@@ -85,13 +102,48 @@ export function ExecutionsHeader({
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="paused">Paused</SelectItem>
-              <SelectItem value="partial">Partial</SelectItem>
+              <SelectItem value="all">
+                <div className="flex items-center gap-2">
+                  <Circle className="h-3 w-3" />
+                  <span>All Status</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="running">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-3 w-3 text-blue-500 dark:text-blue-400" />
+                  <span>Running</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="success">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3 w-3 text-green-500 dark:text-green-400" />
+                  <span>Success</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="error">
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-3 w-3 text-red-500 dark:text-red-400" />
+                  <span>Error</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="cancelled">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-3 w-3 text-orange-500 dark:text-orange-400" />
+                  <span>Cancelled</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="paused">
+                <div className="flex items-center gap-2">
+                  <Pause className="h-3 w-3 text-yellow-500 dark:text-yellow-400" />
+                  <span>Paused</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="partial">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-3 w-3 text-amber-500 dark:text-amber-400" />
+                  <span>Partial</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
 

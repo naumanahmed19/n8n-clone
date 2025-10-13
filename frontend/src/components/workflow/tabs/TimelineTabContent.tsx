@@ -9,19 +9,19 @@ export function TimelineTabContent({ flowExecutionStatus, realTimeResults }: Tim
   const nodeResults = Array.from(realTimeResults.entries())
 
   return (
-    <div className="p-4">
+    <div className="p-4 bg-background">
       {flowExecutionStatus ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium">Execution Timeline</h4>
-            <div className="text-sm text-gray-500">
+            <h4 className="font-medium text-foreground">Execution Timeline</h4>
+            <div className="text-sm text-muted-foreground">
               Status: {flowExecutionStatus.status}
             </div>
           </div>
 
           <div className="space-y-2">
             {nodeResults.length === 0 ? (
-              <div className="text-gray-500 text-center py-8">
+              <div className="text-muted-foreground text-center py-8">
                 No timeline data available
               </div>
             ) : (
@@ -31,20 +31,20 @@ export function TimelineTabContent({ flowExecutionStatus, realTimeResults }: Tim
                   <div key={nodeId} className="flex items-center space-x-3">
                     <div className="flex flex-col items-center">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                        result.status === 'success' ? 'bg-green-500' :
-                        result.status === 'error' ? 'bg-red-500' :
-                        result.status === 'running' ? 'bg-blue-500' :
-                        result.status === 'skipped' ? 'bg-yellow-500' :
-                        'bg-gray-400'
+                        result.status === 'success' ? 'bg-green-500 dark:bg-green-600' :
+                        result.status === 'error' ? 'bg-red-500 dark:bg-red-600' :
+                        result.status === 'running' ? 'bg-blue-500 dark:bg-blue-600' :
+                        result.status === 'skipped' ? 'bg-yellow-500 dark:bg-yellow-600' :
+                        'bg-muted'
                       }`}>
                         {index + 1}
                       </div>
-                      {!isLast && <div className="w-0.5 h-8 bg-gray-200 mt-1" />}
+                      {!isLast && <div className="w-0.5 h-8 bg-border mt-1" />}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{nodeId}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="font-medium text-sm text-foreground">{nodeId}</div>
+                      <div className="text-xs text-muted-foreground">
                         Status: {result.status}
                         {result.startTime && (
                           <span className="ml-2">
@@ -60,7 +60,7 @@ export function TimelineTabContent({ flowExecutionStatus, realTimeResults }: Tim
           </div>
         </div>
       ) : (
-        <div className="text-gray-500 text-center py-8">
+        <div className="text-muted-foreground text-center py-8">
           No timeline data available
         </div>
       )}

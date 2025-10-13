@@ -11,7 +11,7 @@ import {
  */
 export interface TriggerExecutionContext extends FlowExecutionContext {
   triggerId: string;
-  triggerType: "webhook" | "schedule" | "manual";
+  triggerType: "webhook" | "schedule" | "manual" | "workflow-called";
   affectedNodes: Set<string>;
   isolatedExecution: boolean;
   parentExecutionId?: string;
@@ -37,7 +37,7 @@ export class TriggerExecutionContextFactory {
    */
   static createTriggerContext(
     triggerId: string,
-    triggerType: "webhook" | "schedule" | "manual",
+    triggerType: "webhook" | "schedule" | "manual" | "workflow-called",
     workflowId: string,
     userId: string,
     triggerNodeId: string,
@@ -52,7 +52,7 @@ export class TriggerExecutionContextFactory {
       retryDelay: 1000,
       saveProgress: true,
       saveData: true,
-      manual: triggerType === "manual",
+      manual: ["manual", "workflow-called"].includes(triggerType),
       isolatedExecution: options.isolatedExecution !== false, // Default to true for triggers
       ...options,
     };

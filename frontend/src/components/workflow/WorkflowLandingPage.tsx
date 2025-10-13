@@ -68,7 +68,7 @@ export function WorkflowLandingPage() {
   ]
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8" style={{ backgroundColor: '#fafafa' }}>
+    <div className="flex flex-col items-center justify-center h-full p-8 bg-background">
       <div className="max-w-4xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-12">
@@ -137,8 +137,8 @@ export function WorkflowLandingPage() {
                     </h3>
                     <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
                       workflow.active 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-gray-100 text-gray-700'
+                        ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300' 
+                        : 'bg-muted text-muted-foreground'
                     }`}>
                       {workflow.active ? 'Active' : 'Inactive'}
                     </span>

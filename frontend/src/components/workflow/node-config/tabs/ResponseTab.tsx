@@ -73,7 +73,9 @@ export function ResponseTab({ node }: ResponseTabProps) {
                 </CardHeader>
                 <CardContent>
                   <pre className="text-sm text-red-700 whitespace-pre-wrap font-mono bg-red-50 p-3 rounded">
-                    {nodeExecutionResult.error}
+                    {typeof nodeExecutionResult.error === 'string' 
+                      ? nodeExecutionResult.error 
+                      : JSON.stringify(nodeExecutionResult.error, null, 2)}
                   </pre>
                 </CardContent>
               </Card>

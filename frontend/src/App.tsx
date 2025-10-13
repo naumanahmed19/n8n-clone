@@ -1,15 +1,24 @@
 import { Layout, ProtectedRoute, WorkflowEditorLayout } from '@/components'
 import { Toaster } from '@/components/ui/sonner'
 
-import { SidebarContextProvider } from '@/contexts'
-import { CredentialsPage, CustomNodesPage, ExecutionsPage, LoginPage, RegisterPage, WorkspacePage } from '@/pages'
+import { SidebarContextProvider, ThemeProvider } from '@/contexts'
+import {
+    CredentialsPage,
+    CustomNodesPage,
+    ExecutionsPage,
+    LoginPage,
+    RegisterPage,
+    WorkflowEditorPage
+} from '@/pages'
+import { OAuthCallback } from '@/pages/OAuthCallback'
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 
 function App() {
   return (
     <>
       <Router>
-        <SidebarContextProvider>
+        <ThemeProvider>
+          <SidebarContextProvider>
           <Routes>
           {/* Public routes */}
           <Route
@@ -29,12 +38,30 @@ function App() {
             }
           />
 
+          {/* OAuth callback route - requires auth */}
+          <Route
+            path="/oauth/callback"
+            element={
+              <ProtectedRoute>
+                <OAuthCallback />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Workflow editor routes with persistent layout - must come before main routes */}
+          <Route
+            path="/workflows/:id/executions/:executionId"
+            element={
+              <ProtectedRoute>
+                <WorkflowEditorPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/workflows/:id/*"
             element={
               <ProtectedRoute>
-                <WorkflowEditorLayout />
+                <WorkflowEditorPage />
               </ProtectedRoute>
             }
           />
@@ -59,7 +86,6 @@ function App() {
             }
           >
             <Route index element={<Navigate to="/workflows" replace />} />
-            <Route path="workspace" element={<WorkspacePage />} />
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />
@@ -69,9 +95,10 @@ function App() {
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
+          <Toaster />
         </SidebarContextProvider>
+        </ThemeProvider>
       </Router>
-      <Toaster />
     </>
   )
 }
