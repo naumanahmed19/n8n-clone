@@ -1,25 +1,25 @@
 import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useGlobalToast } from '@/hooks/useToast'
 import { workflowService } from '@/services/workflow'
+import type { EnvironmentType } from '@/types/environment'
 import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { CreateCategoryModal } from './CreateCategoryModal'
 import { EnvironmentSelector } from '../environment/EnvironmentSelector'
-import type { EnvironmentType } from '@/types/environment'
+import { CreateCategoryModal } from './CreateCategoryModal'
 
 interface WorkflowBreadcrumbProps {
   category?: string

@@ -1,6 +1,6 @@
 import { useReactFlowInteractions } from '@/hooks/workflow'
 import { useReactFlowUIStore } from '@/stores'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
@@ -52,7 +52,7 @@ export function WorkflowCanvas({
     } = useReactFlowInteractions()
     
     // Get panOnDrag and zoomOnScroll settings from store
-    const { panOnDrag, zoomOnScroll } = useReactFlowUIStore()
+    const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
     
     // Determine if interactions should be disabled
     const isDisabled = readOnly || executionMode
@@ -66,6 +66,9 @@ export function WorkflowCanvas({
         document.documentElement.classList.contains('dark')
     )
     
+    // Add resize observer to handle container dimension changes
+    const containerRef = useRef<HTMLDivElement>(null)
+    
     useEffect(() => {
         const observer = new MutationObserver(() => {
             setIsDarkMode(document.documentElement.classList.contains('dark'))
@@ -78,6 +81,26 @@ export function WorkflowCanvas({
         
         return () => observer.disconnect()
     }, [])
+    
+    // Add ResizeObserver to handle layout changes
+    useEffect(() => {
+        if (!containerRef.current || !reactFlowInstance) return
+        
+        const resizeObserver = new ResizeObserver(() => {
+          // Delay slightly to ensure DOM has updated
+          setTimeout(() => {
+            if (reactFlowInstance && nodes.length > 0) {
+              reactFlowInstance.fitView({ padding: 0.1, duration: 0 })
+            }
+          }, 50)
+        })
+        
+        resizeObserver.observe(containerRef.current)
+        
+        return () => {
+          resizeObserver.disconnect()
+        }
+    }, [reactFlowInstance, nodes.length])
     
     // Edge styles based on theme
     const edgeStyle = useMemo(() => ({
@@ -94,7 +117,14 @@ export function WorkflowCanvas({
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
-            <div className="h-full" ref={reactFlowWrapper} style={{ backgroundColor }}>
+            <div className="h-full"  ref={(el) => {
+                if (reactFlowWrapper) {
+                    (reactFlowWrapper as any).current = el
+                }
+                if (el) {
+                    (containerRef as any).current = el
+                }
+            }} style={{ backgroundColor }}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}

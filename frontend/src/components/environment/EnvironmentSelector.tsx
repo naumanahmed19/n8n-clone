@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useEnvironmentStore } from '@/stores/environment'
+import { useReactFlowUIStore } from '@/stores'
 import {
   EnvironmentType,
   getEnvironmentIcon,
@@ -84,6 +85,14 @@ export function EnvironmentSelector({
             settings: envData.settings || {},  // Override with environment settings
             active: envData.active,  // Override with environment active state
           })
+          
+          // Trigger ReactFlow to recalculate layout after environment switch
+          setTimeout(() => {
+            const { reactFlowInstance } = useReactFlowUIStore.getState()
+            if (reactFlowInstance) {
+              reactFlowInstance.fitView({ padding: 0.1, duration: 200 })
+            }
+          }, 100)
         }
       } catch (error) {
         console.error('Failed to load environment workflow:', error)
@@ -111,6 +120,14 @@ export function EnvironmentSelector({
         
         const mainWorkflow = await workflowService.getWorkflow(workflowId)
         setWorkflow(mainWorkflow)
+        
+        // Trigger ReactFlow to recalculate layout after exiting environment view
+        setTimeout(() => {
+          const { reactFlowInstance } = useReactFlowUIStore.getState()
+          if (reactFlowInstance) {
+            reactFlowInstance.fitView({ padding: 0.1, duration: 200 })
+          }
+        }, 100)
       } catch (error) {
         console.error('Failed to reload main workflow:', error)
         // Fallback to page reload if API call fails
