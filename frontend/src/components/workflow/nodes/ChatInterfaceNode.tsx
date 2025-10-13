@@ -39,11 +39,14 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   const isReadOnly = false // Chat should always be interactive
   const isExecuting = executionState.status === 'running'
   
+  // Ensure we have valid parameters object
+  const parameters = data.parameters || {}
+  
   // Track expanded state (stored in node parameters to persist)
-  const [isExpanded, setIsExpanded] = useState(data.parameters?.isExpanded ?? false)
+  const [isExpanded, setIsExpanded] = useState(parameters.isExpanded ?? false)
   
   // Get parameters from node configuration
-  const placeholder = data.parameters?.placeholder || 'Type a message...'
+  const placeholder = parameters.placeholder || 'Type a message...'
   
   // State for input and UI
   const [inputValue, setInputValue] = useState('')
@@ -54,7 +57,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
   const processingRef = useRef(false) // Prevent infinite loops
 
   // Get stored messages from node parameters
-  const storedMessages = (data.parameters?.conversationHistory as Message[]) || []
+  const storedMessages = (parameters.conversationHistory as Message[]) || []
 
   // Get connected node's output (e.g., OpenAI response)
   const getConnectedNodeResponse = useCallback(() => {
@@ -124,31 +127,20 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     const chatNodeResult = lastExecutionResult.nodeResults?.find(nr => nr.nodeId === id)
     
     if (!chatNodeResult) {
-      console.error(`ChatNode ${id}: Not found in execution results`, {
-        triggerNodeId,
-        executedNodes: lastExecutionResult.nodeResults?.map(nr => nr.nodeId)
-      })
       setLastProcessedExecutionId(executionId)
       processingRef.current = false
       return
     }
     
     if (chatNodeResult && chatNodeResult.data) {
-      // Get user message from chat node's output
-      let userMessage = null
-      const chatData = chatNodeResult.data
-      
-      // Extract user message from chat node's output: data.main[0].json
-      if (chatData.main && Array.isArray(chatData.main) && chatData.main.length > 0) {
-        const mainOutput = chatData.main[0]
-        if (mainOutput.json) {
-          userMessage = mainOutput.json.userMessage || mainOutput.json.message
-        }
-      }
+      // Get user message from node parameters (we set it before execution)
+      // Find the node in the workflow to get its current parameters
+      const chatNode = workflow.nodes.find(n => n.id === id)
+      const userMessage = chatNode?.parameters?.userMessage
       
       if (userMessage) {
         // Check if this message already exists in history
-        const currentMessages = (data.parameters?.conversationHistory as Message[]) || []
+        const currentMessages = (parameters.conversationHistory as Message[]) || []
         const userMsgId = `${executionId}-user`
         const alreadyExists = currentMessages.some(msg => msg.id === userMsgId)
         
@@ -160,11 +152,11 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         
         const newMessages: Message[] = []
         
-        // Add user message
+        // Add user message - ensure it's a string
         newMessages.push({
           id: userMsgId,
           role: 'user',
-          content: userMessage,
+          content: typeof userMessage === 'string' ? userMessage : JSON.stringify(userMessage),
           timestamp: new Date(chatNodeResult.startTime || Date.now())
         })
         
@@ -175,7 +167,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
           newMessages.push({
             id: `${executionId}-assistant`,
             role: 'assistant',
-            content: aiResponse,
+            content: typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse),
             timestamp: new Date(chatNodeResult.endTime || Date.now())
           })
         }
@@ -186,7 +178,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
         // Update node parameters with new conversation history
         updateNode(id, {
           parameters: {
-            ...data.parameters,
+            ...parameters,
             conversationHistory: updatedHistory
           }
         })
@@ -205,7 +197,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       // Clear processing flag if no chat result data
       processingRef.current = false
     }
-    // Only depend on lastExecutionResult changes - not on workflow or data.parameters
+    // Only depend on lastExecutionResult changes - not on workflow or parameters
     // We get workflow from the closure scope, don't need it as dependency
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastExecutionResult, id])
@@ -248,11 +240,11 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     // Save expanded state to node parameters
     updateNode(id, {
       parameters: {
-        ...data.parameters,
+        ...parameters,
         isExpanded: newExpanded
       }
     })
-  }, [isExpanded, id, data.parameters, updateNode])
+  }, [isExpanded, id, parameters, updateNode])
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isExecuting) return
@@ -269,7 +261,7 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     try {
       updateNode(id, {
         parameters: {
-          ...data.parameters,
+          ...parameters,
           userMessage: messageToSend
         },
         disabled: false
@@ -277,13 +269,10 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
 
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      console.log('Executing workflow with node:', id, 'message:', messageToSend)
-      const result = await executeWorkflow(id)
+      await executeWorkflow(id)
       
-      console.log('Workflow execution completed', result)
       setIsTyping(false)
     } catch (error) {
-      console.error('Failed to execute workflow:', error)
       setIsTyping(false)
       
       // Add error message to conversation history
@@ -297,12 +286,12 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
       const updatedHistory = [...storedMessages, errorMessage]
       updateNode(id, {
         parameters: {
-          ...data.parameters,
+          ...parameters,
           conversationHistory: updatedHistory
         }
       })
     }
-  }, [inputValue, isExecuting, id, data.parameters, updateNode, executeWorkflow, storedMessages])
+  }, [inputValue, isExecuting, id, parameters, updateNode, executeWorkflow, storedMessages])
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -315,11 +304,11 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
     // Clear conversation history
     updateNode(id, {
       parameters: {
-        ...data.parameters,
+        ...parameters,
         conversationHistory: []
       }
     })
-  }, [id, data.parameters, updateNode])
+  }, [id, parameters, updateNode])
 
   // Prepare header info text
   const headerInfo = displayMessages.length > 0 
@@ -355,7 +344,11 @@ export function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfac
                       : 'bg-secondary text-foreground'
                   }`}
                 >
-                  <p className="text-xs whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-xs whitespace-pre-wrap">
+                    {typeof message.content === 'string' 
+                      ? message.content 
+                      : JSON.stringify(message.content)}
+                  </p>
                 </div>
                 <span className="text-[10px] text-muted-foreground px-1">
                   {new Date(message.timestamp).toLocaleTimeString([], { 
