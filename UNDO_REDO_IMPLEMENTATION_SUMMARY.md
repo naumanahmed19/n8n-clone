@@ -11,6 +11,7 @@
 ### 1. **useReactFlowInteractions.ts** (Hook Layer)
 
 #### Added:
+
 - `dragSnapshotTaken` ref to track snapshot state per drag operation
 - `handleNodeDragStart` - Takes snapshot before node drag begins
 - `handleSelectionDragStart` - Takes snapshot before selection drag begins
@@ -18,6 +19,7 @@
 - `handleEdgesDelete` - Takes snapshot before edge deletion
 
 #### Modified:
+
 - `handleNodesChange` - Now only updates store when drag completes (`!change.dragging`)
 - Position updates during drag are ignored for store (handled by React Flow internally)
 - Passes `skipHistory: true` to prevent double history saves
@@ -25,10 +27,12 @@
 ### 2. **workflow.ts** (Store Layer)
 
 #### Added:
+
 - Optional `skipHistory` parameter to `updateNode` method
 - Conditional history saving based on `skipHistory` flag
 
 #### Modified:
+
 ```typescript
 // Before
 updateNode: (nodeId: string, updates: Partial<WorkflowNode>) => void
@@ -40,6 +44,7 @@ updateNode: (nodeId: string, updates: Partial<WorkflowNode>, skipHistory?: boole
 ### 3. **WorkflowCanvas.tsx** (Component Layer)
 
 #### Added:
+
 - Event handler props to ReactFlow:
   - `onNodeDragStart={nodeDragStartHandler}`
   - `onSelectionDragStart={selectionDragStartHandler}`
@@ -47,28 +52,31 @@ updateNode: (nodeId: string, updates: Partial<WorkflowNode>, skipHistory?: boole
   - `onEdgesDelete={edgesDeleteHandler}`
 
 #### Optimized:
+
 - Memoized all handlers to prevent re-creation on every render
 - Conditional handler assignment based on `isDisabled` state
 
 ## 📊 Performance Impact
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Store updates per drag** | 50-200 | 1 | 98-99% ⬇️ |
-| **History entries per drag** | 50-200 | 1 | 98-99% ⬇️ |
-| **Re-renders during drag** | 50-200 | 0 | 100% ⬇️ |
-| **Memory per action** | 5-20 MB | 100 KB | 95-99% ⬇️ |
-| **Undo presses to revert** | 50-200 | 1 | 98-99% ⬇️ |
+| Metric                       | Before  | After  | Improvement |
+| ---------------------------- | ------- | ------ | ----------- |
+| **Store updates per drag**   | 50-200  | 1      | 98-99% ⬇️   |
+| **History entries per drag** | 50-200  | 1      | 98-99% ⬇️   |
+| **Re-renders during drag**   | 50-200  | 0      | 100% ⬇️     |
+| **Memory per action**        | 5-20 MB | 100 KB | 95-99% ⬇️   |
+| **Undo presses to revert**   | 50-200  | 1      | 98-99% ⬇️   |
 
 ## 🎨 User Experience
 
 ### Before
+
 - ❌ Laggy node dragging
 - ❌ Confusing undo/redo (need to press Ctrl+Z 100+ times)
 - ❌ High memory usage
 - ❌ Cluttered history stack
 
 ### After
+
 - ✅ Smooth, responsive dragging
 - ✅ Intuitive undo/redo (1 press = 1 action)
 - ✅ Optimized memory usage

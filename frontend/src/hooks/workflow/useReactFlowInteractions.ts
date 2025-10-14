@@ -91,16 +91,16 @@ export function useReactFlowInteractions() {
       // IMPORTANT: Pass all changes directly to React Flow's internal handler
       // React Flow handles the visual updates internally
       onNodesChange(changes);
-      
+
       // Track dragging state
       changes.forEach((change) => {
-        if (change.type === "position" && 'dragging' in change) {
+        if (change.type === "position" && "dragging" in change) {
           if (change.dragging) {
             isDragging.current = true;
           }
         }
       });
-      
+
       // We DON'T update Zustand store here anymore!
       // Store updates happen in onNodeDragStop instead
     },
@@ -143,14 +143,14 @@ export function useReactFlowInteractions() {
   // Zustand store is only updated when explicitly saving workflow
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: any) => {
-      console.log('✅ Node drag stopped:', node.id);
+      console.log("✅ Node drag stopped:", node.id);
       // Reset flags after a small delay to allow any pending updates
       setTimeout(() => {
         dragSnapshotTaken.current = false;
         isDragging.current = false;
         blockSync.current = false;
       }, 100);
-      
+
       // NOTE: We deliberately DON'T update Zustand store here!
       // React Flow maintains the node positions internally
       // Zustand store will be updated when user saves the workflow
@@ -177,14 +177,14 @@ export function useReactFlowInteractions() {
   // Handle selection drag stop - DON'T update Zustand store here!
   const handleSelectionDragStop = useCallback(
     (_event: React.MouseEvent, nodes: any[]) => {
-      console.log('✅ Selection drag stopped:', nodes.length, 'nodes');
+      console.log("✅ Selection drag stopped:", nodes.length, "nodes");
       // Reset flags after a small delay to allow any pending updates
       setTimeout(() => {
         dragSnapshotTaken.current = false;
         isDragging.current = false;
         blockSync.current = false;
       }, 100);
-      
+
       // NOTE: We deliberately DON'T update Zustand store here!
       // React Flow maintains the node positions internally
       // Zustand store will be updated when user saves the workflow
@@ -193,22 +193,16 @@ export function useReactFlowInteractions() {
   );
 
   // Handle nodes delete - take snapshot BEFORE deletion
-  const handleNodesDelete = useCallback(
-    (nodes: any[]) => {
-      const { saveToHistory } = useWorkflowStore.getState();
-      saveToHistory(`Delete ${nodes.length} node(s)`);
-    },
-    []
-  );
+  const handleNodesDelete = useCallback((nodes: any[]) => {
+    const { saveToHistory } = useWorkflowStore.getState();
+    saveToHistory(`Delete ${nodes.length} node(s)`);
+  }, []);
 
   // Handle edges delete - take snapshot BEFORE deletion
-  const handleEdgesDelete = useCallback(
-    (edges: any[]) => {
-      const { saveToHistory } = useWorkflowStore.getState();
-      saveToHistory(`Delete ${edges.length} connection(s)`);
-    },
-    []
-  );
+  const handleEdgesDelete = useCallback((edges: any[]) => {
+    const { saveToHistory } = useWorkflowStore.getState();
+    saveToHistory(`Delete ${edges.length} connection(s)`);
+  }, []);
 
   // Handle new connections
   const handleConnect: OnConnect = useCallback(
@@ -409,21 +403,23 @@ export function useReactFlowInteractions() {
 
     // Get current React Flow nodes
     const currentNodes = reactFlowInstance?.getNodes() || [];
-    
+
     // Update Zustand workflow with current React Flow positions
     const updatedWorkflow = {
       ...workflow,
-      nodes: workflow.nodes.map(node => {
-        const reactFlowNode = currentNodes.find(rfNode => rfNode.id === node.id);
+      nodes: workflow.nodes.map((node) => {
+        const reactFlowNode = currentNodes.find(
+          (rfNode) => rfNode.id === node.id
+        );
         if (reactFlowNode && reactFlowNode.position) {
           return { ...node, position: reactFlowNode.position };
         }
         return node;
-      })
+      }),
     };
-    
+
     setWorkflow(updatedWorkflow);
-    console.log('💾 Synced React Flow → Zustand');
+    console.log("💾 Synced React Flow → Zustand");
   }, [reactFlowInstance]);
 
   return {
@@ -436,11 +432,11 @@ export function useReactFlowInteractions() {
     edges,
     setNodes,
     setEdges,
-    
+
     // Drag state
     isDragging,
     blockSync,
-    
+
     // Sync utility
     syncToZustand,
 
@@ -454,7 +450,7 @@ export function useReactFlowInteractions() {
     handleDragOver,
     handleDrop,
     handleNodeDoubleClick,
-    
+
     // Undo/Redo optimized handlers
     handleNodeDragStart,
     handleNodeDragStop,

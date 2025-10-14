@@ -9,7 +9,7 @@
 ```typescript
 // ✅ CORRECT Pattern (React Flow Pro)
 const handleNodeDragStart = useCallback(() => {
-  saveToHistory("Move node");  // 👈 Snapshot FIRST
+  saveToHistory("Move node"); // 👈 Snapshot FIRST
   dragSnapshotTaken.current = true;
 }, []);
 
@@ -48,11 +48,11 @@ Performance: FAST | Memory: LOW | UX: EXCELLENT
 ```typescript
 // Add these to ReactFlow component
 <ReactFlow
-  onNodeDragStart={nodeDragStartHandler}        // ✅ Snapshot here
+  onNodeDragStart={nodeDragStartHandler} // ✅ Snapshot here
   onSelectionDragStart={selectionDragStartHandler} // ✅ Snapshot here
-  onNodesDelete={nodesDeleteHandler}            // ✅ Snapshot here
-  onEdgesDelete={edgesDeleteHandler}            // ✅ Snapshot here
-  onNodesChange={nodesChangeHandler}            // ✅ Update only on drag end
+  onNodesDelete={nodesDeleteHandler} // ✅ Snapshot here
+  onEdgesDelete={edgesDeleteHandler} // ✅ Snapshot here
+  onNodesChange={nodesChangeHandler} // ✅ Update only on drag end
   // ... other props
 />
 ```
@@ -72,12 +72,12 @@ updateNode(nodeId, { parameters }, false); // ✅ skipHistory = false (or omit)
 
 ## 📈 Performance Metrics
 
-| Metric | Before | After | Status |
-|--------|--------|-------|--------|
-| Store updates | 100+ | 1 | ✅ 99% ⬇️ |
-| History entries | 100+ | 1 | ✅ 99% ⬇️ |
-| Re-renders | 100+ | 1 | ✅ 99% ⬇️ |
-| Memory growth | 20 MB | 100 KB | ✅ 99.5% ⬇️ |
+| Metric          | Before | After  | Status      |
+| --------------- | ------ | ------ | ----------- |
+| Store updates   | 100+   | 1      | ✅ 99% ⬇️   |
+| History entries | 100+   | 1      | ✅ 99% ⬇️   |
+| Re-renders      | 100+   | 1      | ✅ 99% ⬇️   |
+| Memory growth   | 20 MB  | 100 KB | ✅ 99.5% ⬇️ |
 
 ## 🧪 Quick Test
 
@@ -85,12 +85,12 @@ updateNode(nodeId, { parameters }, false); // ✅ skipHistory = false (or omit)
 // In browser console after implementing fix:
 
 // 1. Check history before drag
-console.log('Before:', window.__ZUSTAND_STORE__.getState().history.length);
+console.log("Before:", window.__ZUSTAND_STORE__.getState().history.length);
 
 // 2. Drag a node across the canvas
 
 // 3. Check history after drag
-console.log('After:', window.__ZUSTAND_STORE__.getState().history.length);
+console.log("After:", window.__ZUSTAND_STORE__.getState().history.length);
 
 // Expected: +1 entry only!
 ```

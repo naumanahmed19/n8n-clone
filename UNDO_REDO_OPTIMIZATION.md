@@ -9,6 +9,7 @@ The frequency of React Flow node changes in the Zustand store was causing seriou
 3. ❌ Multiple re-renders during a single drag operation
 
 This resulted in:
+
 - Poor performance during node dragging
 - Polluted undo/redo history with hundreds of intermediate position states
 - Excessive memory usage from storing every micro-movement
@@ -30,7 +31,7 @@ onNodesChange: (changes) => {
       updateNode(change.id, { position: change.position }); // Triggers saveToHistory!
     }
   });
-}
+};
 
 // ✅ AFTER: Snapshot BEFORE drag starts, update position WITHOUT history
 onNodeDragStart: () => {
@@ -38,7 +39,7 @@ onNodeDragStart: () => {
     saveToHistory("Move node");
     dragSnapshotTaken.current = true;
   }
-}
+};
 
 onNodesChange: (changes) => {
   changes.forEach((change) => {
@@ -48,7 +49,7 @@ onNodesChange: (changes) => {
       dragSnapshotTaken.current = false;
     }
   });
-}
+};
 ```
 
 #### 2. **Debounce Store Updates During Drag**
@@ -56,7 +57,8 @@ onNodesChange: (changes) => {
 ```typescript
 // Only update store when dragging finishes
 if (change.type === "position" && change.position) {
-  if (!change.dragging) {  // ✅ Key optimization
+  if (!change.dragging) {
+    // ✅ Key optimization
     updateNode(change.id, { position: change.position }, true);
   }
 }
@@ -74,7 +76,7 @@ updateNode: (nodeId: string, updates: Partial<WorkflowNode>, skipHistory?: boole
 updateNode: (nodeId, updates, skipHistory = false) => {
   const updated = { ...current, nodes: updatedNodes };
   set({ workflow: updated, isDirty: true });
-  
+
   if (!skipHistory) {  // ✅ Conditional history saving
     get().saveToHistory(`Update node: ${nodeId}`);
   }
@@ -89,22 +91,22 @@ Following React Flow Pro's pattern, take snapshots at these moments:
 // ✅ BEFORE node drag starts
 onNodeDragStart: () => {
   saveToHistory("Move node");
-}
+};
 
 // ✅ BEFORE selection drag starts
 onSelectionDragStart: () => {
   saveToHistory("Move selection");
-}
+};
 
 // ✅ BEFORE nodes are deleted
 onNodesDelete: (nodes) => {
   saveToHistory(`Delete ${nodes.length} node(s)`);
-}
+};
 
 // ✅ BEFORE edges are deleted
 onEdgesDelete: (edges) => {
   saveToHistory(`Delete ${edges.length} connection(s)`);
-}
+};
 ```
 
 ## Benefits
@@ -118,18 +120,19 @@ onEdgesDelete: (edges) => {
 
 ### Comparison
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Store updates per drag | ~50-200 | 1 | 98-99% reduction |
-| History entries per drag | ~50-200 | 1 | 98-99% reduction |
-| Re-renders during drag | ~50-200 | 0 | 100% reduction |
-| Memory per action | ~5-20 MB | ~100 KB | 95-99% reduction |
+| Metric                   | Before   | After   | Improvement      |
+| ------------------------ | -------- | ------- | ---------------- |
+| Store updates per drag   | ~50-200  | 1       | 98-99% reduction |
+| History entries per drag | ~50-200  | 1       | 98-99% reduction |
+| Re-renders during drag   | ~50-200  | 0       | 100% reduction   |
+| Memory per action        | ~5-20 MB | ~100 KB | 95-99% reduction |
 
 ## Implementation Details
 
 ### Files Modified
 
 1. **`frontend/src/hooks/workflow/useReactFlowInteractions.ts`**
+
    - Added `dragSnapshotTaken` ref to track snapshot state
    - Modified `handleNodesChange` to only update on drag completion
    - Added `handleNodeDragStart` - takes snapshot before drag
@@ -138,6 +141,7 @@ onEdgesDelete: (edges) => {
    - Added `handleEdgesDelete` - takes snapshot before deletion
 
 2. **`frontend/src/stores/workflow.ts`**
+
    - Added optional `skipHistory` parameter to `updateNode`
    - Modified implementation to conditionally save history
 

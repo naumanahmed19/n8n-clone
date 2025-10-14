@@ -87,7 +87,11 @@ interface WorkflowStore extends WorkflowEditorState {
   setWorkflow: (workflow: Workflow | null) => void;
   updateWorkflow: (updates: Partial<Workflow>) => void;
   addNode: (node: WorkflowNode) => void;
-  updateNode: (nodeId: string, updates: Partial<WorkflowNode>, skipHistory?: boolean) => void;
+  updateNode: (
+    nodeId: string,
+    updates: Partial<WorkflowNode>,
+    skipHistory?: boolean
+  ) => void;
   removeNode: (nodeId: string) => void;
   addConnection: (connection: WorkflowConnection) => void;
   removeConnection: (connectionId: string) => void;
@@ -381,7 +385,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           ),
         };
         set({ workflow: updated, isDirty: true });
-        
+
         // Skip history for position updates - history is saved in onNodeDragStart instead
         if (!skipHistory) {
           get().saveToHistory(`Update node: ${nodeId}`);
