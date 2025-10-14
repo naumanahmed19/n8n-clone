@@ -142,7 +142,7 @@ export function useReactFlowInteractions() {
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: any) => {
       console.log("✅ Node drag stopped:", node.id);
-      
+
       // Sync React Flow positions to Zustand to update isDirty flag
       const { workflow, updateWorkflow } = useWorkflowStore.getState();
       if (workflow && reactFlowInstance) {
@@ -186,8 +186,8 @@ export function useReactFlowInteractions() {
   // Handle selection drag stop - Sync positions to Zustand to mark workflow as dirty
   const handleSelectionDragStop = useCallback(
     (_event: React.MouseEvent, nodes: any[]) => {
-      console.log('✅ Selection drag stopped:', nodes.length, 'nodes');
-      
+      console.log("✅ Selection drag stopped:", nodes.length, "nodes");
+
       // Sync React Flow positions to Zustand to update isDirty flag
       const { workflow, updateWorkflow } = useWorkflowStore.getState();
       if (workflow && reactFlowInstance) {

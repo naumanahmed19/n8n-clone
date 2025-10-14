@@ -7,10 +7,12 @@ After optimizing the undo/redo system by removing real-time Zustand updates duri
 ### Root Cause
 
 The original optimization removed all Zustand store updates from `handleNodeDragStop` and `handleSelectionDragStop` to prevent:
+
 1. Excessive history pollution (50-200 snapshots per drag)
 2. Sync loop issues causing laggy dragging
 
 However, this created a new problem:
+
 - React Flow maintained the new positions internally
 - Zustand store still had the old positions
 - When user tried to save, the old positions were saved
@@ -19,6 +21,7 @@ However, this created a new problem:
 ## ✅ Solution
 
 We now sync React Flow positions back to Zustand **AFTER** drag completes, but:
+
 1. ✅ Still take history snapshot BEFORE drag (not during)
 2. ✅ Still block sync during drag to prevent lag
 3. ✅ **NEW:** Update Zustand with final positions after drag stops
@@ -52,16 +55,17 @@ Reset blockSync = false after 100ms
 ### File: `frontend/src/hooks/workflow/useReactFlowInteractions.ts`
 
 #### Before (Broken - positions not saved)
+
 ```typescript
 const handleNodeDragStop = useCallback(
   (_event: React.MouseEvent, node: any) => {
-    console.log('✅ Node drag stopped:', node.id);
+    console.log("✅ Node drag stopped:", node.id);
     setTimeout(() => {
       dragSnapshotTaken.current = false;
       isDragging.current = false;
       blockSync.current = false;
     }, 100);
-    
+
     // NOTE: We deliberately DON'T update Zustand store here!
     // ❌ BUG: This means positions are never saved!
   },
@@ -70,11 +74,12 @@ const handleNodeDragStop = useCallback(
 ```
 
 #### After (Fixed - positions saved, isDirty set correctly)
+
 ```typescript
 const handleNodeDragStop = useCallback(
   (_event: React.MouseEvent, node: any) => {
-    console.log('✅ Node drag stopped:', node.id);
-    
+    console.log("✅ Node drag stopped:", node.id);
+
     // ✅ Sync React Flow positions to Zustand to update isDirty flag
     const { workflow, updateWorkflow } = useWorkflowStore.getState();
     if (workflow && reactFlowInstance) {
@@ -103,6 +108,7 @@ const handleNodeDragStop = useCallback(
 **Key change:** Now uses `updateWorkflow({ nodes: updatedNodes })` instead of `setWorkflow(updatedWorkflow)`.
 
 **Why this matters:**
+
 - `setWorkflow()` sets `isDirty: false` (designed for loading workflows)
 - `updateWorkflow()` sets `isDirty: true` (designed for user edits)
 
@@ -111,12 +117,14 @@ Same fix applied to `handleSelectionDragStop`.
 ## 🎯 Benefits
 
 ### What We Keep (The Good Parts)
+
 ✅ **Smooth dragging** - No sync interruptions during drag
 ✅ **Clean history** - Only ONE snapshot per drag operation
 ✅ **No lag** - blockSync prevents parent component sync during drag
 ✅ **React Flow as source of truth** - Positions managed internally during editing
 
 ### What We Fixed (The Bug)
+
 ✅ **Positions saved** - Final positions synced to Zustand after drag
 ✅ **isDirty works** - Workflow marked as modified after drag
 ✅ **Save works** - Correct positions persisted to backend
@@ -125,6 +133,7 @@ Same fix applied to `handleSelectionDragStop`.
 ## 🔄 Complete Drag Flow
 
 ### Phase 1: Drag Start
+
 ```typescript
 handleNodeDragStart
 ├─ Check if snapshot taken (dragSnapshotTaken.current)
@@ -135,6 +144,7 @@ handleNodeDragStart
 ```
 
 ### Phase 2: During Drag
+
 ```typescript
 React Flow internal updates (smooth!)
 ├─ Node position changes in React Flow state
@@ -143,6 +153,7 @@ React Flow internal updates (smooth!)
 ```
 
 ### Phase 3: Drag Stop
+
 ```typescript
 handleNodeDragStop
 ├─ Get current React Flow nodes
@@ -152,6 +163,7 @@ handleNodeDragStop
 ```
 
 ### Phase 4: Save
+
 ```typescript
 User clicks Save
 ├─ Workflow in Zustand has correct positions ✓
@@ -161,19 +173,20 @@ User clicks Save
 
 ## 📊 Comparison
 
-| Aspect | Before Fix | After Fix |
-|--------|-----------|-----------|
-| Dragging smoothness | ✅ Smooth | ✅ Smooth |
-| History pollution | ✅ Clean (1 snapshot) | ✅ Clean (1 snapshot) |
-| Positions saved | ❌ **NOT SAVED** | ✅ **SAVED** |
-| isDirty flag | ❌ Not set | ✅ Set correctly |
-| Save button | ❌ Positions wrong | ✅ Positions correct |
-| Undo/Redo | ✅ Works | ✅ Works |
-| Performance | ✅ Fast | ✅ Fast |
+| Aspect              | Before Fix            | After Fix             |
+| ------------------- | --------------------- | --------------------- |
+| Dragging smoothness | ✅ Smooth             | ✅ Smooth             |
+| History pollution   | ✅ Clean (1 snapshot) | ✅ Clean (1 snapshot) |
+| Positions saved     | ❌ **NOT SAVED**      | ✅ **SAVED**          |
+| isDirty flag        | ❌ Not set            | ✅ Set correctly      |
+| Save button         | ❌ Positions wrong    | ✅ Positions correct  |
+| Undo/Redo           | ✅ Works              | ✅ Works              |
+| Performance         | ✅ Fast               | ✅ Fast               |
 
 ## 🧪 Testing
 
 ### Test Case 1: Single Node Drag
+
 ```
 1. Drag a node to new position
 2. Check isDirty flag → Should be TRUE ✓
@@ -183,6 +196,7 @@ User clicks Save
 ```
 
 ### Test Case 2: Multiple Node Drag
+
 ```
 1. Select multiple nodes
 2. Drag selection to new position
@@ -193,6 +207,7 @@ User clicks Save
 ```
 
 ### Test Case 3: Undo After Drag
+
 ```
 1. Note original positions
 2. Drag node(s) to new position
@@ -202,6 +217,7 @@ User clicks Save
 ```
 
 ### Test Case 4: Drag Without Save
+
 ```
 1. Drag node to new position
 2. isDirty = TRUE ✓
@@ -212,11 +228,14 @@ User clicks Save
 ## 💡 Why This Works
 
 ### The Key Insight
+
 We separate two concerns:
+
 1. **Visual updates** - React Flow handles during drag (fast, no Zustand)
 2. **State persistence** - Zustand handles after drag completes (marks dirty)
 
 ### The Timing Strategy
+
 ```
 BEFORE drag: Take history snapshot (for undo)
 DURING drag: Let React Flow do its thing (smooth)
@@ -224,6 +243,7 @@ AFTER drag:  Sync to Zustand (set isDirty)
 ```
 
 This gives us:
+
 - Fast dragging (no store updates during drag)
 - Clean history (one snapshot per drag)
 - Correct saving (final positions synced)
@@ -232,6 +252,7 @@ This gives us:
 ## 🎯 Success Criteria
 
 All requirements met:
+
 - [x] Dragging is smooth (no lag)
 - [x] Undo/redo has clean history (1 snapshot per drag)
 - [x] Positions are saved correctly
