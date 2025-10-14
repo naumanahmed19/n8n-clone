@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores';
 import { Trash2 } from 'lucide-react';
 import { CSSProperties, useCallback } from 'react';
-import { EdgeLabelRenderer } from 'reactflow';
+import { EdgeLabelRenderer } from '@xyflow/react';
 
 interface EdgeButtonProps {
   x: number;
@@ -29,7 +29,10 @@ export function EdgeButton({
   onMouseLeave,
 }: EdgeButtonProps) {
   const { openDialog } = useAddNodeDialogStore();
-  const { workflow, removeConnection, readOnly } = useWorkflowStore();
+  // OPTIMIZATION: Use Zustand selectors to prevent unnecessary re-renders
+  const workflow = useWorkflowStore(state => state.workflow);
+  const removeConnection = useWorkflowStore(state => state.removeConnection);
+  const readOnly = useWorkflowStore(state => state.readOnly);
   
   // Don't render buttons in read-only mode (only when viewing past execution)
   const isReadOnly = readOnly;

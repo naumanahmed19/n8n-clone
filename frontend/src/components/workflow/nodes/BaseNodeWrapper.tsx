@@ -215,7 +215,6 @@ export function BaseNodeWrapper({
   // Local state for tracking which output connector is hovered (for default rendering)
   const [hoveredOutput, setHoveredOutput] = React.useState<string | null>(null)
 
-
   // Get inputs/outputs from data or use defaults
   const nodeInputs = data.inputs || (showInputHandle ? ['main'] : [])
   const nodeOutputs = data.outputs || (showOutputHandle ? ['main'] : [])

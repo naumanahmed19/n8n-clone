@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     NodeTypes,
     ReactFlowProvider
-} from 'reactflow'
-import 'reactflow/dist/style.css'
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 
 import {
     ResizableHandle,
@@ -35,7 +35,6 @@ import {
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
 
-
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
     chat: ChatInterfaceNode,
@@ -53,17 +52,17 @@ export function WorkflowEditor({
     readOnly = false,
     executionMode = false
 }: WorkflowEditorProps) {
-    const {
-        workflow,
-        showPropertyPanel,
-        propertyPanelNodeId,
-        showChatDialog,
-        chatDialogNodeId,
-        undo,
-        redo,
-        closeNodeProperties,
-        closeChatDialog,
-    } = useWorkflowStore()
+    // OPTIMIZATION: Use Zustand selectors to prevent unnecessary re-renders
+    // Only subscribe to the specific state slices we need
+    const workflow = useWorkflowStore(state => state.workflow)
+    const showPropertyPanel = useWorkflowStore(state => state.showPropertyPanel)
+    const propertyPanelNodeId = useWorkflowStore(state => state.propertyPanelNodeId)
+    const showChatDialog = useWorkflowStore(state => state.showChatDialog)
+    const chatDialogNodeId = useWorkflowStore(state => state.chatDialogNodeId)
+    const undo = useWorkflowStore(state => state.undo)
+    const redo = useWorkflowStore(state => state.redo)
+    const closeNodeProperties = useWorkflowStore(state => state.closeNodeProperties)
+    const closeChatDialog = useWorkflowStore(state => state.closeChatDialog)
 
     // Command dialog state
     const { isOpen: showAddNodeDialog, openDialog, closeDialog, position } = useAddNodeDialogStore()
@@ -183,7 +182,7 @@ export function WorkflowEditor({
         return transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
     }, [workflow?.connections, executionState.status, executionState.executionId])
 
-    // Sync Zustand workflow → React Flow
+    // Sync Zustand workflow â†’ React Flow
     // Only sync when workflow ID changes (new workflow loaded) OR when blockSync is false
     const workflowId = workflow?.id;
     const prevWorkflowIdRef = useRef<string | undefined>();
@@ -194,15 +193,15 @@ export function WorkflowEditor({
         
         if (shouldSync) {
             if (workflowChanged) {
-                console.log('🔄 Syncing Zustand → React Flow (workflow changed)', workflowId);
+                console.log('ðŸ”„ Syncing Zustand â†’ React Flow (workflow changed)', workflowId);
             } else {
-                console.log('🔄 Syncing Zustand → React Flow (not blocked)');
+                console.log('ðŸ”„ Syncing Zustand â†’ React Flow (not blocked)');
             }
             setNodes(reactFlowNodes);
             setEdges(reactFlowEdges);
             prevWorkflowIdRef.current = workflowId;
         } else {
-            console.log('⏸️  Sync blocked - drag in progress');
+            console.log('â¸ï¸  Sync blocked - drag in progress');
         }
     }, [workflowId, reactFlowNodes, reactFlowEdges, setNodes, setEdges, blockSync]);
 

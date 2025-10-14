@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { CustomNode } from '@/components/workflow/CustomNode'
 import { useWorkflowStore } from '@/stores/workflow'
-import type { NodeProps } from 'reactflow'
+import type { NodeProps } from '@xyflow/react'
 import type { CustomNodeData } from '@/components/workflow/CustomNode'
 
 // Mock ReactFlow
@@ -46,8 +46,8 @@ describe('Error Handling Integration', () => {
     },
     selected: false,
     type: 'custom',
-    xPos: 0,
-    yPos: 0,
+    positionAbsoluteX: 0,
+    positionAbsoluteY: 0,
     zIndex: 1,
     isConnectable: true,
     sourcePosition: 'right' as any,

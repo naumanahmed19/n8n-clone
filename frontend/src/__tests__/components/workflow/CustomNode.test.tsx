@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { CustomNode } from '@/components/workflow/CustomNode'
-import { NodeProps } from 'reactflow'
+import { NodeProps } from '@xyflow/react'
 
 import { vi } from 'vitest'
 
@@ -32,8 +32,8 @@ const mockNodeProps: NodeProps = {
   dragging: false,
   isConnectable: true,
   zIndex: 1,
-  xPos: 0,
-  yPos: 0
+  positionAbsoluteX: 0,
+  positionAbsoluteY: 0
 }
 
 describe('CustomNode', () => {
@@ -136,10 +136,10 @@ describe('CustomNode', () => {
   it('should show custom icon when provided', () => {
     const iconProps = {
       ...mockNodeProps,
-      data: { ...mockNodeProps.data, icon: '🌐' }
+      data: { ...mockNodeProps.data, icon: 'ðŸŒ' }
     }
     render(<CustomNode {...iconProps} />)
     
-    expect(screen.getByText('🌐')).toBeInTheDocument()
+    expect(screen.getByText('ðŸŒ')).toBeInTheDocument()
   })
 })

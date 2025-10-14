@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { BaseEdge, EdgeProps, getBezierPath } from 'reactflow';
+import { BaseEdge, EdgeProps, getBezierPath } from '@xyflow/react';
 import { EdgeButton } from './EdgeButton';
 
 export const CustomEdge = memo(function CustomEdge({

@@ -22,8 +22,12 @@ export function useKeyboardShortcuts({
   onAddNode,
   disabled = false,
 }: UseKeyboardShortcutsProps) {
-  const { selectedNodeId, removeNode, closeNodeProperties } =
-    useWorkflowStore();
+  // OPTIMIZATION: Use Zustand selectors to prevent unnecessary re-renders
+  const selectedNodeId = useWorkflowStore((state) => state.selectedNodeId);
+  const removeNode = useWorkflowStore((state) => state.removeNode);
+  const closeNodeProperties = useWorkflowStore(
+    (state) => state.closeNodeProperties
+  );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {

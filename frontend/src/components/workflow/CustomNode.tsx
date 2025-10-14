@@ -2,7 +2,7 @@ import { useWorkflowStore } from '@/stores'
 import type { NodeType } from '@/types'
 import { getNodeIcon } from '@/utils/nodeIconMap'
 import { memo, useMemo } from 'react'
-import { NodeProps } from 'reactflow'
+import { NodeProps } from '@xyflow/react'
 import { NodeMetadata } from './components/NodeMetadata'
 import { useNodeExecution } from './hooks/useNodeExecution'
 import { BaseNodeWrapper } from './nodes/BaseNodeWrapper'
@@ -41,8 +41,9 @@ interface CustomNodeData {
 }
 
 export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
+  // OPTIMIZATION: Use Zustand selector to prevent unnecessary re-renders
   // Get read-only state from store (only true when viewing past execution)
-  const { readOnly } = useWorkflowStore()
+  const readOnly = useWorkflowStore(state => state.readOnly)
   
   // Use custom hooks for node visual state
   const { nodeVisualState } = useNodeExecution(id, data.nodeType)

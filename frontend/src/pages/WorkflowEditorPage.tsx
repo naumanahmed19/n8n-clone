@@ -370,7 +370,6 @@ export function WorkflowEditorPage() {
     )
   }
 
-
   return (
     <TooltipProvider>
       <SidebarProvider

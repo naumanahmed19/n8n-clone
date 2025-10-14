@@ -22,7 +22,6 @@ export function WorkflowEditorLayout() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-
   const { 
     workflow, 
     setWorkflow, 

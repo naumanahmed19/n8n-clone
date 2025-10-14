@@ -11,24 +11,31 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-} from "reactflow";
+} from "@xyflow/react";
 
 /**
  * Custom hook for ReactFlow interactions
  * Handles node/edge changes, connections, drag/drop, and selection
  */
 export function useReactFlowInteractions() {
-  const {
-    selectedNodeId,
-    addNode,
-    addConnection,
-    removeConnection,
-    setSelectedNode,
-    showPropertyPanel,
-    propertyPanelNodeId,
-    openNodeProperties,
-    closeNodeProperties,
-  } = useWorkflowStore();
+  // OPTIMIZATION: Use Zustand selectors to prevent unnecessary re-renders
+  const selectedNodeId = useWorkflowStore((state) => state.selectedNodeId);
+  const addNode = useWorkflowStore((state) => state.addNode);
+  const addConnection = useWorkflowStore((state) => state.addConnection);
+  const removeConnection = useWorkflowStore((state) => state.removeConnection);
+  const setSelectedNode = useWorkflowStore((state) => state.setSelectedNode);
+  const showPropertyPanel = useWorkflowStore(
+    (state) => state.showPropertyPanel
+  );
+  const propertyPanelNodeId = useWorkflowStore(
+    (state) => state.propertyPanelNodeId
+  );
+  const openNodeProperties = useWorkflowStore(
+    (state) => state.openNodeProperties
+  );
+  const closeNodeProperties = useWorkflowStore(
+    (state) => state.closeNodeProperties
+  );
 
   const { openDialog } = useAddNodeDialogStore();
 
@@ -282,7 +289,7 @@ export function useReactFlowInteractions() {
       try {
         const nodeType: NodeType = JSON.parse(nodeTypeData);
 
-        const position = reactFlowInstance.project({
+        const position = reactFlowInstance.screenToFlowPosition({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
@@ -385,7 +392,7 @@ export function useReactFlowInteractions() {
         }
 
         // Convert screen coordinates to flow coordinates
-        const position = reactFlowInstance.project({
+        const position = reactFlowInstance.screenToFlowPosition({
           x: clientX - reactFlowBounds.left,
           y: clientY - reactFlowBounds.top,
         });

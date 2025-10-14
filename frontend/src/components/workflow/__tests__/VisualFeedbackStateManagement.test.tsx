@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { CustomNode } from '../CustomNode'
 import { useWorkflowStore } from '@/stores/workflow'
-import type { NodeProps } from 'reactflow'
+import type { NodeProps } from '@xyflow/react'
 
 // Mock the workflow store
 vi.mock('@/stores/workflow')
@@ -60,8 +60,8 @@ describe('CustomNode Visual Feedback and State Management', () => {
     dragging: false,
     isConnectable: true,
     zIndex: 1,
-    xPos: 0,
-    yPos: 0
+    positionAbsoluteX: 0,
+    positionAbsoluteY: 0
   }
 
   beforeEach(() => {

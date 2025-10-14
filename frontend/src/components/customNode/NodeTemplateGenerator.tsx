@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useCustomNodeStore } from '../../stores/customNode';
 
 export const NodeTemplateGenerator: React.FC = () => {

@@ -4,7 +4,7 @@ import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
 import { MessageCircle, Send, Trash2 } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NodeProps } from 'reactflow'
+import { NodeProps } from '@xyflow/react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
 interface Message {

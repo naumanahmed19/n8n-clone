@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ReactFlowProvider } from 'reactflow'
+import { ReactFlowProvider } from '@xyflow/react'
 import { create } from 'zustand'
 import { ExecuteToolbarButton } from '@/components/workflow/ExecuteToolbarButton'
 import { DisableToggleToolbarButton } from '@/components/workflow/DisableToggleToolbarButton'

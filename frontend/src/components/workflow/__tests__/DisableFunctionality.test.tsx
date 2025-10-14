@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ReactFlowProvider } from 'reactflow'
+import { ReactFlowProvider } from '@xyflow/react'
 import { CustomNode } from '../CustomNode'
 import { useWorkflowStore } from '@/stores/workflow'
 

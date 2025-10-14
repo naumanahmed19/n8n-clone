@@ -1,5 +1,5 @@
 import { RefObject, useCallback, useEffect, useRef } from "react";
-import { ReactFlowInstance } from "reactflow";
+import { ReactFlowInstance } from "@xyflow/react";
 
 interface UseReactFlowAutoLayoutOptions {
   reactFlowInstance: ReactFlowInstance | null;

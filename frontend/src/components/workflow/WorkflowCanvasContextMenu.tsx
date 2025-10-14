@@ -42,7 +42,7 @@ import {
   ZoomOut
 } from 'lucide-react';
 import React, { memo, useCallback, useMemo } from 'react';
-import { useReactFlow } from 'reactflow';
+import { useReactFlow } from '@xyflow/react';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode
