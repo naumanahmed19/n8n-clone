@@ -1,4 +1,4 @@
-import { ReactFlowInstance } from "reactflow";
+import { ReactFlowInstance } from "@xyflow/react";
 import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
 

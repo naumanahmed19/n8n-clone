@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useWorkflowStore } from '@/stores'
 import { Download, Image as ImageIcon, Maximize2, RefreshCw } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { NodeProps } from 'reactflow'
+import { NodeProps } from '@xyflow/react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
 interface ImagePreviewNodeData {

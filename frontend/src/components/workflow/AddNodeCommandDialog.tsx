@@ -11,7 +11,7 @@ import {
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { useCallback, useEffect, useMemo } from 'react'
-import { useReactFlow } from 'reactflow'
+import { useReactFlow } from '@xyflow/react'
 
 interface AddNodeCommandDialogProps {
   open: boolean
@@ -162,7 +162,7 @@ export function AddNodeCommandDialog({
       }
     } else if (reactFlowInstance) {
       // Get center of viewport as fallback
-      nodePosition = reactFlowInstance.project({
+      nodePosition = reactFlowInstance.screenToFlowPosition({
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
       })

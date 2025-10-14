@@ -1,5 +1,4 @@
 import { useCopyPasteStore, useWorkflowStore } from "@/stores";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Edge,
   Node,
@@ -9,7 +8,8 @@ import {
   useReactFlow,
   useStore,
   type KeyCode,
-} from "reactflow";
+} from "@xyflow/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Custom hook for copy/paste/cut functionality in React Flow

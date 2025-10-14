@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { BaseEdge, EdgeProps, Position } from 'reactflow';
+import { BaseEdge, EdgeProps, Position } from '@xyflow/react';
 import { EdgeButton } from '../EdgeButton';
 import {
   getStepInitialPoints,

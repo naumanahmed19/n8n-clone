@@ -13,7 +13,7 @@
 
 import { useWorkflowStore } from "@/stores/workflow";
 import { useMemo } from "react";
-import type { Edge } from "reactflow";
+import type { Edge } from "@xyflow/react";
 
 /**
  * Hook to get edge animation states based on execution state

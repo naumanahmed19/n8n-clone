@@ -499,8 +499,6 @@ export function InputsColumn({ node }: InputsColumnProps) {
     }
   }
 
-
-
   if (inputNodes.length === 0) {
     return (
       <div className="flex w-full h-full border-r border-gray-200 flex-col">

@@ -184,8 +184,6 @@ export function WorkflowToolbar({
     setDirty(true) // Mark workflow as dirty when title changes
   }
 
-
-
   const handleSave = () => {
     setSaving(true)
     try {

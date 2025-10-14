@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     NodeTypes,
     ReactFlowProvider
-} from 'reactflow'
-import 'reactflow/dist/style.css'
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 
 import {
     ResizableHandle,
@@ -34,7 +34,6 @@ import {
     transformWorkflowEdgesToReactFlow,
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
-
 
 const nodeTypes: NodeTypes = {
     custom: CustomNode,
@@ -183,7 +182,7 @@ export function WorkflowEditor({
         return transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
     }, [workflow?.connections, executionState.status, executionState.executionId])
 
-    // Sync Zustand workflow → React Flow
+    // Sync Zustand workflow â†’ React Flow
     // Only sync when workflow ID changes (new workflow loaded) OR when blockSync is false
     const workflowId = workflow?.id;
     const prevWorkflowIdRef = useRef<string | undefined>();
@@ -194,15 +193,15 @@ export function WorkflowEditor({
         
         if (shouldSync) {
             if (workflowChanged) {
-                console.log('🔄 Syncing Zustand → React Flow (workflow changed)', workflowId);
+                console.log('ðŸ”„ Syncing Zustand â†’ React Flow (workflow changed)', workflowId);
             } else {
-                console.log('🔄 Syncing Zustand → React Flow (not blocked)');
+                console.log('ðŸ”„ Syncing Zustand â†’ React Flow (not blocked)');
             }
             setNodes(reactFlowNodes);
             setEdges(reactFlowEdges);
             prevWorkflowIdRef.current = workflowId;
         } else {
-            console.log('⏸️  Sync blocked - drag in progress');
+            console.log('â¸ï¸  Sync blocked - drag in progress');
         }
     }, [workflowId, reactFlowNodes, reactFlowEdges, setNodes, setEdges, blockSync]);
 

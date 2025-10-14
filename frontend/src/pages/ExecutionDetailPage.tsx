@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ReactFlowProvider } from 'reactflow'
+import { ReactFlowProvider } from '@xyflow/react'
 
 export function ExecutionDetailPage() {
   const { executionId } = useParams<{ executionId: string }>()

@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import { Plus } from 'lucide-react'
 import { memo } from 'react'
-import { Handle, Position } from 'reactflow'
+import { Handle, Position } from '@xyflow/react'
 import { calculateHandlePosition } from '../utils/handlePositioning'
 
 interface NodeHandlesProps {

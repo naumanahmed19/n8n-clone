@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ReactFlowProvider, NodeProps } from 'reactflow'
+import { ReactFlowProvider, NodeProps } from '@xyflow/react'
 import { CustomNode } from '../CustomNode'
 import { shouldShowExecuteButton, shouldShowDisableButton } from '@/utils/nodeTypeClassification'
 

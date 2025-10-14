@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { useReactFlow } from 'reactflow';
+import { useReactFlow } from '@xyflow/react';
 import { ControlPointData } from './ControlPoint';
 
 interface ControlPointProps {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Visual Test Page for Chat Interface Node
  * 
  * This component allows you to visually test and interact with the Chat Interface Node
@@ -8,8 +8,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ChatInterfaceNode } from '@/components/workflow/nodes'
-import ReactFlow, { Background, Controls, ReactFlowProvider } from 'reactflow'
-import 'reactflow/dist/style.css'
+import { ReactFlow,  Background, Controls, ReactFlowProvider } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import '../reactflow-theme.css'
 
 const nodeTypes = {
@@ -293,25 +293,25 @@ export function ChatInterfaceNodeVisualTest() {
             <div className="space-y-2">
               <h4 className="font-semibold">Visual Features</h4>
               <ul className="space-y-1 text-sm">
-                <li>✅ Message bubbles (user & assistant)</li>
-                <li>✅ Avatar icons</li>
-                <li>✅ Timestamps</li>
-                <li>✅ Typing indicator</li>
-                <li>✅ Scrollable message area</li>
-                <li>✅ Model badge display</li>
-                <li>✅ Empty state</li>
+                <li>Ã¢Å“â€¦ Message bubbles (user & assistant)</li>
+                <li>Ã¢Å“â€¦ Avatar icons</li>
+                <li>Ã¢Å“â€¦ Timestamps</li>
+                <li>Ã¢Å“â€¦ Typing indicator</li>
+                <li>Ã¢Å“â€¦ Scrollable message area</li>
+                <li>Ã¢Å“â€¦ Model badge display</li>
+                <li>Ã¢Å“â€¦ Empty state</li>
               </ul>
             </div>
             <div className="space-y-2">
               <h4 className="font-semibold">Functional Features</h4>
               <ul className="space-y-1 text-sm">
-                <li>✅ Send messages</li>
-                <li>✅ Enter key to send</li>
-                <li>✅ Input validation</li>
-                <li>✅ Message history</li>
-                <li>✅ Disabled state</li>
-                <li>✅ Selected state</li>
-                <li>✅ ReactFlow handles</li>
+                <li>Ã¢Å“â€¦ Send messages</li>
+                <li>Ã¢Å“â€¦ Enter key to send</li>
+                <li>Ã¢Å“â€¦ Input validation</li>
+                <li>Ã¢Å“â€¦ Message history</li>
+                <li>Ã¢Å“â€¦ Disabled state</li>
+                <li>Ã¢Å“â€¦ Selected state</li>
+                <li>Ã¢Å“â€¦ ReactFlow handles</li>
               </ul>
             </div>
           </div>

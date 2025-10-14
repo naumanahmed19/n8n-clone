@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores';
 import { Trash2 } from 'lucide-react';
 import { CSSProperties, useCallback } from 'react';
-import { EdgeLabelRenderer } from 'reactflow';
+import { EdgeLabelRenderer } from '@xyflow/react';
 
 interface EdgeButtonProps {
   x: number;

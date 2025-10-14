@@ -11,7 +11,7 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-} from "reactflow";
+} from "@xyflow/react";
 
 /**
  * Custom hook for ReactFlow interactions
@@ -289,7 +289,7 @@ export function useReactFlowInteractions() {
       try {
         const nodeType: NodeType = JSON.parse(nodeTypeData);
 
-        const position = reactFlowInstance.project({
+        const position = reactFlowInstance.screenToFlowPosition({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
         });
@@ -392,7 +392,7 @@ export function useReactFlowInteractions() {
         }
 
         // Convert screen coordinates to flow coordinates
-        const position = reactFlowInstance.project({
+        const position = reactFlowInstance.screenToFlowPosition({
           x: clientX - reactFlowBounds.left,
           y: clientY - reactFlowBounds.top,
         });
