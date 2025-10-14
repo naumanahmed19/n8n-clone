@@ -22,7 +22,6 @@ interface WorkflowCanvasProps {
     showBackground: boolean
     backgroundVariant: string
     onInit: (instance: any) => void
-    isExecuting?: boolean
     readOnly?: boolean
     executionMode?: boolean
     // Event handlers
@@ -52,7 +51,6 @@ export function WorkflowCanvas({
     showBackground,
     backgroundVariant,
     onInit,
-    isExecuting = false,
     readOnly = false,
     executionMode = false,
     // Event handlers from parent
@@ -102,11 +100,12 @@ export function WorkflowCanvas({
     )
 
     // Memoize defaultEdgeOptions to prevent ReactFlow re-initialization
+    // NOTE: animated property is now set per-edge by useExecutionAwareEdges hook
+    // This ensures only edges in the current execution path are animated
     const defaultEdgeOptions = useMemo(() => ({
         type: 'smoothstep' as const,
-        animated: isExecuting,
         style: edgeStyle,
-    }), [isExecuting, edgeStyle])
+    }), [edgeStyle])
 
     // Memoize MiniMap style to prevent object re-creation
     const miniMapStyle = useMemo(() => ({

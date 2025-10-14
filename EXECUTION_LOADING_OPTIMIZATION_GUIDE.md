@@ -394,4 +394,32 @@ The optimized implementation provides:
 4. **Memory efficient** - O(n) space complexity
 5. **Production ready** - tested with 1000+ node workflows
 
+## 🎨 Edge Animation Optimization
+
+### Problem
+Previously, ALL edges would animate when ANY execution was running due to a global `isExecuting` flag.
+
+### Solution
+Created `useEdgeAnimation` hook that calculates animation per-edge based on execution path:
+
+```typescript
+// Only animate edges where BOTH source AND target are in current execution
+const edgeAnimationMap = useEdgeAnimation(edges)
+const executionAwareEdges = useExecutionAwareEdges(edges)
+
+// Pass to WorkflowCanvas
+<WorkflowCanvas edges={executionAwareEdges} />
+```
+
+### Benefits
+- ✅ Each execution path animates its own edges only
+- ✅ No cross-contamination between trigger paths
+- ✅ Minimal re-renders (only affected edges update)
+- ✅ Perfect execution isolation
+
+**See**: `EDGE_ANIMATION_EXECUTION_ISOLATION.md` for complete details.
+
+---
+
 **Result**: Blazing fast execution state management with perfect isolation! 🎉
+

@@ -18,6 +18,7 @@ import {
     useReactFlowInteractions,
     useWorkflowOperations,
 } from '@/hooks/workflow'
+import { useExecutionAwareEdges } from '@/hooks/useEdgeAnimation'
 import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
@@ -99,6 +100,10 @@ export function WorkflowEditor({
     // Ctrl/Cmd+C to copy, Ctrl/Cmd+X to cut, Ctrl/Cmd+V to paste
     // Functions are stored in useCopyPasteStore for use in context menus
     useCopyPaste()
+
+    // OPTIMIZATION: Enhance edges with execution-aware animation
+    // Only edges in the current execution path will be animated
+    const executionAwareEdges = useExecutionAwareEdges(edges)
 
     const {
         executionState,
@@ -248,14 +253,13 @@ export function WorkflowEditor({
                                 >
                                     <WorkflowCanvas
                                         nodes={nodes}
-                                        edges={edges}
+                                        edges={executionAwareEdges}
                                         nodeTypes={nodeTypes}
                                         showControls={showControls}
                                         showMinimap={showMinimap}
                                         showBackground={showBackground}
                                         backgroundVariant={backgroundVariant}
                                         onInit={handleReactFlowInit}
-                                        isExecuting={executionState.status === 'running'}
                                         readOnly={readOnly}
                                         executionMode={executionMode}
                                         // Event handlers from useReactFlowInteractions
