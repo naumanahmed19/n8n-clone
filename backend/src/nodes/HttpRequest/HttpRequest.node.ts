@@ -146,18 +146,32 @@ export const HttpRequestNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    const method = this.getNodeParameter("method") as string;
-    const url = this.getNodeParameter("url") as string;
+    const method = (await this.getNodeParameter("method")) as string;
+    const url = (await this.getNodeParameter("url")) as string;
+
+    // Debug logging to see what we actually received
+    this.logger.info("HTTP Request - Parameter values received", {
+      method,
+      url,
+      urlType: typeof url,
+      urlLength: url?.length,
+    });
+
     const headers =
-      (this.getNodeParameter("headers") as Record<string, string>) || {};
-    const body = this.getNodeParameter("body");
-    const timeout = (this.getNodeParameter("timeout") as number) || 30000;
-    const followRedirects = this.getNodeParameter("followRedirects") as boolean;
-    const maxRedirects = (this.getNodeParameter("maxRedirects") as number) || 5;
+      ((await this.getNodeParameter("headers")) as Record<string, string>) ||
+      {};
+    const body = await this.getNodeParameter("body");
+    const timeout =
+      ((await this.getNodeParameter("timeout")) as number) || 30000;
+    const followRedirects = (await this.getNodeParameter(
+      "followRedirects"
+    )) as boolean;
+    const maxRedirects =
+      ((await this.getNodeParameter("maxRedirects")) as number) || 5;
     const continueOnFail =
-      (this.getNodeParameter("continueOnFail") as boolean) || false;
+      ((await this.getNodeParameter("continueOnFail")) as boolean) || false;
     const alwaysOutputData =
-      (this.getNodeParameter("alwaysOutputData") as boolean) || false;
+      ((await this.getNodeParameter("alwaysOutputData")) as boolean) || false;
 
     if (!url) {
       throw new Error("URL is required");

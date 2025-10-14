@@ -1,4 +1,6 @@
 import { clsx } from 'clsx'
+import { Plus } from 'lucide-react'
+import { memo } from 'react'
 import { Handle, Position } from 'reactflow'
 import { calculateHandlePosition } from '../utils/handlePositioning'
 
@@ -14,7 +16,7 @@ interface NodeHandlesProps {
   readOnly?: boolean
 }
 
-export function NodeHandles({
+export const NodeHandles = memo(function NodeHandles({
   inputs,
   outputs,
   disabled,
@@ -80,7 +82,7 @@ export function NodeHandles({
       )}
     </>
   )
-}
+})
 
 interface OutputHandleProps {
   output: string
@@ -94,7 +96,7 @@ interface OutputHandleProps {
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void
 }
 
-function OutputHandle({
+const OutputHandle = memo(function OutputHandle({
   output,
   top,
   isHovered,
@@ -148,7 +150,5 @@ function OutputHandle({
       )}
     </div>
   )
-}
-
-import { Plus } from 'lucide-react'
+})
 

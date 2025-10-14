@@ -1,6 +1,7 @@
 // Zustand store exports
 export * from "./addNodeDialog";
 export * from "./auth";
+export * from "./copyPaste";
 export * from "./credential";
 export * from "./customNode";
 export * from "./nodeConfigDialog";

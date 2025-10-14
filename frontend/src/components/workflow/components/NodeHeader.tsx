@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, LucideIcon } from 'lucide-react'
+import { memo } from 'react'
 import { NodeIcon } from './NodeIcon'
 
 interface NodeHeaderProps {
@@ -52,7 +53,7 @@ interface NodeHeaderProps {
  * />
  * ```
  */
-export function NodeHeader({
+export const NodeHeader = memo(function NodeHeader({
   label,
   headerInfo,
   icon,
@@ -109,6 +110,5 @@ export function NodeHeader({
       )}
     </div>
   )
-}
+})
 
-NodeHeader.displayName = 'NodeHeader'

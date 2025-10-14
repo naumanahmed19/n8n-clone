@@ -32,7 +32,7 @@ export const JsonNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    const jsonData = this.getNodeParameter("jsonData") as string;
+    const jsonData = (await this.getNodeParameter("jsonData")) as string;
 
     try {
       const parsedData =

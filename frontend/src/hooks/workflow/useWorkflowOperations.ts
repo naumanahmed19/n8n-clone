@@ -1,7 +1,8 @@
 import { workflowService } from "@/services";
 import { useAuthStore, useWorkflowStore } from "@/stores";
+import { Workflow } from "@/types";
 import { extractTriggersFromNodes } from "@/utils/triggerUtils";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
 /**
@@ -9,21 +10,47 @@ import { toast } from "sonner";
  * Encapsulates workflow CRUD operations and file handling
  */
 export function useWorkflowOperations() {
-  const {
-    workflow,
-    workflowTitle,
-    isTitleDirty,
-    saveTitle,
-    setWorkflow,
-    setDirty,
-    validateWorkflow,
-    exportWorkflow,
-    importWorkflow,
-    isExporting,
-    isImporting,
-  } = useWorkflowStore();
+  // Optimize store subscriptions - only get what we need
+  const workflow = useWorkflowStore((state) => state.workflow);
+  const workflowTitle = useWorkflowStore((state) => state.workflowTitle);
+  const isTitleDirty = useWorkflowStore((state) => state.isTitleDirty);
+  const isDirty = useWorkflowStore((state) => state.isDirty);
+  const saveTitle = useWorkflowStore((state) => state.saveTitle);
+  const setWorkflow = useWorkflowStore((state) => state.setWorkflow);
+  const setDirty = useWorkflowStore((state) => state.setDirty);
+  const validateWorkflow = useWorkflowStore((state) => state.validateWorkflow);
+  const exportWorkflow = useWorkflowStore((state) => state.exportWorkflow);
+  const importWorkflow = useWorkflowStore((state) => state.importWorkflow);
+  const isExporting = useWorkflowStore((state) => state.isExporting);
+  const isImporting = useWorkflowStore((state) => state.isImporting);
 
   const { user } = useAuthStore();
+
+  // Memoize derived values
+  const canSave = useMemo(() => Boolean(workflow && user), [workflow, user]);
+  const hasUnsavedChanges = useMemo(
+    () => isDirty || isTitleDirty,
+    [isDirty, isTitleDirty]
+  );
+
+  // Helper to build workflow data (DRY principle)
+  const buildWorkflowData = useCallback(
+    (currentWorkflow: Workflow) => {
+      const triggers = extractTriggersFromNodes(currentWorkflow.nodes);
+      return {
+        name: workflowTitle || currentWorkflow.name,
+        description: currentWorkflow.description,
+        nodes: currentWorkflow.nodes,
+        connections: currentWorkflow.connections,
+        triggers: triggers,
+        settings: currentWorkflow.settings,
+        active: currentWorkflow.active,
+        category: currentWorkflow.category || undefined,
+        tags: currentWorkflow.tags,
+      };
+    },
+    [workflowTitle]
+  );
 
   // Save workflow function
   const saveWorkflow = useCallback(async () => {
@@ -35,75 +62,61 @@ export function useWorkflowOperations() {
         saveTitle();
       }
 
-      if (workflow.id === "new") {
-        // Create new workflow
-        const triggers = extractTriggersFromNodes(workflow.nodes);
+      // Build workflow data once
+      const workflowData = buildWorkflowData(workflow);
+      const isNewWorkflow = workflow.id === "new";
 
-        const workflowData = {
-          name: workflowTitle || workflow.name,
-          description: workflow.description,
-          nodes: workflow.nodes,
-          connections: workflow.connections,
-          triggers: triggers,
-          settings: workflow.settings,
-          active: workflow.active,
-          category: workflow.category || undefined,
-          tags: workflow.tags,
-        };
+      // Save workflow (create or update)
+      const savedWorkflow = isNewWorkflow
+        ? await workflowService.createWorkflow(workflowData)
+        : await workflowService.updateWorkflow(workflow.id, workflowData);
 
-        const savedWorkflow = await workflowService.createWorkflow(
-          workflowData
-        );
-        setWorkflow(savedWorkflow);
-        setDirty(false);
+      setWorkflow(savedWorkflow);
+      setDirty(false);
 
-        // Update URL to reflect the new workflow ID
+      // Update URL for new workflows
+      if (isNewWorkflow) {
         window.history.replaceState(
           null,
           "",
           `/workflows/${savedWorkflow.id}/edit`
         );
-        toast.success("Workflow created successfully");
-      } else {
-        // Update existing workflow
-        const triggers = extractTriggersFromNodes(workflow.nodes);
-
-        const workflowData = {
-          name: workflowTitle || workflow.name,
-          description: workflow.description,
-          nodes: workflow.nodes,
-          connections: workflow.connections,
-          triggers: triggers,
-          settings: workflow.settings,
-          active: workflow.active,
-          category: workflow.category || undefined,
-          tags: workflow.tags,
-        };
-
-        const updatedWorkflow = await workflowService.updateWorkflow(
-          workflow.id,
-          workflowData
-        );
-        setWorkflow(updatedWorkflow);
-        setDirty(false);
-        toast.success("Workflow saved successfully");
       }
+
+      toast.success(
+        isNewWorkflow
+          ? "Workflow created successfully"
+          : "Workflow saved successfully"
+      );
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save workflow:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to save workflow. Please try again.";
+
+      // Extract error message from API response and format it
+      let errorMessage = "Failed to save workflow. Please try again.";
+
+      if (error?.message) {
+        // Check if the message already starts with "Failed to save"
+        if (error.message.toLowerCase().includes("failed to save")) {
+          errorMessage = error.message;
+        } else {
+          // Prefix with "Failed to save: " and add the specific reason
+          errorMessage = `Failed to save: ${error.message}`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = `Failed to save: ${error.message}`;
+      }
+
+      // Show the error message to the user
       toast.error(errorMessage);
       return false;
     }
   }, [
     workflow,
     user,
-    workflowTitle,
     isTitleDirty,
     saveTitle,
+    buildWorkflowData,
     setWorkflow,
     setDirty,
   ]);
@@ -157,10 +170,8 @@ export function useWorkflowOperations() {
     isExporting,
     isImporting,
 
-    // Derived state
-    canSave: Boolean(workflow && user),
-    hasUnsavedChanges: useWorkflowStore(
-      (state) => state.isDirty || state.isTitleDirty
-    ),
+    // Derived state (memoized)
+    canSave,
+    hasUnsavedChanges,
   };
 }

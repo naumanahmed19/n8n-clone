@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { BaseEdge, EdgeProps, getBezierPath } from 'reactflow';
 import { EdgeButton } from './EdgeButton';
 
-export function CustomEdge({
+export const CustomEdge = memo(function CustomEdge({
   id,
   sourceX,
   sourceY,
@@ -63,4 +63,6 @@ export function CustomEdge({
       )}
     </>
   );
-}
+})
+
+CustomEdge.displayName = 'CustomEdge'

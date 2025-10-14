@@ -23,7 +23,8 @@ export function getNodeExecutionStatus(
   nodeId: string,
   executionState: ExecutionState,
   nodeResult: NodeExecutionResult | undefined,
-  lastExecutionResult: ExecutionResult | null
+  lastExecutionResult: ExecutionResult | null,
+  lastResultsMap?: Map<string, NodeExecutionResult>
 ): "idle" | "running" | "success" | "error" | "skipped" {
   if (executionState.status === "running") {
     if (nodeResult) {
@@ -42,9 +43,10 @@ export function getNodeExecutionStatus(
     }
 
     if (lastExecutionResult) {
-      const lastNodeResult = lastExecutionResult.nodeResults.find(
-        (nr) => nr.nodeId === nodeId
-      );
+      // Use provided map for O(1) lookup, or fallback to find for backwards compatibility
+      const lastNodeResult = lastResultsMap
+        ? lastResultsMap.get(nodeId)
+        : lastExecutionResult.nodeResults.find((nr) => nr.nodeId === nodeId);
       if (lastNodeResult) {
         return lastNodeResult.status;
       }
@@ -52,6 +54,23 @@ export function getNodeExecutionStatus(
   }
 
   return "idle";
+}
+
+/**
+ * Creates a Map for faster node type lookups (O(1) instead of O(n))
+ */
+function createNodeTypeMap(nodeTypes: NodeType[]): Map<string, NodeType> {
+  return new Map(nodeTypes.map((nt) => [nt.type, nt]));
+}
+
+/**
+ * Creates a Map for faster execution result lookups
+ */
+function createNodeResultsMap(
+  executionResult: ExecutionResult | null
+): Map<string, NodeExecutionResult> {
+  if (!executionResult) return new Map();
+  return new Map(executionResult.nodeResults.map((nr) => [nr.nodeId, nr]));
 }
 
 /**
@@ -112,17 +131,20 @@ export function transformWorkflowNodesToReactFlow(
   getNodeResult: (nodeId: string) => NodeExecutionResult | undefined,
   lastExecutionResult: ExecutionResult | null
 ) {
+  // Create Maps for O(1) lookups instead of O(n) finds
+  const nodeTypeMap = createNodeTypeMap(availableNodeTypes);
+  const lastResultsMap = createNodeResultsMap(lastExecutionResult);
+
   return workflowNodes.map((node) => {
     const nodeResult = getNodeResult(node.id);
     const nodeStatus = getNodeExecutionStatus(
       node.id,
       executionState,
       nodeResult,
-      lastExecutionResult
+      lastExecutionResult,
+      lastResultsMap
     );
-    const nodeTypeDefinition = availableNodeTypes.find(
-      (nt) => nt.type === node.type
-    );
+    const nodeTypeDefinition = nodeTypeMap.get(node.type);
 
     // Use specific node type for special nodes with custom renderers, otherwise use 'custom'
     const reactFlowNodeType =
@@ -150,9 +172,7 @@ export function transformWorkflowNodesToReactFlow(
         dimensions: { width: 64, height: 64 },
         customStyle: getNodeCustomStyle(node, nodeTypeDefinition),
         executionResult: nodeResult,
-        lastExecutionData: lastExecutionResult?.nodeResults.find(
-          (nr) => nr.nodeId === node.id
-        ),
+        lastExecutionData: lastResultsMap.get(node.id),
         // Add node type definition and execution capability
         nodeTypeDefinition,
         executionCapability: nodeTypeDefinition?.executionCapability,

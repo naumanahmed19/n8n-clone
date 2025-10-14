@@ -1,4 +1,5 @@
 import { canNodeExecuteIndividually, shouldShowDisableButton, shouldShowExecuteButton } from '@/utils/nodeTypeClassification'
+import { memo } from 'react'
 import { NodeToolbar, Position } from 'reactflow'
 import { DisableToggleToolbarButton } from '../DisableToggleToolbarButton'
 import { ExecuteToolbarButton } from '../ExecuteToolbarButton'
@@ -19,7 +20,7 @@ interface NodeToolbarContentProps {
   onToggleDisabled: (nodeId: string, disabled: boolean) => void
 }
 
-export function NodeToolbarContent({
+export const NodeToolbarContent = memo(function NodeToolbarContent({
   nodeId,
   nodeType,
   nodeLabel,
@@ -77,4 +78,6 @@ export function NodeToolbarContent({
       </div>
     </NodeToolbar>
   )
-}
+})
+
+NodeToolbarContent.displayName = 'NodeToolbarContent'

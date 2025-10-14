@@ -19,10 +19,8 @@ import {
  */
 export function useReactFlowInteractions() {
   const {
-    workflow,
     selectedNodeId,
     addNode,
-    updateNode,
     addConnection,
     removeConnection,
     setSelectedNode,
@@ -34,7 +32,6 @@ export function useReactFlowInteractions() {
 
   const { openDialog } = useAddNodeDialogStore();
 
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [connectionInProgress, setConnectionInProgress] =
     useState<Connection | null>(null);
 
@@ -44,23 +41,23 @@ export function useReactFlowInteractions() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Check if a node exists in the workflow
+  const checkNodeExists = useCallback((nodeId: string) => {
+    const workflow = useWorkflowStore.getState().workflow;
+    return workflow?.nodes.some((node) => node.id === nodeId) ?? false;
+  }, []);
+
   // Handle node selection
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
       const selectedNode = params.nodes[0];
       if (selectedNode) {
         setSelectedNode(selectedNode.id);
-        // Don't automatically open config panel - only set selection
       } else {
         setSelectedNode(null);
-        // Only close config panel if no node is selected AND the property panel is open
-        // but the propertyPanelNodeId doesn't match any existing workflow node
-        // This prevents the dialog from closing during execution state changes
-        // while still allowing it to close when a node is actually removed or user clicks away
+        // Close property panel if the node no longer exists in workflow
         if (showPropertyPanel && propertyPanelNodeId) {
-          const nodeExists = workflow?.nodes.find(
-            (node) => node.id === propertyPanelNodeId
-          );
+          const nodeExists = checkNodeExists(propertyPanelNodeId);
           if (!nodeExists) {
             closeNodeProperties();
           }
@@ -71,24 +68,31 @@ export function useReactFlowInteractions() {
       setSelectedNode,
       showPropertyPanel,
       propertyPanelNodeId,
-      workflow,
+      checkNodeExists,
       closeNodeProperties,
     ]
   );
+
+  // Drag operation state tracking
+  const dragSnapshotTaken = useRef(false);
+  const isDragging = useRef(false);
+  const blockSync = useRef(false);
 
   // Handle node position changes
   const handleNodesChange: OnNodesChange = useCallback(
     (changes) => {
       onNodesChange(changes);
 
-      // Update workflow store with position changes
+      // Track dragging state
       changes.forEach((change) => {
-        if (change.type === "position" && change.position) {
-          updateNode(change.id, { position: change.position });
+        if (change.type === "position" && "dragging" in change) {
+          if (change.dragging) {
+            isDragging.current = true;
+          }
         }
       });
     },
-    [onNodesChange, updateNode]
+    [onNodesChange]
   );
 
   // Handle edge changes
@@ -105,6 +109,124 @@ export function useReactFlowInteractions() {
     },
     [onEdgesChange, removeConnection]
   );
+
+  // Helper function to sync React Flow positions to Zustand after drag
+  const syncPositionsToZustand = useCallback(() => {
+    const { workflow, updateWorkflow } = useWorkflowStore.getState();
+    if (workflow && reactFlowInstance) {
+      const currentNodes = reactFlowInstance.getNodes();
+      const updatedNodes = workflow.nodes.map((wfNode) => {
+        const rfNode = currentNodes.find((n) => n.id === wfNode.id);
+        if (rfNode && rfNode.position) {
+          return { ...wfNode, position: rfNode.position };
+        }
+        return wfNode;
+      });
+      updateWorkflow({ nodes: updatedNodes });
+    }
+  }, [reactFlowInstance]);
+
+  // Helper function to reset drag flags
+  const resetDragFlags = useCallback(() => {
+    setTimeout(() => {
+      dragSnapshotTaken.current = false;
+      isDragging.current = false;
+      blockSync.current = false;
+    }, 100);
+  }, []);
+
+  // Handle node drag start - take snapshot BEFORE dragging
+  const handleNodeDragStart = useCallback(
+    (_event: React.MouseEvent, _node: any) => {
+      if (!dragSnapshotTaken.current) {
+        const { saveToHistory } = useWorkflowStore.getState();
+        saveToHistory("Move node");
+        dragSnapshotTaken.current = true;
+      }
+      isDragging.current = true;
+      blockSync.current = true;
+    },
+    []
+  );
+
+  // Handle node drag stop
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, _node: any) => {
+      syncPositionsToZustand();
+      resetDragFlags();
+    },
+    [syncPositionsToZustand, resetDragFlags]
+  );
+
+  // Handle selection drag start - take snapshot BEFORE dragging selection
+  const handleSelectionDragStart = useCallback(
+    (_event: React.MouseEvent, _nodes: any[]) => {
+      if (!dragSnapshotTaken.current) {
+        const { saveToHistory } = useWorkflowStore.getState();
+        saveToHistory("Move selection");
+        dragSnapshotTaken.current = true;
+      }
+      isDragging.current = true;
+      blockSync.current = true;
+    },
+    []
+  );
+
+  // Handle selection drag stop
+  const handleSelectionDragStop = useCallback(
+    (_event: React.MouseEvent, _nodes: any[]) => {
+      syncPositionsToZustand();
+      resetDragFlags();
+    },
+    [syncPositionsToZustand, resetDragFlags]
+  );
+
+  // Handle nodes delete
+  const handleNodesDelete = useCallback((nodes: any[]) => {
+    if (nodes.length === 0) return;
+
+    const nodeIds = nodes.map((node) => node.id);
+
+    // Update Zustand workflow store
+    const { workflow, updateWorkflow, saveToHistory } =
+      useWorkflowStore.getState();
+    if (workflow) {
+      // Save to history before deletion
+      saveToHistory(`Delete ${nodes.length} node(s)`);
+
+      // Remove nodes and their connections from workflow
+      updateWorkflow({
+        nodes: workflow.nodes.filter((node) => !nodeIds.includes(node.id)),
+        connections: workflow.connections.filter(
+          (conn) =>
+            !nodeIds.includes(conn.sourceNodeId) &&
+            !nodeIds.includes(conn.targetNodeId)
+        ),
+      });
+    }
+  }, []);
+
+  // Handle edges delete
+  const handleEdgesDelete = useCallback((edges: any[]) => {
+    if (edges.length === 0) return;
+
+    const edgeIds = edges.map((edge) => edge.id);
+
+    // Update Zustand workflow store
+    const { workflow, updateWorkflow, saveToHistory } =
+      useWorkflowStore.getState();
+    if (workflow) {
+      // Save to history before deletion
+      saveToHistory(`Delete ${edges.length} connection(s)`);
+
+      // Remove connections from workflow
+      updateWorkflow({
+        connections: workflow.connections.filter(
+          (conn) => !edgeIds.includes(conn.id)
+        ),
+      });
+    }
+  }, []);
 
   // Handle new connections
   const handleConnect: OnConnect = useCallback(
@@ -145,8 +267,14 @@ export function useReactFlowInteractions() {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!reactFlowBounds || !reactFlowInstance) return;
+      if (!reactFlowInstance) return;
+
+      // Get the ReactFlow wrapper element from the DOM
+      const reactFlowWrapper = document.querySelector(
+        ".react-flow"
+      ) as HTMLElement;
+      const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
+      if (!reactFlowBounds) return;
 
       const nodeTypeData = event.dataTransfer.getData("application/reactflow");
       if (!nodeTypeData) return;
@@ -246,8 +374,11 @@ export function useReactFlowInteractions() {
             ? event.clientY
             : (event as TouchEvent).touches[0].clientY;
 
-        const reactFlowBounds =
-          reactFlowWrapper.current?.getBoundingClientRect();
+        // Get the ReactFlow wrapper element from the DOM
+        const reactFlowWrapper = document.querySelector(
+          ".react-flow"
+        ) as HTMLElement;
+        const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
         if (!reactFlowBounds) {
           setConnectionInProgress(null);
           return;
@@ -298,9 +429,33 @@ export function useReactFlowInteractions() {
     }
   }, [reactFlowInstance]);
 
+  // Sync React Flow state back to Zustand (call this before saving)
+  const syncToZustand = useCallback(() => {
+    const { workflow, setWorkflow } = useWorkflowStore.getState();
+    if (!workflow) return;
+
+    // Get current React Flow nodes
+    const currentNodes = reactFlowInstance?.getNodes() || [];
+
+    // Update Zustand workflow with current React Flow positions
+    const updatedWorkflow = {
+      ...workflow,
+      nodes: workflow.nodes.map((node) => {
+        const reactFlowNode = currentNodes.find(
+          (rfNode) => rfNode.id === node.id
+        );
+        if (reactFlowNode && reactFlowNode.position) {
+          return { ...node, position: reactFlowNode.position };
+        }
+        return node;
+      }),
+    };
+
+    setWorkflow(updatedWorkflow);
+  }, [reactFlowInstance]);
+
   return {
     // Refs and instances
-    reactFlowWrapper,
     reactFlowInstance,
 
     // Node and edge state
@@ -308,6 +463,13 @@ export function useReactFlowInteractions() {
     edges,
     setNodes,
     setEdges,
+
+    // Drag state
+    isDragging,
+    blockSync,
+
+    // Sync utility
+    syncToZustand,
 
     // Event handlers
     handleSelectionChange,
@@ -319,6 +481,14 @@ export function useReactFlowInteractions() {
     handleDragOver,
     handleDrop,
     handleNodeDoubleClick,
+
+    // Undo/Redo optimized handlers
+    handleNodeDragStart,
+    handleNodeDragStop,
+    handleSelectionDragStart,
+    handleSelectionDragStop,
+    handleNodesDelete,
+    handleEdgesDelete,
 
     // Controls
     handleZoomIn,

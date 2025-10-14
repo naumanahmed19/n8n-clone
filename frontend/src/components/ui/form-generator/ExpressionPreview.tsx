@@ -1,19 +1,140 @@
+import { variableService } from '@/services'
 import { useWorkflowStore } from '@/stores'
+import type { Variable } from '@/types/variable'
 import { Eye } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface ExpressionPreviewProps {
   value: string
   nodeId?: string
 }
 
+// Helper function to parse string arguments (removes quotes)
+function parseStringArg(arg: string): string {
+  return arg.replace(/['"]/g, '').trim()
+}
+
+// Helper function to parse numeric arguments
+function parseNumericArgs(args: string): number[] {
+  return args.split(',').map(a => {
+    const trimmed = a.trim()
+    const num = Number.parseInt(trimmed)
+    return Number.isNaN(num) ? 0 : num
+  })
+}
+
+// Helper function to parse and evaluate simple argument values
+function parseArgValue(arg: string): any {
+  const trimmed = arg.trim()
+  
+  // Try to parse as JSON (handles strings, numbers, booleans, null)
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    // If JSON parse fails, try as number
+    const num = Number(trimmed)
+    if (!Number.isNaN(num)) {
+      return num
+    }
+    
+    // Otherwise return as string (remove quotes if present)
+    return trimmed.replace(/^['"]|['"]$/g, '')
+  }
+}
+
 export function ExpressionPreview({ value, nodeId }: ExpressionPreviewProps) {
   const workflowStore = useWorkflowStore()
+  const [variables, setVariables] = useState<Variable[]>([])
+
+  // Fetch variables on mount
+  useEffect(() => {
+    const fetchVariables = async () => {
+      try {
+        const fetchedVariables = await variableService.getVariables()
+        setVariables(fetchedVariables)
+      } catch (error) {
+        console.error('Error fetching variables for preview:', error)
+      }
+    }
+    fetchVariables()
+  }, [])
 
   // Function to resolve expression values
   const resolveExpression = (expression: string): string => {
-    if (!nodeId) return expression
-
     try {
+      // Handle built-in n8n expressions
+      if (expression === '$now') {
+        return new Date().toISOString()
+      }
+      
+      if (expression === '$today') {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return today.toISOString()
+      }
+      
+      // Handle $now with methods (e.g., $now.format("YYYY-MM-DD"))
+      if (expression.startsWith('$now.')) {
+        const methodMatch = expression.match(/^\$now\.(\w+)\(([^)]*)\)$/)
+        if (methodMatch) {
+          const method = methodMatch[1]
+          const args = methodMatch[2]
+          
+          if (method === 'format') {
+            const format = args.replace(/['"]/g, '') // Remove quotes
+            const now = new Date()
+            
+            // Simple format implementation (you can expand this)
+            let formatted = format
+              .replace('YYYY', now.getFullYear().toString())
+              .replace('MM', String(now.getMonth() + 1).padStart(2, '0'))
+              .replace('DD', String(now.getDate()).padStart(2, '0'))
+              .replace('HH', String(now.getHours()).padStart(2, '0'))
+              .replace('mm', String(now.getMinutes()).padStart(2, '0'))
+              .replace('ss', String(now.getSeconds()).padStart(2, '0'))
+            
+            return formatted
+          }
+          
+          if (method === 'plus' || method === 'add') {
+            // Simple implementation for adding time
+            return `[${expression}] → Use for time calculations`
+          }
+          
+          if (method === 'minus' || method === 'subtract') {
+            // Simple implementation for subtracting time
+            return `[${expression}] → Use for time calculations`
+          }
+        }
+        
+        return new Date().toISOString() // Default to current time
+      }
+      
+      // First, check if it's a variable expression ($vars.* or $local.*)
+      const varsMatch = expression.match(/^\$vars\.(.+)$/)
+      const localMatch = expression.match(/^\$local\.(.+)$/)
+      
+      if (varsMatch) {
+        const varKey = varsMatch[1]
+        const variable = variables.find(v => v.key === varKey && v.scope === 'GLOBAL')
+        if (variable) {
+          return variable.value
+        }
+        return `[Variable not found: $vars.${varKey}]`
+      }
+      
+      if (localMatch) {
+        const varKey = localMatch[1]
+        const variable = variables.find(v => v.key === varKey && v.scope === 'LOCAL')
+        if (variable) {
+          return variable.value
+        }
+        return `[Variable not found: $local.${varKey}]`
+      }
+
+      // If not a variable, check if it's a json.* expression (from connected nodes)
+      if (!nodeId) return expression
+
       const { workflow } = workflowStore
       if (!workflow) return expression
 
@@ -111,6 +232,316 @@ export function ExpressionPreview({ value, nodeId }: ExpressionPreviewProps) {
     // Find all {{...}} expressions and replace them with actual values
     const resolvedText = value.replace(/\{\{([^}]+)\}\}/g, (_match, expression) => {
       const trimmedExpr = expression.trim()
+      
+      // Check if it's a direct json array method (e.g., json.filter(), json.map())
+      const jsonArrayMethodMatch = trimmedExpr.match(/^json\.(\w+)\((.+?)\)$/)
+      if (jsonArrayMethodMatch) {
+        const method = jsonArrayMethodMatch[1]
+        const methodArgs = jsonArrayMethodMatch[2]
+        
+        // Get json data from connected nodes
+        if (!nodeId) return `[Preview not available - complex array method]`
+        
+        const { workflow } = workflowStore
+        if (!workflow) return `[Preview not available - complex array method]`
+        
+        const inputConnections = workflow.connections.filter(
+          (conn) => conn.targetNodeId === nodeId
+        )
+        
+        if (inputConnections.length === 0) return `[Preview not available - complex array method]`
+        
+        // Get data from the first connected node
+        for (const connection of inputConnections) {
+          const sourceNodeId = connection.sourceNodeId
+          const sourceNodeResult = workflowStore.getNodeExecutionResult(sourceNodeId)
+          
+          if (!sourceNodeResult?.data) continue
+          
+          // Extract data structure
+          let sourceData: any[] = []
+          if (sourceNodeResult.data.main && Array.isArray(sourceNodeResult.data.main)) {
+            sourceData = sourceNodeResult.data.main
+          } else if (sourceNodeResult.status === 'skipped') {
+            sourceData = [{ json: sourceNodeResult.data }]
+          }
+          
+          if (sourceData.length === 0) continue
+          
+          const firstItem = sourceData[0]
+          let itemData: any = null
+          
+          if (firstItem && firstItem.json) {
+            itemData = firstItem.json
+          } else if (firstItem) {
+            itemData = firstItem
+          }
+          
+          if (!itemData) continue
+          
+          // Check if itemData is an array
+          if (!Array.isArray(itemData)) {
+            return `[json is not an array - it's ${typeof itemData}]`
+          }
+          
+          // Handle different array methods
+          try {
+            switch (method) {
+              case 'filter': {
+                // Complex operation with arrow function - cannot safely eval
+                return `[Will filter array of ${itemData.length} items - result available at execution]`
+              }
+              case 'map': {
+                // Complex operation with arrow function - cannot safely eval
+                return `[Will map array of ${itemData.length} items - result available at execution]`
+              }
+              case 'find': {
+                // Complex operation with arrow function - cannot safely eval
+                return `[Will find from array of ${itemData.length} items - result available at execution]`
+              }
+              case 'some': {
+                // Complex operation with arrow function - cannot safely eval
+                return `[Will check array of ${itemData.length} items - result available at execution]`
+              }
+              case 'every': {
+                // Complex operation with arrow function - cannot safely eval
+                return `[Will check array of ${itemData.length} items - result available at execution]`
+              }
+              case 'reduce': {
+                // Complex operation with arrow function - cannot safely eval
+                return `[Will reduce array of ${itemData.length} items - result available at execution]`
+              }
+              case 'length': {
+                // Safe: property access
+                return String(itemData.length)
+              }
+              case 'join': {
+                // Safe: can evaluate join for simple arrays
+                const separator = parseStringArg(methodArgs)
+                
+                // Check if all items are primitives (safe to join)
+                if (itemData.every((item: any) => typeof item !== 'object' || item === null)) {
+                  return itemData.join(separator)
+                }
+                
+                // For object arrays, show info message
+                return `[Array with ${itemData.length} objects - join result available at execution]`
+              }
+              case 'slice': {
+                // Safe: can evaluate slice with numeric arguments
+                const args = parseNumericArgs(methodArgs)
+                
+                if (args.length >= 1) {
+                  const sliced = itemData.slice(args[0], args[1])
+                  
+                  // Show actual result for small slices
+                  if (sliced.length <= 3 && sliced.every((item: any) => typeof item !== 'object')) {
+                    return JSON.stringify(sliced)
+                  }
+                  
+                  // Otherwise show info
+                  return `[Array with ${sliced.length} items - full result available at execution]`
+                }
+                
+                return `[Will slice array - result available at execution]`
+              }
+              case 'reverse': {
+                // Safe: can show reversed array info
+                return `[Will reverse array of ${itemData.length} items - result available at execution]`
+              }
+              case 'sort': {
+                // Might have arrow function comparator - show info
+                return `[Will sort array of ${itemData.length} items - result available at execution]`
+              }
+              case 'concat': {
+                // Safe: can show info about concatenation
+                return `[Will concatenate with array - result available at execution]`
+              }
+              case 'includes': {
+                // Safe: can evaluate includes for simple values
+                try {
+                  const searchValue = parseArgValue(methodArgs)
+                  if (typeof searchValue !== 'undefined') {
+                    const result = itemData.includes(searchValue)
+                    return String(result)
+                  }
+                } catch {}
+                return `[Will check if array includes value - result available at execution]`
+              }
+              case 'indexOf': {
+                // Safe: can evaluate indexOf for simple values
+                try {
+                  const searchValue = parseArgValue(methodArgs)
+                  if (typeof searchValue !== 'undefined') {
+                    const result = itemData.indexOf(searchValue)
+                    return String(result)
+                  }
+                } catch {}
+                return `[Will find index in array - result available at execution]`
+              }
+              default:
+                return `[Array method '${method}' result available at execution]`
+            }
+          } catch (error) {
+            return `[Error previewing array method: ${method}]`
+          }
+        }
+        
+        return `[Preview not available - complex array method]`
+      }
+      
+      // Check if it's a json.* expression (with or without methods)
+      const jsonMatch = trimmedExpr.match(/^json\.(.+?)(?:\.(\w+)\((.*?)\))?$/)
+      if (jsonMatch) {
+        const fieldPath = jsonMatch[1]
+        const method = jsonMatch[2]
+        const methodArgs = jsonMatch[3]
+        
+        // Get json data from connected nodes
+        if (!nodeId) return trimmedExpr
+        
+        const { workflow } = workflowStore
+        if (!workflow) return trimmedExpr
+        
+        const inputConnections = workflow.connections.filter(
+          (conn) => conn.targetNodeId === nodeId
+        )
+        
+        if (inputConnections.length === 0) return trimmedExpr
+        
+        // Get data from the first connected node
+        for (const connection of inputConnections) {
+          const sourceNodeId = connection.sourceNodeId
+          const sourceNodeResult = workflowStore.getNodeExecutionResult(sourceNodeId)
+          
+          if (!sourceNodeResult?.data) continue
+          
+          // Extract data structure
+          let sourceData: any[] = []
+          if (sourceNodeResult.data.main && Array.isArray(sourceNodeResult.data.main)) {
+            sourceData = sourceNodeResult.data.main
+          } else if (sourceNodeResult.status === 'skipped') {
+            sourceData = [{ json: sourceNodeResult.data }]
+          }
+          
+          if (sourceData.length === 0) continue
+          
+          const firstItem = sourceData[0]
+          let itemData: any = null
+          
+          if (firstItem && firstItem.json) {
+            itemData = firstItem.json
+          } else if (firstItem) {
+            itemData = firstItem
+          }
+          
+          if (!itemData) continue
+          
+          // Get the field value
+          const fieldValue = getNestedValue(itemData, fieldPath)
+          
+          if (fieldValue === undefined) {
+            return `[Field not found: json.${fieldPath}]`
+          }
+          
+          // Apply method if exists
+          if (method && typeof fieldValue === 'string') {
+            try {
+              switch (method) {
+                case 'toUpperCase':
+                  return fieldValue.toUpperCase()
+                case 'toLowerCase':
+                  return fieldValue.toLowerCase()
+                case 'trim':
+                  return fieldValue.trim()
+                case 'length':
+                  return String(fieldValue.length)
+                case 'substring':
+                case 'substr':
+                  if (methodArgs) {
+                    const args = methodArgs.split(',').map((a: string) => parseInt(a.trim()))
+                    return fieldValue.substring(args[0], args[1])
+                  }
+                  return fieldValue
+                case 'replace':
+                  if (methodArgs) {
+                    const args = methodArgs.split(',').map((a: string) => a.trim().replace(/['"]/g, ''))
+                    return fieldValue.replace(args[0], args[1] || '')
+                  }
+                  return fieldValue
+                default:
+                  return formatValue(fieldValue)
+              }
+            } catch (error) {
+              return `[Error applying method: ${method}]`
+            }
+          } else if (method && Array.isArray(fieldValue)) {
+            // Handle array methods
+            try {
+              switch (method) {
+                case 'length':
+                  return String(fieldValue.length)
+                case 'join':
+                  if (methodArgs) {
+                    const separator = methodArgs.replace(/['"]/g, '')
+                    return fieldValue.join(separator)
+                  }
+                  return fieldValue.join(',')
+                default:
+                  return formatValue(fieldValue)
+              }
+            } catch (error) {
+              return `[Error applying method: ${method}]`
+            }
+          }
+          
+          // No method, just return the value
+          return formatValue(fieldValue)
+        }
+        
+        return trimmedExpr
+      }
+      
+      // Check if it's a complex expression (contains operators or function calls)
+      // Exclude method calls on json.* expressions (already handled above)
+      const isComplexExpression = /[+\-*/%[\]<>=!&|]/.test(trimmedExpr) && !trimmedExpr.startsWith('json.')
+      
+      if (isComplexExpression) {
+        // For complex expressions, replace variables within them first
+        let resolvedExpression = trimmedExpr
+        
+        // Replace $now with current timestamp
+        resolvedExpression = resolvedExpression.replace(/\$now/g, `"${new Date().toISOString()}"`)
+        
+        // Replace $today with today's date at midnight
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        resolvedExpression = resolvedExpression.replace(/\$today/g, `"${today.toISOString()}"`)
+        
+        // Replace $vars.* variables
+        resolvedExpression = resolvedExpression.replace(/\$vars\.(\w+)/g, (_m: string, varKey: string) => {
+          const variable = variables.find(v => v.key === varKey && v.scope === 'GLOBAL')
+          return variable ? JSON.stringify(variable.value) : `"[Variable not found: $vars.${varKey}]"`
+        })
+        
+        // Replace $local.* variables
+        resolvedExpression = resolvedExpression.replace(/\$local\.(\w+)/g, (_m: string, varKey: string) => {
+          const variable = variables.find(v => v.key === varKey && v.scope === 'LOCAL')
+          return variable ? JSON.stringify(variable.value) : `"[Variable not found: $local.${varKey}]"`
+        })
+        
+        // Try to evaluate the expression
+        try {
+          // eslint-disable-next-line no-eval
+          const result = eval(resolvedExpression)
+          return String(result)
+        } catch (error) {
+          // If evaluation fails, return the resolved expression as-is
+          return `[Expression: ${resolvedExpression}]`
+        }
+      }
+      
+      // For simple expressions, use the existing resolveExpression function
       const resolvedValue = resolveExpression(trimmedExpr)
       return resolvedValue
     })

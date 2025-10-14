@@ -1,12 +1,13 @@
 import { cn } from '@/lib/utils'
 import { Code2, Database, Variable } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export interface AutocompleteItem {
   type: 'variable' | 'function' | 'property'
   label: string
   value: string
   description?: string
+  example?: string // Example usage
   icon?: React.ReactNode
   category?: string // Optional category for grouping
 }
@@ -29,6 +30,8 @@ export function ExpressionAutocomplete({
   selectedIndex,
 }: ExpressionAutocompleteProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [hoveredItem, setHoveredItem] = useState<AutocompleteItem | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 })
 
   useEffect(() => {
     if (!visible) return
@@ -81,6 +84,9 @@ export function ExpressionAutocomplete({
   // Define category order for consistent display
   // Dynamic input node categories will appear first, followed by standard categories
   const standardCategories = [
+    'Variables',
+    'Variables (Global)',
+    'Variables (Local)',
     'JSON Data',
     'Item Data',
     'Node Data',
@@ -137,26 +143,58 @@ export function ExpressionAutocomplete({
             {/* Category Items */}
             {groupedItems[category].map((item) => {
               const currentIndex = flatIndex++
+              const isHovered = hoveredItem === item
+              
               return (
-                <button
-                  key={`${item.type}-${item.value}-${currentIndex}`}
-                  type="button"
-                  data-selected={currentIndex === selectedIndex}
-                  onClick={() => onSelect(item)}
-                  className={cn(
-                    'w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-muted transition-colors',
-                    currentIndex === selectedIndex && 'bg-muted'
-                  )}
-                >
-                  <div className="mt-0.5">{item.icon || getIcon(item.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{item.label}</div>
-                    {item.description && (
-                      <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                <div key={`${item.type}-${item.value}-${currentIndex}`} className="relative">
+                  <button
+                    type="button"
+                    data-selected={currentIndex === selectedIndex}
+                    onClick={() => onSelect(item)}
+                    onMouseEnter={(e) => {
+                      setHoveredItem(item)
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      setTooltipPosition({ top: rect.top, left: rect.right + 8 })
+                    }}
+                    onMouseLeave={() => setHoveredItem(null)}
+                    className={cn(
+                      'w-full px-3 py-2 text-left flex items-start gap-2 hover:bg-muted transition-colors',
+                      currentIndex === selectedIndex && 'bg-muted'
                     )}
-                    <code className="text-xs text-blue-600 dark:text-blue-400">{item.value}</code>
-                  </div>
-                </button>
+                  >
+                    <div className="mt-0.5">{item.icon || getIcon(item.type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{item.label}</div>
+                      {item.description && (
+                        <div className="text-xs text-muted-foreground truncate">{item.description}</div>
+                      )}
+                      <code className="text-xs text-blue-600 dark:text-blue-400">{item.value}</code>
+                    </div>
+                  </button>
+                  
+                  {/* Enhanced tooltip on hover */}
+                  {isHovered && item.example && (
+                    <div
+                      className="fixed z-[60] bg-popover border rounded-md shadow-lg p-3 max-w-xs"
+                      style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
+                    >
+                      <div className="space-y-2">
+                        <div>
+                          <div className="text-xs font-semibold text-muted-foreground uppercase">Example</div>
+                          <code className="text-xs text-foreground block mt-1 p-2 bg-muted rounded">
+                            {item.example}
+                          </code>
+                        </div>
+                        {item.description && (
+                          <div>
+                            <div className="text-xs font-semibold text-muted-foreground uppercase">Description</div>
+                            <p className="text-xs text-foreground mt-1">{item.description}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -172,29 +210,33 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'variable',
     label: 'JSON Data',
-    value: '{{json}}',
+    value: 'json',
     description: 'Access all input data',
+    example: '{{json}} → { "name": "John", "age": 30 }',
     category: 'JSON Data',
   },
   {
     type: 'property',
     label: 'Field from JSON',
-    value: '{{json.fieldName}}',
+    value: 'json.fieldName',
     description: 'Access a specific field',
+    example: '{{json.email}} → "john@example.com"',
     category: 'JSON Data',
   },
   {
     type: 'property',
     label: 'Nested Field',
-    value: '{{json.parent.child}}',
+    value: 'json.parent.child',
     description: 'Access nested properties',
+    example: '{{json.user.address.city}} → "New York"',
     category: 'JSON Data',
   },
   {
     type: 'property',
     label: 'Array Item',
-    value: '{{json.items[0]}}',
+    value: 'json.items[0]',
     description: 'Access array elements',
+    example: '{{json.items[0].name}} → "First Item"',
     category: 'JSON Data',
   },
   
@@ -202,15 +244,17 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'variable',
     label: 'Item Index',
-    value: '{{$item.index}}',
+    value: '$item.index',
     description: 'Current item index',
+    example: '{{$item.index}} → 0, 1, 2...',
     category: 'Item Data',
   },
   {
     type: 'variable',
     label: 'Item Binary',
-    value: '{{$item.binary}}',
+    value: '$item.binary',
     description: 'Binary data of current item',
+    example: '{{$item.binary.data}}',
     category: 'Item Data',
   },
   
@@ -218,14 +262,14 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'variable',
     label: 'Node Name',
-    value: '{{$node.name}}',
+    value: '$node.name',
     description: 'Current node name',
     category: 'Node Data',
   },
   {
     type: 'variable',
     label: 'Node Type',
-    value: '{{$node.type}}',
+    value: '$node.type',
     description: 'Current node type',
     category: 'Node Data',
   },
@@ -234,7 +278,7 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'variable',
     label: 'Parameters',
-    value: '{{$parameter}}',
+    value: '$parameter',
     description: 'Access node parameters',
     category: 'Node Data',
   },
@@ -243,14 +287,14 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'variable',
     label: 'Workflow ID',
-    value: '{{$workflow.id}}',
+    value: '$workflow.id',
     description: 'Current workflow ID',
     category: 'Workflow Data',
   },
   {
     type: 'variable',
     label: 'Workflow Name',
-    value: '{{$workflow.name}}',
+    value: '$workflow.name',
     description: 'Current workflow name',
     category: 'Workflow Data',
   },
@@ -259,15 +303,17 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'function',
     label: 'Current Date',
-    value: '{{$now}}',
+    value: '$now',
     description: 'Current date and time',
+    example: '{{$now}} → "2025-10-13T12:30:45.000Z"',
     category: 'Date & Time',
   },
   {
     type: 'function',
     label: 'Today',
-    value: '{{$today}}',
+    value: '$today',
     description: "Today's date",
+    example: '{{$today}} → "2025-10-13"',
     category: 'Date & Time',
   },
   
@@ -275,15 +321,17 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'function',
     label: 'Random Number',
-    value: '{{$randomInt(min, max)}}',
+    value: '$randomInt(min, max)',
     description: 'Random integer',
+    example: '{{$randomInt(1, 100)}} → 42',
     category: 'Utility Functions',
   },
   {
     type: 'function',
     label: 'UUID',
-    value: '{{$uuid()}}',
+    value: '$uuid()',
     description: 'Generate a UUID',
+    example: '{{$uuid()}} → "a1b2c3d4-..."',
     category: 'Utility Functions',
   },
   
@@ -291,28 +339,28 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'function',
     label: 'Uppercase',
-    value: '{{json.field.toUpperCase()}}',
+    value: 'json.field.toUpperCase()',
     description: 'Convert to uppercase',
     category: 'String Functions',
   },
   {
     type: 'function',
     label: 'Lowercase',
-    value: '{{json.field.toLowerCase()}}',
+    value: 'json.field.toLowerCase()',
     description: 'Convert to lowercase',
     category: 'String Functions',
   },
   {
     type: 'function',
     label: 'Trim',
-    value: '{{json.field.trim()}}',
+    value: 'json.field.trim()',
     description: 'Remove whitespace',
     category: 'String Functions',
   },
   {
     type: 'function',
     label: 'Split',
-    value: '{{json.field.split(",")}}',
+    value: 'json.field.split(",")',
     description: 'Split string',
     category: 'String Functions',
   },
@@ -321,28 +369,28 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'function',
     label: 'Array Length',
-    value: '{{json.array.length}}',
+    value: 'json.array.length',
     description: 'Get array length',
     category: 'Array Functions',
   },
   {
     type: 'function',
     label: 'Join Array',
-    value: '{{json.array.join(",")}}',
+    value: 'json.array.join(",")',
     description: 'Join array elements',
     category: 'Array Functions',
   },
   {
     type: 'function',
     label: 'First Item',
-    value: '{{json.array[0]}}',
+    value: 'json.array[0]',
     description: 'Get first item',
     category: 'Array Functions',
   },
   {
     type: 'function',
     label: 'Last Item',
-    value: '{{json.array[json.array.length - 1]}}',
+    value: 'json.array[json.array.length - 1]',
     description: 'Get last item',
     category: 'Array Functions',
   },
@@ -351,21 +399,21 @@ export const defaultAutocompleteItems: AutocompleteItem[] = [
   {
     type: 'function',
     label: 'Math Round',
-    value: '{{Math.round(json.value)}}',
+    value: 'Math.round(json.value)',
     description: 'Round number',
     category: 'Math Functions',
   },
   {
     type: 'function',
     label: 'Math Floor',
-    value: '{{Math.floor(json.value)}}',
+    value: 'Math.floor(json.value)',
     description: 'Round down',
     category: 'Math Functions',
   },
   {
     type: 'function',
     label: 'Math Ceil',
-    value: '{{Math.ceil(json.value)}}',
+    value: 'Math.ceil(json.value)',
     description: 'Round up',
     category: 'Math Functions',
   },

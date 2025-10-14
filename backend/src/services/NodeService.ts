@@ -399,7 +399,8 @@ export class NodeService {
     credentials?: Record<string, any>,
     executionId?: string,
     userId?: string,
-    options?: SecureExecutionOptions
+    options?: SecureExecutionOptions,
+    workflowId?: string
   ): Promise<NodeExecutionResult> {
     const execId =
       executionId ||
@@ -434,7 +435,8 @@ export class NodeService {
         credentials || {},
         executingUserId,
         execId,
-        options
+        options,
+        workflowId
       );
 
       // Execute the node in secure context

@@ -1,6 +1,7 @@
 import { useWorkflowStore } from '@/stores'
 import type { NodeType } from '@/types'
 import { getNodeIcon } from '@/utils/nodeIconMap'
+import { memo, useMemo } from 'react'
 import { NodeProps } from 'reactflow'
 import { NodeMetadata } from './components/NodeMetadata'
 import { useNodeExecution } from './hooks/useNodeExecution'
@@ -39,20 +40,45 @@ interface CustomNodeData {
   hasError?: boolean
 }
 
-export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
+export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
   // Get read-only state from store (only true when viewing past execution)
   const { readOnly } = useWorkflowStore()
   
   // Use custom hooks for node visual state
   const { nodeVisualState } = useNodeExecution(id, data.nodeType)
 
-  // Check if this is a trigger node
-  const isTrigger = data.executionCapability === 'trigger'
+  // Check if this is a trigger node (memoize to prevent recalculation)
+  const isTrigger = useMemo(() => 
+    data.executionCapability === 'trigger',
+    [data.executionCapability]
+  )
 
-  // Get icon from map if not provided in data
-  const iconConfig = getNodeIcon(data.nodeType)
-  const nodeIcon = data.icon || iconConfig.icon
-  const nodeColor = data.color || iconConfig.color
+  // Memoize icon configuration to prevent calling getNodeIcon on every render
+  const iconConfig = useMemo(() => getNodeIcon(data.nodeType), [data.nodeType])
+  
+  // Memoize derived icon and color values
+  const nodeIcon = useMemo(() => data.icon || iconConfig.icon, [data.icon, iconConfig.icon])
+  const nodeColor = useMemo(() => data.color || iconConfig.color, [data.color, iconConfig.color])
+
+  // Memoize nodeConfig object to prevent recreation
+  const nodeConfig = useMemo(() => ({
+    icon: nodeIcon,
+    color: nodeColor,
+    isTrigger,
+    inputs: data.inputs,
+    outputs: data.outputs,
+    imageUrl: data.parameters?.imageUrl as string,
+  }), [nodeIcon, nodeColor, isTrigger, data.inputs, data.outputs, data.parameters?.imageUrl])
+
+  // Memoize toolbar config
+  const toolbarConfig = useMemo(() => ({
+    showToolbar: true,
+  }), [])
+
+  // Memoize custom metadata component
+  const customMetadata = useMemo(() => (
+    <NodeMetadata nodeVisualState={nodeVisualState} />
+  ), [nodeVisualState])
 
   return (
     <BaseNodeWrapper
@@ -63,22 +89,9 @@ export function CustomNode({ data, selected, id }: NodeProps<CustomNodeData>) {
       isExpanded={false}
       onToggleExpand={() => {}}
       canExpand={false}
-      nodeConfig={{
-        icon: nodeIcon,
-        color: nodeColor,
-        isTrigger,
-        inputs: data.inputs,
-        outputs: data.outputs,
-        imageUrl: data.parameters?.imageUrl as string,
-      }}
-      customMetadata={
-        <NodeMetadata
-          nodeVisualState={nodeVisualState}
-        />
-      }
-      toolbar={{
-        showToolbar: true,
-      }}
+      nodeConfig={nodeConfig}
+      customMetadata={customMetadata}
+      toolbar={toolbarConfig}
     />
   )
-}
+})

@@ -814,7 +814,9 @@ export class FlowExecutionEngine extends EventEmitter {
         inputData,
         credentialsMapping,
         context.executionId,
-        context.userId // Pass the userId from context
+        context.userId, // Pass the userId from context
+        undefined, // options
+        context.workflowId // Pass workflowId for variable resolution
       );
 
       if (!nodeResult.success) {

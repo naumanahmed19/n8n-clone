@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     NodeTypes,
     ReactFlowProvider
@@ -10,7 +10,9 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { useExecutionAwareEdges } from '@/hooks/useEdgeAnimation'
 import {
+    useCopyPaste,
     useExecutionControls,
     useExecutionPanelData,
     useKeyboardShortcuts,
@@ -76,7 +78,32 @@ export function WorkflowEditor({
         edges,
         setNodes,
         setEdges,
+        handleNodesChange,
+        handleEdgesChange,
+        handleConnect,
+        handleConnectStart,
+        handleConnectEnd,
+        handleDrop,
+        handleDragOver,
+        handleSelectionChange,
+        handleNodeDoubleClick,
+        handleNodeDragStart,
+        handleNodeDragStop,
+        handleSelectionDragStart,
+        handleSelectionDragStop,
+        handleNodesDelete,
+        handleEdgesDelete,
+        blockSync,
     } = useReactFlowInteractions()
+
+    // Copy/paste functionality - automatically registers keyboard shortcuts
+    // Ctrl/Cmd+C to copy, Ctrl/Cmd+X to cut, Ctrl/Cmd+V to paste
+    // Functions are stored in useCopyPasteStore for use in context menus
+    useCopyPaste()
+
+    // OPTIMIZATION: Enhance edges with execution-aware animation
+    // Only edges in the current execution path will be animated
+    const executionAwareEdges = useExecutionAwareEdges(edges)
 
     const {
         executionState,
@@ -116,44 +143,97 @@ export function WorkflowEditor({
         setReactFlowInstance(instance)
     }, [setReactFlowInstance])
 
+    // Memoize empty delete handler to prevent recreation on every render
+    const emptyDeleteHandler = useCallback(() => {}, [])
+
+    // Memoize add node handler
+    const handleAddNode = useCallback(() => openDialog(), [openDialog])
+
     // Keyboard shortcuts - disabled in read-only mode
     useKeyboardShortcuts({
         onSave: saveWorkflow,
         onUndo: undo,
         onRedo: redo,
-        onDelete: () => {}, // Will be set by the hook
-        onAddNode: () => openDialog(),
+        onDelete: emptyDeleteHandler,
+        onAddNode: handleAddNode,
         disabled: readOnly
     })
 
     // Convert workflow data to React Flow format with real execution status
-    useEffect(() => {
-        if (!workflow) return
+    // Using useMemo to prevent unnecessary re-transformations when dependencies haven't changed
+    const reactFlowNodes = useMemo(() => {
+        if (!workflow) return []
 
-        const reactFlowNodes = transformWorkflowNodesToReactFlow(
+        return transformWorkflowNodesToReactFlow(
             workflow.nodes,
             availableNodeTypes,
             executionState,
             getNodeResult,
             lastExecutionResult
         )
+    }, [workflow?.nodes, availableNodeTypes, executionState, realTimeResults, lastExecutionResult, getNodeResult])
+
+    // Create execution state key and edges with memoization
+    const reactFlowEdges = useMemo(() => {
+        if (!workflow) return []
 
         // Create a key that changes when execution state changes to force edge re-renders
         // This ensures edge buttons become visible after execution completes
         const executionStateKey = `${executionState.status}-${executionState.executionId || 'none'}`
-        const reactFlowEdges = transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
+        return transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
+    }, [workflow?.connections, executionState.status, executionState.executionId])
 
-        setNodes(reactFlowNodes)
-        setEdges(reactFlowEdges)
-    }, [workflow, executionState, realTimeResults, lastExecutionResult, getNodeResult, availableNodeTypes, setNodes, setEdges])
-
-    // Get selected node data for config panel
-    const selectedNode = workflow?.nodes.find(node => node.id === propertyPanelNodeId)
-    const selectedNodeType = selectedNode ? availableNodeTypes.find(nt => nt.type === selectedNode.type) : null
+    // Sync Zustand workflow → React Flow
+    // Only sync when workflow ID changes (new workflow loaded) OR when blockSync is false
+    const workflowId = workflow?.id;
+    const prevWorkflowIdRef = useRef<string | undefined>();
     
-    // Get chat node data for chat dialog
-    const chatNode = workflow?.nodes.find(node => node.id === chatDialogNodeId)
-    const chatNodeName = chatNode?.name || 'Chat'
+    useEffect(() => {
+        const workflowChanged = workflowId !== prevWorkflowIdRef.current;
+        const shouldSync = workflowChanged || !blockSync.current;
+        
+        if (shouldSync) {
+            if (workflowChanged) {
+                console.log('🔄 Syncing Zustand → React Flow (workflow changed)', workflowId);
+            } else {
+                console.log('🔄 Syncing Zustand → React Flow (not blocked)');
+            }
+            setNodes(reactFlowNodes);
+            setEdges(reactFlowEdges);
+            prevWorkflowIdRef.current = workflowId;
+        } else {
+            console.log('⏸️  Sync blocked - drag in progress');
+        }
+    }, [workflowId, reactFlowNodes, reactFlowEdges, setNodes, setEdges, blockSync]);
+
+    // Memoize node type map for O(1) lookups
+    const nodeTypeMap = useMemo(() => {
+        return new Map(availableNodeTypes.map(nt => [nt.type, nt]))
+    }, [availableNodeTypes])
+
+    // Memoize workflow nodes map for O(1) lookups
+    const workflowNodesMap = useMemo(() => {
+        if (!workflow?.nodes) return new Map()
+        return new Map(workflow.nodes.map(node => [node.id, node]))
+    }, [workflow?.nodes])
+
+    // Get selected node data for config panel (O(1) lookup)
+    const selectedNode = useMemo(() => {
+        return propertyPanelNodeId ? workflowNodesMap.get(propertyPanelNodeId) : null
+    }, [propertyPanelNodeId, workflowNodesMap])
+
+    const selectedNodeType = useMemo(() => {
+        return selectedNode ? nodeTypeMap.get(selectedNode.type) : null
+    }, [selectedNode, nodeTypeMap])
+    
+    // Get chat node data for chat dialog (O(1) lookup)
+    const chatNode = useMemo(() => {
+        return chatDialogNodeId ? workflowNodesMap.get(chatDialogNodeId) : null
+    }, [chatDialogNodeId, workflowNodesMap])
+
+    const chatNodeName = useMemo(() => {
+        return chatNode?.name || 'Chat'
+    }, [chatNode])
 
     return (
         <div className="flex flex-col h-full w-full">
@@ -173,16 +253,31 @@ export function WorkflowEditor({
                                 >
                                     <WorkflowCanvas
                                         nodes={nodes}
-                                        edges={edges}
+                                        edges={executionAwareEdges}
                                         nodeTypes={nodeTypes}
                                         showControls={showControls}
                                         showMinimap={showMinimap}
                                         showBackground={showBackground}
                                         backgroundVariant={backgroundVariant}
                                         onInit={handleReactFlowInit}
-                                        isExecuting={executionState.status === 'running'}
                                         readOnly={readOnly}
                                         executionMode={executionMode}
+                                        // Event handlers from useReactFlowInteractions
+                                        onNodesChange={handleNodesChange}
+                                        onEdgesChange={handleEdgesChange}
+                                        onConnect={handleConnect}
+                                        onConnectStart={handleConnectStart}
+                                        onConnectEnd={handleConnectEnd}
+                                        onDrop={handleDrop}
+                                        onDragOver={handleDragOver}
+                                        onSelectionChange={handleSelectionChange}
+                                        onNodeDoubleClick={handleNodeDoubleClick}
+                                        onNodeDragStart={handleNodeDragStart}
+                                        onNodeDragStop={handleNodeDragStop}
+                                        onSelectionDragStart={handleSelectionDragStart}
+                                        onSelectionDragStop={handleSelectionDragStop}
+                                        onNodesDelete={handleNodesDelete}
+                                        onEdgesDelete={handleEdgesDelete}
                                     />
                                 </ResizablePanel>
 

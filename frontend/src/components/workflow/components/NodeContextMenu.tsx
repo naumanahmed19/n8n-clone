@@ -3,7 +3,7 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
 } from '@/components/ui/context-menu'
-import { Copy, Lock, Play, Settings, Trash2, Unlock } from 'lucide-react'
+import { Copy, Scissors, Clipboard, Lock, Play, Settings, Trash2, Unlock } from 'lucide-react'
 
 interface NodeContextMenuProps {
   onOpenProperties: () => void
@@ -11,8 +11,13 @@ interface NodeContextMenuProps {
   onDuplicate: () => void
   onDelete: () => void
   onToggleLock: () => void
+  onCopy?: () => void
+  onCut?: () => void
+  onPaste?: () => void
   isLocked: boolean
   readOnly?: boolean
+  canCopy?: boolean
+  canPaste?: boolean
 }
 
 export function NodeContextMenu({
@@ -21,8 +26,13 @@ export function NodeContextMenu({
   onDuplicate,
   onDelete,
   onToggleLock,
+  onCopy,
+  onCut,
+  onPaste,
   isLocked,
-  readOnly = false
+  readOnly = false,
+  canCopy = false,
+  canPaste = false,
 }: NodeContextMenuProps) {
   return (
     <ContextMenuContent className="w-48">
@@ -73,6 +83,40 @@ export function NodeContextMenu({
         <Copy className="mr-2 h-4 w-4" />
         Duplicate
       </ContextMenuItem>
+
+      {/* Copy/Cut/Paste Options */}
+      {onCopy && (
+        <ContextMenuItem
+          onClick={onCopy}
+          disabled={!canCopy || readOnly}
+          className="cursor-pointer"
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Copy
+        </ContextMenuItem>
+      )}
+
+      {onCut && (
+        <ContextMenuItem
+          onClick={onCut}
+          disabled={!canCopy || readOnly}
+          className="cursor-pointer"
+        >
+          <Scissors className="mr-2 h-4 w-4" />
+          Cut
+        </ContextMenuItem>
+      )}
+
+      {onPaste && (
+        <ContextMenuItem
+          onClick={onPaste}
+          disabled={!canPaste || readOnly}
+          className="cursor-pointer"
+        >
+          <Clipboard className="mr-2 h-4 w-4" />
+          Paste
+        </ContextMenuItem>
+      )}
 
       <ContextMenuSeparator />
       

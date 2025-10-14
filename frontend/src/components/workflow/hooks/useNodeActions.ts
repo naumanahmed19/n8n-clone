@@ -44,9 +44,7 @@ export function useNodeActions(nodeId: string) {
   };
 
   const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this node?")) {
-      removeNode(nodeId);
-    }
+    removeNode(nodeId);
   };
 
   const handleToggleLock = () => {
