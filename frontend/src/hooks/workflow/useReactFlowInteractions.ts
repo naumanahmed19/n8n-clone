@@ -32,7 +32,6 @@ export function useReactFlowInteractions() {
 
   const { openDialog } = useAddNodeDialogStore();
 
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [connectionInProgress, setConnectionInProgress] =
     useState<Connection | null>(null);
 
@@ -268,8 +267,14 @@ export function useReactFlowInteractions() {
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!reactFlowBounds || !reactFlowInstance) return;
+      if (!reactFlowInstance) return;
+
+      // Get the ReactFlow wrapper element from the DOM
+      const reactFlowWrapper = document.querySelector(
+        ".react-flow"
+      ) as HTMLElement;
+      const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
+      if (!reactFlowBounds) return;
 
       const nodeTypeData = event.dataTransfer.getData("application/reactflow");
       if (!nodeTypeData) return;
@@ -369,8 +374,11 @@ export function useReactFlowInteractions() {
             ? event.clientY
             : (event as TouchEvent).touches[0].clientY;
 
-        const reactFlowBounds =
-          reactFlowWrapper.current?.getBoundingClientRect();
+        // Get the ReactFlow wrapper element from the DOM
+        const reactFlowWrapper = document.querySelector(
+          ".react-flow"
+        ) as HTMLElement;
+        const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
         if (!reactFlowBounds) {
           setConnectionInProgress(null);
           return;
@@ -448,7 +456,6 @@ export function useReactFlowInteractions() {
 
   return {
     // Refs and instances
-    reactFlowWrapper,
     reactFlowInstance,
 
     // Node and edge state
