@@ -6,20 +6,29 @@ import { useCallback, useEffect } from "react";
  * Handles workflow and node execution, real-time updates, and execution state management
  */
 export function useExecutionControls() {
-  const {
-    workflow,
-    executionState,
-    lastExecutionResult,
-    realTimeResults,
-    executionLogs,
-    getNodeExecutionResult,
-    initializeRealTimeUpdates,
-    executeNode,
-    stopExecution,
-    clearExecutionLogs,
-    getExecutionFlowStatus,
-    progressTracker,
-  } = useWorkflowStore();
+  // OPTIMIZATION: Use Zustand selectors to prevent unnecessary re-renders
+  const workflow = useWorkflowStore((state) => state.workflow);
+  const executionState = useWorkflowStore((state) => state.executionState);
+  const lastExecutionResult = useWorkflowStore(
+    (state) => state.lastExecutionResult
+  );
+  const realTimeResults = useWorkflowStore((state) => state.realTimeResults);
+  const executionLogs = useWorkflowStore((state) => state.executionLogs);
+  const getNodeExecutionResult = useWorkflowStore(
+    (state) => state.getNodeExecutionResult
+  );
+  const initializeRealTimeUpdates = useWorkflowStore(
+    (state) => state.initializeRealTimeUpdates
+  );
+  const executeNode = useWorkflowStore((state) => state.executeNode);
+  const stopExecution = useWorkflowStore((state) => state.stopExecution);
+  const clearExecutionLogs = useWorkflowStore(
+    (state) => state.clearExecutionLogs
+  );
+  const getExecutionFlowStatus = useWorkflowStore(
+    (state) => state.getExecutionFlowStatus
+  );
+  const progressTracker = useWorkflowStore((state) => state.progressTracker);
 
   // Initialize real-time updates on component mount
   useEffect(() => {

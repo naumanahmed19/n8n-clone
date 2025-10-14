@@ -29,7 +29,8 @@ export function useCopyPaste() {
 
   const { getNodes, setNodes, getEdges, setEdges, screenToFlowPosition } =
     useReactFlow();
-  const { saveToHistory } = useWorkflowStore();
+  // OPTIMIZATION: Use Zustand selector to prevent unnecessary re-renders
+  const saveToHistory = useWorkflowStore((state) => state.saveToHistory);
   const { setCopyPasteFunctions } = useCopyPasteStore();
 
   // Set up the paste buffers to store the copied nodes and edges

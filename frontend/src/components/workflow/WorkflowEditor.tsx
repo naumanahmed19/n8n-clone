@@ -53,17 +53,17 @@ export function WorkflowEditor({
     readOnly = false,
     executionMode = false
 }: WorkflowEditorProps) {
-    const {
-        workflow,
-        showPropertyPanel,
-        propertyPanelNodeId,
-        showChatDialog,
-        chatDialogNodeId,
-        undo,
-        redo,
-        closeNodeProperties,
-        closeChatDialog,
-    } = useWorkflowStore()
+    // OPTIMIZATION: Use Zustand selectors to prevent unnecessary re-renders
+    // Only subscribe to the specific state slices we need
+    const workflow = useWorkflowStore(state => state.workflow)
+    const showPropertyPanel = useWorkflowStore(state => state.showPropertyPanel)
+    const propertyPanelNodeId = useWorkflowStore(state => state.propertyPanelNodeId)
+    const showChatDialog = useWorkflowStore(state => state.showChatDialog)
+    const chatDialogNodeId = useWorkflowStore(state => state.chatDialogNodeId)
+    const undo = useWorkflowStore(state => state.undo)
+    const redo = useWorkflowStore(state => state.redo)
+    const closeNodeProperties = useWorkflowStore(state => state.closeNodeProperties)
+    const closeChatDialog = useWorkflowStore(state => state.closeChatDialog)
 
     // Command dialog state
     const { isOpen: showAddNodeDialog, openDialog, closeDialog, position } = useAddNodeDialogStore()
