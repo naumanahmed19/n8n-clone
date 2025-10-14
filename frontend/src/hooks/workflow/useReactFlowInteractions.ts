@@ -42,7 +42,7 @@ export function useReactFlowInteractions() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // Optimized: Use a selector to check node existence without subscribing to entire workflow
+  // Check if a node exists in the workflow
   const checkNodeExists = useCallback((nodeId: string) => {
     const workflow = useWorkflowStore.getState().workflow;
     return workflow?.nodes.some((node) => node.id === nodeId) ?? false;
@@ -54,13 +54,9 @@ export function useReactFlowInteractions() {
       const selectedNode = params.nodes[0];
       if (selectedNode) {
         setSelectedNode(selectedNode.id);
-        // Don't automatically open config panel - only set selection
       } else {
         setSelectedNode(null);
-        // Only close config panel if no node is selected AND the property panel is open
-        // but the propertyPanelNodeId doesn't match any existing workflow node
-        // This prevents the dialog from closing during execution state changes
-        // while still allowing it to close when a node is actually removed or user clicks away
+        // Close property panel if the node no longer exists in workflow
         if (showPropertyPanel && propertyPanelNodeId) {
           const nodeExists = checkNodeExists(propertyPanelNodeId);
           if (!nodeExists) {
@@ -78,18 +74,14 @@ export function useReactFlowInteractions() {
     ]
   );
 
-  // Track if we've taken a snapshot for current drag operation
+  // Drag operation state tracking
   const dragSnapshotTaken = useRef(false);
-  // Track if we're currently dragging nodes (prevents sync from parent)
   const isDragging = useRef(false);
-  // Track if we should block sync from parent
   const blockSync = useRef(false);
 
   // Handle node position changes
   const handleNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      // IMPORTANT: Pass all changes directly to React Flow's internal handler
-      // React Flow handles the visual updates internally
       onNodesChange(changes);
 
       // Track dragging state
@@ -100,9 +92,6 @@ export function useReactFlowInteractions() {
           }
         }
       });
-
-      // We DON'T update Zustand store here anymore!
-      // Store updates happen in onNodeDragStop instead
     },
     [onNodesChange]
   );
@@ -122,103 +111,84 @@ export function useReactFlowInteractions() {
     [onEdgesChange, removeConnection]
   );
 
+  // Helper function to sync React Flow positions to Zustand after drag
+  const syncPositionsToZustand = useCallback(() => {
+    const { workflow, updateWorkflow } = useWorkflowStore.getState();
+    if (workflow && reactFlowInstance) {
+      const currentNodes = reactFlowInstance.getNodes();
+      const updatedNodes = workflow.nodes.map((wfNode) => {
+        const rfNode = currentNodes.find((n) => n.id === wfNode.id);
+        if (rfNode && rfNode.position) {
+          return { ...wfNode, position: rfNode.position };
+        }
+        return wfNode;
+      });
+      updateWorkflow({ nodes: updatedNodes });
+    }
+  }, [reactFlowInstance]);
+
+  // Helper function to reset drag flags
+  const resetDragFlags = useCallback(() => {
+    setTimeout(() => {
+      dragSnapshotTaken.current = false;
+      isDragging.current = false;
+      blockSync.current = false;
+    }, 100);
+  }, []);
+
   // Handle node drag start - take snapshot BEFORE dragging
   const handleNodeDragStart = useCallback(
     (_event: React.MouseEvent, _node: any) => {
-      // Take snapshot only once per drag operation
       if (!dragSnapshotTaken.current) {
         const { saveToHistory } = useWorkflowStore.getState();
         saveToHistory("Move node");
         dragSnapshotTaken.current = true;
       }
-      // Block sync from parent during drag
       isDragging.current = true;
       blockSync.current = true;
     },
     []
   );
 
-  // Handle node drag stop - Sync positions to Zustand to mark workflow as dirty
+  // Handle node drag stop
   const handleNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: any) => {
-      console.log("✅ Node drag stopped:", node.id);
-
-      // Sync React Flow positions to Zustand to update isDirty flag
-      const { workflow, updateWorkflow } = useWorkflowStore.getState();
-      if (workflow && reactFlowInstance) {
-        const currentNodes = reactFlowInstance.getNodes();
-        const updatedNodes = workflow.nodes.map((wfNode) => {
-          const rfNode = currentNodes.find((n) => n.id === wfNode.id);
-          if (rfNode && rfNode.position) {
-            return { ...wfNode, position: rfNode.position };
-          }
-          return wfNode;
-        });
-        updateWorkflow({ nodes: updatedNodes });
-      }
-
-      // Reset flags after a small delay to allow any pending updates
-      setTimeout(() => {
-        dragSnapshotTaken.current = false;
-        isDragging.current = false;
-        blockSync.current = false;
-      }, 100);
+    (_event: React.MouseEvent, _node: any) => {
+      syncPositionsToZustand();
+      resetDragFlags();
     },
-    [reactFlowInstance]
+    [syncPositionsToZustand, resetDragFlags]
   );
 
   // Handle selection drag start - take snapshot BEFORE dragging selection
   const handleSelectionDragStart = useCallback(
     (_event: React.MouseEvent, _nodes: any[]) => {
-      // Take snapshot only once per drag operation
       if (!dragSnapshotTaken.current) {
         const { saveToHistory } = useWorkflowStore.getState();
         saveToHistory("Move selection");
         dragSnapshotTaken.current = true;
       }
-      // Block sync from parent during drag
       isDragging.current = true;
       blockSync.current = true;
     },
     []
   );
 
-  // Handle selection drag stop - Sync positions to Zustand to mark workflow as dirty
+  // Handle selection drag stop
   const handleSelectionDragStop = useCallback(
-    (_event: React.MouseEvent, nodes: any[]) => {
-      console.log("✅ Selection drag stopped:", nodes.length, "nodes");
-
-      // Sync React Flow positions to Zustand to update isDirty flag
-      const { workflow, updateWorkflow } = useWorkflowStore.getState();
-      if (workflow && reactFlowInstance) {
-        const currentNodes = reactFlowInstance.getNodes();
-        const updatedNodes = workflow.nodes.map((wfNode) => {
-          const rfNode = currentNodes.find((n) => n.id === wfNode.id);
-          if (rfNode && rfNode.position) {
-            return { ...wfNode, position: rfNode.position };
-          }
-          return wfNode;
-        });
-        updateWorkflow({ nodes: updatedNodes });
-      }
-
-      // Reset flags after a small delay to allow any pending updates
-      setTimeout(() => {
-        dragSnapshotTaken.current = false;
-        isDragging.current = false;
-        blockSync.current = false;
-      }, 100);
+    (_event: React.MouseEvent, _nodes: any[]) => {
+      syncPositionsToZustand();
+      resetDragFlags();
     },
-    [reactFlowInstance]
+    [syncPositionsToZustand, resetDragFlags]
   );
 
-  // Handle nodes delete - take snapshot BEFORE deletion
+  // Handle nodes delete
   const handleNodesDelete = useCallback((nodes: any[]) => {
     const { saveToHistory } = useWorkflowStore.getState();
     saveToHistory(`Delete ${nodes.length} node(s)`);
   }, []);
 
-  // Handle edges delete - take snapshot BEFORE deletion
+  // Handle edges delete
   const handleEdgesDelete = useCallback((edges: any[]) => {
     const { saveToHistory } = useWorkflowStore.getState();
     saveToHistory(`Delete ${edges.length} connection(s)`);
@@ -439,7 +409,6 @@ export function useReactFlowInteractions() {
     };
 
     setWorkflow(updatedWorkflow);
-    console.log("💾 Synced React Flow → Zustand");
   }, [reactFlowInstance]);
 
   return {
