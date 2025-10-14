@@ -10,6 +10,7 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import { useExecutionAwareEdges } from '@/hooks/useEdgeAnimation'
 import {
     useCopyPaste,
     useExecutionControls,
@@ -18,7 +19,6 @@ import {
     useReactFlowInteractions,
     useWorkflowOperations,
 } from '@/hooks/workflow'
-import { useExecutionAwareEdges } from '@/hooks/useEdgeAnimation'
 import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
