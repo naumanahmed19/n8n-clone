@@ -16,6 +16,7 @@ import {
     useKeyboardShortcuts,
     useReactFlowInteractions,
     useWorkflowOperations,
+    useCopyPaste,
 } from '@/hooks/workflow'
 import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'
@@ -93,6 +94,11 @@ export function WorkflowEditor({
         handleEdgesDelete,
         blockSync,
     } = useReactFlowInteractions()
+
+    // Copy/paste functionality - automatically registers keyboard shortcuts
+    // Ctrl/Cmd+C to copy, Ctrl/Cmd+X to cut, Ctrl/Cmd+V to paste
+    // Functions are stored in useCopyPasteStore for use in context menus
+    useCopyPaste()
 
     const {
         executionState,

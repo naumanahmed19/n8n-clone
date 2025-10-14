@@ -1,5 +1,5 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { useWorkflowStore } from '@/stores'
+import { useWorkflowStore, useCopyPasteStore } from '@/stores'
 import { LucideIcon } from 'lucide-react'
 import React, { ReactNode, useCallback } from 'react'
 import { NodeContextMenu } from '../components/NodeContextMenu'
@@ -184,6 +184,9 @@ export function BaseNodeWrapper({
     handleToggleDisabled
   } = useNodeActions(id)
 
+  // Get copy/paste functions from store
+  const { copy, cut, paste, canCopy, canPaste } = useCopyPasteStore()
+
   // Use execution hook for toolbar functionality
   const { 
     nodeExecutionState,
@@ -311,8 +314,13 @@ export function BaseNodeWrapper({
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
           onToggleLock={handleToggleLock}
+          onCopy={copy || undefined}
+          onCut={cut || undefined}
+          onPaste={paste || undefined}
           isLocked={!!data.locked}
           readOnly={isReadOnly}
+          canCopy={canCopy}
+          canPaste={canPaste}
         />
       </ContextMenu>
     )
@@ -383,8 +391,13 @@ export function BaseNodeWrapper({
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
         onToggleLock={handleToggleLock}
+        onCopy={copy || undefined}
+        onCut={cut || undefined}
+        onPaste={paste || undefined}
         isLocked={!!data.locked}
         readOnly={isReadOnly}
+        canCopy={canCopy}
+        canPaste={canPaste}
       />
     </ContextMenu>
   )

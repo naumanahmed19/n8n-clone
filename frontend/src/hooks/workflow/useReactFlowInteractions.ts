@@ -184,14 +184,47 @@ export function useReactFlowInteractions() {
 
   // Handle nodes delete
   const handleNodesDelete = useCallback((nodes: any[]) => {
-    const { saveToHistory } = useWorkflowStore.getState();
-    saveToHistory(`Delete ${nodes.length} node(s)`);
+    if (nodes.length === 0) return;
+
+    const nodeIds = nodes.map((node) => node.id);
+
+    // Update Zustand workflow store
+    const { workflow, updateWorkflow, saveToHistory } = useWorkflowStore.getState();
+    if (workflow) {
+      // Save to history before deletion
+      saveToHistory(`Delete ${nodes.length} node(s)`);
+
+      // Remove nodes and their connections from workflow
+      updateWorkflow({
+        nodes: workflow.nodes.filter((node) => !nodeIds.includes(node.id)),
+        connections: workflow.connections.filter(
+          (conn) =>
+            !nodeIds.includes(conn.sourceNodeId) &&
+            !nodeIds.includes(conn.targetNodeId)
+        ),
+      });
+    }
   }, []);
 
   // Handle edges delete
   const handleEdgesDelete = useCallback((edges: any[]) => {
-    const { saveToHistory } = useWorkflowStore.getState();
-    saveToHistory(`Delete ${edges.length} connection(s)`);
+    if (edges.length === 0) return;
+
+    const edgeIds = edges.map((edge) => edge.id);
+
+    // Update Zustand workflow store
+    const { workflow, updateWorkflow, saveToHistory } = useWorkflowStore.getState();
+    if (workflow) {
+      // Save to history before deletion
+      saveToHistory(`Delete ${edges.length} connection(s)`);
+
+      // Remove connections from workflow
+      updateWorkflow({
+        connections: workflow.connections.filter(
+          (conn) => !edgeIds.includes(conn.id)
+        ),
+      });
+    }
   }, []);
 
   // Handle new connections

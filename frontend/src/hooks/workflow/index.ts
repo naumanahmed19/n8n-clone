@@ -30,6 +30,12 @@
  *    • Delete node operations
  *    • Centralized keyboard event management
  *
+ * 📋 useCopyPaste - Copy/paste/cut functionality
+ *    • Copy selected nodes (Ctrl/Cmd+C)
+ *    • Cut selected nodes (Ctrl/Cmd+X)
+ *    • Paste at mouse position (Ctrl/Cmd+V)
+ *    • Maintains relative positions and connections
+ *
  * 🎨 useWorkflowEditorUI - UI state management
  *    • Panel visibility and sizing
  *    • ReactFlow view settings (minimap, background, controls)
@@ -43,3 +49,4 @@ export { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 export { useReactFlowInteractions } from "./useReactFlowInteractions";
 export { useWorkflowEditorUI } from "./useWorkflowEditorUI";
 export { useWorkflowOperations } from "./useWorkflowOperations";
+export { useCopyPaste } from "./useCopyPaste";

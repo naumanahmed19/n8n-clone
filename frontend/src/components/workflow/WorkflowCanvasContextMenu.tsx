@@ -9,9 +9,13 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { useWorkflowOperations } from '@/hooks/workflow';
-import { useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores';
+import { useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore, useCopyPasteStore } from '@/stores';
 import {
   CheckCircle,
+  Copy,
+  Scissors,
+  Clipboard,
+  MousePointerClick,
   Download,
   Eye,
   EyeOff,
@@ -38,6 +42,7 @@ import {
   ZoomOut
 } from 'lucide-react';
 import React, { memo, useCallback, useMemo } from 'react';
+import { useReactFlow } from 'reactflow';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode
@@ -67,6 +72,12 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
     isImporting,
     hasUnsavedChanges,
   } = useWorkflowOperations()
+
+  // Copy/paste functions from store
+  const { copy, cut, paste, canCopy, canPaste } = useCopyPasteStore()
+
+  // ReactFlow instance for select all
+  const { getNodes, setNodes } = useReactFlow()
 
   // ReactFlow UI state from store
   const {
@@ -103,6 +114,12 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
   
   // Memoize workflow active state
   const isWorkflowActive = useMemo(() => workflow?.active, [workflow?.active])
+
+  // Select all nodes handler
+  const handleSelectAll = useCallback(() => {
+    const nodes = getNodes()
+    setNodes(nodes.map(node => ({ ...node, selected: true })))
+  }, [getNodes, setNodes])
 
   // Memoize import handler to prevent recreation
   const handleImportClick = useCallback(() => {
@@ -184,6 +201,44 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
         >
           <Redo className="mr-2 h-4 w-4" />
           Redo
+        </ContextMenuItem>
+
+        <ContextMenuSeparator />
+
+        {/* Select/Copy/Paste Operations */}
+        <ContextMenuItem
+          onClick={handleSelectAll}
+          className="cursor-pointer"
+        >
+          <MousePointerClick className="mr-2 h-4 w-4" />
+          Select All
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={copy || undefined}
+          disabled={!canCopy || readOnly}
+          className="cursor-pointer"
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Copy
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={cut || undefined}
+          disabled={!canCopy || readOnly}
+          className="cursor-pointer"
+        >
+          <Scissors className="mr-2 h-4 w-4" />
+          Cut
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={paste || undefined}
+          disabled={!canPaste || readOnly}
+          className="cursor-pointer"
+        >
+          <Clipboard className="mr-2 h-4 w-4" />
+          Paste
         </ContextMenuItem>
 
         <ContextMenuSeparator />

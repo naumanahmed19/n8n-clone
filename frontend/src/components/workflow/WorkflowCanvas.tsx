@@ -207,6 +207,7 @@ export function WorkflowCanvas({
                     nodesDraggable={!isDisabled}
                     nodesConnectable={!isDisabled}
                     elementsSelectable={true}
+                    deleteKeyCode={isDisabled ? null : ["Backspace", "Delete"]}
                     panOnDrag={panOnDrag}
                     zoomOnScroll={zoomOnScroll}
                     connectionLineStyle={connectionLineStyle}

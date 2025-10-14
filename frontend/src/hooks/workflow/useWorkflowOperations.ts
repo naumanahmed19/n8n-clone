@@ -89,12 +89,25 @@ export function useWorkflowOperations() {
           : "Workflow saved successfully"
       );
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save workflow:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to save workflow. Please try again.";
+      
+      // Extract error message from API response and format it
+      let errorMessage = "Failed to save workflow. Please try again.";
+      
+      if (error?.message) {
+        // Check if the message already starts with "Failed to save"
+        if (error.message.toLowerCase().includes("failed to save")) {
+          errorMessage = error.message;
+        } else {
+          // Prefix with "Failed to save: " and add the specific reason
+          errorMessage = `Failed to save: ${error.message}`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = `Failed to save: ${error.message}`;
+      }
+      
+      // Show the error message to the user
       toast.error(errorMessage);
       return false;
     }
