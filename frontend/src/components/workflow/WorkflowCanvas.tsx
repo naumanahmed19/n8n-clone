@@ -1,8 +1,7 @@
 import { useReactFlowAutoLayout } from '@/hooks/useReactFlowAutoLayout'
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
-import { useReactFlowInteractions } from '@/hooks/workflow'
 import { useReactFlowUIStore } from '@/stores'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import ReactFlow, { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from 'reactflow'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
@@ -26,6 +25,22 @@ interface WorkflowCanvasProps {
     isExecuting?: boolean
     readOnly?: boolean
     executionMode?: boolean
+    // Event handlers
+    onNodesChange: any
+    onEdgesChange: any
+    onConnect: any
+    onConnectStart: any
+    onConnectEnd: any
+    onDrop: any
+    onDragOver: any
+    onSelectionChange: any
+    onNodeDoubleClick: any
+    onNodeDragStart: any
+    onNodeDragStop: any
+    onSelectionDragStart: any
+    onSelectionDragStop: any
+    onNodesDelete: any
+    onEdgesDelete: any
 }
 
 export function WorkflowCanvas({
@@ -40,19 +55,24 @@ export function WorkflowCanvas({
     isExecuting = false,
     readOnly = false,
     executionMode = false,
+    // Event handlers from parent
+    onNodesChange: handleNodesChange,
+    onEdgesChange: handleEdgesChange,
+    onConnect: handleConnect,
+    onConnectStart: handleConnectStart,
+    onConnectEnd: handleConnectEnd,
+    onDrop: handleDrop,
+    onDragOver: handleDragOver,
+    onSelectionChange: handleSelectionChange,
+    onNodeDoubleClick: handleNodeDoubleClick,
+    onNodeDragStart: handleNodeDragStart,
+    onNodeDragStop: handleNodeDragStop,
+    onSelectionDragStart: handleSelectionDragStart,
+    onSelectionDragStop: handleSelectionDragStop,
+    onNodesDelete: handleNodesDelete,
+    onEdgesDelete: handleEdgesDelete,
 }: WorkflowCanvasProps) {
-    const {
-        reactFlowWrapper,
-        handleNodesChange,
-        handleEdgesChange,
-        handleConnect,
-        handleConnectStart,
-        handleConnectEnd,
-        handleDrop,
-        handleDragOver,
-        handleSelectionChange,
-        handleNodeDoubleClick,
-    } = useReactFlowInteractions()
+    const reactFlowWrapper = useRef<HTMLDivElement>(null);
     
     // Get panOnDrag and zoomOnScroll settings from store
     const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
@@ -128,6 +148,37 @@ export function WorkflowCanvas({
         isDisabled ? undefined : handleDragOver,
         [isDisabled, handleDragOver]
     )
+    
+    // Memoize undo/redo snapshot handlers
+    const nodeDragStartHandler = useMemo(() => 
+        isDisabled ? undefined : handleNodeDragStart,
+        [isDisabled, handleNodeDragStart]
+    )
+    
+    const nodeDragStopHandler = useMemo(() => 
+        isDisabled ? undefined : handleNodeDragStop,
+        [isDisabled, handleNodeDragStop]
+    )
+    
+    const selectionDragStartHandler = useMemo(() => 
+        isDisabled ? undefined : handleSelectionDragStart,
+        [isDisabled, handleSelectionDragStart]
+    )
+    
+    const selectionDragStopHandler = useMemo(() => 
+        isDisabled ? undefined : handleSelectionDragStop,
+        [isDisabled, handleSelectionDragStop]
+    )
+    
+    const nodesDeleteHandler = useMemo(() => 
+        isDisabled ? undefined : handleNodesDelete,
+        [isDisabled, handleNodesDelete]
+    )
+    
+    const edgesDeleteHandler = useMemo(() => 
+        isDisabled ? undefined : handleEdgesDelete,
+        [isDisabled, handleEdgesDelete]
+    )
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
@@ -145,6 +196,12 @@ export function WorkflowCanvas({
                     onDragOver={dragOverHandler}
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
+                    onNodeDragStart={nodeDragStartHandler}
+                    onNodeDragStop={nodeDragStopHandler}
+                    onSelectionDragStart={selectionDragStartHandler}
+                    onSelectionDragStop={selectionDragStopHandler}
+                    onNodesDelete={nodesDeleteHandler}
+                    onEdgesDelete={edgesDeleteHandler}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     nodesDraggable={!isDisabled}

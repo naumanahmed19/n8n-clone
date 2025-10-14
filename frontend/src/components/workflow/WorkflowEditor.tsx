@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     NodeTypes,
     ReactFlowProvider
@@ -76,6 +76,22 @@ export function WorkflowEditor({
         edges,
         setNodes,
         setEdges,
+        handleNodesChange,
+        handleEdgesChange,
+        handleConnect,
+        handleConnectStart,
+        handleConnectEnd,
+        handleDrop,
+        handleDragOver,
+        handleSelectionChange,
+        handleNodeDoubleClick,
+        handleNodeDragStart,
+        handleNodeDragStop,
+        handleSelectionDragStart,
+        handleSelectionDragStop,
+        handleNodesDelete,
+        handleEdgesDelete,
+        blockSync,
     } = useReactFlowInteractions()
 
     const {
@@ -156,11 +172,28 @@ export function WorkflowEditor({
         return transformWorkflowEdgesToReactFlow(workflow.connections, executionStateKey)
     }, [workflow?.connections, executionState.status, executionState.executionId])
 
-    // Sync React Flow nodes and edges when memoized values change
+    // Sync Zustand workflow → React Flow
+    // Only sync when workflow ID changes (new workflow loaded) OR when blockSync is false
+    const workflowId = workflow?.id;
+    const prevWorkflowIdRef = useRef<string | undefined>();
+    
     useEffect(() => {
-        setNodes(reactFlowNodes)
-        setEdges(reactFlowEdges)
-    }, [reactFlowNodes, reactFlowEdges, setNodes, setEdges])
+        const workflowChanged = workflowId !== prevWorkflowIdRef.current;
+        const shouldSync = workflowChanged || !blockSync.current;
+        
+        if (shouldSync) {
+            if (workflowChanged) {
+                console.log('🔄 Syncing Zustand → React Flow (workflow changed)', workflowId);
+            } else {
+                console.log('🔄 Syncing Zustand → React Flow (not blocked)');
+            }
+            setNodes(reactFlowNodes);
+            setEdges(reactFlowEdges);
+            prevWorkflowIdRef.current = workflowId;
+        } else {
+            console.log('⏸️  Sync blocked - drag in progress');
+        }
+    }, [workflowId, reactFlowNodes, reactFlowEdges, setNodes, setEdges, blockSync]);
 
     // Memoize node type map for O(1) lookups
     const nodeTypeMap = useMemo(() => {
@@ -219,6 +252,22 @@ export function WorkflowEditor({
                                         isExecuting={executionState.status === 'running'}
                                         readOnly={readOnly}
                                         executionMode={executionMode}
+                                        // Event handlers from useReactFlowInteractions
+                                        onNodesChange={handleNodesChange}
+                                        onEdgesChange={handleEdgesChange}
+                                        onConnect={handleConnect}
+                                        onConnectStart={handleConnectStart}
+                                        onConnectEnd={handleConnectEnd}
+                                        onDrop={handleDrop}
+                                        onDragOver={handleDragOver}
+                                        onSelectionChange={handleSelectionChange}
+                                        onNodeDoubleClick={handleNodeDoubleClick}
+                                        onNodeDragStart={handleNodeDragStart}
+                                        onNodeDragStop={handleNodeDragStop}
+                                        onSelectionDragStart={handleSelectionDragStart}
+                                        onSelectionDragStop={handleSelectionDragStop}
+                                        onNodesDelete={handleNodesDelete}
+                                        onEdgesDelete={handleEdgesDelete}
                                     />
                                 </ResizablePanel>
 

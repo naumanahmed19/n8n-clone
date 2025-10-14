@@ -21,7 +21,6 @@ export function useReactFlowInteractions() {
   const {
     selectedNodeId,
     addNode,
-    updateNode,
     addConnection,
     removeConnection,
     setSelectedNode,
@@ -79,21 +78,33 @@ export function useReactFlowInteractions() {
     ]
   );
 
+  // Track if we've taken a snapshot for current drag operation
+  const dragSnapshotTaken = useRef(false);
+  // Track if we're currently dragging nodes (prevents sync from parent)
+  const isDragging = useRef(false);
+  // Track if we should block sync from parent
+  const blockSync = useRef(false);
+
   // Handle node position changes
   const handleNodesChange: OnNodesChange = useCallback(
     (changes) => {
+      // IMPORTANT: Pass all changes directly to React Flow's internal handler
+      // React Flow handles the visual updates internally
       onNodesChange(changes);
-
-      console.log("Node changes:", changes);
-
-      // Update workflow store with position changes
+      
+      // Track dragging state
       changes.forEach((change) => {
-        if (change.type === "position" && change.position) {
-          updateNode(change.id, { position: change.position });
+        if (change.type === "position" && 'dragging' in change) {
+          if (change.dragging) {
+            isDragging.current = true;
+          }
         }
       });
+      
+      // We DON'T update Zustand store here anymore!
+      // Store updates happen in onNodeDragStop instead
     },
-    [onNodesChange, updateNode]
+    [onNodesChange]
   );
 
   // Handle edge changes
@@ -109,6 +120,94 @@ export function useReactFlowInteractions() {
       });
     },
     [onEdgesChange, removeConnection]
+  );
+
+  // Handle node drag start - take snapshot BEFORE dragging
+  const handleNodeDragStart = useCallback(
+    (_event: React.MouseEvent, _node: any) => {
+      // Take snapshot only once per drag operation
+      if (!dragSnapshotTaken.current) {
+        const { saveToHistory } = useWorkflowStore.getState();
+        saveToHistory("Move node");
+        dragSnapshotTaken.current = true;
+      }
+      // Block sync from parent during drag
+      isDragging.current = true;
+      blockSync.current = true;
+    },
+    []
+  );
+
+  // Handle node drag stop - DON'T update Zustand store here!
+  // React Flow is the source of truth during editing
+  // Zustand store is only updated when explicitly saving workflow
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: any) => {
+      console.log('✅ Node drag stopped:', node.id);
+      // Reset flags after a small delay to allow any pending updates
+      setTimeout(() => {
+        dragSnapshotTaken.current = false;
+        isDragging.current = false;
+        blockSync.current = false;
+      }, 100);
+      
+      // NOTE: We deliberately DON'T update Zustand store here!
+      // React Flow maintains the node positions internally
+      // Zustand store will be updated when user saves the workflow
+    },
+    []
+  );
+
+  // Handle selection drag start - take snapshot BEFORE dragging selection
+  const handleSelectionDragStart = useCallback(
+    (_event: React.MouseEvent, _nodes: any[]) => {
+      // Take snapshot only once per drag operation
+      if (!dragSnapshotTaken.current) {
+        const { saveToHistory } = useWorkflowStore.getState();
+        saveToHistory("Move selection");
+        dragSnapshotTaken.current = true;
+      }
+      // Block sync from parent during drag
+      isDragging.current = true;
+      blockSync.current = true;
+    },
+    []
+  );
+
+  // Handle selection drag stop - DON'T update Zustand store here!
+  const handleSelectionDragStop = useCallback(
+    (_event: React.MouseEvent, nodes: any[]) => {
+      console.log('✅ Selection drag stopped:', nodes.length, 'nodes');
+      // Reset flags after a small delay to allow any pending updates
+      setTimeout(() => {
+        dragSnapshotTaken.current = false;
+        isDragging.current = false;
+        blockSync.current = false;
+      }, 100);
+      
+      // NOTE: We deliberately DON'T update Zustand store here!
+      // React Flow maintains the node positions internally
+      // Zustand store will be updated when user saves the workflow
+    },
+    []
+  );
+
+  // Handle nodes delete - take snapshot BEFORE deletion
+  const handleNodesDelete = useCallback(
+    (nodes: any[]) => {
+      const { saveToHistory } = useWorkflowStore.getState();
+      saveToHistory(`Delete ${nodes.length} node(s)`);
+    },
+    []
+  );
+
+  // Handle edges delete - take snapshot BEFORE deletion
+  const handleEdgesDelete = useCallback(
+    (edges: any[]) => {
+      const { saveToHistory } = useWorkflowStore.getState();
+      saveToHistory(`Delete ${edges.length} connection(s)`);
+    },
+    []
   );
 
   // Handle new connections
@@ -303,6 +402,30 @@ export function useReactFlowInteractions() {
     }
   }, [reactFlowInstance]);
 
+  // Sync React Flow state back to Zustand (call this before saving)
+  const syncToZustand = useCallback(() => {
+    const { workflow, setWorkflow } = useWorkflowStore.getState();
+    if (!workflow) return;
+
+    // Get current React Flow nodes
+    const currentNodes = reactFlowInstance?.getNodes() || [];
+    
+    // Update Zustand workflow with current React Flow positions
+    const updatedWorkflow = {
+      ...workflow,
+      nodes: workflow.nodes.map(node => {
+        const reactFlowNode = currentNodes.find(rfNode => rfNode.id === node.id);
+        if (reactFlowNode && reactFlowNode.position) {
+          return { ...node, position: reactFlowNode.position };
+        }
+        return node;
+      })
+    };
+    
+    setWorkflow(updatedWorkflow);
+    console.log('💾 Synced React Flow → Zustand');
+  }, [reactFlowInstance]);
+
   return {
     // Refs and instances
     reactFlowWrapper,
@@ -313,6 +436,13 @@ export function useReactFlowInteractions() {
     edges,
     setNodes,
     setEdges,
+    
+    // Drag state
+    isDragging,
+    blockSync,
+    
+    // Sync utility
+    syncToZustand,
 
     // Event handlers
     handleSelectionChange,
@@ -324,6 +454,14 @@ export function useReactFlowInteractions() {
     handleDragOver,
     handleDrop,
     handleNodeDoubleClick,
+    
+    // Undo/Redo optimized handlers
+    handleNodeDragStart,
+    handleNodeDragStop,
+    handleSelectionDragStart,
+    handleSelectionDragStop,
+    handleNodesDelete,
+    handleEdgesDelete,
 
     // Controls
     handleZoomIn,
