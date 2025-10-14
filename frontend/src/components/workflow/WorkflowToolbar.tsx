@@ -25,6 +25,7 @@ import { validateImportFile } from '@/utils/errorHandling'
 import {
     AlertCircle,
     ChevronDown,
+    Code,
     Download,
     Loader2,
     MoreHorizontal,
@@ -41,6 +42,7 @@ import { useEffect, useState } from 'react'
 import { ManualDeploymentDialog } from '../environment/ManualDeploymentDialog'
 import { UpdateEnvironmentDialog } from '../environment/UpdateEnvironmentDialog'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
+import { WorkflowCodeDialog } from './WorkflowCodeDialog'
 import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
@@ -65,6 +67,7 @@ export function WorkflowToolbar({
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showDeployDialog, setShowDeployDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showCodeDialog, setShowCodeDialog] = useState(false)
   const { selectedEnvironment, summaries } = useEnvironmentStore()
   
   // Add Node Dialog store
@@ -470,6 +473,13 @@ export function WorkflowToolbar({
             
             <DropdownMenuSeparator />
             
+            <DropdownMenuItem onClick={() => setShowCodeDialog(true)} className="text-xs">
+              <Code className="mr-2 h-3.5 w-3.5" />
+              View Code
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
             <DropdownMenuItem 
               onClick={handleImportClick}
               disabled={isImporting || isExporting}
@@ -559,6 +569,15 @@ export function WorkflowToolbar({
             setDirty(true)
             setShowSettingsModal(false)
           }}
+        />
+      )}
+      
+      {/* Workflow Code Dialog */}
+      {workflow && (
+        <WorkflowCodeDialog
+          isOpen={showCodeDialog}
+          onClose={() => setShowCodeDialog(false)}
+          workflow={workflow}
         />
       )}
     </TooltipProvider>

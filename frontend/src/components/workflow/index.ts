@@ -9,6 +9,7 @@ export * from "./nodes/WorkflowTrigger";
 export { TitleManager } from "./TitleManager";
 export { ToolbarButtonsDemo } from "./ToolbarButtonsDemo";
 export { WorkflowBreadcrumb } from "./WorkflowBreadcrumb";
+export { WorkflowCodeDialog } from "./WorkflowCodeDialog";
 export { WorkflowEditor, WorkflowEditorWrapper } from "./WorkflowEditor";
 export { WorkflowExecuteButton } from "./WorkflowExecuteButton";
 export { WorkflowLandingPage } from "./WorkflowLandingPage";
