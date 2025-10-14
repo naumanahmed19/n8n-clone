@@ -11,6 +11,8 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  Node,
+  Edge,
 } from "@xyflow/react";
 
 /**
@@ -45,8 +47,8 @@ export function useReactFlowInteractions() {
   // Use the useReactFlow hook to get the ReactFlow instance directly
   const reactFlowInstance = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   // Check if a node exists in the workflow
   const checkNodeExists = useCallback((nodeId: string) => {
@@ -254,11 +256,11 @@ export function useReactFlowInteractions() {
         id: newConnection.id,
         source: connection.source,
         target: connection.target,
-        sourceHandle: connection.sourceHandle || undefined,
-        targetHandle: connection.targetHandle || undefined,
+        sourceHandle: connection.sourceHandle ?? undefined,
+        targetHandle: connection.targetHandle ?? undefined,
       };
 
-      setEdges((edges) => addEdge(newEdge, edges));
+      setEdges((edges) => addEdge(newEdge as Edge, edges));
     },
     [addConnection, setEdges]
   );
@@ -348,8 +350,8 @@ export function useReactFlowInteractions() {
       if (params.nodeId && params.handleType === "source") {
         setConnectionInProgress({
           source: params.nodeId,
-          sourceHandle: params.handleId,
-          target: null,
+          sourceHandle: params.handleId ?? null,
+          target: '',
           targetHandle: null,
         });
       }

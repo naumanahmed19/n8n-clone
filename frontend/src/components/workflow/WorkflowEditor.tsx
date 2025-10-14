@@ -35,11 +35,11 @@ import {
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
 
-const nodeTypes: NodeTypes = {
+const nodeTypes = {
     custom: CustomNode,
     chat: ChatInterfaceNode,
     'image-preview': ImagePreviewNode,
-}
+} as NodeTypes
 
 interface WorkflowEditorProps {
     nodeTypes: NodeType[]
