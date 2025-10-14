@@ -1,13 +1,14 @@
 /**
  * useEdgeAnimation Hook
  *
- * Determines which edges should be animated based on execution context.
- * Only animates edges that are part of the current active execution path.
+ * Determines which edges should be animated based on execution state.
+ * Uses the same execution state flag that controls node loading and toolbar buttons,
+ * but only animates edges that are part of the current execution path.
  *
  * Features:
- * - Per-execution edge animation
- * - Prevents animation of edges from other executions
- * - Optimized with custom selectors
+ * - Uses executionState.status === 'running' (same as buttons/loading)
+ * - Only animates edges where both source AND target are in execution path
+ * - Prevents animation of unrelated edges in complex workflows
  */
 
 import { useWorkflowStore } from "@/stores/workflow";
@@ -15,49 +16,66 @@ import { useMemo } from "react";
 import type { Edge } from "reactflow";
 
 /**
- * Hook to get edge animation states based on execution context
+ * Hook to get edge animation states based on execution state
  *
  * @param edges - All edges in the workflow
  * @returns Map of edge IDs to animation state (true/false)
  */
 export function useEdgeAnimation(edges: Edge[]): Map<string, boolean> {
-  // Get current execution context
-  const currentExecution = useWorkflowStore(
-    (state) => {
-      if (!state.executionManager) return null;
-      return state.executionManager.getCurrentExecution();
-    },
-    // Only re-render if execution ID or status changes
-    (a, b) => {
-      if (a === b) return true;
-      if (!a || !b) return false;
-      return a.executionId === b.executionId && a.status === b.status;
-    }
+  // Use the same executionState.status that controls buttons and node loading
+  const isExecuting = useWorkflowStore(
+    (state) => state.executionState.status === "running"
   );
+
+  // Get the nodes in the current execution path
+  const executionNodeIds = useWorkflowStore((state) => {
+    // Check executionManager for affected nodes (most reliable)
+    if (state.executionManager) {
+      const currentExecution = state.executionManager.getCurrentExecution();
+      if (currentExecution?.affectedNodeIds) {
+        return currentExecution.affectedNodeIds;
+      }
+    }
+
+    // Fallback: check flowExecutionState for execution path
+    const currentExecutionId = state.executionState.executionId;
+    if (currentExecutionId) {
+      const flowStatus =
+        state.flowExecutionState.activeExecutions.get(currentExecutionId);
+      if (flowStatus?.executionPath) {
+        return new Set(flowStatus.executionPath);
+      }
+    }
+
+    // No execution path found
+    return new Set<string>();
+  });
 
   // Calculate which edges should be animated
   const edgeAnimationMap = useMemo(() => {
     const animationMap = new Map<string, boolean>();
 
-    // If no current execution or not running, no edges should animate
-    if (!currentExecution || currentExecution.status !== "running") {
+    // If not executing, no edges should animate
+    if (!isExecuting) {
       edges.forEach((edge) => animationMap.set(edge.id, false));
       return animationMap;
     }
 
-    // Get nodes that are part of current execution
-    const affectedNodeIds = currentExecution.affectedNodeIds;
-
-    // Only animate edges where BOTH source and target are in current execution
-    for (const edge of edges) {
-      const isInCurrentExecution =
-        affectedNodeIds.has(edge.source) && affectedNodeIds.has(edge.target);
-
-      animationMap.set(edge.id, isInCurrentExecution);
+    // If executing but no execution path, don't animate any edges
+    if (executionNodeIds.size === 0) {
+      edges.forEach((edge) => animationMap.set(edge.id, false));
+      return animationMap;
     }
 
+    // Only animate edges where BOTH source AND target are in execution path
+    edges.forEach((edge) => {
+      const isInExecutionPath =
+        executionNodeIds.has(edge.source) && executionNodeIds.has(edge.target);
+      animationMap.set(edge.id, isInExecutionPath);
+    });
+
     return animationMap;
-  }, [edges, currentExecution]);
+  }, [edges, isExecuting, executionNodeIds]);
 
   return edgeAnimationMap;
 }
@@ -68,15 +86,7 @@ export function useEdgeAnimation(edges: Edge[]): Map<string, boolean> {
  * @returns boolean - true if any edge should be animated
  */
 export function useHasAnimatedEdges(): boolean {
-  return useWorkflowStore(
-    (state) => {
-      if (!state.executionManager) return false;
-
-      const currentExecution = state.executionManager.getCurrentExecution();
-      return currentExecution?.status === "running" || false;
-    },
-    (a, b) => a === b
-  );
+  return useWorkflowStore((state) => state.executionState.status === "running");
 }
 
 /**

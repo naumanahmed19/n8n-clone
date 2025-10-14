@@ -2273,6 +2273,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
       setExecutionError: (error: string) => {
         const endTime = Date.now();
         const startTime = get().executionState.startTime || endTime;
+        const executionId = get().executionState.executionId;
 
         // Add error to execution logs
         get().addExecutionLog({
@@ -2288,9 +2289,19 @@ export const useWorkflowStore = create<WorkflowStore>()(
             startTime,
             endTime,
             error,
-            executionId: get().executionState.executionId,
+            executionId: executionId,
           },
         });
+
+        // CRITICAL: Complete the execution in ExecutionContextManager
+        // This stops edge animations when execution fails
+        if (executionId && get().executionManager) {
+          get().executionManager.completeExecution(executionId);
+          console.log(
+            "✅ Execution error - completed in manager:",
+            executionId
+          );
+        }
       },
 
       updateNodeExecutionResult: (
@@ -2682,6 +2693,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
               error: data.error?.message,
             });
 
+            // CRITICAL: Complete the execution in ExecutionContextManager
+            // This stops edge animations and marks execution as finished
+            if (data.executionId && get().executionManager) {
+              get().executionManager.completeExecution(data.executionId);
+              console.log(
+                "✅ Execution completed in ExecutionContextManager:",
+                data.executionId
+              );
+            }
+
             // Add to execution history
             const currentFlowState = get().flowExecutionState;
             const flowStatus = currentFlowState.activeExecutions.get(
@@ -2764,18 +2785,42 @@ export const useWorkflowStore = create<WorkflowStore>()(
                     });
                   }
                   get().setExecutionState({ status: "success", progress: 100 });
+
+                  // CRITICAL: Complete the execution in ExecutionContextManager
+                  if (event.executionId && get().executionManager) {
+                    get().executionManager.completeExecution(event.executionId);
+                    console.log(
+                      "✅ Execution completed (event):",
+                      event.executionId
+                    );
+                  }
                   break;
                 case "failed":
                   get().setExecutionState({
                     status: "error",
                     error: event.error?.message || "Execution failed",
                   });
+
+                  // CRITICAL: Mark execution as failed and complete it
+                  if (event.executionId && get().executionManager) {
+                    get().executionManager.completeExecution(event.executionId);
+                    console.log(
+                      "✅ Execution failed and completed:",
+                      event.executionId
+                    );
+                  }
                   break;
                 case "cancelled":
                   get().setExecutionState({
                     status: "cancelled",
                     error: "Execution was cancelled",
                   });
+
+                  // CRITICAL: Cancel the execution in ExecutionContextManager
+                  if (event.executionId && get().executionManager) {
+                    get().executionManager.cancelExecution(event.executionId);
+                    console.log("✅ Execution cancelled:", event.executionId);
+                  }
                   break;
                 case "node-status-update":
                   // Handle flow execution pause/resume events
@@ -2792,12 +2837,6 @@ export const useWorkflowStore = create<WorkflowStore>()(
                       message: "Execution resumed",
                     });
                   }
-                  break;
-                case "cancelled":
-                  get().setExecutionState({
-                    status: "cancelled",
-                    error: "Execution cancelled",
-                  });
                   break;
                 case "node-started":
                   if (event.nodeId) {
