@@ -138,24 +138,33 @@ export function useReactFlowInteractions() {
     []
   );
 
-  // Handle node drag stop - DON'T update Zustand store here!
-  // React Flow is the source of truth during editing
-  // Zustand store is only updated when explicitly saving workflow
+  // Handle node drag stop - Sync positions to Zustand to mark workflow as dirty
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: any) => {
       console.log("✅ Node drag stopped:", node.id);
+      
+      // Sync React Flow positions to Zustand to update isDirty flag
+      const { workflow, updateWorkflow } = useWorkflowStore.getState();
+      if (workflow && reactFlowInstance) {
+        const currentNodes = reactFlowInstance.getNodes();
+        const updatedNodes = workflow.nodes.map((wfNode) => {
+          const rfNode = currentNodes.find((n) => n.id === wfNode.id);
+          if (rfNode && rfNode.position) {
+            return { ...wfNode, position: rfNode.position };
+          }
+          return wfNode;
+        });
+        updateWorkflow({ nodes: updatedNodes });
+      }
+
       // Reset flags after a small delay to allow any pending updates
       setTimeout(() => {
         dragSnapshotTaken.current = false;
         isDragging.current = false;
         blockSync.current = false;
       }, 100);
-
-      // NOTE: We deliberately DON'T update Zustand store here!
-      // React Flow maintains the node positions internally
-      // Zustand store will be updated when user saves the workflow
     },
-    []
+    [reactFlowInstance]
   );
 
   // Handle selection drag start - take snapshot BEFORE dragging selection
@@ -174,22 +183,33 @@ export function useReactFlowInteractions() {
     []
   );
 
-  // Handle selection drag stop - DON'T update Zustand store here!
+  // Handle selection drag stop - Sync positions to Zustand to mark workflow as dirty
   const handleSelectionDragStop = useCallback(
     (_event: React.MouseEvent, nodes: any[]) => {
-      console.log("✅ Selection drag stopped:", nodes.length, "nodes");
+      console.log('✅ Selection drag stopped:', nodes.length, 'nodes');
+      
+      // Sync React Flow positions to Zustand to update isDirty flag
+      const { workflow, updateWorkflow } = useWorkflowStore.getState();
+      if (workflow && reactFlowInstance) {
+        const currentNodes = reactFlowInstance.getNodes();
+        const updatedNodes = workflow.nodes.map((wfNode) => {
+          const rfNode = currentNodes.find((n) => n.id === wfNode.id);
+          if (rfNode && rfNode.position) {
+            return { ...wfNode, position: rfNode.position };
+          }
+          return wfNode;
+        });
+        updateWorkflow({ nodes: updatedNodes });
+      }
+
       // Reset flags after a small delay to allow any pending updates
       setTimeout(() => {
         dragSnapshotTaken.current = false;
         isDragging.current = false;
         blockSync.current = false;
       }, 100);
-
-      // NOTE: We deliberately DON'T update Zustand store here!
-      // React Flow maintains the node positions internally
-      // Zustand store will be updated when user saves the workflow
     },
-    []
+    [reactFlowInstance]
   );
 
   // Handle nodes delete - take snapshot BEFORE deletion
