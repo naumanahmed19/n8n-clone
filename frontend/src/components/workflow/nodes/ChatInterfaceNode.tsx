@@ -2,9 +2,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
+import { Node, NodeProps } from '@xyflow/react'
 import { MessageCircle, Send, Trash2 } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NodeProps, Node } from '@xyflow/react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
 interface Message {

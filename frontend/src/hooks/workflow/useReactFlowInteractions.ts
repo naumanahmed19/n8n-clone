@@ -1,8 +1,9 @@
 import { useAddNodeDialogStore, useWorkflowStore } from "@/stores";
 import { NodeType, WorkflowConnection, WorkflowNode } from "@/types";
-import { useCallback, useRef, useState } from "react";
 import {
   Connection,
+  Edge,
+  Node,
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
@@ -11,9 +12,8 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-  Node,
-  Edge,
 } from "@xyflow/react";
+import { useCallback, useRef, useState } from "react";
 
 /**
  * Custom hook for ReactFlow interactions
@@ -351,7 +351,7 @@ export function useReactFlowInteractions() {
         setConnectionInProgress({
           source: params.nodeId,
           sourceHandle: params.handleId ?? null,
-          target: '',
+          target: "",
           targetHandle: null,
         });
       }

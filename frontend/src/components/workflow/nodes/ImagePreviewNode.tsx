@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { useWorkflowStore } from '@/stores'
+import { Node, NodeProps } from '@xyflow/react'
 import { Download, Image as ImageIcon, Maximize2, RefreshCw } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { NodeProps, Node } from '@xyflow/react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
 interface ImagePreviewNodeData extends Record<string, unknown> {
