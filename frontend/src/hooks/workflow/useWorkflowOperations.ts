@@ -91,10 +91,10 @@ export function useWorkflowOperations() {
       return true;
     } catch (error: any) {
       console.error("Failed to save workflow:", error);
-      
+
       // Extract error message from API response and format it
       let errorMessage = "Failed to save workflow. Please try again.";
-      
+
       if (error?.message) {
         // Check if the message already starts with "Failed to save"
         if (error.message.toLowerCase().includes("failed to save")) {
@@ -106,7 +106,7 @@ export function useWorkflowOperations() {
       } else if (error instanceof Error) {
         errorMessage = `Failed to save: ${error.message}`;
       }
-      
+
       // Show the error message to the user
       toast.error(errorMessage);
       return false;

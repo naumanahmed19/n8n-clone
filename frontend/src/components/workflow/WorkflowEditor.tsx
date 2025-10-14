@@ -11,12 +11,12 @@ import {
     ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import {
+    useCopyPaste,
     useExecutionControls,
     useExecutionPanelData,
     useKeyboardShortcuts,
     useReactFlowInteractions,
     useWorkflowOperations,
-    useCopyPaste,
 } from '@/hooks/workflow'
 import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { NodeType } from '@/types'

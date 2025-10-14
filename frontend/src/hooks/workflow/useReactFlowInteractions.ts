@@ -189,7 +189,8 @@ export function useReactFlowInteractions() {
     const nodeIds = nodes.map((node) => node.id);
 
     // Update Zustand workflow store
-    const { workflow, updateWorkflow, saveToHistory } = useWorkflowStore.getState();
+    const { workflow, updateWorkflow, saveToHistory } =
+      useWorkflowStore.getState();
     if (workflow) {
       // Save to history before deletion
       saveToHistory(`Delete ${nodes.length} node(s)`);
@@ -213,7 +214,8 @@ export function useReactFlowInteractions() {
     const edgeIds = edges.map((edge) => edge.id);
 
     // Update Zustand workflow store
-    const { workflow, updateWorkflow, saveToHistory } = useWorkflowStore.getState();
+    const { workflow, updateWorkflow, saveToHistory } =
+      useWorkflowStore.getState();
     if (workflow) {
       // Save to history before deletion
       saveToHistory(`Delete ${edges.length} connection(s)`);

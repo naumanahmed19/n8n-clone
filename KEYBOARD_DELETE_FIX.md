@@ -1,16 +1,21 @@
 # Keyboard Delete Fix
 
 ## Issue
+
 Keyboard Delete and Backspace keys were not deleting selected nodes, even though other deletion methods (like context menu) worked fine.
 
 ## Root Cause
+
 There were two issues:
 
 ### 1. Missing `deleteKeyCode` prop in React Flow
+
 React Flow requires the `deleteKeyCode` prop to be explicitly set to enable keyboard deletion. Without this prop, React Flow doesn't listen for Delete/Backspace key presses.
 
 ### 2. Incomplete `handleNodesDelete` function
+
 The delete handlers were only saving to history but not actually removing nodes from the Zustand workflow store. This meant:
+
 - React Flow would trigger the delete visually
 - But the workflow store wasn't updated
 - On save/reload, deleted nodes would reappear
@@ -32,6 +37,7 @@ Added the `deleteKeyCode` prop to ReactFlow component:
 ```
 
 This tells React Flow to:
+
 - Listen for both "Backspace" and "Delete" keys
 - Trigger `onNodesDelete` when either key is pressed with selected nodes
 - Disable keyboard deletion when in read-only or execution mode
@@ -41,6 +47,7 @@ This tells React Flow to:
 **File:** `frontend/src/hooks/workflow/useReactFlowInteractions.ts`
 
 **Before (Broken):**
+
 ```typescript
 const handleNodesDelete = useCallback((nodes: any[]) => {
   const { saveToHistory } = useWorkflowStore.getState();
@@ -56,6 +63,7 @@ const handleEdgesDelete = useCallback((edges: any[]) => {
 ```
 
 **After (Fixed):**
+
 ```typescript
 const handleNodesDelete = useCallback((nodes: any[]) => {
   if (nodes.length === 0) return;
@@ -63,7 +71,8 @@ const handleNodesDelete = useCallback((nodes: any[]) => {
   const nodeIds = nodes.map((node) => node.id);
 
   // Update Zustand workflow store
-  const { workflow, updateWorkflow, saveToHistory } = useWorkflowStore.getState();
+  const { workflow, updateWorkflow, saveToHistory } =
+    useWorkflowStore.getState();
   if (workflow) {
     // Save to history before deletion
     saveToHistory(`Delete ${nodes.length} node(s)`);
@@ -86,7 +95,8 @@ const handleEdgesDelete = useCallback((edges: any[]) => {
   const edgeIds = edges.map((edge) => edge.id);
 
   // Update Zustand workflow store
-  const { workflow, updateWorkflow, saveToHistory } = useWorkflowStore.getState();
+  const { workflow, updateWorkflow, saveToHistory } =
+    useWorkflowStore.getState();
   if (workflow) {
     // Save to history before deletion
     saveToHistory(`Delete ${edges.length} connection(s)`);
@@ -120,6 +130,7 @@ const handleEdgesDelete = useCallback((edges: any[]) => {
 ### Edge Deletion Flow:
 
 Same pattern for deleting connections:
+
 1. User selects edge(s) and presses Delete
 2. React Flow calls `onEdgesDelete`
 3. `handleEdgesDelete` removes from workflow store
@@ -128,35 +139,44 @@ Same pattern for deleting connections:
 ## Key Points
 
 ### 1. **Two Keys Supported**
+
 Both "Backspace" and "Delete" keys work for deletion:
+
 ```tsx
 deleteKeyCode={["Backspace", "Delete"]}
 ```
 
 ### 2. **Disabled in Read-Only Mode**
+
 When workflow is read-only or executing, keyboard deletion is disabled:
+
 ```tsx
 deleteKeyCode={isDisabled ? null : ["Backspace", "Delete"]}
 ```
 
 ### 3. **Cascade Delete Connections**
+
 When deleting nodes, all connections to/from those nodes are also removed:
+
 ```typescript
 connections: workflow.connections.filter(
   (conn) =>
-    !nodeIds.includes(conn.sourceNodeId) &&
-    !nodeIds.includes(conn.targetNodeId)
-)
+    !nodeIds.includes(conn.sourceNodeId) && !nodeIds.includes(conn.targetNodeId)
+);
 ```
 
 ### 4. **History Integration**
+
 Deletion is saved to history, allowing undo:
+
 ```typescript
 saveToHistory(`Delete ${nodes.length} node(s)`);
 ```
 
 ### 5. **isDirty Flag**
+
 Using `updateWorkflow()` sets `isDirty: true`, which:
+
 - Enables the Save button
 - Prevents data loss warnings
 - Ensures changes are saved
@@ -176,6 +196,7 @@ Using `updateWorkflow()` sets `isDirty: true`, which:
 ## Testing Checklist
 
 ### Node Deletion
+
 - [ ] Select node → Press Delete key → Node disappears
 - [ ] Select node → Press Backspace key → Node disappears
 - [ ] Select multiple nodes → Press Delete → All nodes disappear
@@ -183,17 +204,20 @@ Using `updateWorkflow()` sets `isDirty: true`, which:
 - [ ] Delete node → Press Undo → Node reappears
 
 ### Connection Deletion
+
 - [ ] Select edge → Press Delete → Edge disappears
 - [ ] Select multiple edges → Press Delete → All edges disappear
 - [ ] Delete edge → Save → Reload → Edge stays deleted
 
 ### Edge Cases
+
 - [ ] Delete node with connections → Connections also removed
 - [ ] Delete in read-only mode → Nothing happens (disabled)
 - [ ] Delete in execution mode → Nothing happens (disabled)
 - [ ] Delete with property panel open → Panel closes if node deleted
 
 ### Integration
+
 - [ ] Context menu delete still works
 - [ ] Cut (Ctrl/Cmd+X) still works
 - [ ] Undo after delete restores nodes
@@ -202,6 +226,7 @@ Using `updateWorkflow()` sets `isDirty: true`, which:
 ## Files Modified
 
 1. **`frontend/src/components/workflow/WorkflowCanvas.tsx`**
+
    - Added `deleteKeyCode={isDisabled ? null : ["Backspace", "Delete"]}` prop
 
 2. **`frontend/src/hooks/workflow/useReactFlowInteractions.ts`**
@@ -212,6 +237,7 @@ Using `updateWorkflow()` sets `isDirty: true`, which:
 ## Related Issues
 
 This fix is part of a larger pattern of ensuring React Flow state syncs with Zustand store:
+
 1. ✅ Drag position save - use `updateWorkflow` not `setWorkflow`
 2. ✅ Copy/paste save - sync to Zustand store after paste
 3. ✅ Keyboard delete - sync to Zustand store after delete
@@ -221,6 +247,7 @@ All three issues had the same root cause: **React Flow state not syncing back to
 ## Success Criteria
 
 All requirements met:
+
 - [x] Delete key works
 - [x] Backspace key works
 - [x] Nodes sync to workflow store

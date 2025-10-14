@@ -135,7 +135,9 @@ export function useCopyPaste() {
     const { workflow, updateWorkflow } = useWorkflowStore.getState();
     if (workflow) {
       updateWorkflow({
-        nodes: workflow.nodes.filter((node) => !selectedNodeIds.includes(node.id)),
+        nodes: workflow.nodes.filter(
+          (node) => !selectedNodeIds.includes(node.id)
+        ),
         connections: workflow.connections.filter(
           (conn) =>
             !selectedNodeIds.includes(conn.sourceNodeId) &&

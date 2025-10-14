@@ -55,9 +55,12 @@ class ApiClient {
     if (error.response) {
       // Handle nested error object: { error: { message: "...", code: "..." } }
       const errorData = error.response.data?.error || error.response.data;
-      
+
       return {
-        message: errorData?.message || error.response.data?.message || "An error occurred",
+        message:
+          errorData?.message ||
+          error.response.data?.message ||
+          "An error occurred",
         code: errorData?.code || error.response.data?.code,
         status: error.response.status,
       };
