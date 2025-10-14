@@ -8,9 +8,43 @@ import {
 } from "@/types/execution";
 
 export class ProgressTracker {
-  private nodeStates: Map<string, NodeExecutionState> = new Map();
-  // private executionStartTime: number = 0
+  // FIXED: Support multiple concurrent executions with separate state maps
+  private executionStates: Map<string, Map<string, NodeExecutionState>> = new Map();
+  private currentExecutionId: string = "default"; // Track which execution is currently active
   private listeners: Set<(status: ExecutionFlowStatus) => void> = new Set();
+
+  /**
+   * Get node states for a specific execution (or fallback to current/default)
+   */
+  private getNodeStatesForExecution(executionId: string): Map<string, NodeExecutionState> {
+    // Try to get states for the specific execution
+    let states = this.executionStates.get(executionId);
+    
+    if (!states) {
+      // If not found, try current execution
+      states = this.executionStates.get(this.currentExecutionId);
+    }
+    
+    if (!states) {
+      // If still not found, try default
+      states = this.executionStates.get("default");
+    }
+    
+    if (!states) {
+      // Create default if nothing exists
+      states = new Map();
+      this.executionStates.set("default", states);
+    }
+    
+    return states;
+  }
+
+  /**
+   * Set the current active execution ID
+   */
+  setCurrentExecution(executionId: string): void {
+    this.currentExecutionId = executionId;
+  }
 
   /**
    * Update the status of a specific node
@@ -28,7 +62,9 @@ export class ProgressTracker {
       endTime?: number;
     }
   ): void {
-    const currentState = this.nodeStates.get(nodeId) || {
+    const nodeStates = this.getNodeStatesForExecution(executionId);
+    
+    const currentState = nodeStates.get(nodeId) || {
       nodeId,
       status: NodeExecutionStatus.IDLE,
       dependencies: [],
@@ -71,7 +107,7 @@ export class ProgressTracker {
         status === NodeExecutionStatus.COMPLETED ? 100 : updatedState.progress;
     }
 
-    this.nodeStates.set(nodeId, updatedState);
+    nodeStates.set(nodeId, updatedState);
 
     // Notify listeners of the update
     this.notifyListeners(executionId);
@@ -169,8 +205,8 @@ export class ProgressTracker {
   /**
    * Get execution metrics
    */
-  getExecutionMetrics(_executionId: string): ExecutionMetrics {
-    const nodeStates = Array.from(this.nodeStates.values());
+  getExecutionMetrics(executionId: string): ExecutionMetrics {
+    const nodeStates = Array.from(this.getNodeStatesForExecution(executionId).values());
     const completedNodes = nodeStates.filter(
       (state) => state.status === NodeExecutionStatus.COMPLETED
     );
@@ -237,7 +273,7 @@ export class ProgressTracker {
    * Get current execution flow status
    */
   getExecutionFlowStatus(executionId: string): ExecutionFlowStatus {
-    const nodeStates = new Map(this.nodeStates);
+    const nodeStates = new Map(this.getNodeStatesForExecution(executionId));
     const nodeStatesArray = Array.from(nodeStates.values());
 
     const currentlyExecuting = nodeStatesArray
@@ -304,7 +340,10 @@ export class ProgressTracker {
    * Convert NodeExecutionState to NodeVisualState for UI
    */
   getNodeVisualState(nodeId: string): NodeVisualState {
-    const state = this.nodeStates.get(nodeId);
+    // Get state from current execution context
+    const nodeStates = this.getNodeStatesForExecution(this.currentExecutionId);
+    const state = nodeStates.get(nodeId);
+    
     if (!state) {
       return {
         nodeId,
@@ -346,17 +385,20 @@ export class ProgressTracker {
   }
 
   /**
-   * Initialize node states for a workflow
+   * Initialize node states for a workflow execution
    */
   initializeNodeStates(
     nodeIds: string[],
-    dependencies: Map<string, string[]>
+    dependencies: Map<string, string[]>,
+    executionId?: string
   ): void {
-    this.nodeStates.clear();
-    // this.executionStartTime = Date.now()
-
+    const execId = executionId || this.currentExecutionId;
+    
+    // Create new state map for this execution
+    const nodeStates = new Map<string, NodeExecutionState>();
+    
     nodeIds.forEach((nodeId) => {
-      this.nodeStates.set(nodeId, {
+      nodeStates.set(nodeId, {
         nodeId,
         status: NodeExecutionStatus.IDLE,
         dependencies: dependencies.get(nodeId) || [],
@@ -367,21 +409,36 @@ export class ProgressTracker {
     // Calculate dependents (reverse dependencies)
     for (const [nodeId, deps] of dependencies) {
       deps.forEach((depId) => {
-        const depState = this.nodeStates.get(depId);
+        const depState = nodeStates.get(depId);
         if (depState) {
           depState.dependents.push(nodeId);
         }
       });
     }
+    
+    // Store this execution's state map
+    this.executionStates.set(execId, nodeStates);
   }
 
   /**
    * Reset all node states
    */
   reset(): void {
-    this.nodeStates.clear();
-    // this.executionStartTime = 0
+    this.executionStates.clear();
+    this.currentExecutionId = "default";
     this.listeners.clear();
+  }
+  
+  /**
+   * Clear states for a specific execution
+   */
+  clearExecution(executionId: string): void {
+    this.executionStates.delete(executionId);
+    
+    // If we cleared the current execution, reset to default
+    if (this.currentExecutionId === executionId) {
+      this.currentExecutionId = "default";
+    }
   }
 
   /**
@@ -413,8 +470,9 @@ export class ProgressTracker {
    */
   getAllNodeVisualStates(): Map<string, NodeVisualState> {
     const visualStates = new Map<string, NodeVisualState>();
+    const nodeStates = this.getNodeStatesForExecution(this.currentExecutionId);
 
-    for (const nodeId of this.nodeStates.keys()) {
+    for (const nodeId of nodeStates.keys()) {
       visualStates.set(nodeId, this.getNodeVisualState(nodeId));
     }
 

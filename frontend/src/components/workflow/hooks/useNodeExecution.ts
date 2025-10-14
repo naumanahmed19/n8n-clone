@@ -1,5 +1,5 @@
 import { useWorkflowStore } from "@/stores/workflow";
-import { NodeExecutionStatus } from "@/types/execution";
+import { useExecutionContext } from "@/hooks/useExecutionContext";
 import {
   createNodeExecutionError,
   logExecutionError,
@@ -18,12 +18,12 @@ interface NodeExecutionState {
 export function useNodeExecution(nodeId: string, nodeType: string) {
   const executeNode = useWorkflowStore((state) => state.executeNode);
   const executionState = useWorkflowStore((state) => state.executionState);
-  const getNodeExecutionResult = useWorkflowStore(
-    (state) => state.getNodeExecutionResult
-  );
   const getNodeVisualState = useWorkflowStore(
     (state) => state.getNodeVisualState
   );
+
+  // NEW: Use ExecutionContext hook as primary source of truth
+  const executionContext = useExecutionContext(nodeId);
 
   const [nodeExecutionState, setNodeExecutionState] =
     useState<NodeExecutionState>({
@@ -32,93 +32,40 @@ export function useNodeExecution(nodeId: string, nodeType: string) {
       hasSuccess: false,
     });
 
-  // Get real-time execution result for this node
-  const nodeExecutionResult = getNodeExecutionResult(nodeId);
+  // Get visual state for backward compatibility
   const nodeVisualState = getNodeVisualState(nodeId);
 
-  // Extract specific values for useEffect dependencies
-  const nodeStatus = nodeVisualState?.status;
-  const nodeErrorMessage = nodeVisualState?.errorMessage;
-  const nodeExecutionTime = nodeVisualState?.executionTime;
-  const executionResultStatus = nodeExecutionResult?.status;
-  const executionResultError = nodeExecutionResult?.error;
-  const executionResultEndTime = nodeExecutionResult?.endTime;
-
-  // Update local state based on flow execution results
+  // Update local state based on execution context (NEW: Single source of truth)
   useEffect(() => {
-    // Prioritize flow execution state over legacy execution results
-    if (nodeVisualState && nodeStatus !== NodeExecutionStatus.IDLE) {
-      const isExecuting =
-        nodeStatus === NodeExecutionStatus.RUNNING ||
-        nodeStatus === NodeExecutionStatus.QUEUED;
-      const hasError = nodeStatus === NodeExecutionStatus.FAILED;
-      const hasSuccess = nodeStatus === NodeExecutionStatus.COMPLETED;
+    // Use execution context as primary source
+    const isExecuting = executionContext.isExecuting; // Already filtered by current execution!
+    const hasError = executionContext.hasError;
+    const hasSuccess = executionContext.hasSuccess;
 
-      let executionError: NodeExecutionError | undefined;
-      if (hasError && nodeErrorMessage) {
-        executionError = createNodeExecutionError(
-          nodeErrorMessage,
-          nodeId,
-          nodeType
-        );
-        logExecutionError(nodeId, nodeType, executionError, nodeErrorMessage);
-      }
-
-      setNodeExecutionState({
-        isExecuting,
-        hasError,
-        hasSuccess: !!hasSuccess,
-        lastExecutionTime: nodeExecutionTime,
-        executionError,
-      });
-    } else if (nodeExecutionResult) {
-      // Fallback to legacy execution results
-      const isExecuting =
-        executionResultStatus === "success" &&
-        (nodeExecutionResult.endTime === nodeExecutionResult.startTime ||
-          !nodeExecutionResult.endTime);
-      const hasError = executionResultStatus === "error";
-      const hasSuccess =
-        executionResultStatus === "success" &&
-        nodeExecutionResult.endTime &&
-        nodeExecutionResult.endTime > nodeExecutionResult.startTime;
-
-      let executionError: NodeExecutionError | undefined;
-      if (hasError && executionResultError) {
-        executionError = createNodeExecutionError(
-          executionResultError,
-          nodeId,
-          nodeType
-        );
-        logExecutionError(
-          nodeId,
-          nodeType,
-          executionError,
-          executionResultError
-        );
-      }
-
-      setNodeExecutionState({
-        isExecuting,
-        hasError,
-        hasSuccess: !!hasSuccess,
-        lastExecutionTime: executionResultEndTime,
-        executionError,
-      });
-    } else {
-      setNodeExecutionState({
-        isExecuting: false,
-        hasError: false,
-        hasSuccess: false,
-      });
+    let executionError: NodeExecutionError | undefined;
+    if (hasError && nodeVisualState?.errorMessage) {
+      executionError = createNodeExecutionError(
+        nodeVisualState.errorMessage,
+        nodeId,
+        nodeType
+      );
+      logExecutionError(nodeId, nodeType, executionError, nodeVisualState.errorMessage);
     }
+
+    setNodeExecutionState({
+      isExecuting,
+      hasError,
+      hasSuccess,
+      lastExecutionTime: nodeVisualState?.executionTime,
+      executionError,
+    });
   }, [
-    nodeStatus,
-    nodeErrorMessage,
-    nodeExecutionTime,
-    executionResultStatus,
-    executionResultError,
-    executionResultEndTime,
+    executionContext.isExecuting,
+    executionContext.hasError,
+    executionContext.hasSuccess,
+    executionContext.status,
+    nodeVisualState?.errorMessage,
+    nodeVisualState?.executionTime,
     nodeId,
     nodeType,
   ]);
