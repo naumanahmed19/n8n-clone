@@ -1,5 +1,5 @@
-import { useWorkflowStore } from "@/stores/workflow";
 import { useExecutionContext } from "@/hooks/useExecutionContext";
+import { useWorkflowStore } from "@/stores/workflow";
 import {
   createNodeExecutionError,
   logExecutionError,
@@ -49,7 +49,12 @@ export function useNodeExecution(nodeId: string, nodeType: string) {
         nodeId,
         nodeType
       );
-      logExecutionError(nodeId, nodeType, executionError, nodeVisualState.errorMessage);
+      logExecutionError(
+        nodeId,
+        nodeType,
+        executionError,
+        nodeVisualState.errorMessage
+      );
     }
 
     setNodeExecutionState({

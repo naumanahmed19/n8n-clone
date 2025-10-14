@@ -1,10 +1,9 @@
+import { ExecutionContextManager } from "@/services/ExecutionContextManager";
 import {
   ExecutionEventData,
   executionWebSocket,
 } from "@/services/ExecutionWebSocket";
 import { ProgressTracker } from "@/services/ProgressTracker";
-import { ExecutionContextManager } from "@/services/ExecutionContextManager";
-import { getAffectedNodes } from "@/utils/executionPathAnalyzer";
 import { ValidationResult, workflowFileService } from "@/services/workflowFile";
 import {
   // NodeExecutionState,
@@ -25,6 +24,7 @@ import {
   validateImportFile as validateImportFileUtil,
   validateTitle as validateTitleUtil,
 } from "@/utils/errorHandling";
+import { getAffectedNodes } from "@/utils/executionPathAnalyzer";
 import {
   handleWorkflowError,
   validateWorkflow,
@@ -760,8 +760,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
         status: NodeExecutionStatus,
         data?: any
       ) => {
-        const { progressTracker, executionState, flowExecutionState, executionManager } = get();
-        const executionId = executionState.executionId || flowExecutionState.selectedExecution || "current";
+        const {
+          progressTracker,
+          executionState,
+          flowExecutionState,
+          executionManager,
+        } = get();
+        const executionId =
+          executionState.executionId ||
+          flowExecutionState.selectedExecution ||
+          "current";
 
         // NEW: Update execution context manager (primary source of truth)
         if (status === NodeExecutionStatus.QUEUED) {
@@ -790,27 +798,37 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
         // CRITICAL FIX: Update the execution's currentlyExecuting list
         // This ensures we can properly filter which nodes belong to which execution
-        const executionStatus = currentFlowState.activeExecutions.get(executionId);
+        const executionStatus =
+          currentFlowState.activeExecutions.get(executionId);
         if (executionStatus) {
           if (status === NodeExecutionStatus.RUNNING) {
             // Add to currently executing if not already there
             if (!executionStatus.currentlyExecuting.includes(nodeId)) {
               executionStatus.currentlyExecuting.push(nodeId);
             }
-          } else if (status === NodeExecutionStatus.COMPLETED || 
-                     status === NodeExecutionStatus.FAILED || 
-                     status === NodeExecutionStatus.CANCELLED) {
+          } else if (
+            status === NodeExecutionStatus.COMPLETED ||
+            status === NodeExecutionStatus.FAILED ||
+            status === NodeExecutionStatus.CANCELLED
+          ) {
             // Remove from currently executing when done
-            executionStatus.currentlyExecuting = executionStatus.currentlyExecuting.filter(id => id !== nodeId);
-            
+            executionStatus.currentlyExecuting =
+              executionStatus.currentlyExecuting.filter((id) => id !== nodeId);
+
             // Add to appropriate completion list
-            if (status === NodeExecutionStatus.COMPLETED && !executionStatus.completedNodes.includes(nodeId)) {
+            if (
+              status === NodeExecutionStatus.COMPLETED &&
+              !executionStatus.completedNodes.includes(nodeId)
+            ) {
               executionStatus.completedNodes.push(nodeId);
-            } else if (status === NodeExecutionStatus.FAILED && !executionStatus.failedNodes.includes(nodeId)) {
+            } else if (
+              status === NodeExecutionStatus.FAILED &&
+              !executionStatus.failedNodes.includes(nodeId)
+            ) {
               executionStatus.failedNodes.push(nodeId);
             }
           }
-          
+
           // Update the execution status in the map
           currentFlowState.activeExecutions.set(executionId, executionStatus);
         }
@@ -820,14 +838,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
       getNodeVisualState: (nodeId: string) => {
         const { executionManager } = get();
-        
+
         // NEW: Use ExecutionContextManager as primary source of truth
         // This automatically filters based on current execution context
         const statusInfo = executionManager.getNodeStatus(nodeId);
-        const isExecutingInCurrent = executionManager.isNodeExecutingInCurrent(nodeId);
-        
+        const isExecutingInCurrent =
+          executionManager.isNodeExecutingInCurrent(nodeId);
+
         // Map status to animation state
-        let animationState: "idle" | "pulsing" | "spinning" | "success" | "error" = "idle";
+        let animationState:
+          | "idle"
+          | "pulsing"
+          | "spinning"
+          | "success"
+          | "error" = "idle";
         if (isExecutingInCurrent) {
           animationState = "spinning";
         } else if (statusInfo.status === NodeExecutionStatus.COMPLETED) {
@@ -835,7 +859,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         } else if (statusInfo.status === NodeExecutionStatus.FAILED) {
           animationState = "error";
         }
-        
+
         // Build visual state from execution manager
         const visualState: NodeVisualState = {
           nodeId,
@@ -844,9 +868,12 @@ export const useWorkflowStore = create<WorkflowStore>()(
           progress: 0,
           lastUpdated: statusInfo.lastUpdated,
           executionTime: undefined,
-          errorMessage: statusInfo.status === NodeExecutionStatus.FAILED ? "Execution failed" : undefined,
+          errorMessage:
+            statusInfo.status === NodeExecutionStatus.FAILED
+              ? "Execution failed"
+              : undefined,
         };
-        
+
         return visualState;
       },
 
@@ -878,7 +905,11 @@ export const useWorkflowStore = create<WorkflowStore>()(
         progressTracker.setCurrentExecution(executionId);
 
         // Initialize progress tracker for this execution with execution ID
-        progressTracker.initializeNodeStates(nodeIds, dependencies, executionId);
+        progressTracker.initializeNodeStates(
+          nodeIds,
+          dependencies,
+          executionId
+        );
 
         // Create initial flow status
         const flowStatus = progressTracker.getExecutionFlowStatus(executionId);
@@ -934,13 +965,14 @@ export const useWorkflowStore = create<WorkflowStore>()(
         const currentFlowState = get().flowExecutionState;
         if (currentFlowState.activeExecutions.has(executionId)) {
           currentFlowState.selectedExecution = executionId;
-          
+
           // FIXED: Update ProgressTracker to use the selected execution context
           get().progressTracker.setCurrentExecution(executionId);
-          
+
           // Refresh visual states for the selected execution
-          currentFlowState.nodeVisualStates = get().progressTracker.getAllNodeVisualStates();
-          
+          currentFlowState.nodeVisualStates =
+            get().progressTracker.getAllNodeVisualStates();
+
           set({ flowExecutionState: { ...currentFlowState } });
 
           get().addExecutionLog({
@@ -987,7 +1019,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
           // Remove from active executions
           currentFlowState.activeExecutions.delete(executionId);
-          
+
           // FIXED: Clean up execution state from ProgressTracker
           get().progressTracker.clearExecution(executionId);
 
@@ -999,10 +1031,12 @@ export const useWorkflowStore = create<WorkflowStore>()(
             );
             currentFlowState.selectedExecution =
               remaining.length > 0 ? remaining[0] : undefined;
-              
+
             // Update current execution context to the new selected execution
             if (currentFlowState.selectedExecution) {
-              get().progressTracker.setCurrentExecution(currentFlowState.selectedExecution);
+              get().progressTracker.setCurrentExecution(
+                currentFlowState.selectedExecution
+              );
             }
           }
 
@@ -1220,8 +1254,10 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 nodeId,
                 affectedNodes
               );
-              executionManager.setCurrentExecution(executionResponse.executionId);
-              
+              executionManager.setCurrentExecution(
+                executionResponse.executionId
+              );
+
               // OPTIMIZATION: Trigger Zustand update to notify subscribers
               set({ executionManager });
 
@@ -2516,7 +2552,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               // CRITICAL: Set the execution context before updating node state
               // This ensures the node state is updated in the correct execution's context
               get().progressTracker.setCurrentExecution(data.executionId);
-              
+
               // Set node visual state to running with loading indicator
               get().updateNodeExecutionState(
                 data.nodeId,
@@ -2579,7 +2615,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
             if (data.nodeId && data.status) {
               // CRITICAL: Set the execution context before updating node state
               get().progressTracker.setCurrentExecution(data.executionId);
-              
+
               get().updateNodeExecutionState(data.nodeId, data.status, {
                 progress: data.progress,
                 error: data.error,
@@ -2614,7 +2650,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
                 if (progress.currentNode) {
                   // CRITICAL: Set the execution context before updating node state
                   get().progressTracker.setCurrentExecution(data.executionId);
-                  
+
                   const progressPercentage = Math.round(
                     (progress.completedNodes / progress.totalNodes) * 100
                   );

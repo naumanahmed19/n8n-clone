@@ -1,9 +1,9 @@
 /**
  * ExecutionPathAnalyzer
- * 
+ *
  * Analyzes workflow graphs to determine which nodes will be affected by an execution.
  * Uses graph traversal (BFS) to find all downstream nodes from a trigger point.
- * 
+ *
  * Key Features:
  * - Calculates execution paths from trigger nodes
  * - Handles cycles and complex graphs
@@ -11,19 +11,19 @@
  * - Supports conditional branches and loops
  */
 
-import type { Workflow, WorkflowConnection } from '../types/workflow'
+import type { Workflow, WorkflowConnection } from "../types/workflow";
 
 export interface ExecutionPath {
-  triggerNodeId: string
-  affectedNodeIds: string[]
-  totalNodes: number
-  depth: number  // Maximum depth from trigger
+  triggerNodeId: string;
+  affectedNodeIds: string[];
+  totalNodes: number;
+  depth: number; // Maximum depth from trigger
 }
 
 /**
  * Calculate which nodes will be affected when executing from a trigger node.
  * Uses Breadth-First Search (BFS) to traverse the workflow graph.
- * 
+ *
  * @param triggerNodeId - The node where execution starts (trigger node)
  * @param workflow - The workflow containing nodes and connections
  * @returns Array of node IDs that will be affected by this execution
@@ -32,32 +32,32 @@ export function getAffectedNodes(
   triggerNodeId: string,
   workflow: Workflow
 ): string[] {
-  const visited = new Set<string>()
-  const queue: string[] = [triggerNodeId]
-  const affectedNodes: string[] = [triggerNodeId]
-  
+  const visited = new Set<string>();
+  const queue: string[] = [triggerNodeId];
+  const affectedNodes: string[] = [triggerNodeId];
+
   // Build adjacency map for faster lookups
-  const adjacencyMap = buildAdjacencyMap(workflow.connections)
-  
+  const adjacencyMap = buildAdjacencyMap(workflow.connections);
+
   while (queue.length > 0) {
-    const currentNodeId = queue.shift()!
-    
+    const currentNodeId = queue.shift()!;
+
     // Skip if already visited (handles cycles)
-    if (visited.has(currentNodeId)) continue
-    visited.add(currentNodeId)
-    
+    if (visited.has(currentNodeId)) continue;
+    visited.add(currentNodeId);
+
     // Get all nodes connected from this node
-    const outgoingNodes = adjacencyMap.get(currentNodeId) || []
-    
+    const outgoingNodes = adjacencyMap.get(currentNodeId) || [];
+
     for (const targetNodeId of outgoingNodes) {
       if (!visited.has(targetNodeId)) {
-        queue.push(targetNodeId)
-        affectedNodes.push(targetNodeId)
+        queue.push(targetNodeId);
+        affectedNodes.push(targetNodeId);
       }
     }
   }
-  
-  return affectedNodes
+
+  return affectedNodes;
 }
 
 /**
@@ -67,15 +67,15 @@ export function calculateExecutionPath(
   triggerNodeId: string,
   workflow: Workflow
 ): ExecutionPath {
-  const affectedNodeIds = getAffectedNodes(triggerNodeId, workflow)
-  const depth = calculateMaxDepth(triggerNodeId, workflow.connections)
-  
+  const affectedNodeIds = getAffectedNodes(triggerNodeId, workflow);
+  const depth = calculateMaxDepth(triggerNodeId, workflow.connections);
+
   return {
     triggerNodeId,
     affectedNodeIds,
     totalNodes: affectedNodeIds.length,
     depth,
-  }
+  };
 }
 
 /**
@@ -85,19 +85,19 @@ export function calculateExecutionPath(
 function buildAdjacencyMap(
   connections: WorkflowConnection[]
 ): Map<string, string[]> {
-  const adjacencyMap = new Map<string, string[]>()
-  
+  const adjacencyMap = new Map<string, string[]>();
+
   for (const connection of connections) {
-    const { sourceNodeId, targetNodeId } = connection
-    
+    const { sourceNodeId, targetNodeId } = connection;
+
     if (!adjacencyMap.has(sourceNodeId)) {
-      adjacencyMap.set(sourceNodeId, [])
+      adjacencyMap.set(sourceNodeId, []);
     }
-    
-    adjacencyMap.get(sourceNodeId)!.push(targetNodeId)
+
+    adjacencyMap.get(sourceNodeId)!.push(targetNodeId);
   }
-  
-  return adjacencyMap
+
+  return adjacencyMap;
 }
 
 /**
@@ -107,32 +107,32 @@ function calculateMaxDepth(
   triggerNodeId: string,
   connections: WorkflowConnection[]
 ): number {
-  const adjacencyMap = buildAdjacencyMap(connections)
-  const visited = new Set<string>()
-  let maxDepth = 0
-  
+  const adjacencyMap = buildAdjacencyMap(connections);
+  const visited = new Set<string>();
+  let maxDepth = 0;
+
   // BFS with depth tracking
   const queue: Array<{ nodeId: string; depth: number }> = [
-    { nodeId: triggerNodeId, depth: 0 }
-  ]
-  
+    { nodeId: triggerNodeId, depth: 0 },
+  ];
+
   while (queue.length > 0) {
-    const { nodeId, depth } = queue.shift()!
-    
-    if (visited.has(nodeId)) continue
-    visited.add(nodeId)
-    
-    maxDepth = Math.max(maxDepth, depth)
-    
-    const outgoingNodes = adjacencyMap.get(nodeId) || []
+    const { nodeId, depth } = queue.shift()!;
+
+    if (visited.has(nodeId)) continue;
+    visited.add(nodeId);
+
+    maxDepth = Math.max(maxDepth, depth);
+
+    const outgoingNodes = adjacencyMap.get(nodeId) || [];
     for (const targetNodeId of outgoingNodes) {
       if (!visited.has(targetNodeId)) {
-        queue.push({ nodeId: targetNodeId, depth: depth + 1 })
+        queue.push({ nodeId: targetNodeId, depth: depth + 1 });
       }
     }
   }
-  
-  return maxDepth
+
+  return maxDepth;
 }
 
 /**
@@ -143,8 +143,8 @@ export function isNodeReachableFromTrigger(
   triggerNodeId: string,
   workflow: Workflow
 ): boolean {
-  const affectedNodes = getAffectedNodes(triggerNodeId, workflow)
-  return affectedNodes.includes(nodeId)
+  const affectedNodes = getAffectedNodes(triggerNodeId, workflow);
+  return affectedNodes.includes(nodeId);
 }
 
 /**
@@ -152,30 +152,30 @@ export function isNodeReachableFromTrigger(
  * (Nodes with no incoming connections)
  */
 export function getTriggerNodes(workflow: Workflow): string[] {
-  const nodesWithIncoming = new Set<string>()
-  
+  const nodesWithIncoming = new Set<string>();
+
   // Find all nodes that have incoming connections
   for (const connection of workflow.connections) {
-    nodesWithIncoming.add(connection.targetNodeId)
+    nodesWithIncoming.add(connection.targetNodeId);
   }
-  
+
   // Nodes without incoming connections are potential triggers
   const triggerNodes = workflow.nodes
-    .filter(node => !nodesWithIncoming.has(node.id))
-    .map(node => node.id)
-  
-  return triggerNodes
+    .filter((node) => !nodesWithIncoming.has(node.id))
+    .map((node) => node.id);
+
+  return triggerNodes;
 }
 
 /**
  * Get execution paths for all triggers in a workflow
  */
 export function getAllExecutionPaths(workflow: Workflow): ExecutionPath[] {
-  const triggerNodes = getTriggerNodes(workflow)
-  
-  return triggerNodes.map(triggerNodeId =>
+  const triggerNodes = getTriggerNodes(workflow);
+
+  return triggerNodes.map((triggerNodeId) =>
     calculateExecutionPath(triggerNodeId, workflow)
-  )
+  );
 }
 
 /**
@@ -185,15 +185,15 @@ export function findNodeExecutionPath(
   nodeId: string,
   workflow: Workflow
 ): ExecutionPath | null {
-  const allPaths = getAllExecutionPaths(workflow)
-  
+  const allPaths = getAllExecutionPaths(workflow);
+
   for (const path of allPaths) {
     if (path.affectedNodeIds.includes(nodeId)) {
-      return path
+      return path;
     }
   }
-  
-  return null
+
+  return null;
 }
 
 /**
@@ -204,12 +204,12 @@ export function areNodesInSamePath(
   nodeId2: string,
   workflow: Workflow
 ): boolean {
-  const path1 = findNodeExecutionPath(nodeId1, workflow)
-  const path2 = findNodeExecutionPath(nodeId2, workflow)
-  
-  if (!path1 || !path2) return false
-  
-  return path1.triggerNodeId === path2.triggerNodeId
+  const path1 = findNodeExecutionPath(nodeId1, workflow);
+  const path2 = findNodeExecutionPath(nodeId2, workflow);
+
+  if (!path1 || !path2) return false;
+
+  return path1.triggerNodeId === path2.triggerNodeId;
 }
 
 /**
@@ -219,52 +219,49 @@ export function getDownstreamNodes(
   nodeId: string,
   workflow: Workflow
 ): string[] {
-  const affectedNodes = getAffectedNodes(nodeId, workflow)
-  
+  const affectedNodes = getAffectedNodes(nodeId, workflow);
+
   // Remove the starting node from results
-  return affectedNodes.filter(id => id !== nodeId)
+  return affectedNodes.filter((id) => id !== nodeId);
 }
 
 /**
  * Get nodes that execute before a given node
  */
-export function getUpstreamNodes(
-  nodeId: string,
-  workflow: Workflow
-): string[] {
-  const upstreamNodes: string[] = []
-  const visited = new Set<string>()
-  
+export function getUpstreamNodes(nodeId: string, workflow: Workflow): string[] {
+  const upstreamNodes: string[] = [];
+  const visited = new Set<string>();
+
   // Build reverse adjacency map (target -> sources)
-  const reverseAdjacencyMap = new Map<string, string[]>()
+  const reverseAdjacencyMap = new Map<string, string[]>();
   for (const connection of workflow.connections) {
-    const { sourceNodeId, targetNodeId } = connection
-    
+    const { sourceNodeId, targetNodeId } = connection;
+
     if (!reverseAdjacencyMap.has(targetNodeId)) {
-      reverseAdjacencyMap.set(targetNodeId, [])
+      reverseAdjacencyMap.set(targetNodeId, []);
     }
-    
-    reverseAdjacencyMap.get(targetNodeId)!.push(sourceNodeId)
+
+    reverseAdjacencyMap.get(targetNodeId)!.push(sourceNodeId);
   }
-  
+
   // BFS backwards
-  const queue: string[] = [nodeId]
-  
+  const queue: string[] = [nodeId];
+
   while (queue.length > 0) {
-    const currentNodeId = queue.shift()!
-    
-    if (visited.has(currentNodeId)) continue
-    visited.add(currentNodeId)
-    
-    const incomingNodes = reverseAdjacencyMap.get(currentNodeId) || []
-    
+    const currentNodeId = queue.shift()!;
+
+    if (visited.has(currentNodeId)) continue;
+    visited.add(currentNodeId);
+
+    const incomingNodes = reverseAdjacencyMap.get(currentNodeId) || [];
+
     for (const sourceNodeId of incomingNodes) {
       if (!visited.has(sourceNodeId)) {
-        queue.push(sourceNodeId)
-        upstreamNodes.push(sourceNodeId)
+        queue.push(sourceNodeId);
+        upstreamNodes.push(sourceNodeId);
       }
     }
   }
-  
-  return upstreamNodes
+
+  return upstreamNodes;
 }
