@@ -1,23 +1,28 @@
 # View Workflow Code Feature
 
 ## Overview
+
 Added a new "View Code" feature that allows users to view, edit, copy, and export the JSON representation of their workflow in multiple formats.
 
 ## Implementation Details
 
 ### New Component: WorkflowCodeDialog
+
 **Location:** `frontend/src/components/workflow/WorkflowCodeDialog.tsx`
 
 A comprehensive dialog component that displays workflow data in JSON format with the following features:
 
 #### Features
+
 1. **Multiple View Modes** - Four tabs for different perspectives:
+
    - **Full Workflow**: Complete workflow structure including all metadata
    - **Nodes Only**: Just the node definitions with parameters and positions
    - **Connections**: Node connections defining the workflow flow
    - **Settings**: Workflow settings and configuration
 
 2. **Edit Mode** ⭐ NEW:
+
    - Click "Edit" button on any tab to enter edit mode
    - Modify JSON directly in a full-height textarea
    - Live JSON validation on save
@@ -27,10 +32,12 @@ A comprehensive dialog component that displays workflow data in JSON format with
    - Changes mark workflow as dirty (requires save)
 
 3. **Copy to Clipboard**: Each tab has a copy button with visual feedback
+
    - Shows "Copied!" confirmation when successful
    - Toast notifications for user feedback
 
 4. **Download Options**: Download any view as a JSON file
+
    - Automatic filename generation based on workflow name
    - Separate files for each view type
 
@@ -41,9 +48,11 @@ A comprehensive dialog component that displays workflow data in JSON format with
    - Full-height display (85vh - header spacing)
 
 ### Integration in WorkflowToolbar
+
 **Location:** `frontend/src/components/workflow/WorkflowToolbar.tsx`
 
 #### Changes Made:
+
 1. **Import Added**: Imported the new `WorkflowCodeDialog` component and `Code` icon
 2. **State Added**: Added `showCodeDialog` state to control dialog visibility
 3. **Menu Item Added**: Added "View Code" option in the "More Options" dropdown menu
@@ -52,6 +61,7 @@ A comprehensive dialog component that displays workflow data in JSON format with
 4. **Dialog Rendered**: Added the dialog component at the bottom of the component
 
 ### Export Update
+
 **Location:** `frontend/src/components/workflow/index.ts`
 
 Added export for the new `WorkflowCodeDialog` component.
@@ -59,10 +69,13 @@ Added export for the new `WorkflowCodeDialog` component.
 ## User Experience
 
 ### Access Points
+
 Users can access the "View Code" feature from:
+
 1. **Workflow Toolbar** → More Options Menu (⋯) → View Code
 
 ### Workflow
+
 1. User clicks the "More Options" button (three dots) in the toolbar
 2. Selects "View Code" from the dropdown menu
 3. Dialog opens with four tabs showing different aspects of the workflow
@@ -76,6 +89,7 @@ Users can access the "View Code" feature from:
 5. Close the dialog when done
 
 ### Use Cases
+
 - **Debugging**: View the raw workflow structure to debug issues
 - **Documentation**: Copy workflow structure for documentation
 - **Learning**: Understand how workflows are structured internally
@@ -89,6 +103,7 @@ Users can access the "View Code" feature from:
 ## Technical Details
 
 ### Dependencies Used
+
 - `@/components/ui/dialog` - Dialog container
 - `@/components/ui/button` - Action buttons
 - `@/components/ui/scroll-area` - Scrollable content area
@@ -99,6 +114,7 @@ Users can access the "View Code" feature from:
 - `@/stores` - Zustand workflow store for updates ⭐ NEW
 
 ### Edit Mode Features ⭐ NEW
+
 - **JSON Validation**: Validates JSON syntax before applying changes
 - **Error Handling**: Shows user-friendly error messages for invalid JSON
 - **Selective Updates**: Can edit full workflow, nodes only, connections only, or settings only
@@ -107,16 +123,19 @@ Users can access the "View Code" feature from:
 - **Toast Notifications**: Success/error feedback for all operations
 
 ### Props Interface
+
 ```typescript
 interface WorkflowCodeDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  workflow: Workflow | null
+  isOpen: boolean;
+  onClose: () => void;
+  workflow: Workflow | null;
 }
 ```
 
 ### Data Format
+
 Each tab displays JSON.stringify with 2-space indentation:
+
 - Full workflow: Complete `workflow` object
 - Nodes: `workflow.nodes` array
 - Connections: `workflow.connections` array
@@ -125,6 +144,7 @@ Each tab displays JSON.stringify with 2-space indentation:
 ## Future Enhancements
 
 Possible improvements for the future:
+
 1. **Syntax Highlighting**: Add proper JSON syntax highlighting with colors
 2. **Search/Filter**: Add ability to search within the JSON
 3. **Diff View**: Compare current workflow with saved version
@@ -152,6 +172,7 @@ Possible improvements for the future:
 ## Files Modified
 
 1. **Created:**
+
    - `frontend/src/components/workflow/WorkflowCodeDialog.tsx`
 
 2. **Modified:**
@@ -161,6 +182,7 @@ Possible improvements for the future:
 ## Related Features
 
 This feature complements the existing:
+
 - **Export Workflow**: Downloads complete workflow file for import
 - **Workflow Settings**: Manages workflow metadata
 - **Import Workflow**: Loads workflow from file
