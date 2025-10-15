@@ -227,6 +227,7 @@ export function WorkflowCanvas({
                     selectNodesOnDrag={false}
                     multiSelectionKeyCode="Shift"
                     selectionMode={SelectionMode.Partial}
+                    fitView
                     defaultEdgeOptions={defaultEdgeOptions}
                 >
                     {/* Toolbar for grouping selected nodes */}
