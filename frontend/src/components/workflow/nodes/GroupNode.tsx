@@ -3,7 +3,6 @@ import {
   NodeResizer,
   NodeToolbar,
   useReactFlow,
-  useStore,
 } from '@xyflow/react'
 import { memo } from 'react'
 
@@ -13,16 +12,12 @@ function GroupNode({ id }: NodeProps) {
   const detachNodes = useDetachNodes()
   const { getNodes } = useReactFlow()
 
-  const hasChildNodes = useStore((store) => {
-    const childNodeCount = store.parentLookup.get(id)?.size ?? 0
-    return childNodeCount > 0
-  })
+  // Check if this group has child nodes
+  const childNodes = getNodes().filter((node) => node.parentId === id)
+  const hasChildNodes = childNodes.length > 0
 
   const onDetach = () => {
-    const childNodeIds = getNodes()
-      .filter((node) => node.parentId === id)
-      .map((node) => node.id)
-
+    const childNodeIds = childNodes.map((node) => node.id)
     detachNodes(childNodeIds, id)
   }
 

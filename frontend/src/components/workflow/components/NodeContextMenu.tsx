@@ -3,7 +3,7 @@ import {
     ContextMenuItem,
     ContextMenuSeparator,
 } from '@/components/ui/context-menu'
-import { Copy, Scissors, Clipboard, Lock, Play, Settings, Trash2, Unlock } from 'lucide-react'
+import { Copy, Scissors, Clipboard, Lock, Play, Settings, Trash2, Unlock, Ungroup } from 'lucide-react'
 
 interface NodeContextMenuProps {
   onOpenProperties: () => void
@@ -14,10 +14,12 @@ interface NodeContextMenuProps {
   onCopy?: () => void
   onCut?: () => void
   onPaste?: () => void
+  onUngroup?: () => void
   isLocked: boolean
   readOnly?: boolean
   canCopy?: boolean
   canPaste?: boolean
+  isInGroup?: boolean
 }
 
 export function NodeContextMenu({
@@ -29,10 +31,12 @@ export function NodeContextMenu({
   onCopy,
   onCut,
   onPaste,
+  onUngroup,
   isLocked,
   readOnly = false,
   canCopy = false,
   canPaste = false,
+  isInGroup = false,
 }: NodeContextMenuProps) {
   return (
     <ContextMenuContent className="w-48">
@@ -72,6 +76,21 @@ export function NodeContextMenu({
           </>
         )}
       </ContextMenuItem>
+
+      {/* Ungroup option - only show if node is in a group */}
+      {isInGroup && onUngroup && (
+        <>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            onClick={onUngroup}
+            disabled={readOnly}
+            className="cursor-pointer"
+          >
+            <Ungroup className="mr-2 h-4 w-4" />
+            Remove from Group
+          </ContextMenuItem>
+        </>
+      )}
 
       <ContextMenuSeparator />
 

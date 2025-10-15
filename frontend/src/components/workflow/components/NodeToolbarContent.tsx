@@ -1,6 +1,6 @@
 import { canNodeExecuteIndividually, shouldShowDisableButton, shouldShowExecuteButton } from '@/utils/nodeTypeClassification'
-import { memo } from 'react'
 import { NodeToolbar, Position } from '@xyflow/react'
+import { memo } from 'react'
 import { DisableToggleToolbarButton } from '../DisableToggleToolbarButton'
 import { ExecuteToolbarButton } from '../ExecuteToolbarButton'
 import type { NodeExecutionError } from '../types'
