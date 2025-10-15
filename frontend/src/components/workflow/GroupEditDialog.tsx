@@ -202,9 +202,9 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
                     setCustomBorderColor('')
                   }}
                   className={`
-                    h-12 rounded-md border-4 transition-all relative
+                    h-8 rounded border-2 transition-all relative
                     ${selectedPreset === preset.name 
-                      ? 'ring-2 ring-primary ring-offset-2' 
+                      ? 'ring-2 ring-primary ring-offset-1' 
                       : 'hover:ring-1 hover:ring-gray-300'
                     }
                   `}
@@ -217,8 +217,8 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
                   <span className="sr-only">{preset.name}</span>
                   {selectedPreset === preset.name && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-primary-foreground" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                           <path d="M5 13l4 4L19 7"></path>
                         </svg>
                       </div>

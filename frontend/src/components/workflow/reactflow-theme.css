@@ -131,24 +131,13 @@ ReactFlow Dark Theme Overrides
 /* Light mode group node */
 .react-flow__node-group {
   background-color: rgba(207, 182, 255, 0.4);
-  border: 1px solid #9e86ed;
   border-radius: 8px;
   box-shadow: 0px 3.54px 4.55px 0px #00000005, 0px 3.54px 4.55px 0px #0000000d,
     0px 0.51px 1.01px 0px #0000001a;
 }
 
 .react-flow__node-group.selectable:focus {
-  box-shadow: 0px 0px 0px 4px #e8e8e8;
-  border-color: #9e86ed;
-}
-
-.react-flow__node-group.selectable:hover {
-  border-color: #7d5bd0;
-}
-
-.react-flow__node-group.selectable.selected {
-  border-color: #9e86ed;
-  border-width: 2px;
+  outline: none;
 }
 
 /* Active state when dragging a node over a group */
@@ -173,24 +162,13 @@ ReactFlow Dark Theme Overrides
 /* Dark mode group node */
 .dark .react-flow__node-group {
   background-color: rgba(120, 85, 200, 0.2);
-  border-color: #7d5bd0;
   box-shadow: 0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.05),
     0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
     0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
 }
 
 .dark .react-flow__node-group.selectable:focus {
-  box-shadow: 0px 0px 0px 4px #535353;
-  border-color: #9e86ed;
-}
-
-.dark .react-flow__node-group.selectable:hover {
-  border-color: #b59ef5;
-}
-
-.dark .react-flow__node-group.selectable.selected {
-  border-color: #9e86ed;
-  border-width: 2px;
+  outline: none;
 }
 
 /* Active state when dragging a node over a group in dark mode */
@@ -212,13 +190,26 @@ ReactFlow Dark Theme Overrides
   }
 }
 
-/* Node resizer for group nodes */
+/* Node resizer for group nodes - only show when selected */
 .react-flow__node-group .react-flow__resize-control.handle {
   width: 8px;
   height: 8px;
   border-radius: 2px;
   background-color: #9e86ed;
   border: 1px solid #ffffff;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* Hide resize control lines when not selected */
+.react-flow__node-group .react-flow__resize-control.line {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.react-flow__node-group.selected .react-flow__resize-control.handle,
+.react-flow__node-group.selected .react-flow__resize-control.line {
+  opacity: 1;
 }
 
 .dark .react-flow__node-group .react-flow__resize-control.handle {
