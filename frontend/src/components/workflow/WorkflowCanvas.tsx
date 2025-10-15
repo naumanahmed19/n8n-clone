@@ -36,6 +36,7 @@ interface WorkflowCanvasProps {
     onSelectionChange: any
     onNodeDoubleClick: any
     onNodeDragStart: any
+    onNodeDrag: any
     onNodeDragStop: any
     onSelectionDragStart: any
     onSelectionDragStop: any
@@ -65,6 +66,7 @@ export function WorkflowCanvas({
     onSelectionChange: handleSelectionChange,
     onNodeDoubleClick: handleNodeDoubleClick,
     onNodeDragStart: handleNodeDragStart,
+    onNodeDrag: handleNodeDrag,
     onNodeDragStop: handleNodeDragStop,
     onSelectionDragStart: handleSelectionDragStart,
     onSelectionDragStop: handleSelectionDragStop,
@@ -155,6 +157,11 @@ export function WorkflowCanvas({
         [isDisabled, handleNodeDragStart]
     )
     
+    const nodeDragHandler = useMemo(() => 
+        isDisabled ? undefined : handleNodeDrag,
+        [isDisabled, handleNodeDrag]
+    )
+    
     const nodeDragStopHandler = useMemo(() => 
         isDisabled ? undefined : handleNodeDragStop,
         [isDisabled, handleNodeDragStop]
@@ -197,6 +204,7 @@ export function WorkflowCanvas({
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     onNodeDragStart={nodeDragStartHandler}
+                    onNodeDrag={nodeDragHandler}
                     onNodeDragStop={nodeDragStopHandler}
                     onSelectionDragStart={selectionDragStartHandler}
                     onSelectionDragStop={selectionDragStopHandler}

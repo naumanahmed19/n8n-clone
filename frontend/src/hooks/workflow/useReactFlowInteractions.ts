@@ -14,6 +14,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { useCallback, useRef, useState } from "react";
+import { useNodeGroupDragHandlers } from "./useNodeGroupDragHandlers";
 
 /**
  * Custom hook for ReactFlow interactions
@@ -46,6 +47,9 @@ export function useReactFlowInteractions() {
 
   // Use the useReactFlow hook to get the ReactFlow instance directly
   const reactFlowInstance = useReactFlow();
+
+  // Get group drag handlers for adding nodes to groups
+  const { onNodeDrag: onNodeDragGroup, onNodeDragStop: onNodeDragStopGroup } = useNodeGroupDragHandlers();
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -86,22 +90,117 @@ export function useReactFlowInteractions() {
   const dragSnapshotTaken = useRef(false);
   const isDragging = useRef(false);
   const blockSync = useRef(false);
+  const resizeSnapshotTaken = useRef(false);
+  const isResizing = useRef(false);
 
   // Handle node position changes
   const handleNodesChange: OnNodesChange = useCallback(
     (changes) => {
       onNodesChange(changes);
 
-      // Track dragging state
+      // Track dragging state and handle dimension changes
+      let isResizeComplete = false;
+      let isResizeStart = false;
+      
       changes.forEach((change) => {
         if (change.type === "position" && "dragging" in change) {
           if (change.dragging) {
             isDragging.current = true;
           }
         }
+        
+        // Detect dimension changes (from resizing)
+        if (change.type === "dimensions") {
+          // Check if resize is starting
+          if ('resizing' in change && change.resizing === true) {
+            isResizeStart = true;
+            isResizing.current = true;
+            blockSync.current = true; // Block sync during resize
+          }
+          // Check if resize is complete (resizing becomes false or undefined)
+          if ('resizing' in change && change.resizing === false) {
+            isResizeComplete = true;
+          }
+        }
       });
+
+      // Take snapshot at the start of resize operation (only once)
+      if (isResizeStart && !resizeSnapshotTaken.current) {
+        console.log('🔷 Resize started - blocking sync');
+        const { saveToHistory } = useWorkflowStore.getState();
+        saveToHistory("Resize group");
+        resizeSnapshotTaken.current = true;
+      }
+
+      // Only sync to Zustand when resize is COMPLETE, not during continuous resizing
+      if (isResizeComplete && reactFlowInstance) {
+        console.log('✅ Resize complete - syncing to Zustand');
+        // Use a short delay to ensure React Flow state is updated
+        setTimeout(() => {
+          const { workflow, updateWorkflow, setDirty } = useWorkflowStore.getState();
+          if (workflow) {
+            const currentNodes = reactFlowInstance.getNodes();
+            const existingNodesMap = new Map(workflow.nodes.map((n) => [n.id, n]));
+            const updatedNodes: WorkflowNode[] = [];
+
+            currentNodes.forEach((rfNode) => {
+              const existingNode = existingNodesMap.get(rfNode.id);
+
+              if (rfNode.type === "group") {
+                const baseGroupNode = existingNode || {
+                  id: rfNode.id,
+                  type: "group",
+                  name: `Group ${rfNode.id}`,
+                  parameters: {},
+                  position: rfNode.position,
+                  disabled: false,
+                };
+
+                // React Flow stores dimensions in width/height properties
+                // Merge them with existing style or create new style object
+                const style = {
+                  ...(rfNode.style || {}),
+                  ...(rfNode.width !== undefined && { width: rfNode.width }),
+                  ...(rfNode.height !== undefined && { height: rfNode.height }),
+                };
+
+                console.log('📏 Group node resize:', {
+                  id: rfNode.id,
+                  rfNode_width: rfNode.width,
+                  rfNode_height: rfNode.height,
+                  rfNode_style: rfNode.style,
+                  merged_style: style
+                });
+
+                updatedNodes.push({
+                  ...baseGroupNode,
+                  position: rfNode.position,
+                  style: style as any,
+                });
+              } else if (existingNode) {
+                updatedNodes.push({
+                  ...existingNode,
+                  position: rfNode.position,
+                  parentId: rfNode.parentId || undefined,
+                  extent: (rfNode.extent || undefined) as any,
+                });
+              }
+            });
+
+            updateWorkflow({ nodes: updatedNodes });
+            setDirty(true);
+            
+            // Reset resize flags IMMEDIATELY after updating Zustand
+            // This allows WorkflowEditor to sync the updated dimensions back to ReactFlow
+            resizeSnapshotTaken.current = false;
+            isResizing.current = false;
+            blockSync.current = false;
+            console.log('🔓 Unblocked sync after resize');
+          }
+        }, 0);
+      }
     },
-    [onNodesChange]
+    [onNodesChange, reactFlowInstance]
   );
 
   // Handle edge changes
@@ -145,10 +244,18 @@ export function useReactFlowInteractions() {
             disabled: false,
           };
 
+          // React Flow stores dimensions in width/height properties
+          // Merge them with existing style or create new style object
+          const style = {
+            ...(rfNode.style || {}),
+            ...(rfNode.width !== undefined && { width: rfNode.width }),
+            ...(rfNode.height !== undefined && { height: rfNode.height }),
+          };
+
           updatedNodes.push({
             ...baseGroupNode,
             position: rfNode.position,
-            style: rfNode.style as any,
+            style: style as any,
           });
         } else if (existingNode) {
           // Update existing regular nodes
@@ -188,13 +295,26 @@ export function useReactFlowInteractions() {
     []
   );
 
+  // Handle node drag - check for group intersections and highlight
+  const handleNodeDrag = useCallback(
+    (event: React.MouseEvent, node: any, nodes: any[]) => {
+      // Call the group drag handler to check for intersections
+      onNodeDragGroup(event, node, nodes);
+    },
+    [onNodeDragGroup]
+  );
+
   // Handle node drag stop
   const handleNodeDragStop = useCallback(
-    (_event: React.MouseEvent, _node: any) => {
+    (event: React.MouseEvent, node: any, nodes: any[]) => {
+      // First, call the group drag stop handler to attach to group if needed
+      onNodeDragStopGroup(event, node, nodes);
+      
+      // Then sync positions and reset flags
       syncPositionsToZustand();
       resetDragFlags();
     },
-    [syncPositionsToZustand, resetDragFlags]
+    [onNodeDragStopGroup, syncPositionsToZustand, resetDragFlags]
   );
 
   // Handle selection drag start - take snapshot BEFORE dragging selection
@@ -549,6 +669,7 @@ export function useReactFlowInteractions() {
 
     // Undo/Redo optimized handlers
     handleNodeDragStart,
+    handleNodeDrag,
     handleNodeDragStop,
     handleSelectionDragStart,
     handleSelectionDragStop,

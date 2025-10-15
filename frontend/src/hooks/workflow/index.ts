@@ -48,6 +48,7 @@ export { default as useDetachNodes } from "./useDetachNodes";
 export { useExecutionControls } from "./useExecutionControls";
 export { useExecutionPanelData } from "./useExecutionPanelData";
 export { useKeyboardShortcuts } from "./useKeyboardShortcuts";
+export { useNodeGroupDragHandlers } from "./useNodeGroupDragHandlers";
 export { useReactFlowInteractions } from "./useReactFlowInteractions";
 export { useWorkflowEditorUI } from "./useWorkflowEditorUI";
 export { useWorkflowOperations } from "./useWorkflowOperations";

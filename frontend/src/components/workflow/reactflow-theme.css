@@ -151,6 +151,24 @@ ReactFlow Dark Theme Overrides
   border-width: 2px;
 }
 
+/* Active state when dragging a node over a group */
+.react-flow__node-group.active {
+  background-color: rgba(207, 182, 255, 0.6);
+  border-color: #7d5bd0;
+  border-width: 2px;
+  border-style: dashed;
+  animation: pulse-border 1s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: #7d5bd0;
+  }
+  50% {
+    border-color: #9e86ed;
+  }
+}
+
 /* Dark mode group node */
 .dark .react-flow__node-group {
   background-color: rgba(120, 85, 200, 0.2);
@@ -172,6 +190,24 @@ ReactFlow Dark Theme Overrides
 .dark .react-flow__node-group.selectable.selected {
   border-color: #9e86ed;
   border-width: 2px;
+}
+
+/* Active state when dragging a node over a group in dark mode */
+.dark .react-flow__node-group.active {
+  background-color: rgba(120, 85, 200, 0.4);
+  border-color: #b59ef5;
+  border-width: 2px;
+  border-style: dashed;
+  animation: pulse-border-dark 1s ease-in-out infinite;
+}
+
+@keyframes pulse-border-dark {
+  0%, 100% {
+    border-color: #b59ef5;
+  }
+  50% {
+    border-color: #9e86ed;
+  }
 }
 
 /* Node resizer for group nodes */

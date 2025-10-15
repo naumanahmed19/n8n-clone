@@ -88,6 +88,7 @@ export function WorkflowEditor({
         handleSelectionChange,
         handleNodeDoubleClick,
         handleNodeDragStart,
+        handleNodeDrag,
         handleNodeDragStop,
         handleSelectionDragStart,
         handleSelectionDragStop,
@@ -273,6 +274,7 @@ export function WorkflowEditor({
                                         onSelectionChange={handleSelectionChange}
                                         onNodeDoubleClick={handleNodeDoubleClick}
                                         onNodeDragStart={handleNodeDragStart}
+                                        onNodeDrag={handleNodeDrag}
                                         onNodeDragStop={handleNodeDragStop}
                                         onSelectionDragStart={handleSelectionDragStart}
                                         onSelectionDragStop={handleSelectionDragStop}
