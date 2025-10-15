@@ -136,8 +136,13 @@ ReactFlow Dark Theme Overrides
     0px 0.51px 1.01px 0px #0000001a;
 }
 
-.react-flow__node-group.selectable:focus {
-  outline: none;
+.react-flow__node-group.selectable:focus,
+.react-flow__node-group.selected,
+.react-flow__node-group.selectable.selected,
+.react-flow__node-group:focus,
+.react-flow__node-group.active {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Active state when dragging a node over a group */
@@ -167,8 +172,13 @@ ReactFlow Dark Theme Overrides
     0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
 }
 
-.dark .react-flow__node-group.selectable:focus {
-  outline: none;
+.dark .react-flow__node-group.selectable:focus,
+.dark .react-flow__node-group.selected,
+.dark .react-flow__node-group.selectable.selected,
+.dark .react-flow__node-group:focus,
+.dark .react-flow__node-group.active {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Active state when dragging a node over a group in dark mode */
@@ -201,15 +211,23 @@ ReactFlow Dark Theme Overrides
   transition: opacity 0.2s;
 }
 
-/* Hide resize control lines when not selected */
+/* Hide resize control lines when not selected and make them transparent */
 .react-flow__node-group .react-flow__resize-control.line {
   opacity: 0;
   transition: opacity 0.2s;
+  background-color: transparent !important;
+  border-color: transparent !important;
 }
 
 .react-flow__node-group.selected .react-flow__resize-control.handle,
 .react-flow__node-group.selected .react-flow__resize-control.line {
   opacity: 1;
+}
+
+/* Keep lines transparent even when selected */
+.react-flow__node-group.selected .react-flow__resize-control.line {
+  background-color: transparent !important;
+  border-color: transparent !important;
 }
 
 .dark .react-flow__node-group .react-flow__resize-control.handle {
