@@ -84,7 +84,7 @@ export function EdgeButton({
   return (
     <EdgeLabelRenderer>
       <div
-        className="nodrag nopan pointer-events-auto absolute z-50 flex items-center gap-1 rounded-lg border bg-card px-1.5 py-1.5 shadow-lg"
+        className="nodrag nopan pointer-events-auto absolute z-50 flex items-center gap-0.5 rounded border bg-card px-0.5 py-0.5 shadow-sm"
         style={{
           transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
           ...style,
@@ -94,18 +94,18 @@ export function EdgeButton({
       >
         <button
           onClick={handleAddClick}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           title="Add node"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3 w-3" />
         </button>
-        <div className="mx-1 h-6 w-px bg-border" />
+        <div className="mx-0.5 h-3 w-px bg-border" />
         <button
           onClick={handleDeleteClick}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           title="Delete connection"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3 w-3" />
         </button>
       </div>
     </EdgeLabelRenderer>
