@@ -49,7 +49,8 @@ export function useReactFlowInteractions() {
   const reactFlowInstance = useReactFlow();
 
   // Get group drag handlers for adding nodes to groups
-  const { onNodeDrag: onNodeDragGroup, onNodeDragStop: onNodeDragStopGroup } = useNodeGroupDragHandlers();
+  const { onNodeDrag: onNodeDragGroup, onNodeDragStop: onNodeDragStopGroup } =
+    useNodeGroupDragHandlers();
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -101,24 +102,24 @@ export function useReactFlowInteractions() {
       // Track dragging state and handle dimension changes
       let isResizeComplete = false;
       let isResizeStart = false;
-      
+
       changes.forEach((change) => {
         if (change.type === "position" && "dragging" in change) {
           if (change.dragging) {
             isDragging.current = true;
           }
         }
-        
+
         // Detect dimension changes (from resizing)
         if (change.type === "dimensions") {
           // Check if resize is starting
-          if ('resizing' in change && change.resizing === true) {
+          if ("resizing" in change && change.resizing === true) {
             isResizeStart = true;
             isResizing.current = true;
             blockSync.current = true; // Block sync during resize
           }
           // Check if resize is complete (resizing becomes false or undefined)
-          if ('resizing' in change && change.resizing === false) {
+          if ("resizing" in change && change.resizing === false) {
             isResizeComplete = true;
           }
         }
@@ -126,7 +127,7 @@ export function useReactFlowInteractions() {
 
       // Take snapshot at the start of resize operation (only once)
       if (isResizeStart && !resizeSnapshotTaken.current) {
-        console.log('🔷 Resize started - blocking sync');
+        console.log("🔷 Resize started - blocking sync");
         const { saveToHistory } = useWorkflowStore.getState();
         saveToHistory("Resize group");
         resizeSnapshotTaken.current = true;
@@ -134,13 +135,16 @@ export function useReactFlowInteractions() {
 
       // Only sync to Zustand when resize is COMPLETE, not during continuous resizing
       if (isResizeComplete && reactFlowInstance) {
-        console.log('✅ Resize complete - syncing to Zustand');
+        console.log("✅ Resize complete - syncing to Zustand");
         // Use a short delay to ensure React Flow state is updated
         setTimeout(() => {
-          const { workflow, updateWorkflow, setDirty } = useWorkflowStore.getState();
+          const { workflow, updateWorkflow, setDirty } =
+            useWorkflowStore.getState();
           if (workflow) {
             const currentNodes = reactFlowInstance.getNodes();
-            const existingNodesMap = new Map(workflow.nodes.map((n) => [n.id, n]));
+            const existingNodesMap = new Map(
+              workflow.nodes.map((n) => [n.id, n])
+            );
             const updatedNodes: WorkflowNode[] = [];
 
             currentNodes.forEach((rfNode) => {
@@ -164,12 +168,12 @@ export function useReactFlowInteractions() {
                   ...(rfNode.height !== undefined && { height: rfNode.height }),
                 };
 
-                console.log('📏 Group node resize:', {
+                console.log("📏 Group node resize:", {
                   id: rfNode.id,
                   rfNode_width: rfNode.width,
                   rfNode_height: rfNode.height,
                   rfNode_style: rfNode.style,
-                  merged_style: style
+                  merged_style: style,
                 });
 
                 updatedNodes.push({
@@ -189,13 +193,13 @@ export function useReactFlowInteractions() {
 
             updateWorkflow({ nodes: updatedNodes });
             setDirty(true);
-            
+
             // Reset resize flags IMMEDIATELY after updating Zustand
             // This allows WorkflowEditor to sync the updated dimensions back to ReactFlow
             resizeSnapshotTaken.current = false;
             isResizing.current = false;
             blockSync.current = false;
-            console.log('🔓 Unblocked sync after resize');
+            console.log("🔓 Unblocked sync after resize");
           }
         }, 0);
       }
@@ -309,7 +313,7 @@ export function useReactFlowInteractions() {
     (event: React.MouseEvent, node: any, nodes: any[]) => {
       // First, call the group drag stop handler to attach to group if needed
       onNodeDragStopGroup(event, node, nodes);
-      
+
       // Then sync positions and reset flags
       syncPositionsToZustand();
       resetDragFlags();

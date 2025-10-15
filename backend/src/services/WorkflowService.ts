@@ -179,7 +179,10 @@ export class WorkflowService {
       }
 
       // DEBUG: Log nodes to check if style is preserved when fetching
-      console.log('🔍 Workflow nodes from DB:', JSON.stringify(workflow.nodes, null, 2));
+      console.log(
+        "🔍 Workflow nodes from DB:",
+        JSON.stringify(workflow.nodes, null, 2)
+      );
 
       return workflow;
     } catch (error) {
@@ -260,8 +263,11 @@ export class WorkflowService {
       });
 
       // DEBUG: Log nodes to check if style is preserved
-      console.log('🔍 Nodes being saved:', JSON.stringify(data.nodes, null, 2));
-      console.log('🔍 Workflow returned from DB:', JSON.stringify(workflow.nodes, null, 2));
+      console.log("🔍 Nodes being saved:", JSON.stringify(data.nodes, null, 2));
+      console.log(
+        "🔍 Workflow returned from DB:",
+        JSON.stringify(workflow.nodes, null, 2)
+      );
 
       // Sync triggers with TriggerService if triggers or active status changed
       if (

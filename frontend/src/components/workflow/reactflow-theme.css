@@ -161,7 +161,8 @@ ReactFlow Dark Theme Overrides
 }
 
 @keyframes pulse-border {
-  0%, 100% {
+  0%,
+  100% {
     border-color: #7d5bd0;
   }
   50% {
@@ -202,7 +203,8 @@ ReactFlow Dark Theme Overrides
 }
 
 @keyframes pulse-border-dark {
-  0%, 100% {
+  0%,
+  100% {
     border-color: #b59ef5;
   }
   50% {
