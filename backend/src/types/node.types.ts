@@ -207,6 +207,7 @@ export enum BuiltInNodeTypes {
   JSON = "json",
   SET = "set",
   IF = "if",
+  CODE = "code",
   WEBHOOK = "webhook",
   WEBHOOK_TRIGGER = "webhook-trigger",
   SCHEDULE_TRIGGER = "schedule-trigger",
