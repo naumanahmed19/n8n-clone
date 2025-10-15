@@ -1,48 +1,49 @@
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
+    ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { useWorkflowOperations } from '@/hooks/workflow';
-import { useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore, useCopyPasteStore } from '@/stores';
+import { useCopyPasteStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores';
+import { useReactFlow } from '@xyflow/react';
 import {
-  CheckCircle,
-  Copy,
-  Scissors,
-  Clipboard,
-  MousePointerClick,
-  Download,
-  Eye,
-  EyeOff,
-  FileText,
-  Grid,
-  Grid3X3,
-  Hash,
-  History,
-  Lock,
-  Map,
-  Maximize,
-  Palette,
-  Play,
-  Plus,
-  Power,
-  PowerOff,
-  Redo,
-  Save,
-  Settings,
-  Undo,
-  Unlock,
-  Upload,
-  ZoomIn,
-  ZoomOut
+    CheckCircle,
+    Clipboard,
+    Copy,
+    Download,
+    Eye,
+    EyeOff,
+    FileText,
+    Grid,
+    Grid3X3,
+    Hash,
+    History,
+    Lock,
+    Map,
+    Maximize,
+    Minimize2,
+    MousePointerClick,
+    Palette,
+    Play,
+    Plus,
+    Power,
+    PowerOff,
+    Redo,
+    Save,
+    Scissors,
+    Settings,
+    Undo,
+    Unlock,
+    Upload,
+    ZoomIn,
+    ZoomOut
 } from 'lucide-react';
 import React, { memo, useCallback, useMemo } from 'react';
-import { useReactFlow } from '@xyflow/react';
 
 interface WorkflowCanvasContextMenuProps {
   children: React.ReactNode
@@ -85,6 +86,7 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
     showBackground,
     showControls,
     showExecutionPanel,
+    compactMode,
     panOnDrag,
     zoomOnScroll,
     toggleMinimap,
@@ -92,6 +94,7 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
     toggleControls,
     togglePanOnDrag,
     toggleZoomOnScroll,
+    toggleCompactMode,
     changeBackgroundVariant,
     toggleExecutionPanel,
     zoomIn,
@@ -330,6 +333,23 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
             >
               <Settings className="mr-2 h-4 w-4" />
               {showControls ? 'Hide' : 'Show'} Controls
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={toggleCompactMode}
+              className="cursor-pointer"
+            >
+              {compactMode ? (
+                <>
+                  <Maximize className="mr-2 h-4 w-4" />
+                  Show Node Titles
+                </>
+              ) : (
+                <>
+                  <Minimize2 className="mr-2 h-4 w-4" />
+                  Compact Mode
+                </>
+              )}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem

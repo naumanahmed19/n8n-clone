@@ -14,19 +14,18 @@ export interface NodeStyleConfig {
 export function getNodeBorderClasses(config: NodeStyleConfig): string {
   const { status, selected, disabled } = config;
 
-  if (disabled) return "border-border opacity-50";
-  if (selected)
-    return "border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-900";
+  if (disabled) return "border-border/50 opacity-60";
+  if (selected) return "border-primary ring-1 ring-primary/20";
 
   switch (status) {
     case "running":
-      return "border-blue-300 dark:border-blue-600";
+      return "border-blue-400/60 dark:border-blue-500/60";
     case "success":
-      return "border-green-300 dark:border-green-600";
+      return "border-green-400/60 dark:border-green-500/60";
     case "error":
-      return "border-red-300 dark:border-red-600";
+      return "border-red-400/60 dark:border-red-500/60";
     case "skipped":
-      return "border-border";
+      return "border-border/50";
     default:
       return "border-border";
   }

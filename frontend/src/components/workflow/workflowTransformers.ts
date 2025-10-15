@@ -174,6 +174,8 @@ export function transformWorkflowNodesToReactFlow(
         ? "chat"
         : node.type === "image-preview"
         ? "image-preview"
+        : node.type === "annotation"
+        ? "annotation"
         : "custom";
 
     // Build the base node

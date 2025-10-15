@@ -1,5 +1,6 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { useCopyPasteStore, useWorkflowStore } from '@/stores'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useCopyPasteStore, useReactFlowUIStore, useWorkflowStore } from '@/stores'
 import { useReactFlow } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import React, { ReactNode, useCallback } from 'react'
@@ -203,6 +204,9 @@ export function BaseNodeWrapper({
   
   // Get execution state from store for toolbar
   const { executionState } = useWorkflowStore()
+  
+  // Get compact mode from UI store
+  const { compactMode } = useReactFlowUIStore()
 
   // Handle double-click to open properties dialog
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -227,18 +231,144 @@ export function BaseNodeWrapper({
   const nodeOutputs = data.outputs || (showOutputHandle ? ['main'] : [])
   const isTrigger = data.executionCapability === 'trigger'
 
+  // Calculate node width based on compact mode
+  const effectiveCollapsedWidth = compactMode ? 'auto' : collapsedWidth
+  const effectiveExpandedWidth = compactMode ? '280px' : expandedWidth
+
   // Compact view (collapsed)
   if (!isExpanded) {
+    // Wrap with tooltip when in compact mode
+    if (compactMode) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div>
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <div className="relative">
+                    <div
+                      onDoubleClick={handleDoubleClick}
+                      className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
+                        getNodeStatusClasses(data.status, selected, data.disabled)
+                      } ${className}`}
+                      style={{ width: effectiveCollapsedWidth }}
+                    >
+                      {/* Dynamic Handles */}
+                      <NodeHandles
+                        inputs={nodeInputs}
+                        outputs={nodeOutputs}
+                        disabled={data.disabled}
+                        isTrigger={isTrigger}
+                        hoveredOutput={hoveredOutput}
+                        onOutputMouseEnter={setHoveredOutput}
+                        onOutputMouseLeave={() => setHoveredOutput(null)}
+                        onOutputClick={handleOutputClick}
+                        readOnly={isReadOnly}
+                      />
+
+                      {/* Node Toolbar - Always show like CustomNode */}
+                      <NodeToolbarContent
+                        nodeId={id}
+                        nodeType={data.nodeType}
+                        nodeLabel={data.label}
+                        disabled={data.disabled}
+                        isExecuting={nodeExecutionState.isExecuting}
+                        hasError={nodeExecutionState.hasError}
+                        hasSuccess={nodeExecutionState.hasSuccess}
+                        executionError={nodeExecutionState.executionError}
+                        workflowExecutionStatus={executionState.status}
+                        onExecute={handleExecuteNode}
+                        onRetry={handleRetryNode}
+                        onToggleDisabled={handleToggleDisabled}
+                      />
+
+                      {/* Render custom content or NodeContent with icon, or default header */}
+                      {customContent ? (
+                        customContent
+                      ) : nodeConfig ? (
+                        <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
+                          <NodeIcon 
+                            config={nodeConfig}
+                            isExecuting={nodeExecutionState.isExecuting}
+                          />
+                          {!compactMode && (
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-sm font-medium truncate">{data.label}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Compact Header */}
+                          <NodeHeader
+                            label={data.label}
+                            headerInfo={headerInfo}
+                            icon={Icon ? { Icon, iconColor } : undefined}
+                            isExpanded={false}
+                            canExpand={canExpand && !!expandedContent}
+                            onToggleExpand={handleToggleExpandClick}
+                            isExecuting={nodeExecutionState.isExecuting}
+                          />
+                          
+                          {/* Optional collapsed content */}
+                          {collapsedContent && (
+                            <div className="px-3 pb-3">
+                              {collapsedContent}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Custom metadata below node (e.g., NodeMetadata component) */}
+                    {customMetadata && (
+                      <div className="mt-1">
+                        {customMetadata}
+                      </div>
+                    )}
+                  </div>
+                </ContextMenuTrigger>
+                
+                <NodeContextMenu
+                  onOpenProperties={handleOpenProperties}
+                  onExecute={handleExecuteFromContext}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDelete}
+                  onToggleLock={handleToggleLock}
+                  onCopy={copy || undefined}
+                  onCut={cut || undefined}
+                  onPaste={paste || undefined}
+                  onUngroup={isInGroup ? handleUngroup : undefined}
+                  isLocked={!!data.locked}
+                  readOnly={isReadOnly}
+                  canCopy={canCopy}
+                  canPaste={canPaste}
+                  isInGroup={isInGroup}
+                />
+              </ContextMenu>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="font-medium">{data.label}</p>
+            {headerInfo && (
+              <p className="text-xs text-muted-foreground">{headerInfo}</p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    // No compact mode - return without tooltip
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className="relative">
             <div
               onDoubleClick={handleDoubleClick}
-              className={`relative bg-card rounded-lg border-2 shadow-md transition-all duration-200 ${
+              className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
                 getNodeStatusClasses(data.status, selected, data.disabled)
               } ${className}`}
-              style={{ width: collapsedWidth }}
+              style={{ width: effectiveCollapsedWidth }}
             >
               {/* Dynamic Handles */}
               <NodeHandles
@@ -273,14 +403,16 @@ export function BaseNodeWrapper({
               {customContent ? (
                 customContent
               ) : nodeConfig ? (
-                <div className="flex items-center gap-2 p-3">
+                <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
                   <NodeIcon 
                     config={nodeConfig}
                     isExecuting={nodeExecutionState.isExecuting}
                   />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-medium truncate">{data.label}</span>
-                  </div>
+                  {!compactMode && (
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate">{data.label}</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -341,10 +473,10 @@ export function BaseNodeWrapper({
         <div className="relative">
           <div
             onDoubleClick={handleDoubleClick}
-            className={`relative bg-card rounded-lg border-2 shadow-lg transition-all duration-200 ${
+            className={`relative bg-card rounded-lg border shadow-lg transition-all duration-200 hover:shadow-xl ${
               getNodeStatusClasses(data.status, selected, data.disabled)
             } ${className}`}
-            style={{ width: expandedWidth }}
+            style={{ width: effectiveExpandedWidth }}
           >
             {/* Dynamic Handles */}
             <NodeHandles

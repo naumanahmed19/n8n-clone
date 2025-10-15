@@ -1,23 +1,7 @@
-ReactFlow Dark Theme Overrides
+/* ReactFlow Dark Theme Overrides */
 
-/* Controls buttons in dark mode */
-.dark .react-flow__controls {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.dark .react-flow__controls-button {
-  background: hsl(var(--card));
-  border-color: hsl(var(--border));
-  color: hsl(var(--foreground));
-}
-
-.dark .react-flow__controls-button:hover {
-  background: hsl(var(--accent));
-}
-
-.dark .react-flow__controls-button svg {
-  fill: hsl(var(--foreground));
-}
+/* Note: Custom WorkflowControls now use shadcn UI styles */
+/* Legacy React Flow control styles are no longer needed */
 
 /* MiniMap in dark mode */
 .dark .react-flow__minimap {
@@ -143,8 +127,7 @@ ReactFlow Dark Theme Overrides
 .react-flow__node-group.selectable.selected {
   outline: none !important;
   box-shadow: 0px 3.54px 4.55px 0px #00000005, 0px 3.54px 4.55px 0px #0000000d,
-    0px 0.51px 1.01px 0px #0000001a,
-    0px 0px 0px 2px rgba(0, 0, 0, 0.1);
+    0px 0.51px 1.01px 0px #0000001a, 0px 0px 0px 2px rgba(0, 0, 0, 0.1);
 }
 
 .react-flow__node-group.active {
@@ -346,4 +329,151 @@ ReactFlow Dark Theme Overrides
   width: 6px;
   height: 6px;
   border-radius: 1px;
+}
+
+/* Annotation Node Styles */
+.react-flow__node-annotation {
+  font-size: 12px;
+  background: transparent;
+  border: none;
+}
+
+/* Annotation Node */
+.react-flow__node-annotation {
+  font-size: 16px;
+  width: 200px;
+  color: #683bfa;
+  position: absolute;
+  box-shadow: none;
+  font-family: monospace;
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  padding: 4px 8px;
+}
+
+.react-flow__node-annotation .annotation-content {
+  padding: 10px;
+  display: flex;
+}
+
+.react-flow__node-annotation .annotation-level {
+  margin-right: 4px;
+}
+
+.react-flow__node-annotation .annotation-arrow {
+  position: absolute;
+  font-size: 24px;
+}
+
+/* Annotation display mode (not editing) */
+.annotation-display {
+  color: #683bfa;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", sans-serif;
+  min-height: 24px;
+  padding: 8px;
+  cursor: pointer;
+  user-select: none;
+  overflow-wrap: break-word;
+}
+
+.annotation-display:hover {
+  background: rgba(104, 59, 250, 0.05);
+  border-radius: 2px;
+}
+
+/* Markdown content in annotation */
+.annotation-display p:last-child {
+  margin-bottom: 0;
+}
+
+.annotation-display code {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.9em;
+}
+
+.annotation-display pre code {
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.annotation-display ul,
+.annotation-display ol {
+  margin-left: 4px;
+}
+
+.annotation-display li {
+  margin-bottom: 2px;
+}
+
+.annotation-display h1,
+.annotation-display h2,
+.annotation-display h3,
+.annotation-display h4,
+.annotation-display h5,
+.annotation-display h6 {
+  line-height: 1.3;
+}
+
+.annotation-display h1:first-child,
+.annotation-display h2:first-child,
+.annotation-display h3:first-child,
+.annotation-display h4:first-child,
+.annotation-display h5:first-child,
+.annotation-display h6:first-child,
+.annotation-display p:first-child {
+  margin-top: 0;
+}
+
+/* Annotation textarea (editing mode) */
+.annotation-textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  border: 2px solid #683bfa;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  background: white;
+  color: #683bfa;
+  font-family: "Courier New", Courier, monospace;
+  outline: none;
+}
+
+.annotation-textarea:focus {
+  border-color: #683bfa;
+  box-shadow: 0 0 0 3px rgba(104, 59, 250, 0.2);
+}
+
+.annotation-textarea::placeholder {
+  color: #683bfa;
+  opacity: 0.5;
+}
+
+/* Dark mode styles */
+.dark .annotation-display {
+  color: #8b6bff;
+}
+
+.dark .annotation-display:hover {
+  background: rgba(139, 107, 255, 0.05);
+}
+
+.dark .annotation-textarea {
+  color: #8b6bff;
+  border-color: #8b6bff;
+  background: rgba(139, 107, 255, 0.05);
+}
+
+.dark .annotation-textarea:focus {
+  box-shadow: 0 0 0 3px rgba(139, 107, 255, 0.2);
+}
+
+.dark .annotation-textarea::placeholder {
+  color: #8b6bff;
 }

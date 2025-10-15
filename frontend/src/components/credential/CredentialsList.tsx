@@ -4,38 +4,36 @@ import { CredentialTypeSelection } from '@/components/credential/CredentialTypeS
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useSidebarContext } from '@/contexts'
 import { credentialService } from '@/services'
 import { useCredentialStore } from '@/stores'
 import { Credential, CredentialType } from '@/types'
 import {
-    Activity,
-    Calendar,
-    Clock,
-    Copy,
-    Edit,
-    Key as KeyIcon,
-    MoreHorizontal,
-    Plus,
-    Shield,
-    TestTube,
-    Trash2,
-    Users
+  Activity,
+  Calendar,
+  Clock,
+  Copy,
+  Edit,
+  Key as KeyIcon,
+  MoreHorizontal,
+  Plus,
+  Shield,
+  TestTube,
+  Trash2,
+  Users
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 interface CredentialsListProps {}
 
 export function CredentialsList({}: CredentialsListProps) {
-  const navigate = useNavigate()
   const {
     credentialsData: credentials,
     setCredentialsData: setCredentials,
@@ -179,10 +177,6 @@ export function CredentialsList({}: CredentialsListProps) {
       // Still close sidebar on success
       handleCloseDetailSidebar()
     }
-  }
-
-  const handleCredentialClick = (credentialId: string) => {
-    navigate(`/credentials/${credentialId}`)
   }
 
   const fetchCredentials = async (forceRefresh = false) => {
@@ -385,13 +379,21 @@ export function CredentialsList({}: CredentialsListProps) {
   return (
     <>
       <div className="divide-y">
-        {filteredCredentials.map((credential) => (
-          <div
-            key={credential.id}
-            className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer group transition-colors"
-            onClick={() => handleCredentialClick(credential.id)}
-          >
-            <div className="px-4 py-3">
+        {filteredCredentials.map((credential) => {
+          const isOAuthCredential = credential.type === 'googleSheetsOAuth2'
+          
+          return (
+            <div
+              key={credential.id}
+              className={`hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group transition-colors ${!isOAuthCredential ? 'cursor-pointer' : ''}`}
+              onClick={() => {
+                if (!isOAuthCredential) {
+                  console.log('Credential clicked:', credential.name)
+                  handleEditCredential(credential)
+                }
+              }}
+            >
+              <div className="px-4 py-3">
               {/* Header Row - Name and Action Button */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -512,7 +514,8 @@ export function CredentialsList({}: CredentialsListProps) {
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Detail sidebar is managed by the main app sidebar */}

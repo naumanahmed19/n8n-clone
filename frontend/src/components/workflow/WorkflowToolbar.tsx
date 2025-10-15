@@ -3,19 +3,18 @@ import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
@@ -23,42 +22,30 @@ import { useEnvironmentStore } from '@/stores/environment'
 import { getEnvironmentLabel } from '@/types/environment'
 import { validateImportFile } from '@/utils/errorHandling'
 import {
-    AlertCircle,
-    ChevronDown,
-    Download,
-    Loader2,
-    MoreHorizontal,
-    Package,
-    Redo,
-    RefreshCw,
-    Save,
-    Settings,
-    Terminal,
-    Undo,
-    Upload
+  AlertCircle,
+  ChevronDown,
+  Download,
+  Loader2,
+  MoreHorizontal,
+  Package,
+  RefreshCw,
+  Save,
+  Settings,
+  Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ManualDeploymentDialog } from '../environment/ManualDeploymentDialog'
 import { UpdateEnvironmentDialog } from '../environment/UpdateEnvironmentDialog'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
-import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
   // Minimal props - mainly for workflow operations that need main workflow store
-  canUndo: boolean
-  canRedo: boolean
-  onUndo: () => void
-  onRedo: () => void
   onSave: () => void
 }
 
 export function WorkflowToolbar({
   // Minimal props - mainly for workflow operations that need main workflow store
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
   onSave,
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
@@ -201,28 +188,6 @@ export function WorkflowToolbar({
     }
   }
 
-  const handleExecuteWorkflow = async (triggerNodeId?: string) => {
-    if (!workflow) return
-    
-    try {
-      // If workflow is not saved (has unsaved changes), save it first
-      if (isDirty || mainTitleDirty) {
-        await handleSave()
-        // Wait a moment for save to complete
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-      
-      // Execute the workflow using the workflow store's executeNode method
-      const { executeNode } = useWorkflowStore.getState()
-      await executeNode(triggerNodeId || workflow.nodes.find(n => 
-        n.type.includes('trigger') || 
-        ['manual-trigger', 'webhook-trigger', 'schedule-trigger', 'workflow-called'].includes(n.type)
-      )?.id || '', undefined, 'workflow')
-    } catch (error) {
-      console.error('Failed to execute workflow:', error)
-    }
-  }
-
   return (
     <TooltipProvider>
       <ConfirmDialog />
@@ -265,74 +230,12 @@ export function WorkflowToolbar({
             />
           </div>
 
-          <Separator orientation="vertical" className="h-4" />
-
-          {/* Edit actions */}
-          <div className="flex items-center space-x-0.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onUndo}
-                  disabled={!canUndo}
-                  className="h-7 w-7 p-0"
-                >
-                  <Undo className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Undo (Ctrl+Z)</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRedo}
-                  disabled={!canRedo}
-                  className="h-7 w-7 p-0"
-                >
-                  <Redo className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Redo (Ctrl+Y)</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          {/* Removed Undo/Redo buttons - now available in canvas controls */}
 
       </div>
 
-      {/* Center section - Command Palette and Execute Button */}
+      {/* Center section - Empty (Execute and Add Node moved to bottom controls) */}
       <div className="flex items-center justify-center space-x-2">
-          {/* Execute Button */}
-          <WorkflowExecuteButton 
-            onExecute={handleExecuteWorkflow}
-            disabled={isSaving}
-          />
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => openDialog()}
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 text-xs border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-              >
-                <Terminal className="h-3.5 w-3.5 mr-1.5" />
-                Add Node
-                <kbd className="ml-2 pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Add a node (⌘K)</p>
-            </TooltipContent>
-          </Tooltip>
       </div>
 
       {/* Right section - All controls */}

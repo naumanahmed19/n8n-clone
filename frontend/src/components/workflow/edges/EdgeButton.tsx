@@ -1,8 +1,7 @@
-import { Button } from '@/components/ui/button';
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores';
-import { Trash2 } from 'lucide-react';
-import { CSSProperties, useCallback } from 'react';
 import { EdgeLabelRenderer } from '@xyflow/react';
+import { Plus, Trash2 } from 'lucide-react';
+import { CSSProperties, useCallback } from 'react';
 
 interface EdgeButtonProps {
   x: number;
@@ -85,7 +84,7 @@ export function EdgeButton({
   return (
     <EdgeLabelRenderer>
       <div
-        className="nodrag nopan pointer-events-auto absolute flex gap-1"
+        className="nodrag nopan pointer-events-auto absolute z-50 flex items-center gap-0.5 rounded border bg-card px-0.5 py-0.5 shadow-sm"
         style={{
           transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
           ...style,
@@ -93,22 +92,21 @@ export function EdgeButton({
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
-        <Button
+        <button
           onClick={handleAddClick}
-          size="icon"
-          variant="secondary"
-          className="border h-6 w-6 rounded-xl hover:bg-card shadow-sm"
+          className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          title="Add node"
         >
-          +
-        </Button>
-        <Button
+          <Plus className="h-3 w-3" />
+        </button>
+        <div className="mx-0.5 h-3 w-px bg-border" />
+        <button
           onClick={handleDeleteClick}
-          size="icon"
-          variant="destructive"
-          className="h-6 w-6 rounded-xl shadow-sm"
+          className="flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          title="Delete connection"
         >
           <Trash2 className="h-3 w-3" />
-        </Button>
+        </button>
       </div>
     </EdgeLabelRenderer>
   );

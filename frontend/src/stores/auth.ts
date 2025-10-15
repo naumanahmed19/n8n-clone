@@ -3,6 +3,28 @@ import { AuthState, LoginCredentials, RegisterCredentials } from "@/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+// Helper function to load all user preferences
+const loadAllPreferences = async () => {
+  try {
+    // Load canvas preferences
+    const { useReactFlowUIStore } = await import("./reactFlowUI");
+    await useReactFlowUIStore.getState().loadPreferences();
+
+    // Load theme preferences
+    const { userService } = await import("@/services");
+    const preferences = await userService.getPreferences();
+    if (preferences.theme) {
+      localStorage.setItem("theme", preferences.theme);
+      // Dispatch custom event to notify ThemeProvider
+      window.dispatchEvent(
+        new CustomEvent("theme-loaded", { detail: preferences.theme })
+      );
+    }
+  } catch (error) {
+    console.error("Failed to load user preferences:", error);
+  }
+};
+
 interface AuthActions {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
@@ -41,6 +63,9 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           // Socket authentication will be handled by Layout component
+
+          // Load user preferences after successful login
+          loadAllPreferences();
         } catch (error: any) {
           set({
             user: null,
@@ -68,6 +93,9 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           // Socket authentication will be handled by Layout component
+
+          // Load user preferences after successful registration
+          loadAllPreferences();
         } catch (error: any) {
           set({
             user: null,
@@ -144,6 +172,9 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           });
+
+          // Load user preferences after getting current user
+          loadAllPreferences();
         } catch (error: any) {
           // Clear token from localStorage and apiClient when getCurrentUser fails
           localStorage.removeItem("auth_token");

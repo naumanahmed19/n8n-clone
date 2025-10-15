@@ -8,6 +8,7 @@ export * from "./ExecutionWebSocket";
 export * from "./node";
 export * from "./ProgressTracker";
 export * from "./socket";
+export * from "./user";
 export * from "./variable.service";
 export * from "./workflow";
 export * from "./workflowFile";
