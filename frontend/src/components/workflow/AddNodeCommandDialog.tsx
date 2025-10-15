@@ -61,17 +61,21 @@ export function AddNodeCommandDialog({
   }, [activeNodeTypes])
 
   const handleSelectNode = useCallback((nodeType: NodeType) => {
+    if (!reactFlowInstance) return
+    
     // Calculate position where to add the node
     let nodePosition = { x: 300, y: 300 }
     let parentGroupId: string | undefined = undefined
+    let sourceNodeIdForConnection: string | undefined = undefined
     
-    if (insertionContext && reactFlowInstance) {
+    if (insertionContext) {
       // Check if this is a connection drop (source but no target)
       const isConnectionDrop = insertionContext.sourceNodeId && !insertionContext.targetNodeId
       
       if (isConnectionDrop) {
         // Connection was dropped on canvas - position near the source node
         const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+        sourceNodeIdForConnection = insertionContext.sourceNodeId
         
         if (sourceNode) {
           // Check if source node is in a group
@@ -163,16 +167,36 @@ export function AddNodeCommandDialog({
           }
         }
       }
-    } else if (position) {
-      // Position is already in flow coordinates from openDialog caller
-      // (either from WorkflowEditor's viewport center or from connection drag)
-      nodePosition = position
-    } else if (reactFlowInstance) {
-      // Get center of viewport as fallback
-      nodePosition = reactFlowInstance.screenToFlowPosition({
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-      })
+    } else {
+      // No insertion context - check if there's a selected node to connect from
+      const selectedNodes = reactFlowInstance.getNodes().filter(node => node.selected)
+      
+      if (selectedNodes.length === 1) {
+        // Single node selected - position new node to the right and connect
+        const selectedNode = selectedNodes[0]
+        sourceNodeIdForConnection = selectedNode.id
+        
+        // Check if selected node is in a group
+        if (selectedNode.parentId) {
+          parentGroupId = selectedNode.parentId
+        }
+        
+        // Position to the right of the selected node
+        nodePosition = {
+          x: selectedNode.position.x + 250,
+          y: selectedNode.position.y
+        }
+      } else if (position) {
+        // Position is already in flow coordinates from openDialog caller
+        // (either from WorkflowEditor's viewport center or from connection drag)
+        nodePosition = position
+      } else {
+        // Get center of viewport as fallback
+        nodePosition = reactFlowInstance.screenToFlowPosition({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        })
+      }
     }
 
     // Initialize parameters with defaults from node type
@@ -206,12 +230,15 @@ export function AddNodeCommandDialog({
     // Add the node first
     addNode(newNode)
 
-    // If we have insertion context, create connections
-    if (insertionContext && insertionContext.sourceNodeId) {
-      // Check if this is inserting between nodes or just connecting from source
-      const isInsertingBetweenNodes = insertionContext.targetNodeId && insertionContext.targetNodeId !== ''
+    // Create connection if we have a source node
+    // Either from insertionContext (drag from connector) or sourceNodeIdForConnection (selected node)
+    const effectiveSourceNodeId = insertionContext?.sourceNodeId || sourceNodeIdForConnection
+    
+    if (effectiveSourceNodeId) {
+      // Check if this is inserting between nodes (only possible with insertionContext)
+      const isInsertingBetweenNodes = insertionContext?.targetNodeId && insertionContext.targetNodeId !== ''
       
-      if (isInsertingBetweenNodes) {
+      if (isInsertingBetweenNodes && insertionContext) {
         // First, find and remove the existing connection between source and target
         const existingConnection = workflow?.connections.find(
           conn =>
@@ -228,17 +255,17 @@ export function AddNodeCommandDialog({
 
       // Create connection from source node to new node
       const sourceConnection: WorkflowConnection = {
-        id: `${insertionContext.sourceNodeId}-${newNode.id}-${Date.now()}`,
-        sourceNodeId: insertionContext.sourceNodeId,
-        sourceOutput: insertionContext.sourceOutput || 'main',
+        id: `${effectiveSourceNodeId}-${newNode.id}-${Date.now()}`,
+        sourceNodeId: effectiveSourceNodeId,
+        sourceOutput: insertionContext?.sourceOutput || 'main',
         targetNodeId: newNode.id,
         targetInput: 'main',
       }
 
       addConnection(sourceConnection)
 
-      // If there's a target node specified, wire the new node to it
-      if (isInsertingBetweenNodes && insertionContext.targetNodeId) {
+      // If there's a target node specified (inserting between nodes), wire the new node to it
+      if (isInsertingBetweenNodes && insertionContext?.targetNodeId) {
         const targetConnection: WorkflowConnection = {
           id: `${newNode.id}-${insertionContext.targetNodeId}-${Date.now() + 1}`,
           sourceNodeId: newNode.id,
@@ -250,6 +277,15 @@ export function AddNodeCommandDialog({
         addConnection(targetConnection)
       }
     }
+
+    // Auto-select the newly added node
+    // First, deselect all existing nodes
+    reactFlowInstance.setNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        selected: node.id === newNode.id, // Only select the new node
+      }))
+    )
 
     onOpenChange(false)
   }, [addNode, addConnection, removeConnection, updateNode, workflow, onOpenChange, position, reactFlowInstance, insertionContext])
