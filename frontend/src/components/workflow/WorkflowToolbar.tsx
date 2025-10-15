@@ -3,18 +3,18 @@ import { useConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
@@ -22,17 +22,17 @@ import { useEnvironmentStore } from '@/stores/environment'
 import { getEnvironmentLabel } from '@/types/environment'
 import { validateImportFile } from '@/utils/errorHandling'
 import {
-    AlertCircle,
-    ChevronDown,
-    Download,
-    Loader2,
-    MoreHorizontal,
-    Package,
-    RefreshCw,
-    Save,
-    Settings,
-    Terminal,
-    Upload
+  AlertCircle,
+  ChevronDown,
+  Download,
+  Loader2,
+  MoreHorizontal,
+  Package,
+  RefreshCw,
+  Save,
+  Settings,
+  Terminal,
+  Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ManualDeploymentDialog } from '../environment/ManualDeploymentDialog'

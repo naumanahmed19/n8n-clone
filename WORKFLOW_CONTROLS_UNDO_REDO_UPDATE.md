@@ -7,6 +7,7 @@ Undo and Redo buttons have been successfully added to the workflow controls, com
 ## ✨ New Addition
 
 ### Undo/Redo Buttons
+
 - **Undo** (↶) - Reverts the last action (Ctrl+Z)
 - **Redo** (↷) - Reapplies the last undone action (Ctrl+Y)
 - Smart disabled state when no actions available
@@ -16,6 +17,7 @@ Undo and Redo buttons have been successfully added to the workflow controls, com
 ## 🎨 Updated Visual Layout
 
 ### Complete Control Set (Left to Right)
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ [▶] | [+] | [-] [+] [⊡] | [↶] [↷] | [💬]              │
@@ -27,6 +29,7 @@ Undo and Redo buttons have been successfully added to the workflow controls, com
 ```
 
 ### Control Groups
+
 1. **Execution**: Execute/Play button
 2. **Node Management**: Add node button
 3. **View Controls**: Zoom out, zoom in, fit view
@@ -39,21 +42,21 @@ Undo and Redo buttons have been successfully added to the workflow controls, com
 
 ```tsx
 interface WorkflowControlsProps {
-  children?: ReactNode
-  className?: string
-  showAddNode?: boolean    // Default: true
-  showExecute?: boolean    // Default: true
-  showUndoRedo?: boolean   // Default: true (NEW!)
+  children?: ReactNode;
+  className?: string;
+  showAddNode?: boolean; // Default: true
+  showExecute?: boolean; // Default: true
+  showUndoRedo?: boolean; // Default: true (NEW!)
 }
 ```
 
 ### Usage in WorkflowCanvas
 
 ```tsx
-<WorkflowControls 
-  showAddNode={!isDisabled} 
+<WorkflowControls
+  showAddNode={!isDisabled}
   showExecute={!isDisabled}
-  showUndoRedo={!isDisabled}  // NEW!
+  showUndoRedo={!isDisabled} // NEW!
 >
   <AddAnnotationControl />
 </WorkflowControls>
@@ -62,6 +65,7 @@ interface WorkflowControlsProps {
 ### Store Integration
 
 The undo/redo buttons connect directly to the workflow store:
+
 - `undo()` - Undo function from store
 - `redo()` - Redo function from store
 - `canUndo()` - Check if undo is available
@@ -83,6 +87,7 @@ The undo/redo buttons connect directly to the workflow store:
 ## 🎯 Benefits
 
 ### User Experience
+
 - ✅ All essential tools in one place
 - ✅ No need to reach for toolbar
 - ✅ Quick access to undo/redo
@@ -90,6 +95,7 @@ The undo/redo buttons connect directly to the workflow store:
 - ✅ Smart button states (disabled when not available)
 
 ### Developer Experience
+
 - ✅ Easy to show/hide control groups
 - ✅ Integrated with existing store
 - ✅ Consistent component API
@@ -97,15 +103,16 @@ The undo/redo buttons connect directly to the workflow store:
 
 ## 🔐 Access Control
 
-| Mode | Execute | Add Node | Zoom | Undo/Redo | Custom |
-|------|---------|----------|------|-----------|---------|
-| **Edit Mode** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Read-Only** | ❌ | ❌ | ✅ | ❌ | Depends |
-| **Execution** | ❌ | ❌ | ✅ | ❌ | Depends |
+| Mode          | Execute | Add Node | Zoom | Undo/Redo | Custom  |
+| ------------- | ------- | -------- | ---- | --------- | ------- |
+| **Edit Mode** | ✅      | ✅       | ✅   | ✅        | ✅      |
+| **Read-Only** | ❌      | ❌       | ✅   | ❌        | Depends |
+| **Execution** | ❌      | ❌       | ✅   | ❌        | Depends |
 
 ## 💡 Usage Examples
 
 ### Full Controls (Default)
+
 ```tsx
 <WorkflowControls>
   <AddAnnotationControl />
@@ -113,17 +120,15 @@ The undo/redo buttons connect directly to the workflow store:
 ```
 
 ### Read-Only Mode
+
 ```tsx
-<WorkflowControls 
-  showAddNode={false} 
-  showExecute={false}
-  showUndoRedo={false}
->
+<WorkflowControls showAddNode={false} showExecute={false} showUndoRedo={false}>
   {/* Only zoom controls */}
 </WorkflowControls>
 ```
 
 ### Hide Only Undo/Redo
+
 ```tsx
 <WorkflowControls showUndoRedo={false}>
   <AddAnnotationControl />
@@ -133,6 +138,7 @@ The undo/redo buttons connect directly to the workflow store:
 ## 🧪 Testing
 
 ### Functionality
+
 - [x] Undo button reverts last action
 - [x] Redo button reapplies undone action
 - [x] Buttons disabled when no actions available
@@ -142,6 +148,7 @@ The undo/redo buttons connect directly to the workflow store:
 - [x] Accessibility (ARIA labels, focus states)
 
 ### Integration
+
 - [x] Works alongside other controls
 - [x] Hidden in read-only mode
 - [x] Proper spacing and dividers
@@ -150,11 +157,13 @@ The undo/redo buttons connect directly to the workflow store:
 ## 📊 Impact
 
 ### Before This Update
+
 - Undo/redo only in toolbar (top of screen)
 - Required mouse travel to top
 - Not accessible in read-only scenarios
 
 ### After This Update
+
 - Undo/redo available on canvas
 - Quick access without leaving workflow
 - Consistent with other canvas controls
@@ -180,11 +189,13 @@ The undo/redo buttons connect directly to the workflow store:
 ## 📁 Files Modified
 
 1. **WorkflowControls.tsx**
+
    - Added undo/redo buttons
    - Added `showUndoRedo` prop
    - Integrated with workflow store
 
 2. **WorkflowCanvas.tsx**
+
    - Passes `showUndoRedo={!isDisabled}`
    - Hides in read-only/execution mode
 
@@ -196,6 +207,7 @@ The undo/redo buttons connect directly to the workflow store:
 ## 🚀 Future Considerations
 
 Potential enhancements:
+
 - [ ] Show undo/redo history preview on hover
 - [ ] Display action names in tooltips ("Undo: Add Node")
 - [ ] Keyboard shortcut indicators in UI
@@ -206,6 +218,7 @@ Potential enhancements:
 ## 📝 Summary
 
 The workflow controls now provide a complete set of editing tools directly on the canvas:
+
 - ✅ Execution control
 - ✅ Node management
 - ✅ View controls
@@ -217,6 +230,7 @@ This creates a professional, efficient workflow editing experience that rivals m
 ## 🎯 Conclusion
 
 With the addition of undo/redo buttons, the workflow controls now offer:
+
 1. **Completeness**: All essential tools in one place
 2. **Efficiency**: Quick access without toolbar trips
 3. **Consistency**: Unified control panel design
