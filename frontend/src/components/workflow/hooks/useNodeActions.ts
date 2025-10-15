@@ -1,6 +1,6 @@
+import { useDetachNodes } from "@/hooks/workflow";
 import { useAddNodeDialogStore } from "@/stores/addNodeDialog";
 import { useWorkflowStore } from "@/stores/workflow";
-import { useDetachNodes } from "@/hooks/workflow";
 
 export function useNodeActions(nodeId: string) {
   const executeNode = useWorkflowStore((state) => state.executeNode);

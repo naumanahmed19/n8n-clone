@@ -1,9 +1,9 @@
 import {
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuSeparator,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
 } from '@/components/ui/context-menu'
-import { Copy, Scissors, Clipboard, Lock, Play, Settings, Trash2, Unlock, Ungroup } from 'lucide-react'
+import { Clipboard, Copy, Lock, Play, Scissors, Settings, Trash2, Ungroup, Unlock } from 'lucide-react'
 
 interface NodeContextMenuProps {
   onOpenProperties: () => void

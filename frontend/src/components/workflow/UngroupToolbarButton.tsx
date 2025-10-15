@@ -1,6 +1,6 @@
+import { useDetachNodes } from '@/hooks/workflow'
 import { Ungroup } from 'lucide-react'
 import { memo } from 'react'
-import { useDetachNodes } from '@/hooks/workflow'
 
 interface UngroupToolbarButtonProps {
   nodeId: string
