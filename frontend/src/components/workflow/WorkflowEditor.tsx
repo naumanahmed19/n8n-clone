@@ -127,6 +127,7 @@ export function WorkflowEditor({
         showControls,
         backgroundVariant,
         setReactFlowInstance,
+        reactFlowInstance,
     } = useReactFlowUIStore()
 
     const {
@@ -148,8 +149,20 @@ export function WorkflowEditor({
     // Memoize empty delete handler to prevent recreation on every render
     const emptyDeleteHandler = useCallback(() => {}, [])
 
-    // Memoize add node handler
-    const handleAddNode = useCallback(() => openDialog(), [openDialog])
+    // Memoize add node handler - calculate viewport center position
+    const handleAddNode = useCallback(() => {
+        if (reactFlowInstance) {
+            // Calculate center of viewport
+            const viewportCenter = reactFlowInstance.screenToFlowPosition({
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2,
+            })
+            openDialog(viewportCenter)
+        } else {
+            // Fallback if instance not ready
+            openDialog()
+        }
+    }, [openDialog, reactFlowInstance])
 
     // Keyboard shortcuts - disabled in read-only mode
     useKeyboardShortcuts({

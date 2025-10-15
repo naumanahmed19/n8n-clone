@@ -164,13 +164,9 @@ export function AddNodeCommandDialog({
         }
       }
     } else if (position) {
-      // If position is provided (e.g., from output connector click), use it
-      // Convert screen coordinates to flow coordinates
-      if (reactFlowInstance) {
-        nodePosition = reactFlowInstance.screenToFlowPosition(position)
-      } else {
-        nodePosition = position
-      }
+      // Position is already in flow coordinates from openDialog caller
+      // (either from WorkflowEditor's viewport center or from connection drag)
+      nodePosition = position
     } else if (reactFlowInstance) {
       // Get center of viewport as fallback
       nodePosition = reactFlowInstance.screenToFlowPosition({

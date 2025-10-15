@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import { useReactFlow } from '@xyflow/react'
-import { Box, Maximize2, MessageSquare, Minus, Plus, Redo, Undo } from 'lucide-react'
+import { Box, Maximize2, MessageSquare, Plus, Redo, Undo, ZoomIn, ZoomOut } from 'lucide-react'
 import { ReactNode, useCallback, useState } from 'react'
 import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 
@@ -227,7 +227,7 @@ export function WorkflowControls({ className, showAddNode = true, showExecute = 
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             aria-label="Zoom Out"
           >
-            <Minus className="h-4 w-4" />
+            <ZoomOut className="h-4 w-4" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">
@@ -243,7 +243,7 @@ export function WorkflowControls({ className, showAddNode = true, showExecute = 
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             aria-label="Zoom In"
           >
-            <Plus className="h-4 w-4" />
+            <ZoomIn className="h-4 w-4" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">
