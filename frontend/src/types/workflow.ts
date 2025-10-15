@@ -16,6 +16,7 @@ export interface WorkflowNode {
     width?: number;
     height?: number;
     backgroundColor?: string;
+    borderColor?: string;
     [key: string]: any;
   };
 }
