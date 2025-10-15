@@ -1,11 +1,12 @@
 ﻿import { useReactFlowAutoLayout } from '@/hooks/useReactFlowAutoLayout'
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
-import { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
+import { Background, BackgroundVariant, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
 import { useMemo, useRef } from 'react'
 import { AddAnnotationControl } from './AddAnnotationControl'
 import SelectedNodesToolbar from './SelectedNodesToolbar'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
+import { WorkflowControls } from './WorkflowControls'
 import { WorkflowEdge } from './edges'
 import './reactflow-theme.css'
 
@@ -231,9 +232,9 @@ export function WorkflowCanvas({
                     {/* Toolbar for grouping selected nodes */}
                     {!isDisabled && <SelectedNodesToolbar />}
                     {showControls && (
-                        <Controls>
+                        <WorkflowControls showAddNode={!isDisabled}>
                             <AddAnnotationControl />
-                        </Controls>
+                        </WorkflowControls>
                     )}
                     {showMinimap && (
                         <MiniMap

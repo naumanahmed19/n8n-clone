@@ -1,23 +1,7 @@
-ReactFlow Dark Theme Overrides
+/* ReactFlow Dark Theme Overrides */
 
-/* Controls buttons in dark mode */
-.dark .react-flow__controls {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.dark .react-flow__controls-button {
-  background: hsl(var(--card));
-  border-color: hsl(var(--border));
-  color: hsl(var(--foreground));
-}
-
-.dark .react-flow__controls-button:hover {
-  background: hsl(var(--accent));
-}
-
-.dark .react-flow__controls-button svg {
-  fill: hsl(var(--foreground));
-}
+/* Note: Custom WorkflowControls now use shadcn UI styles */
+/* Legacy React Flow control styles are no longer needed */
 
 /* MiniMap in dark mode */
 .dark .react-flow__minimap {

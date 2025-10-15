@@ -1,8 +1,9 @@
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
-import { ControlButton, useReactFlow } from '@xyflow/react'
+import { useReactFlow } from '@xyflow/react'
 import { MessageSquare } from 'lucide-react'
 import { useCallback } from 'react'
+import { WorkflowControlButton } from './WorkflowControls'
 
 export function AddAnnotationControl() {
   const { screenToFlowPosition, setNodes } = useReactFlow()
@@ -55,8 +56,10 @@ export function AddAnnotationControl() {
   }, [screenToFlowPosition, setNodes, workflow, updateWorkflow, setDirty, saveToHistory])
 
   return (
-    <ControlButton onClick={addAnnotation} title="Add Annotation">
-      <MessageSquare />
-    </ControlButton>
+    <WorkflowControlButton
+      onClick={addAnnotation}
+      title="Add Annotation"
+      icon={<MessageSquare className="h-4 w-4" />}
+    />
   )
 }
