@@ -2,6 +2,7 @@ export interface WorkflowNode {
   id: string;
   type: string;
   name: string;
+  description?: string;
   parameters: Record<string, any>;
   position: { x: number; y: number };
   credentials?: string[];

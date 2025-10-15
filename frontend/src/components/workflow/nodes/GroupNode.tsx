@@ -4,8 +4,8 @@ import {
   NodeToolbar,
   useReactFlow,
 } from '@xyflow/react'
-import { Trash2, Ungroup } from 'lucide-react'
-import { memo, useCallback } from 'react'
+import { Edit, Trash2, Ungroup } from 'lucide-react'
+import { memo, useCallback, useState } from 'react'
 
 import {
   ContextMenu,
@@ -16,15 +16,30 @@ import {
 } from '@/components/ui/context-menu'
 import { useDetachNodes } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
+import { GroupEditDialog } from '../GroupEditDialog'
 
-function GroupNode({ id }: NodeProps) {
+function GroupNode({ id, data }: NodeProps) {
   const detachNodes = useDetachNodes()
   const { getNodes, setNodes } = useReactFlow()
-  const { saveToHistory, setDirty } = useWorkflowStore()
+  const { saveToHistory, setDirty, workflow } = useWorkflowStore()
+  const [showEditDialog, setShowEditDialog] = useState(false)
+
+  // Get the group node data from workflow store
+  const workflowNode = workflow?.nodes.find(n => n.id === id)
+  const groupName: string = workflowNode?.name || (data?.label as string) || ''
+  const groupDescription: string | undefined = workflowNode?.description
 
   // Check if this group has child nodes
   const childNodes = getNodes().filter((node) => node.parentId === id)
   const hasChildNodes = childNodes.length > 0
+
+  const onEdit = useCallback(() => {
+    setShowEditDialog(true)
+  }, [])
+
+  const onDoubleClick = useCallback(() => {
+    setShowEditDialog(true)
+  }, [])
 
   const onDetach = useCallback(() => {
     const childNodeIds = childNodes.map((node) => node.id)
@@ -65,41 +80,72 @@ function GroupNode({ id }: NodeProps) {
   }, [id, getNodes, setNodes, saveToHistory, setDirty])
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div className="group-node">
-          <NodeResizer />
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className="group-node" onDoubleClick={onDoubleClick}>
+            <NodeResizer />
+            
+            {/* Group Label - only show if name is not empty */}
+            {groupName && (
+              <div className="group-node-label-container">
+                <div className="group-node-label">
+                  {groupName}
+                </div>
+                {groupDescription && (
+                  <div className="group-node-description">
+                    {groupDescription}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {hasChildNodes && (
+              <NodeToolbar className="nodrag">
+                <button className="group-node-button" onClick={onDetach}>
+                  Ungroup
+                </button>
+              </NodeToolbar>
+            )}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-48">
+          <ContextMenuItem
+            onClick={onEdit}
+            className="cursor-pointer"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Group
+          </ContextMenuItem>
           {hasChildNodes && (
-            <NodeToolbar className="nodrag">
-              <button className="group-node-button" onClick={onDetach}>
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                onClick={onDetach}
+                className="cursor-pointer"
+              >
+                <Ungroup className="mr-2 h-4 w-4" />
                 Ungroup
-              </button>
-            </NodeToolbar>
+              </ContextMenuItem>
+            </>
           )}
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        {hasChildNodes && (
-          <>
-            <ContextMenuItem
-              onClick={onDetach}
-              className="cursor-pointer"
-            >
-              <Ungroup className="mr-2 h-4 w-4" />
-              Ungroup
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-          </>
-        )}
-        <ContextMenuItem
-          onClick={onDeleteGroup}
-          className="cursor-pointer text-red-600 focus:text-red-600"
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Group
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            onClick={onDeleteGroup}
+            className="cursor-pointer text-red-600 focus:text-red-600"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Group
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      
+      <GroupEditDialog 
+        open={showEditDialog} 
+        onOpenChange={setShowEditDialog}
+        groupId={id}
+      />
+    </>
   )
 }
 

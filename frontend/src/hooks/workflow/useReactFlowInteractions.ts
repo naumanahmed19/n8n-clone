@@ -610,16 +610,24 @@ export function useReactFlowInteractions() {
       const existingNode = existingNodesMap.get(rfNode.id);
 
       if (rfNode.type === "group") {
-        // Handle group nodes - create or update
-        const groupNode: WorkflowNode = {
-          id: rfNode.id,
-          type: "group",
-          name: `Group ${rfNode.id}`,
-          parameters: rfNode.data || {},
-          position: rfNode.position,
-          disabled: false,
-          style: rfNode.style as any, // Cast to compatible type
-        };
+        // Handle group nodes - preserve existing data and merge with current state
+        const existingGroupNode = existingNodesMap.get(rfNode.id);
+        const groupNode: WorkflowNode = existingGroupNode
+          ? {
+              ...existingGroupNode, // Preserve all existing fields (name, description, etc.)
+              position: rfNode.position,
+              style: rfNode.style as any,
+            }
+          : {
+              // New group node
+              id: rfNode.id,
+              type: "group",
+              name: "",
+              parameters: rfNode.data || {},
+              position: rfNode.position,
+              disabled: false,
+              style: rfNode.style as any,
+            };
         updatedNodes.push(groupNode);
       } else if (existingNode) {
         // Update existing regular node with current position and parent info

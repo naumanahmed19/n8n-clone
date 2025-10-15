@@ -37,6 +37,12 @@ export function useWorkflowOperations() {
   const buildWorkflowData = useCallback(
     (currentWorkflow: Workflow) => {
       const triggers = extractTriggersFromNodes(currentWorkflow.nodes);
+
+      console.log(
+        "🔍 FRONTEND: Workflow nodes before building:",
+        JSON.stringify(currentWorkflow.nodes, null, 2)
+      );
+
       return {
         name: workflowTitle || currentWorkflow.name,
         description: currentWorkflow.description,

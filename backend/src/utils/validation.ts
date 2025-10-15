@@ -25,6 +25,7 @@ export const nodeSchema = z.object({
   id: z.string(),
   type: z.string(),
   name: z.string(),
+  description: z.string().optional(),
   parameters: z.record(z.any()),
   position: z.object({
     x: z.number(),
@@ -33,6 +34,17 @@ export const nodeSchema = z.object({
   credentials: z.array(z.string()).optional(),
   disabled: z.boolean(),
   mockData: z.any().optional(),
+  mockDataPinned: z.boolean().optional(),
+  locked: z.boolean().optional(),
+  // Group node properties
+  parentId: z.string().optional(),
+  extent: z
+    .union([
+      z.literal("parent"),
+      z.tuple([z.number(), z.number(), z.number(), z.number()]),
+    ])
+    .optional(),
+  style: z.record(z.any()).optional(),
 });
 
 export const connectionSchema = z.object({

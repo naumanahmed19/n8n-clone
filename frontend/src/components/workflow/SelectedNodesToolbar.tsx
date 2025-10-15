@@ -99,7 +99,8 @@ export default function SelectedNodesToolbar() {
           updatedWorkflowNodes.push({
             id: rfNode.id,
             type: 'group',
-            name: `Group ${rfNode.id}`,
+            name: '',
+            description: undefined,
             parameters: rfNode.data || {},
             position: rfNode.position,
             disabled: false,
