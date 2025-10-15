@@ -1,4 +1,3 @@
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import * as React from "react";
@@ -7,7 +6,6 @@ export interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
   error?: string;
-  field?: any;
   disabled?: boolean;
   language?: "javascript" | "python";
   placeholder?: string;
@@ -17,7 +15,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = "",
   onChange,
   error,
-  field,
   disabled,
   language = "javascript",
   placeholder,
@@ -142,79 +139,47 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   };
 
-  const fieldId = React.useId();
-  const label = field?.displayName || "Code";
-  const description = field?.description;
-  const required = field?.required;
-
   return (
-    <div className="flex flex-col space-y-2 h-full">
-      {label && (
-        <Label
-          htmlFor={fieldId}
-          className={cn(
-            "flex items-center gap-1",
-            error && "text-destructive"
-          )}
-        >
-          {label}
-          {required && <span className="text-destructive">*</span>}
-        </Label>
+    <div
+      className={cn(
+        "relative flex min-h-[400px] border rounded-md overflow-hidden",
+        error && "border-destructive"
       )}
-
-      {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
-      )}
-
-      <div
-        className={cn(
-          "relative flex-1 flex min-h-[400px] border rounded-md overflow-hidden",
-          error && "border-destructive"
-        )}
-      >
-        {/* Line Numbers */}
-        <div className="flex-shrink-0 select-none bg-muted/30 border-r px-2 py-3 text-xs font-mono text-muted-foreground leading-6">
-          {internalValue.split("\n").map((_, index) => (
-            <div key={index + 1} className="text-right min-w-[2rem]">
-              {index + 1}
-            </div>
-          ))}
-        </div>
-
-        {/* Text Area */}
-        <div className="flex-1 relative">
-          <Textarea
-            id={fieldId}
-            className={cn(
-              "font-mono text-sm leading-6 resize-none h-full min-h-0 w-full border-0",
-              "focus:ring-2 focus:ring-ring focus:ring-offset-0 focus:border-0",
-              "transition-colors pl-3 rounded-none",
-              error && "focus:ring-destructive"
-            )}
-            value={internalValue}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-            disabled={disabled}
-            placeholder={placeholder || `Enter ${language} code...`}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${fieldId}-error` : undefined}
-            style={{
-              outline: "none",
-              boxShadow: "none",
-            }}
-          />
-          <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-            {language === "python" ? "Python" : "JavaScript"}
+    >
+      {/* Line Numbers */}
+      <div className="flex-shrink-0 select-none bg-muted/30 border-r px-2 py-3 text-xs font-mono text-muted-foreground leading-6">
+        {internalValue.split("\n").map((_, index) => (
+          <div key={index + 1} className="text-right min-w-[2rem]">
+            {index + 1}
           </div>
-        </div>
+        ))}
       </div>
 
-      {error && (
-        <p id={`${fieldId}-error`} className="text-sm font-medium text-destructive">
-          {error}
-        </p>
-      )}
+      {/* Text Area */}
+      <div className="flex-1 relative">
+        <Textarea
+          className={cn(
+            "font-mono text-sm leading-6 resize-none h-full min-h-0 w-full border-0",
+            "focus:ring-2 focus:ring-ring focus:ring-offset-0 focus:border-0",
+            "transition-colors pl-3 rounded-none",
+            error && "focus:ring-destructive"
+          )}
+          value={internalValue}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          spellCheck={false}
+          disabled={disabled}
+          placeholder={placeholder || `Enter ${language} code...`}
+          aria-invalid={!!error}
+          style={{
+            outline: "none",
+            boxShadow: "none",
+          }}
+        />
+        <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+          {language === "python" ? "Python" : "JavaScript"}
+        </div>
+      </div>
     </div>
   );
 };
