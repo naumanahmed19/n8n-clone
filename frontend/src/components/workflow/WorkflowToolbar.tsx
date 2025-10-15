@@ -31,14 +31,12 @@ import {
   RefreshCw,
   Save,
   Settings,
-  Terminal,
   Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ManualDeploymentDialog } from '../environment/ManualDeploymentDialog'
 import { UpdateEnvironmentDialog } from '../environment/UpdateEnvironmentDialog'
 import { WorkflowBreadcrumb } from './WorkflowBreadcrumb'
-import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
@@ -190,28 +188,6 @@ export function WorkflowToolbar({
     }
   }
 
-  const handleExecuteWorkflow = async (triggerNodeId?: string) => {
-    if (!workflow) return
-    
-    try {
-      // If workflow is not saved (has unsaved changes), save it first
-      if (isDirty || mainTitleDirty) {
-        await handleSave()
-        // Wait a moment for save to complete
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-      
-      // Execute the workflow using the workflow store's executeNode method
-      const { executeNode } = useWorkflowStore.getState()
-      await executeNode(triggerNodeId || workflow.nodes.find(n => 
-        n.type.includes('trigger') || 
-        ['manual-trigger', 'webhook-trigger', 'schedule-trigger', 'workflow-called'].includes(n.type)
-      )?.id || '', undefined, 'workflow')
-    } catch (error) {
-      console.error('Failed to execute workflow:', error)
-    }
-  }
-
   return (
     <TooltipProvider>
       <ConfirmDialog />
@@ -258,33 +234,8 @@ export function WorkflowToolbar({
 
       </div>
 
-      {/* Center section - Command Palette and Execute Button */}
+      {/* Center section - Empty (Execute and Add Node moved to bottom controls) */}
       <div className="flex items-center justify-center space-x-2">
-          {/* Execute Button */}
-          <WorkflowExecuteButton 
-            onExecute={handleExecuteWorkflow}
-            disabled={isSaving}
-          />
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => openDialog()}
-                variant="outline"
-                size="sm"
-                className="h-7 px-3 text-xs border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-              >
-                <Terminal className="h-3.5 w-3.5 mr-1.5" />
-                Add Node
-                <kbd className="ml-2 pointer-events-none inline-flex h-4 select-none items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Add a node (⌘K)</p>
-            </TooltipContent>
-          </Tooltip>
       </div>
 
       {/* Right section - All controls */}

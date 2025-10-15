@@ -3,7 +3,6 @@ import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { Background, BackgroundVariant, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
 import { useMemo, useRef } from 'react'
-import { AddAnnotationControl } from './AddAnnotationControl'
 import SelectedNodesToolbar from './SelectedNodesToolbar'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowControls } from './WorkflowControls'
@@ -221,8 +220,8 @@ export function WorkflowCanvas({
                     panOnDrag={panOnDrag}
                     zoomOnScroll={zoomOnScroll}
                     connectionLineStyle={connectionLineStyle}
-                    translateExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
-                    nodeExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
+                    // translateExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
+                    // nodeExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
                     attributionPosition="bottom-left"
                     selectNodesOnDrag={false}
                     multiSelectionKeyCode="Shift"
@@ -233,9 +232,7 @@ export function WorkflowCanvas({
                     {/* Toolbar for grouping selected nodes */}
                     {!isDisabled && <SelectedNodesToolbar />}
                     {showControls && (
-                        <WorkflowControls showAddNode={!isDisabled} showExecute={!isDisabled} showUndoRedo={!isDisabled}>
-                            <AddAnnotationControl />
-                        </WorkflowControls>
+                        <WorkflowControls showAddNode={!isDisabled} showExecute={!isDisabled} showUndoRedo={!isDisabled} />
                     )}
                     {showMinimap && (
                         <MiniMap
