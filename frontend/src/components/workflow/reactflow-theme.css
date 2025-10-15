@@ -346,3 +346,107 @@ ReactFlow Dark Theme Overrides
   height: 6px;
   border-radius: 1px;
 }
+
+/* Annotation Node Styles */
+.react-flow__node-annotation {
+  font-size: 12px;
+  background: transparent;
+  border: none;
+}
+
+/* Annotation Node */
+.react-flow__node-annotation {
+  font-size: 16px;
+  width: 200px;
+  color: #683bfa;
+  position: absolute;
+  box-shadow: none;
+  font-family: monospace;
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  padding: 4px 8px;
+}
+
+.react-flow__node-annotation .annotation-content {
+  padding: 10px;
+  display: flex;
+}
+
+.react-flow__node-annotation .annotation-level {
+  margin-right: 4px;
+}
+
+.react-flow__node-annotation .annotation-arrow {
+  position: absolute;
+  font-size: 24px;
+}
+
+/* Annotation display mode (not editing) */
+.annotation-display {
+  color: #683bfa;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+  font-family: monospace;
+  min-height: 24px;
+  padding: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.annotation-display:hover {
+  background: rgba(104, 59, 250, 0.05);
+  border-radius: 2px;
+}
+
+/* Annotation textarea (editing mode) */
+.annotation-textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  border: 2px solid #683bfa;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  background: white;
+  color: #683bfa;
+  font-family: monospace;
+  outline: none;
+}
+
+.annotation-textarea:focus {
+  border-color: #683bfa;
+  box-shadow: 0 0 0 3px rgba(104, 59, 250, 0.2);
+}
+
+.annotation-textarea::placeholder {
+  color: #683bfa;
+  opacity: 0.5;
+}
+
+/* Dark mode styles */
+.dark .annotation-display {
+  color: #8b6bff;
+}
+
+.dark .annotation-display:hover {
+  background: rgba(139, 107, 255, 0.05);
+}
+
+.dark .annotation-textarea {
+  color: #8b6bff;
+  border-color: #8b6bff;
+  background: rgba(139, 107, 255, 0.05);
+}
+
+.dark .annotation-textarea:focus {
+  box-shadow: 0 0 0 3px rgba(139, 107, 255, 0.2);
+}
+
+.dark .annotation-textarea::placeholder {
+  color: #8b6bff;
+}
+

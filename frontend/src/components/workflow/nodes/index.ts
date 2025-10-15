@@ -12,3 +12,6 @@ export { ImagePreviewNode } from "./ImagePreviewNode";
 
 // Group node
 export { default as GroupNode } from "./GroupNode";
+
+// Annotation node
+export { default as AnnotationNode } from "./AnnotationNode";

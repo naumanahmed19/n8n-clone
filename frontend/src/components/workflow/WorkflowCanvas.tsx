@@ -3,6 +3,7 @@ import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
 import { useMemo, useRef } from 'react'
+import { AddAnnotationControl } from './AddAnnotationControl'
 import SelectedNodesToolbar from './SelectedNodesToolbar'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
@@ -228,7 +229,11 @@ export function WorkflowCanvas({
                 >
                     {/* Toolbar for grouping selected nodes */}
                     {!isDisabled && <SelectedNodesToolbar />}
-                    {showControls && <Controls />}
+                    {showControls && (
+                        <Controls>
+                            <AddAnnotationControl />
+                        </Controls>
+                    )}
                     {showMinimap && (
                         <MiniMap
                             nodeColor={isDarkMode ? '#334155' : '#e2e8f0'}
