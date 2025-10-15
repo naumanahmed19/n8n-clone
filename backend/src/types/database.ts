@@ -39,6 +39,15 @@ export interface Node {
   position: { x: number; y: number }
   credentials?: string[]
   disabled: boolean
+  // Group node properties
+  parentId?: string
+  extent?: 'parent' | [number, number, number, number]
+  style?: {
+    width?: number
+    height?: number
+    backgroundColor?: string
+    [key: string]: any
+  }
 }
 
 export interface Connection {

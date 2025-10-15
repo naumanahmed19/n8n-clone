@@ -9,6 +9,15 @@ export interface WorkflowNode {
   locked?: boolean;
   mockData?: any;
   mockDataPinned?: boolean;
+  // Group node properties
+  parentId?: string;
+  extent?: 'parent' | [number, number, number, number];
+  style?: {
+    width?: number;
+    height?: number;
+    backgroundColor?: string;
+    [key: string]: any;
+  };
 }
 
 export interface WorkflowConnection {

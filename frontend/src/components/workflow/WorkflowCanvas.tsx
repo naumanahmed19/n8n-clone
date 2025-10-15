@@ -2,9 +2,10 @@
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { useMemo, useRef } from 'react'
-import { ReactFlow,  Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from '@xyflow/react'
+import { ReactFlow,  Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes, SelectionMode } from '@xyflow/react'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
+import SelectedNodesToolbar from './SelectedNodesToolbar'
 import './reactflow-theme.css'
 
 // Define edge types once outside component to prevent re-creation
@@ -212,10 +213,13 @@ export function WorkflowCanvas({
                     connectionLineStyle={connectionLineStyle}
                     fitView
                     attributionPosition="bottom-left"
-                    edgeUpdaterRadius={isDisabled ? 0 : 10}
-                    connectionRadius={isDisabled ? 0 : 20}
+                    selectNodesOnDrag={false}
+                    multiSelectionKeyCode="Shift"
+                    selectionMode={SelectionMode.Partial}
                     defaultEdgeOptions={defaultEdgeOptions}
                 >
+                    {/* Toolbar for grouping selected nodes */}
+                    {!isDisabled && <SelectedNodesToolbar />}
                     {showControls && <Controls />}
                     {showMinimap && (
                         <MiniMap

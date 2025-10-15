@@ -124,13 +124,43 @@ export function useReactFlowInteractions() {
     const { workflow, updateWorkflow } = useWorkflowStore.getState();
     if (workflow && reactFlowInstance) {
       const currentNodes = reactFlowInstance.getNodes();
-      const updatedNodes = workflow.nodes.map((wfNode) => {
-        const rfNode = currentNodes.find((n) => n.id === wfNode.id);
-        if (rfNode && rfNode.position) {
-          return { ...wfNode, position: rfNode.position };
+      
+      // Create a map of existing workflow nodes
+      const existingNodesMap = new Map(workflow.nodes.map(n => [n.id, n]));
+      
+      // Update existing nodes and add new group nodes
+      const updatedNodes: WorkflowNode[] = [];
+      
+      currentNodes.forEach((rfNode) => {
+        const existingNode = existingNodesMap.get(rfNode.id);
+        
+        if (rfNode.type === 'group') {
+          // Handle group nodes
+          const baseGroupNode = existingNode || {
+            id: rfNode.id,
+            type: 'group',
+            name: `Group ${rfNode.id}`,
+            parameters: {},
+            position: rfNode.position,
+            disabled: false,
+          };
+          
+          updatedNodes.push({
+            ...baseGroupNode,
+            position: rfNode.position,
+            style: rfNode.style as any,
+          });
+        } else if (existingNode) {
+          // Update existing regular nodes
+          updatedNodes.push({
+            ...existingNode,
+            position: rfNode.position,
+            parentId: rfNode.parentId || undefined,
+            extent: (rfNode.extent || undefined) as any,
+          });
         }
-        return wfNode;
       });
+      
       updateWorkflow({ nodes: updatedNodes });
     }
   }, [reactFlowInstance]);
@@ -446,18 +476,44 @@ export function useReactFlowInteractions() {
     // Get current React Flow nodes
     const currentNodes = reactFlowInstance?.getNodes() || [];
 
-    // Update Zustand workflow with current React Flow positions
+    // Create a map of existing workflow nodes for quick lookup
+    const existingNodesMap = new Map(workflow.nodes.map(n => [n.id, n]));
+
+    // Build updated nodes array
+    const updatedNodes: WorkflowNode[] = [];
+
+    currentNodes.forEach((rfNode) => {
+      const existingNode = existingNodesMap.get(rfNode.id);
+
+      if (rfNode.type === 'group') {
+        // Handle group nodes - create or update
+        const groupNode: WorkflowNode = {
+          id: rfNode.id,
+          type: 'group',
+          name: `Group ${rfNode.id}`,
+          parameters: rfNode.data || {},
+          position: rfNode.position,
+          disabled: false,
+          style: rfNode.style as any, // Cast to compatible type
+        };
+        updatedNodes.push(groupNode);
+      } else if (existingNode) {
+        // Update existing regular node with current position and parent info
+        updatedNodes.push({
+          ...existingNode,
+          position: rfNode.position,
+          parentId: rfNode.parentId || undefined,
+          extent: (rfNode.extent || undefined) as any, // Cast to compatible type
+        });
+      }
+      // Note: We skip nodes that don't exist in workflow and aren't groups
+      // These might be temporary UI nodes that shouldn't be persisted
+    });
+
+    // Update Zustand workflow with synced nodes
     const updatedWorkflow = {
       ...workflow,
-      nodes: workflow.nodes.map((node) => {
-        const reactFlowNode = currentNodes.find(
-          (rfNode) => rfNode.id === node.id
-        );
-        if (reactFlowNode && reactFlowNode.position) {
-          return { ...node, position: reactFlowNode.position };
-        }
-        return node;
-      }),
+      nodes: updatedNodes,
     };
 
     setWorkflow(updatedWorkflow);

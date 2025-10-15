@@ -135,7 +135,29 @@ export function transformWorkflowNodesToReactFlow(
   const nodeTypeMap = createNodeTypeMap(availableNodeTypes);
   const lastResultsMap = createNodeResultsMap(lastExecutionResult);
 
-  return workflowNodes.map((node) => {
+  // Sort nodes so that group nodes come before their children
+  // This is important for React Flow to properly establish parent-child relationships
+  const sortedNodes = [...workflowNodes].sort((a, b) => {
+    // Group nodes should come first
+    if (a.type === 'group' && b.type !== 'group') return -1;
+    if (a.type !== 'group' && b.type === 'group') return 1;
+    
+    // If both are groups or both are regular nodes, maintain original order
+    return 0;
+  });
+
+  const result = sortedNodes.map((node) => {
+    // Handle group nodes separately
+    if (node.type === 'group') {
+      return {
+        id: node.id,
+        type: 'group',
+        position: node.position,
+        style: node.style || {},
+        data: node.parameters || {},
+      };
+    }
+
     const nodeResult = getNodeResult(node.id);
     const nodeStatus = getNodeExecutionStatus(
       node.id,
@@ -154,7 +176,8 @@ export function transformWorkflowNodesToReactFlow(
         ? "image-preview"
         : "custom";
 
-    return {
+    // Build the base node
+    const reactFlowNode: any = {
       id: node.id,
       type: reactFlowNodeType,
       position: node.position,
@@ -178,7 +201,20 @@ export function transformWorkflowNodesToReactFlow(
         executionCapability: nodeTypeDefinition?.executionCapability,
       },
     };
+
+    // Add parent/child relationship properties if they exist
+    if (node.parentId) {
+      reactFlowNode.parentId = node.parentId;
+      reactFlowNode.expandParent = true; // Important: allows child to expand parent size
+    }
+    if (node.extent) {
+      reactFlowNode.extent = node.extent;
+    }
+
+    return reactFlowNode;
   });
+  
+  return result;
 }
 
 /**

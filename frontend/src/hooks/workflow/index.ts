@@ -50,3 +50,4 @@ export { useReactFlowInteractions } from "./useReactFlowInteractions";
 export { useWorkflowEditorUI } from "./useWorkflowEditorUI";
 export { useWorkflowOperations } from "./useWorkflowOperations";
 export { useCopyPaste } from "./useCopyPaste";
+export { default as useDetachNodes } from "./useDetachNodes";
