@@ -51,7 +51,7 @@ export const CodeNode: NodeDefinition = {
     {
       displayName: "Code",
       name: "code",
-      type: "string",
+      type: "custom",
       required: true,
       default: `// Access input data via 'items' variable
 // Each item is available as items[0], items[1], etc.
@@ -66,6 +66,10 @@ const results = items.map(item => ({
 
 return results;`,
       description: "The code to execute. Access input items via 'items' variable and return the results.",
+      component: "CodeEditor",
+      componentProps: {
+        language: "javascript",
+      },
       displayOptions: {
         show: {
           language: ["javascript"],
@@ -75,7 +79,7 @@ return results;`,
     {
       displayName: "Code",
       name: "code",
-      type: "string",
+      type: "custom",
       required: true,
       default: `# Access input data via 'items' variable
 # Each item is a dictionary with the data
@@ -94,6 +98,10 @@ for item in items:
 # Output must be JSON
 print(json.dumps(results))`,
       description: "The Python code to execute. Access input items via 'items' variable and print JSON results.",
+      component: "CodeEditor",
+      componentProps: {
+        language: "python",
+      },
       displayOptions: {
         show: {
           language: ["python"],

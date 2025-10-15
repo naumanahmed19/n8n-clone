@@ -6,9 +6,19 @@ The Code node allows you to execute JavaScript or Python code to process data in
 
 - **JavaScript Execution**: Execute JavaScript code in a secure VM sandbox using vm2
 - **Python Execution**: Execute Python code using Python 3
+- **Enhanced Code Editor**: Custom code editor with line numbers, syntax-aware indentation, and auto-completion
 - **Secure Sandboxing**: JavaScript code runs in an isolated environment with limited access
 - **Error Handling**: Configurable error handling with `continueOnFail` option
 - **Timeout Control**: Set execution timeout to prevent long-running code
+
+## Code Editor Features
+
+The Code node includes a custom code editor with:
+- **Line Numbers**: Easy navigation and reference
+- **Auto-Indentation**: Smart indentation based on code structure
+- **Bracket Matching**: Auto-completion for brackets in JavaScript
+- **Tab Support**: Press Tab to insert proper indentation
+- **Language-Specific**: Different indentation rules for Python (4 spaces) and JavaScript (2 spaces)
 
 ## Usage
 
