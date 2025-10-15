@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
-import { useCallback, useEffect, useMemo } from 'react'
 import { useReactFlow } from '@xyflow/react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 interface AddNodeCommandDialogProps {
   open: boolean

@@ -1,9 +1,11 @@
 # Add Node to Group via Connection Dialog - Fix
 
 ## Problem
+
 When adding a node via the connection dialog (command dialog) by dragging from a node that's inside a group, the new node was not being added to the same group.
 
 ## Root Cause
+
 The `AddNodeCommandDialog` component's `handleSelectNode` function wasn't checking if the source node had a `parentId` (indicating it's in a group) and therefore wasn't setting the same `parentId` on the newly created node.
 
 ## Solution
@@ -11,33 +13,36 @@ The `AddNodeCommandDialog` component's `handleSelectNode` function wasn't checki
 ### Changes Made
 
 #### 1. Track Parent Group ID
+
 Added `parentGroupId` variable to track if the source node is in a group:
 
 ```typescript
-let parentGroupId: string | undefined = undefined
+let parentGroupId: string | undefined = undefined;
 ```
 
 #### 2. Detect Source Node's Parent
+
 When positioning the new node, check if the source node has a `parentId`:
 
 ```typescript
-const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId);
 
 if (sourceNode) {
   // Check if source node is in a group
   if (sourceNode.parentId) {
-    parentGroupId = sourceNode.parentId
+    parentGroupId = sourceNode.parentId;
   }
-  
+
   // Position to the right of the source node
   nodePosition = {
     x: sourceNode.position.x + 200,
-    y: sourceNode.position.y
-  }
+    y: sourceNode.position.y,
+  };
 }
 ```
 
 #### 3. Add New Node to Same Group
+
 When creating the new node, include `parentId` and `extent` if the source was in a group:
 
 ```typescript
@@ -50,11 +55,11 @@ const newNode: WorkflowNode = {
   credentials: [],
   disabled: false,
   // If source node is in a group, add new node to the same group
-  ...(parentGroupId && { 
+  ...(parentGroupId && {
     parentId: parentGroupId,
-    extent: 'parent' as const
+    extent: "parent" as const,
   }),
-}
+};
 ```
 
 ## How It Works
