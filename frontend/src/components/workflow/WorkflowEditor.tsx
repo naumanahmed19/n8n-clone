@@ -27,7 +27,7 @@ import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
-import { ChatInterfaceNode, ImagePreviewNode, GroupNode } from './nodes'
+import { ChatInterfaceNode, GroupNode, ImagePreviewNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {

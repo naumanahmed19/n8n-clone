@@ -1,12 +1,15 @@
 # Node Grouping Persistence Fix
 
 ## Problem
+
 Nodes were not staying inside groups after saving and reloading the workflow. The group properties (`parentId`, `extent`, `style`) were being stripped by the backend.
 
 ## Root Cause
+
 The Zod validation schema in `backend/src/types/api.ts` did not include the group node properties. When validating the workflow data during save, Zod was stripping these properties because they weren't defined in the schema.
 
 ## Solution
+
 Added the missing properties to the node schema in the Zod validation:
 
 ### File: `backend/src/types/api.ts`

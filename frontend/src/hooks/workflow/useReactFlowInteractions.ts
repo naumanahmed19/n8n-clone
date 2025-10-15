@@ -124,27 +124,27 @@ export function useReactFlowInteractions() {
     const { workflow, updateWorkflow } = useWorkflowStore.getState();
     if (workflow && reactFlowInstance) {
       const currentNodes = reactFlowInstance.getNodes();
-      
+
       // Create a map of existing workflow nodes
-      const existingNodesMap = new Map(workflow.nodes.map(n => [n.id, n]));
-      
+      const existingNodesMap = new Map(workflow.nodes.map((n) => [n.id, n]));
+
       // Update existing nodes and add new group nodes
       const updatedNodes: WorkflowNode[] = [];
-      
+
       currentNodes.forEach((rfNode) => {
         const existingNode = existingNodesMap.get(rfNode.id);
-        
-        if (rfNode.type === 'group') {
+
+        if (rfNode.type === "group") {
           // Handle group nodes
           const baseGroupNode = existingNode || {
             id: rfNode.id,
-            type: 'group',
+            type: "group",
             name: `Group ${rfNode.id}`,
             parameters: {},
             position: rfNode.position,
             disabled: false,
           };
-          
+
           updatedNodes.push({
             ...baseGroupNode,
             position: rfNode.position,
@@ -160,7 +160,7 @@ export function useReactFlowInteractions() {
           });
         }
       });
-      
+
       updateWorkflow({ nodes: updatedNodes });
     }
   }, [reactFlowInstance]);
@@ -477,7 +477,7 @@ export function useReactFlowInteractions() {
     const currentNodes = reactFlowInstance?.getNodes() || [];
 
     // Create a map of existing workflow nodes for quick lookup
-    const existingNodesMap = new Map(workflow.nodes.map(n => [n.id, n]));
+    const existingNodesMap = new Map(workflow.nodes.map((n) => [n.id, n]));
 
     // Build updated nodes array
     const updatedNodes: WorkflowNode[] = [];
@@ -485,11 +485,11 @@ export function useReactFlowInteractions() {
     currentNodes.forEach((rfNode) => {
       const existingNode = existingNodesMap.get(rfNode.id);
 
-      if (rfNode.type === 'group') {
+      if (rfNode.type === "group") {
         // Handle group nodes - create or update
         const groupNode: WorkflowNode = {
           id: rfNode.id,
-          type: 'group',
+          type: "group",
           name: `Group ${rfNode.id}`,
           parameters: rfNode.data || {},
           position: rfNode.position,

@@ -43,11 +43,11 @@
  *
  */
 
+export { useCopyPaste } from "./useCopyPaste";
+export { default as useDetachNodes } from "./useDetachNodes";
 export { useExecutionControls } from "./useExecutionControls";
 export { useExecutionPanelData } from "./useExecutionPanelData";
 export { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 export { useReactFlowInteractions } from "./useReactFlowInteractions";
 export { useWorkflowEditorUI } from "./useWorkflowEditorUI";
 export { useWorkflowOperations } from "./useWorkflowOperations";
-export { useCopyPaste } from "./useCopyPaste";
-export { default as useDetachNodes } from "./useDetachNodes";

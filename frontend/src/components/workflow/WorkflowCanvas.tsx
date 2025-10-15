@@ -1,11 +1,11 @@
 ﻿import { useReactFlowAutoLayout } from '@/hooks/useReactFlowAutoLayout'
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
+import { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
 import { useMemo, useRef } from 'react'
-import { ReactFlow,  Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes, SelectionMode } from '@xyflow/react'
+import SelectedNodesToolbar from './SelectedNodesToolbar'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
-import SelectedNodesToolbar from './SelectedNodesToolbar'
 import './reactflow-theme.css'
 
 // Define edge types once outside component to prevent re-creation

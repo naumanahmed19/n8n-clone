@@ -11,7 +11,7 @@ export interface WorkflowNode {
   mockDataPinned?: boolean;
   // Group node properties
   parentId?: string;
-  extent?: 'parent' | [number, number, number, number];
+  extent?: "parent" | [number, number, number, number];
   style?: {
     width?: number;
     height?: number;

@@ -133,9 +133,8 @@ ReactFlow Dark Theme Overrides
   background-color: rgba(207, 182, 255, 0.4);
   border: 1px solid #9e86ed;
   border-radius: 8px;
-  box-shadow: 0px 3.54px 4.55px 0px #00000005,
-              0px 3.54px 4.55px 0px #0000000d, 
-              0px 0.51px 1.01px 0px #0000001a;
+  box-shadow: 0px 3.54px 4.55px 0px #00000005, 0px 3.54px 4.55px 0px #0000000d,
+    0px 0.51px 1.01px 0px #0000001a;
 }
 
 .react-flow__node-group.selectable:focus {
@@ -157,8 +156,8 @@ ReactFlow Dark Theme Overrides
   background-color: rgba(120, 85, 200, 0.2);
   border-color: #7d5bd0;
   box-shadow: 0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.05),
-              0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
-              0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
+    0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
+    0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
 }
 
 .dark .react-flow__node-group.selectable:focus {
@@ -204,9 +203,8 @@ ReactFlow Dark Theme Overrides
   font-weight: 500;
   transition: background-color 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
-  box-shadow: 0px 3.54px 4.55px 0px #00000005,
-              0px 3.54px 4.55px 0px #0000000d, 
-              0px 0.51px 1.01px 0px #0000001a;
+  box-shadow: 0px 3.54px 4.55px 0px #00000005, 0px 3.54px 4.55px 0px #0000000d,
+    0px 0.51px 1.01px 0px #0000001a;
 }
 
 .group-node-button:hover {
@@ -227,8 +225,8 @@ ReactFlow Dark Theme Overrides
 
 .dark .group-node-button {
   box-shadow: 0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.05),
-              0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
-              0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
+    0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
+    0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
 }
 
 /* Add gap between adjacent buttons */
@@ -247,4 +245,3 @@ ReactFlow Dark Theme Overrides
   height: 6px;
   border-radius: 1px;
 }
-

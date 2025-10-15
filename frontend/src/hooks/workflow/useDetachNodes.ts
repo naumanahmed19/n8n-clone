@@ -1,19 +1,19 @@
-import { useCallback } from 'react'
-import { useReactFlow } from '@xyflow/react'
-import { useWorkflowStore } from '@/stores'
+import { useWorkflowStore } from "@/stores";
+import { useReactFlow } from "@xyflow/react";
+import { useCallback } from "react";
 
 function useDetachNodes() {
-  const { setNodes, getNodes, getInternalNode } = useReactFlow()
-  const { saveToHistory, setDirty } = useWorkflowStore()
+  const { setNodes, getNodes, getInternalNode } = useReactFlow();
+  const { saveToHistory, setDirty } = useWorkflowStore();
 
   const detachNodes = useCallback(
     (ids: string[], removeParentId?: string) => {
       // Take snapshot for undo/redo
-      saveToHistory('Ungroup nodes')
-      
+      saveToHistory("Ungroup nodes");
+
       const nextNodes = getNodes().map((n) => {
         if (ids.includes(n.id) && n.parentId) {
-          const parentNode = getInternalNode(n.parentId)
+          const parentNode = getInternalNode(n.parentId);
 
           return {
             ...n,
@@ -24,22 +24,22 @@ function useDetachNodes() {
             expandParent: undefined,
             parentId: undefined,
             extent: undefined,
-          }
+          };
         }
-        return n
-      })
+        return n;
+      });
 
       setNodes(
         nextNodes.filter((n) => !removeParentId || n.id !== removeParentId)
-      )
-      
+      );
+
       // Mark workflow as dirty
-      setDirty(true)
+      setDirty(true);
     },
     [setNodes, getNodes, getInternalNode, saveToHistory, setDirty]
-  )
+  );
 
-  return detachNodes
+  return detachNodes;
 }
 
-export default useDetachNodes
+export default useDetachNodes;

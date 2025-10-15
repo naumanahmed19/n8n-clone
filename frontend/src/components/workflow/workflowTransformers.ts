@@ -139,19 +139,19 @@ export function transformWorkflowNodesToReactFlow(
   // This is important for React Flow to properly establish parent-child relationships
   const sortedNodes = [...workflowNodes].sort((a, b) => {
     // Group nodes should come first
-    if (a.type === 'group' && b.type !== 'group') return -1;
-    if (a.type !== 'group' && b.type === 'group') return 1;
-    
+    if (a.type === "group" && b.type !== "group") return -1;
+    if (a.type !== "group" && b.type === "group") return 1;
+
     // If both are groups or both are regular nodes, maintain original order
     return 0;
   });
 
   const result = sortedNodes.map((node) => {
     // Handle group nodes separately
-    if (node.type === 'group') {
+    if (node.type === "group") {
       return {
         id: node.id,
-        type: 'group',
+        type: "group",
         position: node.position,
         style: node.style || {},
         data: node.parameters || {},
@@ -213,7 +213,7 @@ export function transformWorkflowNodesToReactFlow(
 
     return reactFlowNode;
   });
-  
+
   return result;
 }
 

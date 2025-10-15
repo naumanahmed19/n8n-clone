@@ -1,11 +1,11 @@
-import { memo } from 'react'
 import {
   NodeProps,
-  NodeToolbar,
-  useStore,
   NodeResizer,
+  NodeToolbar,
   useReactFlow,
+  useStore,
 } from '@xyflow/react'
+import { memo } from 'react'
 
 import { useDetachNodes } from '@/hooks/workflow'
 

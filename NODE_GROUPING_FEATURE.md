@@ -7,12 +7,14 @@ The node grouping feature allows users to group multiple workflow nodes together
 ## Features
 
 ### 1. **Group Creation**
+
 - Select multiple nodes by holding `Shift` and clicking nodes or dragging a selection box
 - When 2 or more nodes are selected, a "Group selected nodes" button appears
 - Clicking this button creates a group node that contains the selected nodes
 - Grouped nodes maintain their relative positions and connections
 
 ### 2. **Group Node Styling**
+
 - **Light Mode**: Purple background with semi-transparent fill `rgba(207, 182, 255, 0.4)`
 - **Dark Mode**: Darker purple background with semi-transparent fill `rgba(120, 85, 200, 0.2)`
 - Rounded corners (8px border-radius)
@@ -21,11 +23,13 @@ The node grouping feature allows users to group multiple workflow nodes together
 - Hover and selection states with visual feedback
 
 ### 3. **Ungrouping**
+
 - When a group node contains child nodes, an "Ungroup" button appears in the node toolbar
 - Clicking "Ungroup" removes the group and restores nodes to their absolute positions
 - Connections are preserved during ungrouping
 
 ### 4. **Group Resizing**
+
 - Group nodes can be resized using the resize handles at corners and edges
 - Child nodes maintain their relative positions within the group
 - Resize handles are styled to match the group's purple theme
@@ -37,12 +41,14 @@ The node grouping feature allows users to group multiple workflow nodes together
 #### **New Files:**
 
 1. **`GroupNode.tsx`** (`frontend/src/components/workflow/nodes/GroupNode.tsx`)
+
    - Custom node component for group nodes
    - Displays an "Ungroup" button when children are present
    - Uses `NodeResizer` for resizable functionality
    - Checks for child nodes using React Flow's `parentLookup` store
 
 2. **`SelectedNodesToolbar.tsx`** (`frontend/src/components/workflow/SelectedNodesToolbar.tsx`)
+
    - Toolbar that appears when multiple nodes are selected
    - Displays "Group selected nodes" button
    - Filters out already grouped nodes and existing group nodes
@@ -62,10 +68,12 @@ The node grouping feature allows users to group multiple workflow nodes together
 #### **Modified Files:**
 
 1. **`WorkflowEditor.tsx`**
+
    - Added `GroupNode` to the `nodeTypes` configuration
    - Imported `GroupNode` from nodes
 
-3. **`WorkflowCanvas.tsx`**
+2. **`WorkflowCanvas.tsx`**
+
    - Added `SelectedNodesToolbar` component
    - Added `selectNodesOnDrag={false}` to prevent unintended selections
    - Added `multiSelectionKeyCode="Shift"` for multi-selection with Shift key
@@ -74,6 +82,7 @@ The node grouping feature allows users to group multiple workflow nodes together
    - Toolbar only shown when not in read-only or execution mode
 
 3. **`reactflow-theme.css`**
+
    - Added comprehensive group node styling
    - Light and dark mode support
    - Button styling for group/ungroup actions
@@ -81,21 +90,26 @@ The node grouping feature allows users to group multiple workflow nodes together
    - Hover, focus, and selected states
 
 4. **`nodes/index.ts`**
+
    - Exported `GroupNode` component
 
 5. **`hooks/workflow/index.ts`**
+
    - Exported `useDetachNodes` hook
 
 6. **`workflow.ts` (types - frontend)**
+
    - Added `parentId`, `extent`, and `style` properties to `WorkflowNode` interface
    - These properties enable group relationships and styling to be persisted
 
 7. **`database.ts` (types - backend)**
+
    - Updated `Node` interface to include `parentId`, `extent`, and `style` properties
    - Backend now properly accepts and persists group-related data
    - These properties are stored in the database and returned in API responses
 
 8. **`workflowTransformers.ts`**
+
    - Updated `transformWorkflowNodesToReactFlow` to handle group nodes
    - Group nodes are transformed with their style and position
    - **Sorts nodes so group nodes come before their children** (required by React Flow)
@@ -113,6 +127,7 @@ The node grouping feature allows users to group multiple workflow nodes together
 ### Creating a Group:
 
 1. **Select Multiple Nodes:**
+
    - **Option 1**: Click on first node, then hold `Shift` and click on additional nodes
    - **Option 2**: Click and drag to create a selection box around multiple nodes (box selection)
    - Both methods work simultaneously - you can box select some nodes and Shift+click to add more
@@ -125,6 +140,7 @@ The node grouping feature allows users to group multiple workflow nodes together
 ### Ungrouping Nodes:
 
 1. **Select a Group Node:**
+
    - Click on the group node background
 
 2. **Ungroup:**
@@ -135,6 +151,7 @@ The node grouping feature allows users to group multiple workflow nodes together
 ### Resizing Groups:
 
 1. **Select a Group Node:**
+
    - Click on the group node
 
 2. **Resize:**
@@ -146,12 +163,14 @@ The node grouping feature allows users to group multiple workflow nodes together
 ### Group Node Colors:
 
 **Light Mode:**
+
 - Background: `rgba(207, 182, 255, 0.4)`
 - Border: `#9e86ed`
 - Hover Border: `#7d5bd0`
 - Selected Border: `#9e86ed` (2px width)
 
 **Dark Mode:**
+
 - Background: `rgba(120, 85, 200, 0.2)`
 - Border: `#7d5bd0`
 - Hover Border: `#b59ef5`
@@ -234,6 +253,7 @@ Possible improvements for the future:
 ## Troubleshooting
 
 ### Issue: Toolbar doesn't appear when selecting multiple nodes
+
 - **Solution**: Try these methods:
   - Click and drag on the canvas background to draw a selection box around nodes
   - Click one node, hold `Shift`, then click other nodes to add them to selection
@@ -241,20 +261,24 @@ Possible improvements for the future:
 - Ensure you're not in read-only or execution mode
 
 ### Issue: Can't select multiple nodes at once
+
 - **Solution**: Make sure you're either:
   - Drawing a selection box by clicking and dragging on the canvas background (not on a node)
   - Holding `Shift` while clicking on additional nodes
 - If `panOnDrag` is enabled, you might need to be more precise with your clicks
 
 ### Issue: Nodes jump when ungrouping
+
 - **Solution**: This is expected behavior as the hook converts relative positions to absolute positions
 - The final position should match where the node was visually
 
 ### Issue: Can't resize group node
+
 - **Solution**: Make sure the group node is selected (click on its background, not child nodes)
 - Resize handles should appear at corners and edges
 
 ### Issue: Groups disappear after saving (FIXED)
+
 - **Solution**: This issue has been resolved! Groups are now properly persisted to the backend
 - The sync functions (`syncToZustand` and `syncPositionsToZustand`) now handle group nodes
 - Group nodes are saved with their `style`, `position`, and relationship properties
@@ -262,6 +286,7 @@ Possible improvements for the future:
 - If you still experience this issue, make sure you're on the latest version of the code
 
 ### Issue: Nodes don't stay inside group after saving/reloading (FIXED)
+
 - **Solution**: This issue has been resolved!
 - The transformer now adds `expandParent: true` to child nodes
 - Group nodes are sorted to appear before their children in the array (required by React Flow)
@@ -269,6 +294,7 @@ Possible improvements for the future:
 - If nodes still appear outside the group, try refreshing the page twice or ungrouping and regrouping
 
 ### Issue: Save button doesn't activate after grouping (FIXED)
+
 - **Solution**: This issue has been resolved!
 - `SelectedNodesToolbar` now syncs group creation to the workflow store
 - The workflow is marked as dirty (`setDirty(true)`) when nodes are grouped
@@ -276,6 +302,7 @@ Possible improvements for the future:
 - Undo/redo snapshot is automatically created
 
 ### Issue: Nodes move out of group when saving (FIXED)
+
 - **Solution**: This issue has been resolved!
 - When grouping, the changes are immediately synced to the Zustand workflow store
 - The workflow store contains the correct `parentId`, `extent`, and `style` properties
@@ -287,29 +314,29 @@ Possible improvements for the future:
 ### Creating a Group Programmatically:
 
 ```typescript
-import { useReactFlow } from '@xyflow/react'
+import { useReactFlow } from "@xyflow/react";
 
-const { setNodes, getNodesBounds } = useReactFlow()
-const GROUP_PADDING = 25
+const { setNodes, getNodesBounds } = useReactFlow();
+const GROUP_PADDING = 25;
 
 // Select nodes to group
-const nodesToGroup = nodes.filter(n => selectedIds.includes(n.id))
-const bounds = getNodesBounds(nodesToGroup)
+const nodesToGroup = nodes.filter((n) => selectedIds.includes(n.id));
+const bounds = getNodesBounds(nodesToGroup);
 
 // Create group node
 const groupNode = {
   id: `group_${Date.now()}`,
-  type: 'group',
+  type: "group",
   position: { x: bounds.x, y: bounds.y },
   style: {
     width: bounds.width + GROUP_PADDING * 2,
     height: bounds.height + GROUP_PADDING * 2,
   },
   data: {},
-}
+};
 
 // Update child nodes with relative positions
-const updatedNodes = nodes.map(node => {
+const updatedNodes = nodes.map((node) => {
   if (selectedIds.includes(node.id)) {
     return {
       ...node,
@@ -317,14 +344,14 @@ const updatedNodes = nodes.map(node => {
         x: node.position.x - bounds.x + GROUP_PADDING,
         y: node.position.y - bounds.y + GROUP_PADDING,
       },
-      extent: 'parent',
+      extent: "parent",
       parentId: groupNode.id,
-    }
+    };
   }
-  return node
-})
+  return node;
+});
 
-setNodes([groupNode, ...updatedNodes])
+setNodes([groupNode, ...updatedNodes]);
 ```
 
 ## References
