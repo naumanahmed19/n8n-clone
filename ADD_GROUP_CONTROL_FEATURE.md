@@ -30,19 +30,19 @@ Added group creation functionality to the main control bar:
 ```typescript
 const handleAddGroup = () => {
   // Take snapshot for undo/redo
-  saveToHistory('Add group node')
-  
+  saveToHistory("Add group node");
+
   // Calculate center of viewport
   const viewportCenter = screenToFlowPosition({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
-  })
-  
+  });
+
   // Create group node with default size
-  const groupId = `group_${Date.now()}`
+  const groupId = `group_${Date.now()}`;
   const groupNode = {
     id: groupId,
-    type: 'group',
+    type: "group",
     position: {
       x: viewportCenter.x - 150, // Center the 300px wide group
       y: viewportCenter.y - 100, // Center the 200px tall group
@@ -52,35 +52,38 @@ const handleAddGroup = () => {
       height: 200,
     },
     data: {},
-  }
+  };
 
   // Update React Flow nodes
-  setNodes([...getNodes(), groupNode])
-  
+  setNodes([...getNodes(), groupNode]);
+
   // Sync to Zustand workflow store
   if (workflow) {
     const updatedWorkflowNodes = [
       ...workflow.nodes,
       {
         id: groupId,
-        type: 'group',
-        name: '',
+        type: "group",
+        name: "",
         description: undefined,
         parameters: {},
         position: groupNode.position,
         disabled: false,
         style: groupNode.style as any,
-      }
-    ]
-    
-    updateWorkflow({ nodes: updatedWorkflowNodes })
+      },
+    ];
+
+    updateWorkflow({ nodes: updatedWorkflowNodes });
   }
-}
+};
 ```
 
 **Button Implementation**:
+
 ```tsx
-{/* Add Group */}
+{
+  /* Add Group */
+}
 <button
   onClick={handleAddGroup}
   className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
@@ -88,7 +91,7 @@ const handleAddGroup = () => {
   aria-label="Add Group"
 >
   <Box className="h-4 w-4" />
-</button>
+</button>;
 ```
 
 ### Design Decisions
@@ -124,6 +127,7 @@ The control bar now has this structure:
 ## Related Features
 
 ### Existing Group Features
+
 - **Group Selected Nodes**: Via SelectedNodesToolbar when multiple nodes are selected
 - **Drag to Add**: Drag nodes into existing groups to add them
 - **Resize**: Groups can be resized using corner handles
@@ -131,6 +135,7 @@ The control bar now has this structure:
 - **Ungroup**: Context menu option to break apart groups
 
 ### Integration Points
+
 - **Node Grouping**: Works seamlessly with existing group infrastructure
 - **Undo/Redo**: Fully integrated with history system
 - **Save/Load**: Groups persist correctly to database
@@ -139,17 +144,20 @@ The control bar now has this structure:
 ## Technical Details
 
 ### Dependencies
+
 - **React Flow**: `useReactFlow()` hook for `setNodes`, `getNodes`, `screenToFlowPosition`
 - **Workflow Store**: `useWorkflowStore()` for `updateWorkflow`, `saveToHistory`, `workflow`
 - **Lucide React**: `Box` icon component
 
 ### State Management
+
 1. **Creation**: Group node added to both React Flow state and Zustand store
 2. **Sync**: Both states updated simultaneously to maintain consistency
 3. **History**: Snapshot taken before changes for undo capability
 4. **Dirty Flag**: Workflow marked as modified automatically
 
 ### Default Properties
+
 ```typescript
 {
   id: `group_${Date.now()}`,
@@ -169,6 +177,7 @@ The control bar now has this structure:
 ## User Workflows
 
 ### Scenario 1: Planning a Workflow
+
 1. User starts with empty canvas
 2. Clicks "Add Group" multiple times to create sections
 3. Double-clicks each group to name them ("API Calls", "Data Processing", etc.)
@@ -176,6 +185,7 @@ The control bar now has this structure:
 5. Result: Well-organized workflow from the start
 
 ### Scenario 2: Adding a Section
+
 1. User has existing workflow
 2. Decides to add a new feature section
 3. Clicks "Add Group" to create container
@@ -183,6 +193,7 @@ The control bar now has this structure:
 5. All new nodes automatically go into the new group
 
 ### Scenario 3: Visual Organization
+
 1. User wants to separate workflow into phases
 2. Creates multiple groups to represent phases
 3. Customizes each group with different colors
@@ -227,12 +238,14 @@ The control bar now has this structure:
 ## Comparison with Existing Method
 
 ### SelectedNodesToolbar (Group Selected)
+
 - **Trigger**: Requires selecting multiple nodes first
 - **Result**: Groups the selected nodes together
 - **Size**: Automatically calculated based on selected nodes
 - **Use Case**: Grouping existing nodes
 
 ### WorkflowControls (Add Group)
+
 - **Trigger**: Single button click, no prerequisites
 - **Result**: Creates empty group container
 - **Size**: Fixed default (300×200px), user can resize

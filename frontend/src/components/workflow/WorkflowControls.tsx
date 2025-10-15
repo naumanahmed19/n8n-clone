@@ -1,11 +1,11 @@
-import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
+import { WorkflowNode } from '@/types'
 import { useReactFlow } from '@xyflow/react'
 import { Box, Maximize2, MessageSquare, Minus, Plus, Redo, Undo } from 'lucide-react'
 import { ReactNode, useCallback, useState } from 'react'
 import { WorkflowExecuteButton } from './WorkflowExecuteButton'
-import { WorkflowNode } from '@/types'
 
 interface WorkflowControlsProps {
   className?: string

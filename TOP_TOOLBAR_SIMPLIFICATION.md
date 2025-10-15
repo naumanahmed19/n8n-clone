@@ -9,32 +9,40 @@ Removed the "Add Node" button and "Execute/Play" button from the top WorkflowToo
 ### WorkflowToolbar.tsx
 
 #### 1. **Removed Execute Button**
+
 The WorkflowExecuteButton component that was in the center section has been removed:
 
 **Before:**
+
 ```tsx
-{/* Center section - Command Palette and Execute Button */}
+{
+  /* Center section - Command Palette and Execute Button */
+}
 <div className="flex items-center justify-center space-x-2">
-    {/* Execute Button */}
-    <WorkflowExecuteButton 
-      onExecute={handleExecuteWorkflow}
-      disabled={isSaving}
-    />
-    ...
-</div>
+  {/* Execute Button */}
+  <WorkflowExecuteButton
+    onExecute={handleExecuteWorkflow}
+    disabled={isSaving}
+  />
+  ...
+</div>;
 ```
 
 **After:**
+
 ```tsx
-{/* Center section - Empty (Execute and Add Node moved to bottom controls) */}
-<div className="flex items-center justify-center space-x-2">
-</div>
+{
+  /* Center section - Empty (Execute and Add Node moved to bottom controls) */
+}
+<div className="flex items-center justify-center space-x-2"></div>;
 ```
 
 #### 2. **Removed Add Node Button**
+
 The "Add Node" button with keyboard shortcut display has been removed:
 
 **Before:**
+
 ```tsx
 <Tooltip>
   <TooltipTrigger asChild>
@@ -57,28 +65,31 @@ The "Add Node" button with keyboard shortcut display has been removed:
 </Tooltip>
 ```
 
-**After:** *(Removed entirely)*
+**After:** _(Removed entirely)_
 
 #### 3. **Cleaned Up Unused Imports**
+
 Removed imports that are no longer needed:
 
 ```typescript
 // Removed
-import { Terminal } from 'lucide-react'
-import { WorkflowExecuteButton } from './WorkflowExecuteButton'
+import { Terminal } from "lucide-react";
+import { WorkflowExecuteButton } from "./WorkflowExecuteButton";
 ```
 
 #### 4. **Removed Unused Function**
+
 Removed the `handleExecuteWorkflow` function that was only used by the removed execute button:
 
 ```typescript
 // Removed entire function
 const handleExecuteWorkflow = async (triggerNodeId?: string) => {
   // ... implementation removed
-}
+};
 ```
 
 #### 5. **Kept Keyboard Shortcut**
+
 The Cmd+K / Ctrl+K keyboard shortcut for adding nodes is **still active** and working:
 
 ```typescript
@@ -86,16 +97,20 @@ The Cmd+K / Ctrl+K keyboard shortcut for adding nodes is **still active** and wo
 useEffect(() => {
   const handleKeyDown = (event: KeyboardEvent) => {
     // Cmd+K on Mac, Ctrl+K on Windows/Linux
-    if ((event.metaKey || event.ctrlKey) && event.key === 'k' && !event.shiftKey) {
-      event.preventDefault()
-      event.stopPropagation()
-      openDialog()
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.key === "k" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      openDialog();
     }
-  }
+  };
 
-  document.addEventListener('keydown', handleKeyDown)
-  return () => document.removeEventListener('keydown', handleKeyDown)
-}, [openDialog])
+  document.addEventListener("keydown", handleKeyDown);
+  return () => document.removeEventListener("keydown", handleKeyDown);
+}, [openDialog]);
 ```
 
 ## Rationale
@@ -114,6 +129,7 @@ useEffect(() => {
 ### Top Toolbar Focus
 
 The top toolbar now focuses on:
+
 - **Workflow identity**: Breadcrumb navigation
 - **Workflow status**: Active/Inactive toggle
 - **Workflow management**: Save, Export, Import, Settings
@@ -125,12 +141,14 @@ The top toolbar now focuses on:
 ### What Users Still Have Access To:
 
 #### Execute/Play Button
+
 - ✅ Available in bottom WorkflowControls (left side)
 - ✅ Same functionality as before
 - ✅ Positioned for easy access while building workflows
 - ✅ Includes tooltip: Shows execution context
 
 #### Add Node Button
+
 - ✅ Available in bottom WorkflowControls (primary blue button)
 - ✅ Same functionality as before
 - ✅ Keyboard shortcut still works: **Cmd+K / Ctrl+K**
@@ -149,6 +167,7 @@ The top toolbar now focuses on:
 ## Layout Comparison
 
 ### Before
+
 ```
 Top Toolbar:
 [Sidebar] [Breadcrumb] | [Execute] [Add Node] | [Active] [Save▼] [Deploy▼] [⋯]
@@ -158,6 +177,7 @@ Bottom Controls:
 ```
 
 ### After
+
 ```
 Top Toolbar:
 [Sidebar] [Breadcrumb] | (empty) | [Active] [Save▼] [Deploy▼] [⋯]
@@ -171,13 +191,16 @@ Bottom Controls:
 After these changes, the toolbar has three sections:
 
 ### Left Section
+
 - Sidebar trigger
 - Workflow breadcrumb navigation
 
 ### Center Section
+
 - Empty (reserved for future features if needed)
 
 ### Right Section
+
 - Active/Inactive workflow toggle
 - Save button with dropdown
 - Deploy button with dropdown
@@ -213,6 +236,7 @@ After these changes, the toolbar has three sections:
 ## Future Considerations
 
 The empty center section of the top toolbar could potentially be used for:
+
 - Workflow execution status indicator
 - Live execution progress
 - Mini workflow stats
@@ -229,6 +253,7 @@ The empty center section of the top toolbar could potentially be used for:
 ## Migration Notes
 
 No code changes required for other components. The WorkflowToolbar is self-contained and these changes don't affect:
+
 - WorkflowControls (bottom bar) - unchanged
 - WorkflowEditor - unchanged
 - Keyboard shortcuts - still working

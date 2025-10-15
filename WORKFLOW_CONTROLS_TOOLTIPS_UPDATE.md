@@ -11,7 +11,7 @@ Enhanced the WorkflowControls component with shadcn-style tooltips for all butto
 Wrapped every control button with `Tooltip`, `TooltipTrigger`, and `TooltipContent` components:
 
 - **Add Node**: "Add Node"
-- **Add Group**: "Add Group"  
+- **Add Group**: "Add Group"
 - **Add Annotation**: "Add Annotation"
 - **Zoom Out**: "Zoom Out"
 - **Zoom In**: "Zoom In"
@@ -24,6 +24,7 @@ Wrapped every control button with `Tooltip`, `TooltipTrigger`, and `TooltipConte
 Moved annotation functionality from separate `AddAnnotationControl` component directly into `WorkflowControls`:
 
 **Before:**
+
 ```tsx
 <WorkflowControls>
   <AddAnnotationControl />
@@ -31,6 +32,7 @@ Moved annotation functionality from separate `AddAnnotationControl` component di
 ```
 
 **After:**
+
 ```tsx
 <WorkflowControls />
 // All controls (node, group, annotation) are now integrated
@@ -45,6 +47,7 @@ New unified layout groups related actions together:
 ```
 
 **Organization:**
+
 - **Execute**: Primary workflow action
 - **Creation Tools**: Node, Group, and Annotation creation
 - **View Controls**: Zoom and fit operations
@@ -80,58 +83,77 @@ Integrated annotation creation directly into WorkflowControls:
 ```typescript
 const handleAddAnnotation = useCallback(() => {
   // Take snapshot for undo/redo
-  saveToHistory('Add annotation')
+  saveToHistory("Add annotation");
 
   // Calculate center of viewport
   const viewportCenter = screenToFlowPosition({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
-  })
+  });
 
   // Create new annotation node ID
-  const annotationId = `annotation_${Date.now()}`
+  const annotationId = `annotation_${Date.now()}`;
 
   // Create React Flow node
   const newNode = {
     id: annotationId,
-    type: 'annotation',
+    type: "annotation",
     position: viewportCenter,
     data: {
-      label: 'Add your note here...',
+      label: "Add your note here...",
     },
-  }
+  };
 
   // Add to React Flow
-  setNodes((nodes) => [...nodes, newNode])
+  setNodes((nodes) => [...nodes, newNode]);
 
   // Add to Zustand workflow store
   if (workflow) {
     const newWorkflowNode: WorkflowNode = {
       id: annotationId,
-      type: 'annotation',
-      name: 'Annotation',
+      type: "annotation",
+      name: "Annotation",
       parameters: {
-        label: 'Add your note here...',
+        label: "Add your note here...",
       },
       position: viewportCenter,
       disabled: false,
-    }
+    };
 
     updateWorkflow({
       nodes: [...workflow.nodes, newWorkflowNode],
-    })
-    setDirty(true)
+    });
+    setDirty(true);
   }
-}, [screenToFlowPosition, setNodes, workflow, updateWorkflow, setDirty, saveToHistory])
+}, [
+  screenToFlowPosition,
+  setNodes,
+  workflow,
+  updateWorkflow,
+  setDirty,
+  saveToHistory,
+]);
 ```
 
 ### New Imports
 
 ```typescript
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Box, Maximize2, MessageSquare, Minus, Plus, Redo, Undo } from 'lucide-react'
-import { ReactNode, useCallback, useState } from 'react'
-import { WorkflowNode } from '@/types'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Box,
+  Maximize2,
+  MessageSquare,
+  Minus,
+  Plus,
+  Redo,
+  Undo,
+} from "lucide-react";
+import { ReactNode, useCallback, useState } from "react";
+import { WorkflowNode } from "@/types";
 ```
 
 ### Removed Props
@@ -141,42 +163,46 @@ Since controls are now self-contained, removed `children` prop:
 ```typescript
 // Before
 interface WorkflowControlsProps {
-  children?: ReactNode
-  className?: string
-  showAddNode?: boolean
-  showExecute?: boolean
-  showUndoRedo?: boolean
+  children?: ReactNode;
+  className?: string;
+  showAddNode?: boolean;
+  showExecute?: boolean;
+  showUndoRedo?: boolean;
 }
 
 // After
 interface WorkflowControlsProps {
-  className?: string
-  showAddNode?: boolean
-  showExecute?: boolean
-  showUndoRedo?: boolean
+  className?: string;
+  showAddNode?: boolean;
+  showExecute?: boolean;
+  showUndoRedo?: boolean;
 }
 ```
 
 ## User Experience Improvements
 
 ### 1. **Consistent Tooltips**
+
 - All buttons now show helpful tooltips on hover
 - Tooltips appear above buttons (`side="top"`)
 - Consistent with sidebar icon tooltips
 - Includes keyboard shortcuts where applicable
 
 ### 2. **Unified Interface**
+
 - All creation tools in one place
 - No more separate child components
 - Cleaner, more intuitive layout
 - Easier to discover all available actions
 
 ### 3. **Better Organization**
+
 - Related actions grouped together
 - Visual separators between groups
 - Logical left-to-right flow
 
 ### 4. **Professional Polish**
+
 - Smooth tooltip animations
 - Proper hover states
 - Accessibility-friendly with aria-labels
@@ -193,6 +219,7 @@ interface WorkflowControlsProps {
 ## Files Modified
 
 ### 1. **WorkflowControls.tsx**
+
 - Added tooltip imports
 - Added `MessageSquare` icon for annotation
 - Added `useCallback` and `WorkflowNode` imports
@@ -203,6 +230,7 @@ interface WorkflowControlsProps {
 - Integrated annotation button between group and zoom controls
 
 ### 2. **WorkflowCanvas.tsx**
+
 - Removed `AddAnnotationControl` import
 - Removed `<AddAnnotationControl />` from WorkflowControls children
 - Simplified WorkflowControls usage to self-closing tag
@@ -210,12 +238,14 @@ interface WorkflowControlsProps {
 ## Benefits
 
 ### For Users
+
 1. ✅ **Discoverability**: Hover tooltips explain what each button does
 2. ✅ **Keyboard Shortcuts**: Tooltips show keyboard shortcuts (Undo/Redo)
 3. ✅ **Consistency**: Same tooltip style as sidebar and other UI elements
 4. ✅ **Professional**: Polished, modern interface matching design system
 
 ### For Developers
+
 1. ✅ **Simplicity**: All controls in one component
 2. ✅ **Maintainability**: Single source of truth for control bar
 3. ✅ **Consistency**: Reusable tooltip pattern
@@ -239,6 +269,7 @@ interface WorkflowControlsProps {
 ## Comparison: Before vs After
 
 ### Before
+
 ```
 Control Bar:
 [Execute] | [Add Node] [Add Group] | [Zoom Out] [Zoom In] [Fit View] | [Undo] [Redo] | [Annotation]
@@ -248,6 +279,7 @@ Tooltips: Only title attributes (basic, no styling)
 ```
 
 ### After
+
 ```
 Control Bar:
 [Execute] | [Add Node] [Add Group] [Annotation] | [Zoom Out] [Zoom In] [Fit View] | [Undo] [Redo]
@@ -291,6 +323,7 @@ Tooltips rely on `TooltipProvider` being present in the component tree. This is 
 ## Future Enhancements
 
 Potential improvements:
+
 1. Add keyboard shortcuts display to more tooltips
 2. Add tooltips to edge buttons (add/delete on connections)
 3. Add tooltips to node context menu items
@@ -302,15 +335,17 @@ Potential improvements:
 If you have custom code using `AddAnnotationControl`:
 
 **Before:**
+
 ```tsx
-import { AddAnnotationControl } from './AddAnnotationControl'
+import { AddAnnotationControl } from "./AddAnnotationControl";
 
 <WorkflowControls>
   <AddAnnotationControl />
-</WorkflowControls>
+</WorkflowControls>;
 ```
 
 **After:**
+
 ```tsx
 <WorkflowControls />
 // Annotation control is now integrated

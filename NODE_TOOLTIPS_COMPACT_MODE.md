@@ -15,6 +15,7 @@ Added shadcn-style tooltips to workflow nodes when they're in compact mode. When
 ### Tooltip Content
 
 The tooltip displays:
+
 1. **Node Title**: Bold font weight for emphasis
 2. **Header Info** (if present): Secondary information in smaller, muted text
 
@@ -34,7 +35,11 @@ The tooltip is implemented at the wrapper level, wrapping the entire collapsed n
 #### 1. **Added Tooltip Imports**
 
 ```typescript
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 ```
 
 #### 2. **Wrapped Collapsed Node Content**
@@ -49,18 +54,16 @@ if (!isExpanded) {
       <ContextMenuTrigger asChild>
         {/* ... all node content ... */}
       </ContextMenuTrigger>
-      
+
       <NodeContextMenu {...props} />
     </ContextMenu>
-  )
+  );
 
   // Wrap with tooltip when in compact mode
   if (compactMode) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          {nodeContent}
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{nodeContent}</TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">
           <p className="font-medium">{data.label}</p>
           {headerInfo && (
@@ -68,10 +71,10 @@ if (!isExpanded) {
           )}
         </TooltipContent>
       </Tooltip>
-    )
+    );
   }
 
-  return nodeContent
+  return nodeContent;
 }
 ```
 
@@ -80,12 +83,11 @@ if (!isExpanded) {
 1. **Conditional Rendering**: Tooltip only applies when:
    - `compactMode === true`
    - Node is collapsed (`!isExpanded`)
-   
 2. **Content Extraction**: Node content is extracted to a variable first, then conditionally wrapped
-   
 3. **No Tooltip When Not Needed**: When node is expanded or compact mode is off, tooltip is not rendered (no unnecessary DOM elements)
 
 4. **Bottom Placement**: Unlike sidebar tooltips that appear on the side, node tooltips appear below to avoid interfering with:
+
    - Node connections
    - Node toolbar
    - Other nearby nodes
@@ -97,6 +99,7 @@ if (!isExpanded) {
 ## Tooltip Styling
 
 ### Container
+
 ```tsx
 <TooltipContent side="bottom" className="max-w-xs">
 ```
@@ -106,6 +109,7 @@ if (!isExpanded) {
 - **Style**: Inherits shadcn tooltip styles (dark background, white text in light mode)
 
 ### Title
+
 ```tsx
 <p className="font-medium">{data.label}</p>
 ```
@@ -114,10 +118,11 @@ if (!isExpanded) {
 - **Purpose**: Makes the node name stand out
 
 ### Header Info (Optional)
+
 ```tsx
-{headerInfo && (
-  <p className="text-xs text-muted-foreground">{headerInfo}</p>
-)}
+{
+  headerInfo && <p className="text-xs text-muted-foreground">{headerInfo}</p>;
+}
 ```
 
 - **Size**: Extra small (text-xs)
@@ -127,6 +132,7 @@ if (!isExpanded) {
 ## Behavior Comparison
 
 ### Normal Mode (Compact OFF)
+
 ```
 ┌─────────────────┐
 │ 📧 Send Email   │  ← Title visible
@@ -136,6 +142,7 @@ No tooltip needed
 ```
 
 ### Compact Mode (Collapsed)
+
 ```
 ┌──────┐
 │  📧  │  ← Only icon visible
@@ -145,6 +152,7 @@ No tooltip needed
 ```
 
 ### Compact Mode (Expanded)
+
 ```
 ┌─────────────────┐
 │ 📧 Send Email   │  ← Title visible when expanded
@@ -158,6 +166,7 @@ No tooltip (title already showing)
 ## Integration with Existing Features
 
 ### Works With:
+
 - ✅ **Compact Mode Toggle**: Automatically activates/deactivates with compact mode
 - ✅ **Node Expansion**: Tooltip disappears when node is expanded
 - ✅ **Context Menu**: Right-click still works (tooltip doesn't interfere)
@@ -168,6 +177,7 @@ No tooltip (title already showing)
 - ✅ **All Node Types**: Works with all BaseNodeWrapper-based nodes
 
 ### Doesn't Interfere With:
+
 - Node execution states (running, success, error)
 - Node disabled state
 - Node locked state
@@ -197,12 +207,14 @@ All nodes within the workflow canvas have access to the tooltip context.
 ## Performance Considerations
 
 ### Minimal Overhead
+
 - Tooltip component only rendered when `compactMode === true`
 - No additional state management
 - Uses existing `compactMode` from store
 - Leverages React's conditional rendering (no wasted renders)
 
 ### No Impact on Large Workflows
+
 - Tooltips are lightweight shadcn components
 - Only one tooltip visible at a time (on hover)
 - No performance degradation with many nodes
@@ -210,6 +222,7 @@ All nodes within the workflow canvas have access to the tooltip context.
 ## Example Use Cases
 
 ### 1. **Long Node Names**
+
 When node names are truncated in regular mode, compact mode + tooltip provides full name on hover:
 
 ```
@@ -218,6 +231,7 @@ Compact: [📧] → Hover → "Send email to customer success team"
 ```
 
 ### 2. **Nodes with Status Info**
+
 Nodes showing counts or status information:
 
 ```
@@ -227,6 +241,7 @@ Compact: [🔄] → Hover → "Transform Data\nProcessing 150 items"
 ```
 
 ### 3. **Dense Workflows**
+
 In workflows with many nodes, compact mode saves space while tooltips maintain discoverability:
 
 ```
@@ -239,6 +254,7 @@ After: 40+ nodes visible as icons, hover to see names
 ### `frontend/src/components/workflow/nodes/BaseNodeWrapper.tsx`
 
 **Changes:**
+
 1. Added Tooltip component imports
 2. Extracted collapsed node content to variable
 3. Added conditional tooltip wrapper when `compactMode === true`
@@ -269,6 +285,7 @@ After: 40+ nodes visible as icons, hover to see names
 ## Comparison with Sidebar Tooltips
 
 ### Similarities
+
 - Same shadcn Tooltip component
 - Same styling and animation
 - Same delay behavior
@@ -276,32 +293,36 @@ After: 40+ nodes visible as icons, hover to see names
 
 ### Differences
 
-| Feature | Sidebar Tooltips | Node Tooltips |
-|---------|-----------------|---------------|
-| **Position** | `side="right"` | `side="bottom"` |
-| **When Active** | Sidebar collapsed | Compact mode ON |
-| **Content** | Menu item label | Node title + info |
-| **Context** | Navigation | Workflow canvas |
-| **Conditional** | Sidebar state | Compact mode + collapsed |
+| Feature         | Sidebar Tooltips  | Node Tooltips            |
+| --------------- | ----------------- | ------------------------ |
+| **Position**    | `side="right"`    | `side="bottom"`          |
+| **When Active** | Sidebar collapsed | Compact mode ON          |
+| **Content**     | Menu item label   | Node title + info        |
+| **Context**     | Navigation        | Workflow canvas          |
+| **Conditional** | Sidebar state     | Compact mode + collapsed |
 
 ## Future Enhancements
 
 Potential improvements for future iterations:
 
 1. **Rich Tooltip Content**
+
    - Show node type badge
    - Display last execution time
    - Show input/output count
 
 2. **Tooltip Position Options**
+
    - User preference for tooltip position
    - Smart positioning to avoid canvas edges
 
 3. **Tooltip Delay**
+
    - Configurable delay before showing
    - Faster for frequently hovered nodes
 
 4. **Extended Info**
+
    - Show node description on longer hover
    - Display last execution result summary
 
@@ -319,6 +340,7 @@ Potential improvements for future iterations:
 ## Benefits Summary
 
 ### For Users
+
 1. ✅ **Space Efficiency**: More nodes visible on screen
 2. ✅ **Quick Reference**: Hover to see full node names
 3. ✅ **No Context Loss**: Easy to identify nodes despite hidden titles
@@ -326,6 +348,7 @@ Potential improvements for future iterations:
 5. ✅ **Smooth Workflow**: Doesn't interrupt node interactions
 
 ### For Developers
+
 1. ✅ **Reusable Pattern**: Same tooltip system as sidebar
 2. ✅ **Clean Implementation**: Minimal code changes
 3. ✅ **Maintainable**: Uses existing compactMode state
