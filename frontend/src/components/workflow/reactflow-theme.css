@@ -128,7 +128,7 @@ ReactFlow Dark Theme Overrides
   border-radius: 8px;
 }
 
-/* Light mode group node */
+/* Light mode group node - default styling */
 .react-flow__node-group {
   background-color: rgba(207, 182, 255, 0.4);
   border: 1px solid #9e86ed;
@@ -137,24 +137,31 @@ ReactFlow Dark Theme Overrides
     0px 0.51px 1.01px 0px #0000001a;
 }
 
+/* Override with inline styles when custom colors are set */
+.react-flow__node-group[style*="background-color"] {
+  /* Inline styles take precedence */
+}
+
+.react-flow__node-group[style*="border-color"] {
+  border-width: 2px;
+  border-style: solid;
+}
+
 .react-flow__node-group.selectable:focus {
   box-shadow: 0px 0px 0px 4px #e8e8e8;
-  border-color: #9e86ed;
 }
 
 .react-flow__node-group.selectable:hover {
-  border-color: #7d5bd0;
+  opacity: 0.9;
 }
 
 .react-flow__node-group.selectable.selected {
-  border-color: #9e86ed;
   border-width: 2px;
 }
 
 /* Active state when dragging a node over a group */
 .react-flow__node-group.active {
-  background-color: rgba(207, 182, 255, 0.6);
-  border-color: #7d5bd0;
+  opacity: 0.8;
   border-width: 2px;
   border-style: dashed;
   animation: pulse-border 1s ease-in-out infinite;
@@ -163,14 +170,14 @@ ReactFlow Dark Theme Overrides
 @keyframes pulse-border {
   0%,
   100% {
-    border-color: #7d5bd0;
+    opacity: 0.8;
   }
   50% {
-    border-color: #9e86ed;
+    opacity: 1;
   }
 }
 
-/* Dark mode group node */
+/* Dark mode group node - default styling */
 .dark .react-flow__node-group {
   background-color: rgba(120, 85, 200, 0.2);
   border-color: #7d5bd0;
@@ -181,22 +188,19 @@ ReactFlow Dark Theme Overrides
 
 .dark .react-flow__node-group.selectable:focus {
   box-shadow: 0px 0px 0px 4px #535353;
-  border-color: #9e86ed;
 }
 
 .dark .react-flow__node-group.selectable:hover {
-  border-color: #b59ef5;
+  opacity: 0.9;
 }
 
 .dark .react-flow__node-group.selectable.selected {
-  border-color: #9e86ed;
   border-width: 2px;
 }
 
 /* Active state when dragging a node over a group in dark mode */
 .dark .react-flow__node-group.active {
-  background-color: rgba(120, 85, 200, 0.4);
-  border-color: #b59ef5;
+  opacity: 0.8;
   border-width: 2px;
   border-style: dashed;
   animation: pulse-border-dark 1s ease-in-out infinite;
@@ -205,10 +209,10 @@ ReactFlow Dark Theme Overrides
 @keyframes pulse-border-dark {
   0%,
   100% {
-    border-color: #b59ef5;
+    opacity: 0.8;
   }
   50% {
-    border-color: #9e86ed;
+    opacity: 1;
   }
 }
 
