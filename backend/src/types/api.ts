@@ -39,6 +39,7 @@ export const CreateWorkflowSchema = z.object({
         id: z.string(),
         type: z.string(),
         name: z.string(),
+        description: z.string().optional(),
         parameters: z.record(z.any()),
         position: z.object({
           x: z.number(),
@@ -47,6 +48,8 @@ export const CreateWorkflowSchema = z.object({
         credentials: z.array(z.string()).optional(),
         disabled: z.boolean().default(false),
         mockData: z.any().optional(),
+        mockDataPinned: z.boolean().optional(),
+        locked: z.boolean().optional(),
         // Group node properties
         parentId: z.string().optional(),
         extent: z

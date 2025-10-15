@@ -384,11 +384,19 @@ export const useWorkflowStore = create<WorkflowStore>()(
         const current = get().workflow;
         if (!current) return;
 
+        console.log("🔍 ZUSTAND updateNode - nodeId:", nodeId);
+        console.log("🔍 ZUSTAND updateNode - updates:", updates);
+
         const updated = {
           ...current,
-          nodes: current.nodes.map((node) =>
-            node.id === nodeId ? { ...node, ...updates } : node
-          ),
+          nodes: current.nodes.map((node) => {
+            if (node.id === nodeId) {
+              const updatedNode = { ...node, ...updates };
+              console.log("🔍 ZUSTAND updateNode - Updated node:", updatedNode);
+              return updatedNode;
+            }
+            return node;
+          }),
         };
         set({ workflow: updated, isDirty: true });
 

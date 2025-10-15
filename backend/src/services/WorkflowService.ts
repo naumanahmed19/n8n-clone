@@ -244,6 +244,12 @@ export class WorkflowService {
         ? this.normalizeTriggers(triggersToSave)
         : undefined;
 
+      // DEBUG: Log what we're sending to the database
+      console.log(
+        "🔍 BACKEND: Nodes being sent to DB:",
+        JSON.stringify(data.nodes, null, 2)
+      );
+
       const workflow = await this.prisma.workflow.update({
         where: { id },
         data: {
@@ -261,11 +267,12 @@ export class WorkflowService {
           updatedAt: new Date(),
         },
       });
-
-      // DEBUG: Log nodes to check if style is preserved
-      console.log("🔍 Nodes being saved:", JSON.stringify(data.nodes, null, 2));
       console.log(
-        "🔍 Workflow returned from DB:",
+        "🔍 Workflow returned from DB (raw):",
+        JSON.stringify(workflow, null, 2)
+      );
+      console.log(
+        "🔍 Workflow.nodes from DB:",
         JSON.stringify(workflow.nodes, null, 2)
       );
 
@@ -552,6 +559,15 @@ export class WorkflowService {
         if (!node.name || typeof node.name !== "string") {
           errors.push(`Node ${node.id} must have a valid name`);
         }
+      }
+      // Validate optional description field
+      if (
+        node.description !== undefined &&
+        typeof node.description !== "string"
+      ) {
+        errors.push(
+          `Node ${node.id} must have a valid description (string or undefined)`
+        );
       }
       if (
         !node.position ||

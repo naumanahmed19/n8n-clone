@@ -27,12 +27,17 @@ function GroupNode({ id, data }: NodeProps) {
   // Get the group node data from workflow store
   const workflowNode = workflow?.nodes.find(n => n.id === id)
   const groupName: string = workflowNode?.name || (data?.label as string) || ''
+  const groupDescription: string | undefined = workflowNode?.description
 
   // Check if this group has child nodes
   const childNodes = getNodes().filter((node) => node.parentId === id)
   const hasChildNodes = childNodes.length > 0
 
   const onEdit = useCallback(() => {
+    setShowEditDialog(true)
+  }, [])
+
+  const onDoubleClick = useCallback(() => {
     setShowEditDialog(true)
   }, [])
 
@@ -78,13 +83,20 @@ function GroupNode({ id, data }: NodeProps) {
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="group-node">
+          <div className="group-node" onDoubleClick={onDoubleClick}>
             <NodeResizer />
             
             {/* Group Label - only show if name is not empty */}
             {groupName && (
-              <div className="group-node-label">
-                {groupName}
+              <div className="group-node-label-container">
+                <div className="group-node-label">
+                  {groupName}
+                </div>
+                {groupDescription && (
+                  <div className="group-node-description">
+                    {groupDescription}
+                  </div>
+                )}
               </div>
             )}
             

@@ -100,6 +100,7 @@ export default function SelectedNodesToolbar() {
             id: rfNode.id,
             type: 'group',
             name: '',
+            description: undefined,
             parameters: rfNode.data || {},
             position: rfNode.position,
             disabled: false,

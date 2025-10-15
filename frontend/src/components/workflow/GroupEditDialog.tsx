@@ -1,5 +1,5 @@
 import { useReactFlow } from '@xyflow/react'
-import { Palette, Type } from 'lucide-react'
+import { AlignLeft, Palette, Type } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useWorkflowStore } from '@/stores'
 
 interface GroupEditDialogProps {
@@ -40,6 +41,7 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
   const { updateNode, workflow, saveToHistory, setDirty } = useWorkflowStore()
   
   const [groupName, setGroupName] = useState('')
+  const [groupDescription, setGroupDescription] = useState('')
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [customBackgroundColor, setCustomBackgroundColor] = useState('')
   const [customBorderColor, setCustomBorderColor] = useState('')
@@ -52,6 +54,7 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
       
       if (workflowNode) {
         setGroupName(workflowNode.name || '')
+        setGroupDescription(workflowNode.description || '')
         
         const bgColor = node?.style?.backgroundColor || workflowNode.style?.backgroundColor
         const borderColor = node?.style?.borderColor || workflowNode.style?.borderColor
@@ -108,18 +111,26 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
     }
 
     // Update the node with new properties
-    updateNode(groupId, {
+    const updates = {
       name: groupName,
+      description: groupDescription || undefined,
       style: {
         ...workflowNode.style,
         backgroundColor,
         borderColor,
       },
-    })
+    };
+    
+    console.log('📝 GroupEditDialog - Updating node:', groupId);
+    console.log('📝 GroupEditDialog - Name:', groupName);
+    console.log('📝 GroupEditDialog - Description:', groupDescription);
+    console.log('📝 GroupEditDialog - Updates object:', updates);
+    
+    updateNode(groupId, updates)
 
     setDirty(true)
     onOpenChange(false)
-  }, [groupId, groupName, selectedPreset, customBackgroundColor, customBorderColor, workflow, updateNode, saveToHistory, setDirty, onOpenChange])
+  }, [groupId, groupName, groupDescription, selectedPreset, customBackgroundColor, customBorderColor, workflow, updateNode, saveToHistory, setDirty, onOpenChange])
 
   const handleCancel = useCallback(() => {
     onOpenChange(false)
@@ -148,6 +159,25 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Enter group name"
             />
+          </div>
+
+          {/* Group Description */}
+          <div className="space-y-2">
+            <Label htmlFor="group-description" className="flex items-center gap-2">
+              <AlignLeft className="h-4 w-4" />
+              Description
+            </Label>
+            <Textarea
+              id="group-description"
+              value={groupDescription}
+              onChange={(e) => setGroupDescription(e.target.value)}
+              placeholder="Add a description for this group (optional)"
+              rows={3}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Describe the purpose or contents of this group
+            </p>
           </div>
 
           {/* Color Presets */}
