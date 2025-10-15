@@ -15,13 +15,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   useSidebar
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
 import { VariablesList } from "@/components/variable/VariablesList"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { useSidebarContext, useTheme } from "@/contexts"
-import { useAuthStore, useWorkflowStore } from "@/stores"
+import { useAuthStore, useWorkflowStore, useReactFlowUIStore } from "@/stores"
 import {
   Activity,
   ArrowLeft,
@@ -34,7 +35,10 @@ import {
   Settings,
   Sun,
   Variable,
-  Workflow
+  Workflow,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
 } from "lucide-react"
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
@@ -321,8 +325,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
         
         <SidebarContent>
-          <SidebarGroup className="px-0">
-            <SidebarGroupContent>
+          <SidebarGroup className="px-0 h-full">
+            <SidebarGroupContent className="h-full">
               {/* Show DetailSidebar content when open, otherwise show normal content */}
               {detailSidebar ? (
                 detailSidebar.content
@@ -349,7 +353,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   )}
                   
                   {activeWorkflowItem?.title === "Settings" && (
-                    <div className="p-4 space-y-4">
+                    <div className="flex flex-col h-full">
+                      <div className="p-4 space-y-6 overflow-y-auto flex-1">
                       {/* Theme Section */}
                       <div>
                         <h4 className="text-sm font-medium mb-3">Appearance</h4>
@@ -393,24 +398,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         </div>
                       </div>
                       
-                      {/* Workflow Settings */}
+                      <SidebarSeparator />
+
+                      {/* Canvas View Settings */}
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Workflow Settings</h4>
+                        <h4 className="text-sm font-medium mb-3">Canvas View</h4>
                         <div className="space-y-2 text-sm">
-                          <div className="flex justify-between items-center">
-                            <span>Auto-save</span>
-                            <Switch defaultChecked />
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span>Show minimap</span>
-                            <Switch />
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span>Grid snap</span>
-                            <Switch defaultChecked />
-                          </div>
+                          <CanvasViewSettings />
                         </div>
                       </div>
+
+                      <SidebarSeparator />
+
+                      {/* Canvas Zoom Controls */}
+                      <div>
+                        <h4 className="text-sm font-medium mb-3">Zoom Controls</h4>
+                        <div className="flex flex-col gap-2">
+                          <CanvasZoomControls />
+                        </div>
+                      </div>
+
+                      <SidebarSeparator />
+
+                      {/* Canvas Boundary Settings */}
+                      <CanvasBoundarySettings />
+                    </div>
                     </div>
                   )}
                 </>
@@ -422,5 +434,163 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </div>
       <ConfirmDialog />
     </Sidebar>
+  )
+}
+
+// Canvas Zoom Controls Component
+function CanvasZoomControls() {
+  const { zoomIn, zoomOut, fitView } = useReactFlowUIStore()
+
+  return (
+    <>
+      <Button
+        onClick={zoomIn}
+        variant="outline"
+        size="sm"
+        className="w-full justify-start gap-2"
+      >
+        <ZoomIn className="w-4 h-4" />
+        Zoom In
+      </Button>
+      <Button
+        onClick={zoomOut}
+        variant="outline"
+        size="sm"
+        className="w-full justify-start gap-2"
+      >
+        <ZoomOut className="w-4 h-4" />
+        Zoom Out
+      </Button>
+      <Button
+        onClick={fitView}
+        variant="outline"
+        size="sm"
+        className="w-full justify-start gap-2"
+      >
+        <Maximize className="w-4 h-4" />
+        Fit to View
+      </Button>
+    </>
+  )
+}
+
+// Canvas View Settings Component
+function CanvasViewSettings() {
+  const {
+    showMinimap,
+    showBackground,
+    showControls,
+    panOnDrag,
+    zoomOnScroll,
+    toggleMinimap,
+    toggleBackground,
+    toggleControls,
+    togglePanOnDrag,
+    toggleZoomOnScroll,
+    changeBackgroundVariant,
+  } = useReactFlowUIStore()
+
+  return (
+    <>
+      <div className="flex justify-between items-center">
+        <span>Show Minimap</span>
+        <Switch checked={showMinimap} onCheckedChange={toggleMinimap} />
+      </div>
+      <div className="flex justify-between items-center">
+        <span>Show Grid Background</span>
+        <Switch checked={showBackground} onCheckedChange={toggleBackground} />
+      </div>
+      <div className="flex justify-between items-center">
+        <span>Show Controls</span>
+        <Switch checked={showControls} onCheckedChange={toggleControls} />
+      </div>
+      <div className="flex justify-between items-center">
+        <span>Pan on Drag</span>
+        <Switch checked={panOnDrag} onCheckedChange={togglePanOnDrag} />
+      </div>
+      <div className="flex justify-between items-center">
+        <span>Zoom on Scroll</span>
+        <Switch checked={zoomOnScroll} onCheckedChange={toggleZoomOnScroll} />
+      </div>
+      
+      {/* Background Pattern Selector */}
+      {showBackground && (
+        <div className="pt-2 border-t">
+          <label className="text-xs text-muted-foreground mb-2 block">Background Pattern</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => changeBackgroundVariant('dots')}
+              className="px-2 py-1.5 text-xs rounded border hover:bg-sidebar-accent transition-colors text-left"
+            >
+              Dots
+            </button>
+            <button
+              onClick={() => changeBackgroundVariant('lines')}
+              className="px-2 py-1.5 text-xs rounded border hover:bg-sidebar-accent transition-colors text-left"
+            >
+              Lines
+            </button>
+            <button
+              onClick={() => changeBackgroundVariant('cross')}
+              className="px-2 py-1.5 text-xs rounded border hover:bg-sidebar-accent transition-colors text-left"
+            >
+              Cross
+            </button>
+            <button
+              onClick={() => changeBackgroundVariant('none')}
+              className="px-2 py-1.5 text-xs rounded border hover:bg-sidebar-accent transition-colors text-left"
+            >
+              None
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Canvas Boundary Settings Component
+function CanvasBoundarySettings() {
+  const { canvasBoundaryX, canvasBoundaryY, setCanvasBoundaryX, setCanvasBoundaryY } = useReactFlowUIStore()
+
+  return (
+    <div>
+      <h4 className="text-sm font-medium mb-3">Canvas Boundaries</h4>
+      <div className="space-y-4 text-sm">
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-muted-foreground text-xs">Horizontal (X)</span>
+            <span className="font-mono text-xs font-medium">{canvasBoundaryX}px</span>
+          </div>
+          <input
+            type="range"
+            min="500"
+            max="10000"
+            step="100"
+            value={canvasBoundaryX}
+            onChange={(e) => setCanvasBoundaryX(Number(e.target.value))}
+            className="w-full h-1.5 bg-sidebar-border rounded-lg appearance-none cursor-pointer accent-sidebar-primary"
+          />
+        </div>
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-muted-foreground text-xs">Vertical (Y)</span>
+            <span className="font-mono text-xs font-medium">{canvasBoundaryY}px</span>
+          </div>
+          <input
+            type="range"
+            min="500"
+            max="10000"
+            step="100"
+            value={canvasBoundaryY}
+            onChange={(e) => setCanvasBoundaryY(Number(e.target.value))}
+            className="w-full h-1.5 bg-sidebar-border rounded-lg appearance-none cursor-pointer accent-sidebar-primary"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground pt-1">
+          Control how far you can pan and place nodes on the canvas
+        </p>
+      </div>
+    </div>
   )
 }

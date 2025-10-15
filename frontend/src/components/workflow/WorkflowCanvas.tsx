@@ -77,14 +77,14 @@ export function WorkflowCanvas({
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     
     // Get panOnDrag and zoomOnScroll settings from store
-    const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
+    const { panOnDrag, zoomOnScroll, reactFlowInstance, canvasBoundaryX, canvasBoundaryY } = useReactFlowUIStore()
     
     // Use custom hooks for better code organization
     const { edgeStyle, connectionLineStyle, isDarkMode } = useReactFlowStyles()
     const combinedRef = useReactFlowAutoLayout({
         reactFlowInstance,
         nodesCount: nodes.length,
-        enabled: true,
+        enabled: false,
         delay: 50,
         additionalRef: reactFlowWrapper
     })
@@ -220,7 +220,8 @@ export function WorkflowCanvas({
                     panOnDrag={panOnDrag}
                     zoomOnScroll={zoomOnScroll}
                     connectionLineStyle={connectionLineStyle}
-                    fitView
+                    translateExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
+                    nodeExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
                     attributionPosition="bottom-left"
                     selectNodesOnDrag={false}
                     multiSelectionKeyCode="Shift"

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { userService } from '@/services'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -18,6 +19,35 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   })
 
   const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
+
+  // Load theme from database on mount
+  useEffect(() => {
+    const loadThemeFromDB = async () => {
+      try {
+        const preferences = await userService.getPreferences()
+        if (preferences.theme) {
+          setThemeState(preferences.theme)
+          localStorage.setItem('theme', preferences.theme)
+        }
+      } catch (error) {
+        // Silently fail - user might not be authenticated yet
+        // The theme will be loaded after successful login via auth store
+        console.debug('Could not load theme preferences:', error)
+      }
+    }
+
+    loadThemeFromDB()
+
+    // Listen for theme loaded event from auth store
+    const handleThemeLoaded = (event: CustomEvent<Theme>) => {
+      setThemeState(event.detail)
+    }
+
+    window.addEventListener('theme-loaded', handleThemeLoaded as EventListener)
+    return () => {
+      window.removeEventListener('theme-loaded', handleThemeLoaded as EventListener)
+    }
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement
@@ -69,6 +99,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
     localStorage.setItem('theme', newTheme)
+    
+    // Save theme to database preferences
+    userService.patchPreferences({ theme: newTheme }).catch((error) => {
+      console.error('Failed to save theme preference:', error)
+    })
   }
 
   return (

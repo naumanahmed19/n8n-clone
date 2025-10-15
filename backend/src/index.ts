@@ -22,6 +22,7 @@ import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
 import oauthRoutes from "./routes/oauth";
 import triggerRoutes from "./routes/triggers";
+import userRoutes from "./routes/user.routes";
 import variableRoutes from "./routes/variables";
 import webhookRoutes from "./routes/webhook";
 import { workflowRoutes } from "./routes/workflows";
@@ -140,6 +141,7 @@ app.get("/", (req, res) => {
 
 // API routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/workflows", workflowRoutes);
 app.use("/api", environmentRoutes); // Environment routes are nested under workflows
 app.use("/api/executions", executionRoutes);

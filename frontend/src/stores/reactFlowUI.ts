@@ -1,6 +1,19 @@
 import { ReactFlowInstance } from "@xyflow/react";
 import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
+import { userService } from "@/services";
+
+// Debounce helper
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 interface ReactFlowUIState {
   // ReactFlow instance
@@ -16,6 +29,12 @@ interface ReactFlowUIState {
   // Canvas interaction settings
   panOnDrag: boolean;
   zoomOnScroll: boolean;
+
+  // Canvas boundary settings
+  canvasBoundaryX: number;
+  canvasBoundaryY: number;
+  setCanvasBoundaryX: (value: number) => void;
+  setCanvasBoundaryY: (value: number) => void;
 
   // Execution panel state
   showExecutionPanel: boolean;
@@ -44,6 +63,12 @@ interface ReactFlowUIState {
   zoomOut: () => void;
   fitView: () => void;
   zoomToFit: () => void;
+
+  // Preferences persistence
+  loadPreferences: () => Promise<void>;
+  savePreferences: () => void; // Debounced, so returns void not Promise
+  isLoadingPreferences: boolean;
+  isSavingPreferences: boolean;
 }
 
 export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
@@ -56,21 +81,37 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
     backgroundVariant: "dots",
     panOnDrag: true,
     zoomOnScroll: true,
+    canvasBoundaryX: 2000,
+    canvasBoundaryY: 500,
     showExecutionPanel: false,
     executionPanelSize: 4,
+    isLoadingPreferences: false,
+    isSavingPreferences: false,
 
     // Set ReactFlow instance
     setReactFlowInstance: (instance) => set({ reactFlowInstance: instance }),
 
     // Toggle functions
-    toggleMinimap: () => set((state) => ({ showMinimap: !state.showMinimap })),
-    toggleBackground: () =>
-      set((state) => ({ showBackground: !state.showBackground })),
-    toggleControls: () =>
-      set((state) => ({ showControls: !state.showControls })),
-    togglePanOnDrag: () => set((state) => ({ panOnDrag: !state.panOnDrag })),
-    toggleZoomOnScroll: () =>
-      set((state) => ({ zoomOnScroll: !state.zoomOnScroll })),
+    toggleMinimap: () => {
+      set((state) => ({ showMinimap: !state.showMinimap }));
+      get().savePreferences();
+    },
+    toggleBackground: () => {
+      set((state) => ({ showBackground: !state.showBackground }));
+      get().savePreferences();
+    },
+    toggleControls: () => {
+      set((state) => ({ showControls: !state.showControls }));
+      get().savePreferences();
+    },
+    togglePanOnDrag: () => {
+      set((state) => ({ panOnDrag: !state.panOnDrag }));
+      get().savePreferences();
+    },
+    toggleZoomOnScroll: () => {
+      set((state) => ({ zoomOnScroll: !state.zoomOnScroll }));
+      get().savePreferences();
+    },
 
     changeBackgroundVariant: (variant) => {
       if (variant === "none") {
@@ -78,6 +119,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
       } else {
         set({ showBackground: true, backgroundVariant: variant });
       }
+      get().savePreferences();
     },
 
     toggleExecutionPanel: () => {
@@ -92,11 +134,80 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
     },
 
     // Setters
-    setShowMinimap: (show) => set({ showMinimap: show }),
-    setShowBackground: (show) => set({ showBackground: show }),
-    setShowControls: (show) => set({ showControls: show }),
-    setBackgroundVariant: (variant) => set({ backgroundVariant: variant }),
+    setShowMinimap: (show) => {
+      set({ showMinimap: show });
+      get().savePreferences();
+    },
+    setShowBackground: (show) => {
+      set({ showBackground: show });
+      get().savePreferences();
+    },
+    setShowControls: (show) => {
+      set({ showControls: show });
+      get().savePreferences();
+    },
+    setBackgroundVariant: (variant) => {
+      set({ backgroundVariant: variant });
+      get().savePreferences();
+    },
     setExecutionPanelSize: (size) => set({ executionPanelSize: size }),
+    setCanvasBoundaryX: (value) => {
+      set({ canvasBoundaryX: value });
+      get().savePreferences();
+    },
+    setCanvasBoundaryY: (value) => {
+      set({ canvasBoundaryY: value });
+      get().savePreferences();
+    },
+
+    // Preferences persistence
+    loadPreferences: async () => {
+      try {
+        set({ isLoadingPreferences: true });
+        const preferences = await userService.getPreferences();
+        
+        if (preferences.canvas) {
+          set({
+            showMinimap: preferences.canvas.showMinimap ?? get().showMinimap,
+            showBackground: preferences.canvas.showBackground ?? get().showBackground,
+            showControls: preferences.canvas.showControls ?? get().showControls,
+            backgroundVariant: preferences.canvas.backgroundVariant ?? get().backgroundVariant,
+            panOnDrag: preferences.canvas.panOnDrag ?? get().panOnDrag,
+            zoomOnScroll: preferences.canvas.zoomOnScroll ?? get().zoomOnScroll,
+            canvasBoundaryX: preferences.canvas.canvasBoundaryX ?? get().canvasBoundaryX,
+            canvasBoundaryY: preferences.canvas.canvasBoundaryY ?? get().canvasBoundaryY,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+      } finally {
+        set({ isLoadingPreferences: false });
+      }
+    },
+
+    savePreferences: debounce(async () => {
+      try {
+        set({ isSavingPreferences: true });
+        const state = get();
+        
+        await userService.patchPreferences({
+          canvas: {
+            showMinimap: state.showMinimap,
+            showBackground: state.showBackground,
+            showControls: state.showControls,
+            backgroundVariant: state.backgroundVariant,
+            panOnDrag: state.panOnDrag,
+            zoomOnScroll: state.zoomOnScroll,
+            canvasBoundaryX: state.canvasBoundaryX,
+            canvasBoundaryY: state.canvasBoundaryY,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to save preferences:', error);
+      } finally {
+        set({ isSavingPreferences: false });
+      }
+    }, 1000),
 
     // ReactFlow controls
     zoomIn: () => {
