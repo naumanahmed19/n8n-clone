@@ -178,6 +178,12 @@ export class WorkflowService {
         throw new AppError("Workflow not found", 404, "WORKFLOW_NOT_FOUND");
       }
 
+      // DEBUG: Log nodes to check if style is preserved when fetching
+      console.log(
+        "🔍 Workflow nodes from DB:",
+        JSON.stringify(workflow.nodes, null, 2)
+      );
+
       return workflow;
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -247,14 +253,21 @@ export class WorkflowService {
           }),
           ...(data.category !== undefined && { category: data.category }),
           ...(data.tags !== undefined && { tags: data.tags }),
-          ...(data.nodes && { nodes: data.nodes }),
-          ...(data.connections && { connections: data.connections }),
-          ...(normalizedTriggers && { triggers: normalizedTriggers }),
-          ...(data.settings && { settings: data.settings }),
+          ...(data.nodes && { nodes: data.nodes as any }),
+          ...(data.connections && { connections: data.connections as any }),
+          ...(normalizedTriggers && { triggers: normalizedTriggers as any }),
+          ...(data.settings && { settings: data.settings as any }),
           ...(data.active !== undefined && { active: data.active }),
           updatedAt: new Date(),
         },
       });
+
+      // DEBUG: Log nodes to check if style is preserved
+      console.log("🔍 Nodes being saved:", JSON.stringify(data.nodes, null, 2));
+      console.log(
+        "🔍 Workflow returned from DB:",
+        JSON.stringify(workflow.nodes, null, 2)
+      );
 
       // Sync triggers with TriggerService if triggers or active status changed
       if (

@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
-import { useCallback, useEffect, useMemo } from 'react'
 import { useReactFlow } from '@xyflow/react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 interface AddNodeCommandDialogProps {
   open: boolean
@@ -63,6 +63,7 @@ export function AddNodeCommandDialog({
   const handleSelectNode = useCallback((nodeType: NodeType) => {
     // Calculate position where to add the node
     let nodePosition = { x: 300, y: 300 }
+    let parentGroupId: string | undefined = undefined
     
     if (insertionContext && reactFlowInstance) {
       // Check if this is a connection drop (source but no target)
@@ -73,6 +74,11 @@ export function AddNodeCommandDialog({
         const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
         
         if (sourceNode) {
+          // Check if source node is in a group
+          if (sourceNode.parentId) {
+            parentGroupId = sourceNode.parentId
+          }
+          
           // Position to the right of the source node
           nodePosition = {
             x: sourceNode.position.x + 200,
@@ -88,6 +94,11 @@ export function AddNodeCommandDialog({
         const targetNode = reactFlowInstance.getNode(insertionContext.targetNodeId)
         
         if (sourceNode && targetNode) {
+          // Check if source node is in a group
+          if (sourceNode.parentId) {
+            parentGroupId = sourceNode.parentId
+          }
+          
           // Assume standard node width (adjust based on your node sizes)
           const nodeWidth = 150
           const gap = 25
@@ -189,6 +200,11 @@ export function AddNodeCommandDialog({
       position: nodePosition,
       credentials: [],
       disabled: false,
+      // If source node is in a group, add new node to the same group
+      ...(parentGroupId && { 
+        parentId: parentGroupId,
+        extent: 'parent' as const
+      }),
     }
 
     // Add the node first

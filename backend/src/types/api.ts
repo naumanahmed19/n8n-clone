@@ -47,6 +47,22 @@ export const CreateWorkflowSchema = z.object({
         credentials: z.array(z.string()).optional(),
         disabled: z.boolean().default(false),
         mockData: z.any().optional(),
+        // Group node properties
+        parentId: z.string().optional(),
+        extent: z
+          .union([
+            z.literal("parent"),
+            z.tuple([z.number(), z.number(), z.number(), z.number()]),
+          ])
+          .optional(),
+        style: z
+          .object({
+            width: z.number().optional(),
+            height: z.number().optional(),
+            backgroundColor: z.string().optional(),
+          })
+          .passthrough() // Allow additional style properties
+          .optional(),
       })
     )
     .default([]),

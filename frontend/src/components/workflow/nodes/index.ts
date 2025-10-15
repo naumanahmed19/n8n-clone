@@ -9,3 +9,6 @@ export { default as ChatInterfaceNodeVisualTest } from "./ChatInterfaceNodeVisua
 
 // Image preview node
 export { ImagePreviewNode } from "./ImagePreviewNode";
+
+// Group node
+export { default as GroupNode } from "./GroupNode";

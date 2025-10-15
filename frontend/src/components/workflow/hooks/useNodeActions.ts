@@ -1,3 +1,4 @@
+import { useDetachNodes } from "@/hooks/workflow";
 import { useAddNodeDialogStore } from "@/stores/addNodeDialog";
 import { useWorkflowStore } from "@/stores/workflow";
 
@@ -13,6 +14,7 @@ export function useNodeActions(nodeId: string) {
   const workflow = useWorkflowStore((state) => state.workflow);
 
   const { openDialog } = useAddNodeDialogStore();
+  const detachNodes = useDetachNodes();
 
   const handleToggleDisabled = (nodeId: string, disabled: boolean) => {
     updateNode(nodeId, { disabled });
@@ -51,6 +53,10 @@ export function useNodeActions(nodeId: string) {
     toggleNodeLock(nodeId);
   };
 
+  const handleUngroup = () => {
+    detachNodes([nodeId], undefined);
+  };
+
   const handleOutputClick = (
     event: React.MouseEvent<HTMLDivElement>,
     outputHandle: string
@@ -79,6 +85,7 @@ export function useNodeActions(nodeId: string) {
     handleDuplicate,
     handleDelete,
     handleToggleLock,
+    handleUngroup,
     handleOutputClick,
   };
 }

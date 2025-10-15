@@ -1,5 +1,6 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { useWorkflowStore, useCopyPasteStore } from '@/stores'
+import { useCopyPasteStore, useWorkflowStore } from '@/stores'
+import { useReactFlow } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import React, { ReactNode, useCallback } from 'react'
 import { NodeContextMenu } from '../components/NodeContextMenu'
@@ -180,12 +181,18 @@ export function BaseNodeWrapper({
     handleDuplicate,
     handleDelete,
     handleToggleLock,
+    handleUngroup,
     handleOutputClick,
     handleToggleDisabled
   } = useNodeActions(id)
 
   // Get copy/paste functions from store
   const { copy, cut, paste, canCopy, canPaste } = useCopyPasteStore()
+  
+  // Import useReactFlow to check if node is in a group
+  const { getNode } = useReactFlow()
+  const currentNode = getNode(id)
+  const isInGroup = !!currentNode?.parentId
 
   // Use execution hook for toolbar functionality
   const { 
@@ -316,10 +323,12 @@ export function BaseNodeWrapper({
           onCopy={copy || undefined}
           onCut={cut || undefined}
           onPaste={paste || undefined}
+          onUngroup={isInGroup ? handleUngroup : undefined}
           isLocked={!!data.locked}
           readOnly={isReadOnly}
           canCopy={canCopy}
           canPaste={canPaste}
+          isInGroup={isInGroup}
         />
       </ContextMenu>
     )
@@ -393,10 +402,12 @@ export function BaseNodeWrapper({
         onCopy={copy || undefined}
         onCut={cut || undefined}
         onPaste={paste || undefined}
+        onUngroup={isInGroup ? handleUngroup : undefined}
         isLocked={!!data.locked}
         readOnly={isReadOnly}
         canCopy={canCopy}
         canPaste={canPaste}
+        isInGroup={isInGroup}
       />
     </ContextMenu>
   )

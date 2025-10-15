@@ -2,9 +2,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
+import { Node, NodeProps } from '@xyflow/react'
 import { MessageCircle, Send, Trash2 } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NodeProps } from '@xyflow/react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
 interface Message {
@@ -14,7 +14,7 @@ interface Message {
   timestamp: Date
 }
 
-interface ChatInterfaceNodeData {
+interface ChatInterfaceNodeData extends Record<string, unknown> {
   label: string
   nodeType: string
   parameters: Record<string, any>
@@ -32,7 +32,9 @@ interface ChatInterfaceNodeData {
   color?: string
 }
 
-export const ChatInterfaceNode = memo(function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfaceNodeData>) {
+type ChatInterfaceNodeType = Node<ChatInterfaceNodeData>
+
+export const ChatInterfaceNode = memo(function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfaceNodeType>) {
   const { executionState, updateNode, workflow, lastExecutionResult } = useWorkflowStore()
   const { executeWorkflow } = useExecutionControls()
   // For chat nodes, only set read-only during actual execution, not just when execution ID exists

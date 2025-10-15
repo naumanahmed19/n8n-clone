@@ -1,8 +1,9 @@
 ﻿import { useReactFlowAutoLayout } from '@/hooks/useReactFlowAutoLayout'
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
+import { Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
 import { useMemo, useRef } from 'react'
-import { ReactFlow,  Background, BackgroundVariant, Controls, Edge, EdgeTypes, MiniMap, Node, NodeTypes } from '@xyflow/react'
+import SelectedNodesToolbar from './SelectedNodesToolbar'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowEdge } from './edges'
 import './reactflow-theme.css'
@@ -35,6 +36,7 @@ interface WorkflowCanvasProps {
     onSelectionChange: any
     onNodeDoubleClick: any
     onNodeDragStart: any
+    onNodeDrag: any
     onNodeDragStop: any
     onSelectionDragStart: any
     onSelectionDragStop: any
@@ -64,6 +66,7 @@ export function WorkflowCanvas({
     onSelectionChange: handleSelectionChange,
     onNodeDoubleClick: handleNodeDoubleClick,
     onNodeDragStart: handleNodeDragStart,
+    onNodeDrag: handleNodeDrag,
     onNodeDragStop: handleNodeDragStop,
     onSelectionDragStart: handleSelectionDragStart,
     onSelectionDragStop: handleSelectionDragStop,
@@ -154,6 +157,11 @@ export function WorkflowCanvas({
         [isDisabled, handleNodeDragStart]
     )
     
+    const nodeDragHandler = useMemo(() => 
+        isDisabled ? undefined : handleNodeDrag,
+        [isDisabled, handleNodeDrag]
+    )
+    
     const nodeDragStopHandler = useMemo(() => 
         isDisabled ? undefined : handleNodeDragStop,
         [isDisabled, handleNodeDragStop]
@@ -196,6 +204,7 @@ export function WorkflowCanvas({
                     onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     onNodeDragStart={nodeDragStartHandler}
+                    onNodeDrag={nodeDragHandler}
                     onNodeDragStop={nodeDragStopHandler}
                     onSelectionDragStart={selectionDragStartHandler}
                     onSelectionDragStop={selectionDragStopHandler}
@@ -212,10 +221,13 @@ export function WorkflowCanvas({
                     connectionLineStyle={connectionLineStyle}
                     fitView
                     attributionPosition="bottom-left"
-                    edgeUpdaterRadius={isDisabled ? 0 : 10}
-                    connectionRadius={isDisabled ? 0 : 20}
+                    selectNodesOnDrag={false}
+                    multiSelectionKeyCode="Shift"
+                    selectionMode={SelectionMode.Partial}
                     defaultEdgeOptions={defaultEdgeOptions}
                 >
+                    {/* Toolbar for grouping selected nodes */}
+                    {!isDisabled && <SelectedNodesToolbar />}
                     {showControls && <Controls />}
                     {showMinimap && (
                         <MiniMap

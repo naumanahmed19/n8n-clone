@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     NodeTypes,
     ReactFlowProvider
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import {
     ResizableHandle,
@@ -27,7 +27,7 @@ import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
-import { ChatInterfaceNode, ImagePreviewNode } from './nodes'
+import { ChatInterfaceNode, GroupNode, ImagePreviewNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {
@@ -35,11 +35,12 @@ import {
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
 
-const nodeTypes: NodeTypes = {
+const nodeTypes = {
     custom: CustomNode,
     chat: ChatInterfaceNode,
     'image-preview': ImagePreviewNode,
-}
+    group: GroupNode,
+} as NodeTypes
 
 interface WorkflowEditorProps {
     nodeTypes: NodeType[]
@@ -87,6 +88,7 @@ export function WorkflowEditor({
         handleSelectionChange,
         handleNodeDoubleClick,
         handleNodeDragStart,
+        handleNodeDrag,
         handleNodeDragStop,
         handleSelectionDragStart,
         handleSelectionDragStop,
@@ -272,6 +274,7 @@ export function WorkflowEditor({
                                         onSelectionChange={handleSelectionChange}
                                         onNodeDoubleClick={handleNodeDoubleClick}
                                         onNodeDragStart={handleNodeDragStart}
+                                        onNodeDrag={handleNodeDrag}
                                         onNodeDragStop={handleNodeDragStop}
                                         onSelectionDragStart={handleSelectionDragStart}
                                         onSelectionDragStop={handleSelectionDragStop}

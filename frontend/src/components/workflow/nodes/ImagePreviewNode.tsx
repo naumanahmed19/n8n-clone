@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { useWorkflowStore } from '@/stores'
+import { Node, NodeProps } from '@xyflow/react'
 import { Download, Image as ImageIcon, Maximize2, RefreshCw } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { NodeProps } from '@xyflow/react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
-interface ImagePreviewNodeData {
+interface ImagePreviewNodeData extends Record<string, unknown> {
   label: string
   nodeType: string
   parameters: Record<string, any>
@@ -20,6 +20,8 @@ interface ImagePreviewNodeData {
   executionCapability?: 'trigger' | 'action' | 'transform' | 'condition'
 }
 
+type ImagePreviewNodeType = Node<ImagePreviewNodeData>
+
 /**
  * ImagePreviewNode - An example of using BaseNodeWrapper for a different use case.
  * This node displays image previews from the workflow execution results.
@@ -30,7 +32,7 @@ interface ImagePreviewNodeData {
  * - Download and fullscreen capabilities
  * - Uses BaseNodeWrapper for consistent behavior
  */
-export const ImagePreviewNode = memo(function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewNodeData>) {
+export const ImagePreviewNode = memo(function ImagePreviewNode({ data, selected, id }: NodeProps<ImagePreviewNodeType>) {
   const { updateNode, workflow, lastExecutionResult } = useWorkflowStore()
   const isReadOnly = false
   
