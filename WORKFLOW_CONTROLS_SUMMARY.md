@@ -6,24 +6,28 @@ The React Flow controls have been completely upgraded with a modern, Figma-style
 
 ## ✨ New Features
 
-### 1. **Execute/Play Button** 
+### 1. **Execute/Play Button**
+
 - Integrated from the toolbar
 - Smart trigger detection (single vs multiple)
 - Green play icon for visual prominence
 - Executes workflow directly from canvas
 
 ### 2. **Add Node Button**
+
 - Primary styled button for emphasis
 - Opens add node dialog at viewport center
 - Quick access without keyboard shortcut
 
 ### 3. **Zoom Controls**
+
 - Zoom In (+)
 - Zoom Out (-)
 - Fit View (maximize)
 - Clean, minimal design
 
 ### 4. **Custom Controls**
+
 - Easy to extend with WorkflowControlButton
 - Annotation control included by default
 - Dividers for visual separation
@@ -31,6 +35,7 @@ The React Flow controls have been completely upgraded with a modern, Figma-style
 ## 🎨 Design Features
 
 ### Visual Layout (Figma-Style)
+
 ```
 ┌────────────────────────────────────────────┐
 │  [▶] | [+] | [-] [+] [⊡] | [💬]           │
@@ -41,6 +46,7 @@ The React Flow controls have been completely upgraded with a modern, Figma-style
 ```
 
 ### Color Scheme
+
 - **Execute Button**: Green icon (`text-green-600`)
 - **Add Node**: Primary color (`bg-primary`)
 - **Zoom Controls**: Muted foreground (`text-muted-foreground`)
@@ -48,6 +54,7 @@ The React Flow controls have been completely upgraded with a modern, Figma-style
 - **Hover**: Accent background (`hover:bg-accent`)
 
 ### Positioning
+
 - **Location**: Bottom center of canvas
 - **Alignment**: `left-1/2 -translate-x-1/2` (perfect centering)
 - **Spacing**: `gap-1` between buttons
@@ -58,17 +65,20 @@ The React Flow controls have been completely upgraded with a modern, Figma-style
 ### Files Modified
 
 1. **WorkflowControls.tsx** (Created)
+
    - Main controls container component
    - Includes execute, add node, and zoom controls
    - Supports custom children controls
    - Props: `showAddNode`, `showExecute`, `className`
 
 2. **WorkflowCanvas.tsx** (Updated)
+
    - Replaced default React Flow Controls with WorkflowControls
    - Passes `showAddNode={!isDisabled}` to hide in read-only mode
    - Renders AddAnnotationControl as child
 
 3. **AddAnnotationControl.tsx** (Updated)
+
    - Now uses WorkflowControlButton component
    - Consistent styling with other controls
 
@@ -81,24 +91,25 @@ The React Flow controls have been completely upgraded with a modern, Figma-style
 ```tsx
 // WorkflowControls
 interface WorkflowControlsProps {
-  children?: ReactNode
-  className?: string
-  showAddNode?: boolean   // Default: true
-  showExecute?: boolean   // Default: true
+  children?: ReactNode;
+  className?: string;
+  showAddNode?: boolean; // Default: true
+  showExecute?: boolean; // Default: true
 }
 
 // WorkflowControlButton
 interface ControlButtonProps {
-  onClick: () => void
-  title: string
-  icon: ReactNode
-  className?: string
+  onClick: () => void;
+  title: string;
+  icon: ReactNode;
+  className?: string;
 }
 ```
 
 ## 🎯 Usage Examples
 
 ### Basic Usage
+
 ```tsx
 <WorkflowControls>
   <AddAnnotationControl />
@@ -106,6 +117,7 @@ interface ControlButtonProps {
 ```
 
 ### Read-Only Mode
+
 ```tsx
 <WorkflowControls showAddNode={false} showExecute={false}>
   {/* Only zoom controls */}
@@ -113,6 +125,7 @@ interface ControlButtonProps {
 ```
 
 ### With Custom Control
+
 ```tsx
 <WorkflowControls>
   <WorkflowControlButton
@@ -141,7 +154,7 @@ interface ControlButtonProps {
 1. **Execute** (if `showExecute={true}`)
 2. **Divider**
 3. **Add Node** (if `showAddNode={true}`)
-4. **Divider** 
+4. **Divider**
 5. **Zoom Out**
 6. **Zoom In**
 7. **Fit View**
@@ -150,11 +163,11 @@ interface ControlButtonProps {
 
 ## 🔐 Access Control
 
-| Mode | Execute | Add Node | Zoom | Custom |
-|------|---------|----------|------|---------|
-| **Edit** | ✅ | ✅ | ✅ | ✅ |
-| **Read-Only** | ❌ | ❌ | ✅ | Depends |
-| **Execution** | ❌ | ❌ | ✅ | Depends |
+| Mode          | Execute | Add Node | Zoom | Custom  |
+| ------------- | ------- | -------- | ---- | ------- |
+| **Edit**      | ✅      | ✅       | ✅   | ✅      |
+| **Read-Only** | ❌      | ❌       | ✅   | Depends |
+| **Execution** | ❌      | ❌       | ✅   | Depends |
 
 ## 📦 Dependencies
 
@@ -165,16 +178,16 @@ interface ControlButtonProps {
 
 ## 🎨 CSS Variables Used
 
-| Variable | Usage |
-|----------|-------|
-| `--card` | Control panel background |
-| `--border` | Borders and dividers |
-| `--primary` | Add node button |
-| `--primary-foreground` | Add node text |
-| `--muted-foreground` | Icon colors |
-| `--accent` | Hover background |
-| `--accent-foreground` | Hover text |
-| `--ring` | Focus indicator |
+| Variable               | Usage                    |
+| ---------------------- | ------------------------ |
+| `--card`               | Control panel background |
+| `--border`             | Borders and dividers     |
+| `--primary`            | Add node button          |
+| `--primary-foreground` | Add node text            |
+| `--muted-foreground`   | Icon colors              |
+| `--accent`             | Hover background         |
+| `--accent-foreground`  | Hover text               |
+| `--ring`               | Focus indicator          |
 
 ## 🧪 Testing Checklist
 
@@ -199,6 +212,7 @@ interface ControlButtonProps {
 ## 🚀 Future Enhancements
 
 Potential improvements:
+
 - [ ] Tooltips with keyboard shortcuts
 - [ ] Zoom percentage indicator
 - [ ] Lock/unlock canvas toggle
@@ -219,12 +233,14 @@ Potential improvements:
 ## 📊 Impact
 
 ### Before
+
 - Vertical controls on left side
 - Generic React Flow styling
 - Required CSS overrides for dark mode
 - Limited customization
 
 ### After
+
 - Horizontal controls centered at bottom
 - Consistent shadcn UI styling
 - Automatic dark mode support

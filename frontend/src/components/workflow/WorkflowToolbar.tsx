@@ -9,7 +9,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {
     Tooltip,
@@ -29,12 +28,10 @@ import {
     Loader2,
     MoreHorizontal,
     Package,
-    Redo,
     RefreshCw,
     Save,
     Settings,
     Terminal,
-    Undo,
     Upload
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -46,19 +43,11 @@ import { WorkflowSettingsModal } from './WorkflowSettingsModal'
 
 interface WorkflowToolbarProps {
   // Minimal props - mainly for workflow operations that need main workflow store
-  canUndo: boolean
-  canRedo: boolean
-  onUndo: () => void
-  onRedo: () => void
   onSave: () => void
 }
 
 export function WorkflowToolbar({
   // Minimal props - mainly for workflow operations that need main workflow store
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
   onSave,
 }: WorkflowToolbarProps) {
   const { showConfirm, ConfirmDialog } = useConfirmDialog()
@@ -265,44 +254,7 @@ export function WorkflowToolbar({
             />
           </div>
 
-          <Separator orientation="vertical" className="h-4" />
-
-          {/* Edit actions */}
-          <div className="flex items-center space-x-0.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onUndo}
-                  disabled={!canUndo}
-                  className="h-7 w-7 p-0"
-                >
-                  <Undo className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Undo (Ctrl+Z)</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRedo}
-                  disabled={!canRedo}
-                  className="h-7 w-7 p-0"
-                >
-                  <Redo className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Redo (Ctrl+Y)</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          {/* Removed Undo/Redo buttons - now available in canvas controls */}
 
       </div>
 

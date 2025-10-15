@@ -5,21 +5,24 @@
 ✅ **Created** `WorkflowControls.tsx` - Custom controls with shadcn UI styles  
 ✅ **Updated** `AddAnnotationControl.tsx` - Uses new WorkflowControlButton  
 ✅ **Updated** `WorkflowCanvas.tsx` - Uses WorkflowControls instead of default Controls  
-✅ **Cleaned** `reactflow-theme.css` - Removed legacy control styles  
+✅ **Cleaned** `reactflow-theme.css` - Removed legacy control styles
 
 ## Key Features
 
 🎨 **Design System Integration**
+
 - Uses shadcn UI design tokens
 - Automatic dark mode support
 - Consistent hover/focus states
 
 ♿ **Accessibility**
+
 - Proper ARIA labels
 - Keyboard navigation support
 - Focus-visible rings
 
 🔧 **Extensibility**
+
 - Easy to add custom controls
 - Reusable WorkflowControlButton component
 - Clean separation with divider
@@ -30,14 +33,16 @@
 
 ```tsx
 interface WorkflowControlsProps {
-  children?: ReactNode   // Custom control buttons
-  className?: string     // Additional CSS classes
-  showAddNode?: boolean  // Show/hide add node button (default: true)
-  showExecute?: boolean  // Show/hide execute button (default: true)
+  children?: ReactNode; // Custom control buttons
+  className?: string; // Additional CSS classes
+  showAddNode?: boolean; // Show/hide add node button (default: true)
+  showExecute?: boolean; // Show/hide execute button (default: true)
+  showUndoRedo?: boolean; // Show/hide undo/redo buttons (default: true)
 }
 ```
 
 **Default Controls:**
+
 - Execute/Play Button (▶) - Executes workflow from trigger nodes
   - Single trigger: Simple play button
   - Multiple triggers: Dropdown to select trigger
@@ -45,31 +50,33 @@ interface WorkflowControlsProps {
 - Zoom Out (-)
 - Zoom In (+)
 - Fit View (maximize icon)
+- Undo (↶) - Undo last action (Ctrl+Z)
+- Redo (↷) - Redo last undone action (Ctrl+Y)
 
 ### WorkflowControlButton
 
 ```tsx
 interface ControlButtonProps {
-  onClick: () => void
-  title: string        // Tooltip text & ARIA label
-  icon: ReactNode      // Lucide icon component
-  className?: string   // Additional CSS classes
+  onClick: () => void;
+  title: string; // Tooltip text & ARIA label
+  icon: ReactNode; // Lucide icon component
+  className?: string; // Additional CSS classes
 }
 ```
 
 ## Visual Style
 
 ```
-┌────────────────────────────────────────────┐
-│ [▶] | [+] | [-] [+] [⊡] | [💬]           │  Card background
-│                                            │  with border
-│ Play  Add  Zoom controls  Annotation      │
-│       Node (Out/In/Fit)   (custom)        │
-│                                            │
-│ Green Primary Muted icons Muted icons     │
-│ icon  colored                              │
-└────────────────────────────────────────────┘
-          Centered at bottom
+┌──────────────────────────────────────────────────────────┐
+│ [▶] | [+] | [-] [+] [⊡] | [↶] [↷] | [💬]              │  Card background
+│                                                          │  with border
+│ Play  Add  Zoom controls  Undo Redo  Annotation        │
+│       Node (Out/In/Fit)                (custom)         │
+│                                                          │
+│ Green Primary Muted icons Muted icons Muted icons       │
+│ icon  colored                                            │
+└──────────────────────────────────────────────────────────┘
+            Centered at bottom
 ```
 
 ## Usage Example
@@ -93,8 +100,13 @@ import { Sparkles } from 'lucide-react'
   {/* Custom controls */}
 </WorkflowControls>
 
-// Read-only mode: hide both add and execute
-<WorkflowControls showAddNode={false} showExecute={false}>
+// Hide undo/redo buttons
+<WorkflowControls showUndoRedo={false}>
+  {/* Custom controls */}
+</WorkflowControls>
+
+// Read-only mode: hide all edit controls
+<WorkflowControls showAddNode={false} showExecute={false} showUndoRedo={false}>
   {/* Only zoom controls and custom controls */}
 </WorkflowControls>
 
@@ -110,20 +122,21 @@ import { Sparkles } from 'lucide-react'
 
 ## CSS Variables (from shadcn)
 
-| Variable | Usage |
-|----------|-------|
-| `--card` | Control panel background |
-| `--border` | Border colors |
-| `--background` | Button background |
-| `--foreground` | Icons & text |
-| `--accent` | Hover state |
-| `--ring` | Focus indicator |
+| Variable       | Usage                    |
+| -------------- | ------------------------ |
+| `--card`       | Control panel background |
+| `--border`     | Border colors            |
+| `--background` | Button background        |
+| `--foreground` | Icons & text             |
+| `--accent`     | Hover state              |
+| `--ring`       | Focus indicator          |
 
 ## Position
 
 Default: `bottom-4 left-1/2 -translate-x-1/2` (centered at bottom, Figma-style)
 
 Override with className:
+
 ```tsx
 <WorkflowControls className="top-4 left-1/2">
   {/* Positioned top-center */}
@@ -135,7 +148,7 @@ Override with className:
 ✅ Modern browsers (Chrome, Firefox, Safari, Edge)  
 ✅ Dark mode via prefers-color-scheme  
 ✅ Keyboard navigation  
-✅ Touch devices  
+✅ Touch devices
 
 ## Performance
 

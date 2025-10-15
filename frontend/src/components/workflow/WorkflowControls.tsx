@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores'
 import { useReactFlow } from '@xyflow/react'
-import { Maximize2, Minus, Plus } from 'lucide-react'
+import { Maximize2, Minus, Plus, Redo, Undo } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 import { WorkflowExecuteButton } from './WorkflowExecuteButton'
 
@@ -10,12 +10,13 @@ interface WorkflowControlsProps {
   className?: string
   showAddNode?: boolean
   showExecute?: boolean
+  showUndoRedo?: boolean
 }
 
-export function WorkflowControls({ children, className, showAddNode = true, showExecute = true }: WorkflowControlsProps) {
+export function WorkflowControls({ children, className, showAddNode = true, showExecute = true, showUndoRedo = true }: WorkflowControlsProps) {
   const { zoomIn, zoomOut, fitView, screenToFlowPosition } = useReactFlow()
   const { openDialog } = useAddNodeDialogStore()
-  const { workflow } = useWorkflowStore()
+  const { workflow, undo, redo, canUndo, canRedo } = useWorkflowStore()
   const [isSaving] = useState(false)
 
   const handleAddNode = () => {
@@ -111,6 +112,35 @@ export function WorkflowControls({ children, className, showAddNode = true, show
       >
         <Maximize2 className="h-4 w-4" />
       </button>
+
+      {/* Undo/Redo */}
+      {showUndoRedo && (
+        <>
+          <div className="mx-1 h-6 w-px bg-border" />
+          
+          {/* Undo */}
+          <button
+            onClick={undo}
+            disabled={!canUndo()}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            title="Undo (Ctrl+Z)"
+            aria-label="Undo"
+          >
+            <Undo className="h-4 w-4" />
+          </button>
+
+          {/* Redo */}
+          <button
+            onClick={redo}
+            disabled={!canRedo()}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            title="Redo (Ctrl+Y)"
+            aria-label="Redo"
+          >
+            <Redo className="h-4 w-4" />
+          </button>
+        </>
+      )}
 
       {/* Divider if there are children */}
       {children && (

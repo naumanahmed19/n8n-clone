@@ -13,6 +13,7 @@ The React Flow controls have been upgraded to use shadcn UI styles for a consist
 **Purpose:** Custom controls component using shadcn UI design system
 
 **Features:**
+
 - ✅ Consistent styling with shadcn UI theme
 - ✅ Automatic dark mode support via CSS variables
 - ✅ Smooth hover transitions
@@ -23,8 +24,10 @@ The React Flow controls have been upgraded to use shadcn UI styles for a consist
 - ✅ Figma-style horizontal layout, centered at bottom
 
 **Components:**
+
 1. **`WorkflowControls`** - Main container component
-   - Displays add node button (primary colored) 
+
+   - Displays add node button (primary colored)
    - Displays zoom out, zoom in, and fit view buttons (in that order)
    - Horizontal layout like Figma controls
    - Centered at bottom of canvas
@@ -41,6 +44,7 @@ The React Flow controls have been upgraded to use shadcn UI styles for a consist
 ### 2. Updated `AddAnnotationControl.tsx`
 
 **Changes:**
+
 - Replaced `ControlButton` from `@xyflow/react` with `WorkflowControlButton`
 - Now uses consistent shadcn UI styling
 - Properly sized icon with explicit className
@@ -48,6 +52,7 @@ The React Flow controls have been upgraded to use shadcn UI styles for a consist
 ### 3. Updated `WorkflowCanvas.tsx`
 
 **Changes:**
+
 - Replaced `Controls` import from `@xyflow/react` with `WorkflowControls`
 - Updated JSX to use new component
 - Removed dependency on default React Flow controls
@@ -55,6 +60,7 @@ The React Flow controls have been upgraded to use shadcn UI styles for a consist
 ### 4. Cleaned up `reactflow-theme.css`
 
 **Changes:**
+
 - Removed legacy dark mode styles for `.react-flow__controls`
 - Added comment noting that custom controls now use shadcn UI
 - Kept other React Flow component styles (MiniMap, edges, etc.)
@@ -64,6 +70,7 @@ The React Flow controls have been upgraded to use shadcn UI styles for a consist
 ### Color Variables Used
 
 The controls use CSS variables from the shadcn theme:
+
 ```css
 --card            /* Background of control panel */
 --border          /* Border colors */
@@ -76,6 +83,7 @@ The controls use CSS variables from the shadcn theme:
 ### Styling Classes
 
 All buttons use consistent Tailwind classes:
+
 - `rounded-md` - Rounded corners
 - `text-muted-foreground` - Subtle icon color when idle
 - `hover:bg-accent` - Hover background effect
@@ -84,6 +92,7 @@ All buttons use consistent Tailwind classes:
 - `disabled:opacity-50` - Disabled state
 
 Container uses:
+
 - `flex items-center gap-1` - Horizontal layout with tight spacing
 - `left-1/2 -translate-x-1/2` - Perfect centering
 - `bottom-4` - Positioned at bottom with spacing
@@ -105,26 +114,28 @@ Container uses:
 ### Basic Usage
 
 ```tsx
-import { WorkflowControls } from './WorkflowControls'
+import { WorkflowControls } from "./WorkflowControls";
 
 // In your component
-{showControls && (
-  <WorkflowControls showAddNode={!readOnly}>
-    {/* Add custom controls here */}
-  </WorkflowControls>
-)}
+{
+  showControls && (
+    <WorkflowControls showAddNode={!readOnly}>
+      {/* Add custom controls here */}
+    </WorkflowControls>
+  );
+}
 ```
 
 ### Adding Custom Controls
 
 ```tsx
-import { WorkflowControlButton } from './WorkflowControls'
-import { MyIcon } from 'lucide-react'
+import { WorkflowControlButton } from "./WorkflowControls";
+import { MyIcon } from "lucide-react";
 
 export function MyCustomControl() {
   const handleClick = () => {
     // Your logic here
-  }
+  };
 
   return (
     <WorkflowControlButton
@@ -132,18 +143,19 @@ export function MyCustomControl() {
       title="My Custom Action"
       icon={<MyIcon className="h-4 w-4" />}
     />
-  )
+  );
 }
 
 // Then use it in WorkflowCanvas
 <WorkflowControls>
   <MyCustomControl />
-</WorkflowControls>
+</WorkflowControls>;
 ```
 
 ## Visual Comparison
 
 ### Before (Default React Flow Controls)
+
 - Generic styling
 - Required CSS overrides for dark mode
 - Inconsistent with app design
@@ -151,6 +163,7 @@ export function MyCustomControl() {
 - Vertical layout on left side
 
 ### After (Figma-Style shadcn UI Controls)
+
 - Matches application design language
 - Automatic dark mode support
 - Consistent hover/focus states
@@ -173,6 +186,7 @@ frontend/src/components/workflow/
 ## Testing
 
 The controls have been tested for:
+
 - ✅ Add node button (opens dialog at viewport center)
 - ✅ Zoom in/out functionality
 - ✅ Fit view functionality
@@ -190,6 +204,7 @@ No breaking changes for users. The controls functionality remains identical, onl
 ## Future Enhancements
 
 Potential improvements:
+
 1. Add tooltips using shadcn Tooltip component
 2. Add keyboard shortcuts display
 3. Add zoom percentage indicator

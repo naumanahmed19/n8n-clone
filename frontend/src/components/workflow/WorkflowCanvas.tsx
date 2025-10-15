@@ -232,7 +232,7 @@ export function WorkflowCanvas({
                     {/* Toolbar for grouping selected nodes */}
                     {!isDisabled && <SelectedNodesToolbar />}
                     {showControls && (
-                        <WorkflowControls showAddNode={!isDisabled}>
+                        <WorkflowControls showAddNode={!isDisabled} showExecute={!isDisabled} showUndoRedo={!isDisabled}>
                             <AddAnnotationControl />
                         </WorkflowControls>
                     )}
