@@ -1,5 +1,6 @@
 import { userService } from "@/services";
 import { ReactFlowInstance } from "@xyflow/react";
+import { persist } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
 
@@ -71,22 +72,23 @@ interface ReactFlowUIState {
   isSavingPreferences: boolean;
 }
 
-export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
-  (set, get) => ({
-    // Initial state
-    reactFlowInstance: null,
-    showMinimap: true,
-    showBackground: true,
-    showControls: true,
-    backgroundVariant: "dots",
-    panOnDrag: true,
-    zoomOnScroll: true,
-    canvasBoundaryX: 2000,
-    canvasBoundaryY: 500,
-    showExecutionPanel: false,
-    executionPanelSize: 4,
-    isLoadingPreferences: false,
-    isSavingPreferences: false,
+export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      reactFlowInstance: null,
+      showMinimap: true,
+      showBackground: true,
+      showControls: true,
+      backgroundVariant: "dots",
+      panOnDrag: true,
+      zoomOnScroll: true,
+      canvasBoundaryX: 2000,
+      canvasBoundaryY: 500,
+      showExecutionPanel: false,
+      executionPanelSize: 4,
+      isLoadingPreferences: false,
+      isSavingPreferences: false,
 
     // Set ReactFlow instance
     setReactFlowInstance: (instance) => set({ reactFlowInstance: instance }),
@@ -194,6 +196,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
         set({ isSavingPreferences: true });
         const state = get();
 
+        // Save to database (debounced)
         await userService.patchPreferences({
           canvas: {
             showMinimap: state.showMinimap,
@@ -206,6 +209,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
             canvasBoundaryY: state.canvasBoundaryY,
           },
         });
+        // Note: localStorage is automatically updated by persist middleware
       } catch (error) {
         console.error("Failed to save preferences:", error);
       } finally {
@@ -234,5 +238,20 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
       reactFlowInstance?.fitView({ padding: 0.1 });
     },
   }),
+    {
+      name: "reactflow-ui-settings", // localStorage key
+      partialize: (state) => ({
+        showMinimap: state.showMinimap,
+        showBackground: state.showBackground,
+        showControls: state.showControls,
+        backgroundVariant: state.backgroundVariant,
+        panOnDrag: state.panOnDrag,
+        zoomOnScroll: state.zoomOnScroll,
+        canvasBoundaryX: state.canvasBoundaryX,
+        canvasBoundaryY: state.canvasBoundaryY,
+        executionPanelSize: state.executionPanelSize,
+      }),
+    }
+  ),
   shallow
 );
