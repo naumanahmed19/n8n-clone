@@ -6,7 +6,7 @@ import {
 import { VM } from "vm2";
 import { exec } from "child_process";
 import { promisify } from "util";
-import * as fs from "fs";
+import { promises as fsPromises } from "fs";
 import * as path from "path";
 import * as os from "os";
 
@@ -274,7 +274,7 @@ ${code}
 `;
 
     // Write the code to the temporary file
-    await fs.promises.writeFile(tempFile, wrappedCode, "utf8");
+    await fsPromises.writeFile(tempFile, wrappedCode, "utf8");
 
     // Execute the Python script
     const { stdout, stderr } = await execAsync(`python3 "${tempFile}"`, {
@@ -318,7 +318,7 @@ ${code}
     // Clean up the temporary file
     if (tempFile) {
       try {
-        await fs.promises.unlink(tempFile);
+        await fsPromises.unlink(tempFile);
       } catch (cleanupError) {
         console.warn("[Code Node] Failed to clean up temp file:", cleanupError);
       }
