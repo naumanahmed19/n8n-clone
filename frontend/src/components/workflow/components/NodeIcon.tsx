@@ -62,7 +62,7 @@ export const NodeIcon = memo(function NodeIcon({
   if (Icon) {
     return (
       <div 
-        className={`${sizeClasses[size]} rounded-full ${iconColor} flex items-center justify-center flex-shrink-0`}
+        className={`${sizeClasses[size]} rounded-md ${iconColor} flex items-center justify-center flex-shrink-0 shadow-sm`}
       >
         <Icon className={`${iconSizeClasses[size]} text-white`} />
       </div>
@@ -76,8 +76,8 @@ export const NodeIcon = memo(function NodeIcon({
     return (
       <div className="flex-shrink-0">
         <div 
-          className={`${sizeClasses[size]} flex items-center justify-center text-white text-sm font-bold relative ${
-            isTrigger ? 'rounded-full' : 'rounded'
+          className={`${sizeClasses[size]} flex items-center justify-center text-white text-sm font-bold relative shadow-sm ${
+            isTrigger ? 'rounded-full' : 'rounded-md'
           }`}
           style={{ backgroundColor: color || '#666' }}
         >
@@ -85,7 +85,7 @@ export const NodeIcon = memo(function NodeIcon({
             <img 
               src={imageUrl} 
               alt={icon || 'Node icon'} 
-              className="w-full h-full object-cover rounded"
+              className={`w-full h-full object-cover ${isTrigger ? 'rounded-full' : 'rounded-md'}`}
             />
           ) : (
             <>
