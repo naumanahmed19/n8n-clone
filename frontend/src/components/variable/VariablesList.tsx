@@ -338,7 +338,11 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
         {filteredVariables.map((variable) => (
           <div
             key={variable.id}
-            className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border-b last:border-b-0 cursor-pointer group"
+            className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border-b last:border-b-0 group cursor-pointer"
+            onClick={() => {
+              console.log('Variable clicked:', variable.key)
+              handleEditVariable(variable)
+            }}
           >
             <div className="p-3">
               <div className="flex items-start justify-between mb-2">
@@ -378,6 +382,7 @@ export function VariablesList({ currentWorkflowId }: VariablesListProps) {
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <MoreHorizontal className="h-3 w-3" />
                     </Button>
