@@ -272,6 +272,24 @@ ReactFlow Dark Theme Overrides
   margin-left: 0.3rem;
 }
 
+/* Group node label */
+.group-node-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
+}
+
+.dark .group-node-label {
+  opacity: 0.8;
+}
+
 /* Node resizer styling for all nodes (improved visibility) */
 .react-flow__node-resizer {
   border-radius: 0;
