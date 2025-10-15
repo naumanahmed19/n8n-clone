@@ -6,39 +6,39 @@ import { NodeTypesList } from "@/components/node/NodeTypesList"
 import { Button } from "@/components/ui/button"
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator,
-  useSidebar
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarSeparator,
+    useSidebar
 } from "@/components/ui/sidebar"
 import { Switch } from "@/components/ui/switch"
 import { VariablesList } from "@/components/variable/VariablesList"
 import { WorkflowsList } from "@/components/workflow/WorkflowsList"
 import { useSidebarContext, useTheme } from "@/contexts"
-import { useAuthStore, useWorkflowStore, useReactFlowUIStore } from "@/stores"
+import { useAuthStore, useReactFlowUIStore, useWorkflowStore } from "@/stores"
 import {
-  Activity,
-  ArrowLeft,
-  Database,
-  Home,
-  Key,
-  Monitor,
-  Moon,
-  Plus,
-  Settings,
-  Sun,
-  Variable,
-  Workflow,
-  ZoomIn,
-  ZoomOut,
-  Maximize,
+    Activity,
+    ArrowLeft,
+    Database,
+    Home,
+    Key,
+    Maximize,
+    Monitor,
+    Moon,
+    Plus,
+    Settings,
+    Sun,
+    Variable,
+    Workflow,
+    ZoomIn,
+    ZoomOut,
 } from "lucide-react"
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"

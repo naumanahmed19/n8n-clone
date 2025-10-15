@@ -1,14 +1,17 @@
 # Settings Sidebar Full Height Fix
 
 ## Problem
+
 The Settings section in the sidebar was not taking full height and had limited scrollable area with a fixed max-height calculation.
 
 ## Solution
+
 Changed from fixed max-height to flexbox layout that fills the entire available space.
 
 ## Changes Made
 
 ### Before
+
 ```tsx
 <SidebarContent>
   <SidebarGroup className="px-0">
@@ -24,11 +27,13 @@ Changed from fixed max-height to flexbox layout that fills the entire available 
 ```
 
 **Issues:**
+
 - Fixed `max-h-[calc(100vh-12rem)]` didn't adapt to actual available space
 - Didn't fill full height when content was shorter
 - Inconsistent with other sidebar sections
 
 ### After
+
 ```tsx
 <SidebarContent>
   <SidebarGroup className="px-0 h-full">
@@ -46,6 +51,7 @@ Changed from fixed max-height to flexbox layout that fills the entire available 
 ```
 
 **Improvements:**
+
 - Uses flexbox to fill available space automatically
 - Outer wrapper: `flex flex-col h-full` - establishes flex container
 - Inner wrapper: `flex-1` - grows to fill remaining space
@@ -54,25 +60,31 @@ Changed from fixed max-height to flexbox layout that fills the entire available 
 ## Key Changes
 
 ### 1. Added Height Classes to Parent Containers
+
 ```tsx
 <SidebarGroup className="px-0 h-full">
   <SidebarGroupContent className="h-full">
 ```
+
 - Both parent containers now use `h-full` to take full height
 - Creates proper height context for children
 
 ### 2. Flex Container Wrapper
+
 ```tsx
 <div className="flex flex-col h-full">
 ```
+
 - Outer div establishes flex column layout
 - `h-full` ensures it fills parent height
 - Provides proper structure for flex children
 
 ### 3. Scrollable Content Area
+
 ```tsx
 <div className="p-4 space-y-6 overflow-y-auto flex-1">
 ```
+
 - `flex-1` makes it grow to fill available space
 - `overflow-y-auto` enables scrolling when content exceeds space
 - Removed fixed `max-h` calculation
@@ -107,6 +119,7 @@ SidebarContent (full height)
 ## Technical Details
 
 ### Flexbox Layout
+
 ```css
 /* Outer wrapper establishes flex context */
 flex flex-col h-full
@@ -116,6 +129,7 @@ flex-1 overflow-y-auto
 ```
 
 ### How It Works
+
 1. Parent containers pass down full height with `h-full`
 2. Outer div creates flex column container filling that height
 3. Inner div uses `flex-1` to grow and fill remaining space
@@ -123,15 +137,16 @@ flex-1 overflow-y-auto
 
 ### Comparison
 
-| Approach | Before | After |
-|----------|--------|-------|
-| Height Method | Fixed calc | Flexbox |
-| Max Height | `calc(100vh-12rem)` | Dynamic |
-| Fills Space | ❌ No | ✅ Yes |
-| Adapts to Screen | ❌ No | ✅ Yes |
-| CSS Complexity | High | Low |
+| Approach         | Before              | After   |
+| ---------------- | ------------------- | ------- |
+| Height Method    | Fixed calc          | Flexbox |
+| Max Height       | `calc(100vh-12rem)` | Dynamic |
+| Fills Space      | ❌ No               | ✅ Yes  |
+| Adapts to Screen | ❌ No               | ✅ Yes  |
+| CSS Complexity   | High                | Low     |
 
 ## Files Modified
+
 - `frontend/src/components/app-sidebar.tsx`
   - Added `h-full` to `SidebarGroup`
   - Added `h-full` to `SidebarGroupContent`
@@ -139,4 +154,5 @@ flex-1 overflow-y-auto
   - Changed inner div to use `flex-1` instead of `max-h`
 
 ## Result
+
 The Settings sidebar now properly fills the entire available height, making better use of screen space and providing a more consistent user experience across all sidebar sections.

@@ -1,6 +1,10 @@
-import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
-import { getPreferences, updatePreferences, patchPreferences } from '../controllers/user.controller';
+import { Router } from "express";
+import {
+  getPreferences,
+  patchPreferences,
+  updatePreferences,
+} from "../controllers/user.controller";
+import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
@@ -10,12 +14,12 @@ const router = Router();
  */
 
 // GET /api/users/preferences - Get current user's preferences
-router.get('/preferences', authenticateToken, getPreferences);
+router.get("/preferences", authenticateToken, getPreferences);
 
 // PUT /api/users/preferences - Replace all preferences
-router.put('/preferences', authenticateToken, updatePreferences);
+router.put("/preferences", authenticateToken, updatePreferences);
 
 // PATCH /api/users/preferences - Merge preferences (partial update)
-router.patch('/preferences', authenticateToken, patchPreferences);
+router.patch("/preferences", authenticateToken, patchPreferences);
 
 export default router;

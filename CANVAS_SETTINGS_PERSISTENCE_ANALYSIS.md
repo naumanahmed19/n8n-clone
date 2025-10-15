@@ -3,6 +3,7 @@
 ## Current State: ❌ NOT PERSISTED
 
 ### Where Settings Are Stored
+
 Currently, all canvas settings are stored **only in memory** using Zustand state management:
 
 **File**: `frontend/src/stores/reactFlowUI.ts`
@@ -29,6 +30,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
 ```
 
 ### Current Behavior
+
 - ❌ Settings **reset to defaults** on page refresh
 - ❌ Settings **not shared** across different browsers
 - ❌ Settings **not saved** to database
@@ -38,6 +40,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
 ## Database Status
 
 ### User Table
+
 Looking at `backend/prisma/schema.prisma`, the User model currently has:
 
 ```prisma
@@ -63,7 +66,9 @@ model User {
 ## Solution Options
 
 ### Option 1: LocalStorage Persistence (Quick & Simple) ⚡
+
 **Pros:**
+
 - ✅ Quick to implement (5 minutes)
 - ✅ No database changes required
 - ✅ No backend API needed
@@ -71,12 +76,14 @@ model User {
 - ✅ Persists across sessions
 
 **Cons:**
+
 - ❌ Not synced across devices
 - ❌ Lost when clearing browser data
 - ❌ Not backed up
 - ❌ Per-browser storage only
 
 **Implementation:**
+
 ```typescript
 import { persist } from "zustand/middleware";
 
@@ -104,7 +111,9 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 ```
 
 ### Option 2: Database Persistence (Robust & Scalable) 🗄️
+
 **Pros:**
+
 - ✅ Synced across all devices
 - ✅ Backed up with user data
 - ✅ Can be restored
@@ -112,6 +121,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 - ✅ Supports future features (themes, preferences)
 
 **Cons:**
+
 - ⏱️ Requires more work (~30 minutes)
 - 🔧 Needs database migration
 - 🌐 Requires API endpoints
@@ -120,6 +130,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 **Implementation Steps:**
 
 #### 1. Update Prisma Schema
+
 ```prisma
 model User {
   id          String       @id @default(cuid())
@@ -140,13 +151,16 @@ model User {
 ```
 
 #### 2. Run Migration
+
 ```bash
 cd backend
 npx prisma migrate dev --name add_user_preferences
 ```
 
 #### 3. Create Backend API
+
 **File**: `backend/src/controllers/user.controller.ts`
+
 ```typescript
 export const updatePreferences = async (req: Request, res: Response) => {
   try {
@@ -156,12 +170,12 @@ export const updatePreferences = async (req: Request, res: Response) => {
     const user = await prisma.user.update({
       where: { id: userId },
       data: { preferences },
-      select: { preferences: true }
+      select: { preferences: true },
     });
 
     res.json({ success: true, preferences: user.preferences });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update preferences' });
+    res.status(500).json({ error: "Failed to update preferences" });
   }
 };
 
@@ -171,40 +185,45 @@ export const getPreferences = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { preferences: true }
+      select: { preferences: true },
     });
 
     res.json({ preferences: user?.preferences || {} });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get preferences' });
+    res.status(500).json({ error: "Failed to get preferences" });
   }
 };
 ```
 
 #### 4. Add Routes
+
 **File**: `backend/src/routes/user.routes.ts`
+
 ```typescript
-router.get('/preferences', auth, getPreferences);
-router.put('/preferences', auth, updatePreferences);
+router.get("/preferences", auth, getPreferences);
+router.put("/preferences", auth, updatePreferences);
 ```
 
 #### 5. Create Frontend Service
+
 **File**: `frontend/src/services/user.ts`
+
 ```typescript
 export const userService = {
   async getPreferences() {
-    const response = await apiClient.get('/users/preferences');
+    const response = await apiClient.get("/users/preferences");
     return response.data.preferences;
   },
 
   async updatePreferences(preferences: any) {
-    const response = await apiClient.put('/users/preferences', { preferences });
+    const response = await apiClient.put("/users/preferences", { preferences });
     return response.data.preferences;
-  }
+  },
 };
 ```
 
 #### 6. Update Store with DB Sync
+
 ```typescript
 export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
   (set, get) => ({
@@ -218,7 +237,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
           set(prefs.canvas);
         }
       } catch (error) {
-        console.error('Failed to load preferences', error);
+        console.error("Failed to load preferences", error);
       }
     },
 
@@ -235,10 +254,10 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
             zoomOnScroll: state.zoomOnScroll,
             canvasBoundaryX: state.canvasBoundaryX,
             canvasBoundaryY: state.canvasBoundaryY,
-          }
+          },
         });
       } catch (error) {
-        console.error('Failed to save preferences', error);
+        console.error("Failed to save preferences", error);
       }
     }, 1000),
 
@@ -254,6 +273,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
 ```
 
 #### 7. Initialize on App Load
+
 ```typescript
 // In your app initialization (e.g., Layout component)
 useEffect(() => {
@@ -264,6 +284,7 @@ useEffect(() => {
 ```
 
 ### Option 3: Hybrid Approach (Best of Both) 🎯
+
 Combine localStorage (instant) + database (sync):
 
 ```typescript
@@ -281,7 +302,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
           }
         } catch (error) {
           // Fallback to localStorage (already loaded by persist middleware)
-          console.error('Failed to load DB preferences', error);
+          console.error("Failed to load DB preferences", error);
         }
       },
     }),
@@ -304,6 +325,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 ```
 
 **Benefits:**
+
 - ✅ Instant load from localStorage
 - ✅ Synced across devices via DB
 - ✅ Works offline
@@ -313,11 +335,13 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 ## Recommendation
 
 ### For MVP/Quick Fix: Option 1 (LocalStorage) ⚡
+
 - Fast to implement
 - Good enough for single-device users
 - Can upgrade to DB later
 
 ### For Production/Multi-device: Option 3 (Hybrid) 🎯
+
 - Best user experience
 - Most robust solution
 - Future-proof
@@ -331,9 +355,11 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 ## Files to Modify
 
 ### Option 1 (LocalStorage Only):
+
 - ✏️ `frontend/src/stores/reactFlowUI.ts`
 
 ### Option 2 (Database Only):
+
 - ✏️ `backend/prisma/schema.prisma`
 - ✏️ `backend/src/controllers/user.controller.ts`
 - ✏️ `backend/src/routes/user.routes.ts`
@@ -341,6 +367,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
 - ✏️ `frontend/src/stores/reactFlowUI.ts`
 
 ### Option 3 (Hybrid):
+
 - ✏️ All of the above
 
 ## Next Steps

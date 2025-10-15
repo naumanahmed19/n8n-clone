@@ -1,7 +1,7 @@
+import { userService } from "@/services";
 import { ReactFlowInstance } from "@xyflow/react";
 import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
-import { userService } from "@/services";
 
 // Debounce helper
 function debounce<T extends (...args: any[]) => any>(
@@ -165,21 +165,25 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
       try {
         set({ isLoadingPreferences: true });
         const preferences = await userService.getPreferences();
-        
+
         if (preferences.canvas) {
           set({
             showMinimap: preferences.canvas.showMinimap ?? get().showMinimap,
-            showBackground: preferences.canvas.showBackground ?? get().showBackground,
+            showBackground:
+              preferences.canvas.showBackground ?? get().showBackground,
             showControls: preferences.canvas.showControls ?? get().showControls,
-            backgroundVariant: preferences.canvas.backgroundVariant ?? get().backgroundVariant,
+            backgroundVariant:
+              preferences.canvas.backgroundVariant ?? get().backgroundVariant,
             panOnDrag: preferences.canvas.panOnDrag ?? get().panOnDrag,
             zoomOnScroll: preferences.canvas.zoomOnScroll ?? get().zoomOnScroll,
-            canvasBoundaryX: preferences.canvas.canvasBoundaryX ?? get().canvasBoundaryX,
-            canvasBoundaryY: preferences.canvas.canvasBoundaryY ?? get().canvasBoundaryY,
+            canvasBoundaryX:
+              preferences.canvas.canvasBoundaryX ?? get().canvasBoundaryX,
+            canvasBoundaryY:
+              preferences.canvas.canvasBoundaryY ?? get().canvasBoundaryY,
           });
         }
       } catch (error) {
-        console.error('Failed to load preferences:', error);
+        console.error("Failed to load preferences:", error);
       } finally {
         set({ isLoadingPreferences: false });
       }
@@ -189,7 +193,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
       try {
         set({ isSavingPreferences: true });
         const state = get();
-        
+
         await userService.patchPreferences({
           canvas: {
             showMinimap: state.showMinimap,
@@ -203,7 +207,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>(
           },
         });
       } catch (error) {
-        console.error('Failed to save preferences:', error);
+        console.error("Failed to save preferences:", error);
       } finally {
         set({ isSavingPreferences: false });
       }
