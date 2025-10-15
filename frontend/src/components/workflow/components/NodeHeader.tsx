@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { useReactFlowUIStore } from '@/stores'
 import { ChevronDown, ChevronUp, LucideIcon } from 'lucide-react'
 import { memo } from 'react'
 import { NodeIcon } from './NodeIcon'
@@ -63,14 +64,16 @@ export const NodeHeader = memo(function NodeHeader({
   showBorder = false,
   isExecuting = false
 }: NodeHeaderProps) {
+  const { compactMode } = useReactFlowUIStore()
+  
   const handleToggleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onToggleExpand?.()
   }
   
   return (
-    <div className={`flex items-center justify-between p-3 ${showBorder ? 'border-b border-border' : ''}`}>
-      <div className="flex items-center gap-2 flex-1 min-w-0">
+    <div className={`flex items-center ${compactMode && !isExpanded && (!canExpand || !onToggleExpand) ? 'justify-center' : 'justify-between'} ${compactMode && !isExpanded ? 'p-2' : 'p-3'} ${showBorder ? 'border-b border-border' : ''}`}>
+      <div className={`flex items-center ${compactMode && !isExpanded ? 'gap-0' : 'gap-2'} ${!compactMode || isExpanded ? 'flex-1' : ''} min-w-0`}>
         {/* Icon Component */}
         {icon && (
           <NodeIcon 
@@ -81,30 +84,32 @@ export const NodeHeader = memo(function NodeHeader({
           />
         )}
         
-        {/* Label Section */}
-        <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-sm font-medium truncate">{label}</span>
-          {headerInfo && (
-            <span className="text-xs text-muted-foreground truncate">
-              {headerInfo}
-            </span>
-          )}
-        </div>
+        {/* Label Section - Hidden in compact mode ONLY when collapsed */}
+        {(!compactMode || isExpanded) && (
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-sm font-medium truncate">{label}</span>
+            {headerInfo && (
+              <span className="text-xs text-muted-foreground truncate">
+                {headerInfo}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       
-      {/* Expand/Collapse Button */}
+      {/* Expand/Collapse Button - Always show if node can expand */}
       {canExpand && onToggleExpand && (
         <Button
           size="sm"
           variant="ghost"
           onClick={handleToggleClick}
-          className="h-8 w-8 p-0 flex-shrink-0"
+          className={`${compactMode ? 'h-6 w-6' : 'h-8 w-8'} p-0 flex-shrink-0`}
           aria-label={isExpanded ? 'Collapse node' : 'Expand node'}
         >
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4" />
+            <ChevronUp className={compactMode ? 'w-3 h-3' : 'w-4 h-4'} />
           ) : (
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className={compactMode ? 'w-3 h-3' : 'w-4 h-4'} />
           )}
         </Button>
       )}

@@ -6,6 +6,7 @@ export interface UserPreferences {
     showBackground?: boolean;
     showControls?: boolean;
     backgroundVariant?: "dots" | "lines" | "cross";
+    compactMode?: boolean;
     panOnDrag?: boolean;
     zoomOnScroll?: boolean;
     canvasBoundaryX?: number;

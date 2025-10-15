@@ -15,8 +15,7 @@ export function getNodeBorderClasses(config: NodeStyleConfig): string {
   const { status, selected, disabled } = config;
 
   if (disabled) return "border-border/50 opacity-60";
-  if (selected)
-    return "border-primary ring-1 ring-primary/20";
+  if (selected) return "border-primary ring-1 ring-primary/20";
 
   switch (status) {
     case "running":

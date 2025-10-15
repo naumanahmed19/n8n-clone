@@ -27,6 +27,7 @@ import {
   Lock,
   Map,
   Maximize,
+  Minimize2,
   Palette,
   Play,
   Plus,
@@ -85,6 +86,7 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
     showBackground,
     showControls,
     showExecutionPanel,
+    compactMode,
     panOnDrag,
     zoomOnScroll,
     toggleMinimap,
@@ -92,6 +94,7 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
     toggleControls,
     togglePanOnDrag,
     toggleZoomOnScroll,
+    toggleCompactMode,
     changeBackgroundVariant,
     toggleExecutionPanel,
     zoomIn,
@@ -330,6 +333,23 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
             >
               <Settings className="mr-2 h-4 w-4" />
               {showControls ? 'Hide' : 'Show'} Controls
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={toggleCompactMode}
+              className="cursor-pointer"
+            >
+              {compactMode ? (
+                <>
+                  <Maximize className="mr-2 h-4 w-4" />
+                  Show Node Titles
+                </>
+              ) : (
+                <>
+                  <Minimize2 className="mr-2 h-4 w-4" />
+                  Compact Mode
+                </>
+              )}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem

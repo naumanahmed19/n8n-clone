@@ -26,6 +26,7 @@ interface ReactFlowUIState {
   showBackground: boolean;
   showControls: boolean;
   backgroundVariant: "dots" | "lines" | "cross";
+  compactMode: boolean;
 
   // Canvas interaction settings
   panOnDrag: boolean;
@@ -47,6 +48,7 @@ interface ReactFlowUIState {
   toggleControls: () => void;
   togglePanOnDrag: () => void;
   toggleZoomOnScroll: () => void;
+  toggleCompactMode: () => void;
   changeBackgroundVariant: (
     variant: "dots" | "lines" | "cross" | "none"
   ) => void;
@@ -57,6 +59,7 @@ interface ReactFlowUIState {
   setShowBackground: (show: boolean) => void;
   setShowControls: (show: boolean) => void;
   setBackgroundVariant: (variant: "dots" | "lines" | "cross") => void;
+  setCompactMode: (compact: boolean) => void;
   setExecutionPanelSize: (size: number) => void;
 
   // ReactFlow controls
@@ -81,6 +84,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
       showBackground: true,
       showControls: true,
       backgroundVariant: "dots",
+      compactMode: false,
       panOnDrag: true,
       zoomOnScroll: true,
       canvasBoundaryX: 2000,
@@ -112,6 +116,10 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
       },
       toggleZoomOnScroll: () => {
         set((state) => ({ zoomOnScroll: !state.zoomOnScroll }));
+        get().savePreferences();
+      },
+      toggleCompactMode: () => {
+        set((state) => ({ compactMode: !state.compactMode }));
         get().savePreferences();
       },
 
@@ -152,6 +160,10 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
         set({ backgroundVariant: variant });
         get().savePreferences();
       },
+      setCompactMode: (compact) => {
+        set({ compactMode: compact });
+        get().savePreferences();
+      },
       setExecutionPanelSize: (size) => set({ executionPanelSize: size }),
       setCanvasBoundaryX: (value) => {
         set({ canvasBoundaryX: value });
@@ -177,6 +189,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
                 preferences.canvas.showControls ?? get().showControls,
               backgroundVariant:
                 preferences.canvas.backgroundVariant ?? get().backgroundVariant,
+              compactMode: preferences.canvas.compactMode ?? get().compactMode,
               panOnDrag: preferences.canvas.panOnDrag ?? get().panOnDrag,
               zoomOnScroll:
                 preferences.canvas.zoomOnScroll ?? get().zoomOnScroll,
@@ -205,6 +218,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
               showBackground: state.showBackground,
               showControls: state.showControls,
               backgroundVariant: state.backgroundVariant,
+              compactMode: state.compactMode,
               panOnDrag: state.panOnDrag,
               zoomOnScroll: state.zoomOnScroll,
               canvasBoundaryX: state.canvasBoundaryX,
@@ -247,6 +261,7 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
         showBackground: state.showBackground,
         showControls: state.showControls,
         backgroundVariant: state.backgroundVariant,
+        compactMode: state.compactMode,
         panOnDrag: state.panOnDrag,
         zoomOnScroll: state.zoomOnScroll,
         canvasBoundaryX: state.canvasBoundaryX,

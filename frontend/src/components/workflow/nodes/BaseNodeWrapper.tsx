@@ -1,5 +1,5 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { useCopyPasteStore, useWorkflowStore } from '@/stores'
+import { useCopyPasteStore, useWorkflowStore, useReactFlowUIStore } from '@/stores'
 import { useReactFlow } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import React, { ReactNode, useCallback } from 'react'
@@ -203,6 +203,9 @@ export function BaseNodeWrapper({
   
   // Get execution state from store for toolbar
   const { executionState } = useWorkflowStore()
+  
+  // Get compact mode from UI store
+  const { compactMode } = useReactFlowUIStore()
 
   // Handle double-click to open properties dialog
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -227,6 +230,10 @@ export function BaseNodeWrapper({
   const nodeOutputs = data.outputs || (showOutputHandle ? ['main'] : [])
   const isTrigger = data.executionCapability === 'trigger'
 
+  // Calculate node width based on compact mode
+  const effectiveCollapsedWidth = compactMode ? 'auto' : collapsedWidth
+  const effectiveExpandedWidth = compactMode ? '280px' : expandedWidth
+
   // Compact view (collapsed)
   if (!isExpanded) {
     return (
@@ -238,7 +245,7 @@ export function BaseNodeWrapper({
               className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
                 getNodeStatusClasses(data.status, selected, data.disabled)
               } ${className}`}
-              style={{ width: collapsedWidth }}
+              style={{ width: effectiveCollapsedWidth }}
             >
               {/* Dynamic Handles */}
               <NodeHandles
@@ -273,14 +280,16 @@ export function BaseNodeWrapper({
               {customContent ? (
                 customContent
               ) : nodeConfig ? (
-                <div className="flex items-center gap-2 p-3">
+                <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
                   <NodeIcon 
                     config={nodeConfig}
                     isExecuting={nodeExecutionState.isExecuting}
                   />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-medium truncate">{data.label}</span>
-                  </div>
+                  {!compactMode && (
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate">{data.label}</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -344,7 +353,7 @@ export function BaseNodeWrapper({
             className={`relative bg-card rounded-lg border shadow-lg transition-all duration-200 hover:shadow-xl ${
               getNodeStatusClasses(data.status, selected, data.disabled)
             } ${className}`}
-            style={{ width: expandedWidth }}
+            style={{ width: effectiveExpandedWidth }}
           >
             {/* Dynamic Handles */}
             <NodeHandles
