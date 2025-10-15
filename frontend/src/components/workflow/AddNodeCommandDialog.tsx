@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
+import { fuzzyFilter } from '@/utils/fuzzySearch'
 import { useReactFlow } from '@xyflow/react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface AddNodeCommandDialogProps {
   open: boolean
@@ -27,6 +28,8 @@ export function AddNodeCommandDialog({
   const { addNode, addConnection, removeConnection, workflow, updateNode } = useWorkflowStore()
   const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   
   // Get only active node types from the store
   const { activeNodeTypes, fetchNodeTypes } = useNodeTypes()
@@ -38,11 +41,51 @@ export function AddNodeCommandDialog({
     }
   }, [activeNodeTypes.length, fetchNodeTypes])
 
-  // Group nodes by category - only active nodes will be shown
+  // Reset search when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('')
+      setDebouncedSearchQuery('')
+    }
+  }, [open])
+
+  // Debounce search query for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 150) // Small delay for debouncing
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Memoize the getter function to avoid creating new arrays on every render
+  const nodeSearchGetter = useCallback((node: NodeType) => [
+    node.displayName,
+    node.description,
+    node.type,
+    ...node.group
+  ], [])
+
+  // Filter nodes using fuzzy search when there's a search query
+  const filteredNodeTypes = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) {
+      return activeNodeTypes
+    }
+    
+    // Use fuzzy search to filter and sort nodes
+    return fuzzyFilter(
+      activeNodeTypes,
+      debouncedSearchQuery,
+      nodeSearchGetter
+    )
+  }, [activeNodeTypes, debouncedSearchQuery, nodeSearchGetter])
+
+  // Group nodes by category - only filtered nodes will be shown
   const groupedNodes = useMemo(() => {
+    const hasSearch = debouncedSearchQuery.trim().length > 0
     const groups = new Map<string, NodeType[]>()
     
-    activeNodeTypes.forEach(node => {
+    filteredNodeTypes.forEach(node => {
       node.group.forEach(group => {
         if (!groups.has(group)) {
           groups.set(group, [])
@@ -51,14 +94,17 @@ export function AddNodeCommandDialog({
       })
     })
 
-    // Sort groups and nodes within groups
-    return Array.from(groups.entries())
+    // Sort groups alphabetically
+    const sortedGroups = Array.from(groups.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([groupName, nodes]) => ({
-        name: groupName,
-        nodes: nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
-      }))
-  }, [activeNodeTypes])
+    
+    // When searching, fuzzy filter already sorted by relevance - don't re-sort
+    // When not searching, sort nodes alphabetically within groups
+    return sortedGroups.map(([groupName, nodes]) => ({
+      name: groupName,
+      nodes: hasSearch ? nodes : nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
+    }))
+  }, [filteredNodeTypes, debouncedSearchQuery])
 
   const handleSelectNode = useCallback((nodeType: NodeType) => {
     if (!reactFlowInstance) return
@@ -292,7 +338,11 @@ export function AddNodeCommandDialog({
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search nodes..." />
+      <CommandInput 
+        placeholder="Search nodes..." 
+        value={searchQuery}
+        onValueChange={setSearchQuery}
+      />
       <CommandList>
         <CommandEmpty>No nodes found.</CommandEmpty>
         {groupedNodes.map((group, index) => (
@@ -302,7 +352,7 @@ export function AddNodeCommandDialog({
               {group.nodes.map((node) => (
                 <CommandItem
                   key={node.type}
-                  value={`${node.displayName} ${node.description} ${node.group.join(' ')}`}
+                  value={node.type}
                   onSelect={() => handleSelectNode(node)}
                   className="flex items-center gap-3 p-3"
                 >
