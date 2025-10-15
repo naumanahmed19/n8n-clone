@@ -4,11 +4,9 @@ import {
   NodeToolbar,
   useReactFlow,
 } from '@xyflow/react'
-import { memo, useCallback } from 'react'
 import { Trash2, Ungroup } from 'lucide-react'
+import { memo, useCallback } from 'react'
 
-import { useDetachNodes } from '@/hooks/workflow'
-import { useWorkflowStore } from '@/stores'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -16,6 +14,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { useDetachNodes } from '@/hooks/workflow'
+import { useWorkflowStore } from '@/stores'
 
 function GroupNode({ id }: NodeProps) {
   const detachNodes = useDetachNodes()
