@@ -205,7 +205,7 @@ export function transformWorkflowNodesToReactFlow(
     // Add parent/child relationship properties if they exist
     if (node.parentId) {
       reactFlowNode.parentId = node.parentId;
-      reactFlowNode.expandParent = true; // Important: allows child to expand parent size
+      reactFlowNode.expandParent = false; // Prevent auto-expanding parent when child moves
     }
     if (node.extent) {
       reactFlowNode.extent = node.extent;
