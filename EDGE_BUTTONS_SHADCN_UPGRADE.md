@@ -1,6 +1,7 @@
 # Edge Buttons - shadcn UI Styling Upgrade
 
 ## Overview
+
 Updated the connection edge buttons (Add Node and Delete Connection) to match the modern shadcn UI styling of our WorkflowControls, creating a consistent visual design across the canvas.
 
 ## Changes Made
@@ -8,6 +9,7 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 ### File: `frontend/src/components/workflow/edges/EdgeButton.tsx`
 
 #### Before:
+
 ```tsx
 // Old styling - inconsistent with controls
 <div className="nodrag nopan pointer-events-auto absolute flex gap-1">
@@ -17,21 +19,17 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
   >
     +
   </Button>
-  <Button
-    variant="destructive"
-    className="h-6 w-6 rounded-xl shadow-sm"
-  >
+  <Button variant="destructive" className="h-6 w-6 rounded-xl shadow-sm">
     <Trash2 />
   </Button>
 </div>
 ```
 
 #### After:
+
 ```tsx
 // New styling - matches WorkflowControls aesthetic
-<div
-  className="nodrag nopan pointer-events-auto absolute flex items-center gap-1 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border border-border/40 rounded-lg p-1 shadow-sm"
->
+<div className="nodrag nopan pointer-events-auto absolute flex items-center gap-1 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border border-border/40 rounded-lg p-1 shadow-sm">
   <Button
     variant="ghost"
     className="h-6 w-6 rounded-md hover:bg-accent/50"
@@ -53,6 +51,7 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 ## Design Improvements
 
 ### 1. **Container Styling**
+
 - ✅ **Background**: `bg-card/95` with backdrop blur (glassmorphism effect)
 - ✅ **Border**: Subtle `border-border/40` for definition
 - ✅ **Rounded**: `rounded-lg` for modern appearance
@@ -60,16 +59,18 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 - ✅ **Shadow**: `shadow-sm` for depth
 
 ### 2. **Button Updates**
+
 - ✅ **Variant**: Changed from `secondary`/`destructive` to `ghost` for subtlety
 - ✅ **Size**: Consistent `h-6 w-6`
 - ✅ **Rounded**: `rounded-md` instead of `rounded-xl`
 - ✅ **Icons**: Proper Lucide icons (`Plus`, `Trash2`) at `h-3.5 w-3.5`
-- ✅ **Hover States**: 
+- ✅ **Hover States**:
   - Add button: `hover:bg-accent/50` (subtle highlight)
   - Delete button: `hover:bg-destructive/10 hover:text-destructive` (red on hover)
 - ✅ **Tooltips**: Added `title` attributes for accessibility
 
 ### 3. **Visual Separator**
+
 - ✅ Added divider between buttons: `<div className="w-px h-4 bg-border/40" />`
 - ✅ Creates clear visual separation
 - ✅ Matches WorkflowControls separator style
@@ -77,6 +78,7 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 ## Visual Consistency
 
 ### Now Matches:
+
 - ✅ **WorkflowControls** - Same glassmorphism background
 - ✅ **Control Buttons** - Same ghost variant and hover states
 - ✅ **Icon Sizing** - Consistent h-3.5 w-3.5 dimensions
@@ -87,12 +89,14 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 ## Benefits
 
 ### User Experience
+
 - **Visual Cohesion**: Edge buttons now feel part of the same design system
 - **Better Readability**: Glassmorphism background makes buttons stand out over connections
 - **Clear Actions**: Proper icons (Plus for add) more intuitive than "+" text
 - **Hover Feedback**: Destructive hover state clearly indicates delete action
 
 ### Technical
+
 - **CSS Variables**: Uses shadcn theme variables for dark mode support
 - **Backdrop Blur**: Modern glassmorphism effect
 - **Accessibility**: Added title attributes for tooltips
@@ -101,6 +105,7 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 ## Before vs After
 
 ### Before:
+
 - Plain secondary button with "+" text
 - Bright red destructive button
 - Rounded-xl (too rounded)
@@ -108,6 +113,7 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 - Inconsistent with other controls
 
 ### After:
+
 - Professional glassmorphism container
 - Ghost buttons with subtle hover states
 - Proper Plus icon instead of text
@@ -118,6 +124,7 @@ Updated the connection edge buttons (Add Node and Delete Connection) to match th
 ## Dark Mode Support
 
 All styling uses CSS variables from shadcn theme:
+
 - `bg-card` - Adapts to theme
 - `border-border` - Theme-aware borders
 - `bg-accent` - Theme accent colors
@@ -145,6 +152,7 @@ All styling uses CSS variables from shadcn theme:
 ## Future Enhancements
 
 Possible improvements:
+
 - [ ] Use WorkflowControlButton component for consistency
 - [ ] Add keyboard shortcuts (A for add, Delete for remove)
 - [ ] Animate button appearance
@@ -158,6 +166,7 @@ Possible improvements:
 ## CSS Classes Used
 
 ### Container:
+
 - `bg-card/95` - Semi-transparent card background
 - `backdrop-blur` - Blur effect
 - `supports-[backdrop-filter]:bg-card/60` - Enhanced transparency when supported
@@ -167,6 +176,7 @@ Possible improvements:
 - `shadow-sm` - Small shadow
 
 ### Buttons:
+
 - `variant="ghost"` - Subtle button style
 - `h-6 w-6` - Consistent size
 - `rounded-md` - Medium rounded corners
@@ -174,6 +184,7 @@ Possible improvements:
 - `hover:bg-destructive/10 hover:text-destructive` - Delete button hover
 
 ### Separator:
+
 - `w-px` - 1px width
 - `h-4` - 16px height
 - `bg-border/40` - Subtle separator color

@@ -1,7 +1,7 @@
 import { useAddNodeDialogStore, useWorkflowStore } from '@/stores';
+import { EdgeLabelRenderer } from '@xyflow/react';
 import { Plus, Trash2 } from 'lucide-react';
 import { CSSProperties, useCallback } from 'react';
-import { EdgeLabelRenderer } from '@xyflow/react';
 
 interface EdgeButtonProps {
   x: number;
