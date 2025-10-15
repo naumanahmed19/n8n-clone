@@ -26,7 +26,7 @@ function GroupNode({ id, data }: NodeProps) {
 
   // Get the group node data from workflow store
   const workflowNode = workflow?.nodes.find(n => n.id === id)
-  const groupName: string = workflowNode?.name || (data?.label as string) || `Group ${id}`
+  const groupName: string = workflowNode?.name || (data?.label as string) || ''
 
   // Check if this group has child nodes
   const childNodes = getNodes().filter((node) => node.parentId === id)
@@ -81,10 +81,12 @@ function GroupNode({ id, data }: NodeProps) {
           <div className="group-node">
             <NodeResizer />
             
-            {/* Group Label */}
-            <div className="group-node-label">
-              {groupName}
-            </div>
+            {/* Group Label - only show if name is not empty */}
+            {groupName && (
+              <div className="group-node-label">
+                {groupName}
+              </div>
+            )}
             
             {hasChildNodes && (
               <NodeToolbar className="nodrag">

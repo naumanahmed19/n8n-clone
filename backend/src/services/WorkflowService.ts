@@ -543,8 +543,15 @@ export class WorkflowService {
       if (!node.type || typeof node.type !== "string") {
         errors.push(`Node ${node.id} must have a valid type`);
       }
-      if (!node.name || typeof node.name !== "string") {
-        errors.push(`Node ${node.id} must have a valid name`);
+      // Allow empty names for group nodes, but require valid string type
+      if (node.type === "group") {
+        if (typeof node.name !== "string") {
+          errors.push(`Node ${node.id} must have a valid name`);
+        }
+      } else {
+        if (!node.name || typeof node.name !== "string") {
+          errors.push(`Node ${node.id} must have a valid name`);
+        }
       }
       if (
         !node.position ||

@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
 import { Palette, Type } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useWorkflowStore } from '@/stores'
@@ -21,18 +21,18 @@ interface GroupEditDialogProps {
   groupId: string
 }
 
-// Predefined color palette for groups
-const GROUP_COLORS = [
-  { name: 'Blue', value: '#3b82f6', light: '#dbeafe' },
-  { name: 'Green', value: '#10b981', light: '#d1fae5' },
-  { name: 'Purple', value: '#8b5cf6', light: '#ede9fe' },
-  { name: 'Pink', value: '#ec4899', light: '#fce7f3' },
-  { name: 'Orange', value: '#f97316', light: '#ffedd5' },
-  { name: 'Red', value: '#ef4444', light: '#fee2e2' },
-  { name: 'Yellow', value: '#eab308', light: '#fef9c3' },
-  { name: 'Teal', value: '#14b8a6', light: '#ccfbf1' },
-  { name: 'Indigo', value: '#6366f1', light: '#e0e7ff' },
-  { name: 'Gray', value: '#6b7280', light: '#f3f4f6' },
+// Predefined color palette for groups - each preset includes background and border
+const GROUP_COLOR_PRESETS = [
+  { name: 'Blue', background: '#dbeafe', border: '#3b82f6' },
+  { name: 'Green', background: '#d1fae5', border: '#10b981' },
+  { name: 'Purple', background: '#ede9fe', border: '#8b5cf6' },
+  { name: 'Pink', background: '#fce7f3', border: '#ec4899' },
+  { name: 'Orange', background: '#ffedd5', border: '#f97316' },
+  { name: 'Red', background: '#fee2e2', border: '#ef4444' },
+  { name: 'Yellow', background: '#fef9c3', border: '#eab308' },
+  { name: 'Teal', background: '#ccfbf1', border: '#14b8a6' },
+  { name: 'Indigo', background: '#e0e7ff', border: '#6366f1' },
+  { name: 'Gray', background: '#f3f4f6', border: '#6b7280' },
 ]
 
 export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialogProps) {
@@ -40,9 +40,8 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
   const { updateNode, workflow, saveToHistory, setDirty } = useWorkflowStore()
   
   const [groupName, setGroupName] = useState('')
-  const [selectedColor, setSelectedColor] = useState<string | null>(null)
-  const [customColor, setCustomColor] = useState('')
-  const [selectedBorderColor, setSelectedBorderColor] = useState<string | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [customBackgroundColor, setCustomBackgroundColor] = useState('')
   const [customBorderColor, setCustomBorderColor] = useState('')
 
   // Load current group data when dialog opens
@@ -52,42 +51,31 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
       const workflowNode = workflow?.nodes.find(n => n.id === groupId)
       
       if (workflowNode) {
-        setGroupName(workflowNode.name || `Group ${groupId}`)
+        setGroupName(workflowNode.name || '')
         
-        // Check if there's a background color set
         const bgColor = node?.style?.backgroundColor || workflowNode.style?.backgroundColor
-        if (bgColor) {
-          // Check if it matches a predefined color
-          const matchedColor = GROUP_COLORS.find(
-            c => c.value === bgColor || c.light === bgColor
-          )
-          if (matchedColor) {
-            setSelectedColor(matchedColor.value)
-          } else {
-            setCustomColor(bgColor)
-            setSelectedColor(null)
-          }
-        } else {
-          setSelectedColor(null)
-          setCustomColor('')
-        }
-        
-        // Check if there's a border color set
         const borderColor = node?.style?.borderColor || workflowNode.style?.borderColor
-        if (borderColor) {
-          // Check if it matches a predefined color
-          const matchedBorderColor = GROUP_COLORS.find(
-            c => c.value === borderColor
+        
+        // Check if colors match a preset
+        if (bgColor && borderColor) {
+          const matchedPreset = GROUP_COLOR_PRESETS.find(
+            p => p.background === bgColor && p.border === borderColor
           )
-          if (matchedBorderColor) {
-            setSelectedBorderColor(matchedBorderColor.value)
+          if (matchedPreset) {
+            setSelectedPreset(matchedPreset.name)
+            setCustomBackgroundColor('')
+            setCustomBorderColor('')
           } else {
+            // Custom colors
+            setSelectedPreset(null)
+            setCustomBackgroundColor(bgColor)
             setCustomBorderColor(borderColor)
-            setSelectedBorderColor(null)
           }
         } else {
-          setSelectedBorderColor(null)
-          setCustomBorderColor('')
+          // Only one or no colors set
+          setSelectedPreset(null)
+          setCustomBackgroundColor(bgColor || '')
+          setCustomBorderColor(borderColor || '')
         }
       }
     }
@@ -102,29 +90,21 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
     const workflowNode = workflow?.nodes.find(n => n.id === groupId)
     if (!workflowNode) return
 
-    // Determine the background color to use
+    // Determine colors based on preset or custom
     let backgroundColor: string | undefined
-    if (selectedColor) {
-      // Use light version of predefined color
-      const colorObj = GROUP_COLORS.find(c => c.value === selectedColor)
-      backgroundColor = colorObj?.light
-    } else if (customColor) {
-      backgroundColor = customColor
-    } else {
-      // Remove background color
-      backgroundColor = undefined
-    }
-
-    // Determine the border color to use
     let borderColor: string | undefined
-    if (selectedBorderColor) {
-      // Use the border color value directly
-      borderColor = selectedBorderColor
-    } else if (customBorderColor) {
-      borderColor = customBorderColor
+
+    if (selectedPreset) {
+      // Use preset colors
+      const preset = GROUP_COLOR_PRESETS.find(p => p.name === selectedPreset)
+      if (preset) {
+        backgroundColor = preset.background
+        borderColor = preset.border
+      }
     } else {
-      // Remove border color
-      borderColor = undefined
+      // Use custom colors
+      backgroundColor = customBackgroundColor || undefined
+      borderColor = customBorderColor || undefined
     }
 
     // Update the node with new properties
@@ -139,7 +119,7 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
 
     setDirty(true)
     onOpenChange(false)
-  }, [groupId, groupName, selectedColor, customColor, selectedBorderColor, customBorderColor, workflow, updateNode, saveToHistory, setDirty, onOpenChange])
+  }, [groupId, groupName, selectedPreset, customBackgroundColor, customBorderColor, workflow, updateNode, saveToHistory, setDirty, onOpenChange])
 
   const handleCancel = useCallback(() => {
     onOpenChange(false)
@@ -170,120 +150,111 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
             />
           </div>
 
-          {/* Background Color Picker */}
+          {/* Color Presets */}
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              Background Color
+              Color Presets
             </Label>
+            <p className="text-xs text-muted-foreground">
+              Choose a preset with matching background and border colors
+            </p>
             
-            {/* Predefined Colors */}
+            {/* Predefined Presets - show background with border */}
             <div className="grid grid-cols-5 gap-2">
-              {GROUP_COLORS.map((color) => (
+              {GROUP_COLOR_PRESETS.map((preset) => (
                 <button
-                  key={`bg-${color.value}`}
+                  key={preset.name}
                   type="button"
                   onClick={() => {
-                    setSelectedColor(color.value)
-                    setCustomColor('')
+                    setSelectedPreset(preset.name)
+                    setCustomBackgroundColor('')
+                    setCustomBorderColor('')
                   }}
                   className={`
-                    h-10 rounded-md border-2 transition-all
-                    ${selectedColor === color.value 
-                      ? 'border-primary ring-2 ring-primary ring-offset-2' 
-                      : 'border-transparent hover:border-gray-300'
+                    h-12 rounded-md border-4 transition-all relative
+                    ${selectedPreset === preset.name 
+                      ? 'ring-2 ring-primary ring-offset-2' 
+                      : 'hover:ring-1 hover:ring-gray-300'
                     }
                   `}
-                  style={{ backgroundColor: color.light }}
-                  title={color.name}
+                  style={{ 
+                    backgroundColor: preset.background,
+                    borderColor: preset.border
+                  }}
+                  title={preset.name}
                 >
-                  <span className="sr-only">{color.name}</span>
+                  <span className="sr-only">{preset.name}</span>
+                  {selectedPreset === preset.name && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-primary-foreground" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                          <path d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
 
-            {/* Custom Color Input */}
+            {/* Clear Preset Button */}
+            {selectedPreset && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedPreset(null)}
+                className="w-full"
+              >
+                Clear Preset
+              </Button>
+            )}
+          </div>
+
+          {/* Custom Colors Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <Label className="flex items-center gap-2 text-base">
+              <Palette className="h-4 w-4" />
+              Custom Colors
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Or set custom background and border colors individually
+            </p>
+
+            {/* Custom Background Color */}
             <div className="space-y-2">
-              <Label htmlFor="custom-color" className="text-xs text-muted-foreground">
-                Or enter a custom color
+              <Label htmlFor="custom-bg-color" className="text-sm font-normal">
+                Background Color
               </Label>
               <div className="flex gap-2">
                 <Input
-                  id="custom-color"
+                  id="custom-bg-color"
                   type="text"
-                  value={customColor}
+                  value={customBackgroundColor}
                   onChange={(e) => {
-                    setCustomColor(e.target.value)
-                    setSelectedColor(null)
+                    setCustomBackgroundColor(e.target.value)
+                    setSelectedPreset(null)
                   }}
                   placeholder="#hexcode or rgb()"
                   className="font-mono text-sm"
                 />
                 <input
                   type="color"
-                  value={customColor || '#3b82f6'}
+                  value={customBackgroundColor || '#dbeafe'}
                   onChange={(e) => {
-                    setCustomColor(e.target.value)
-                    setSelectedColor(null)
+                    setCustomBackgroundColor(e.target.value)
+                    setSelectedPreset(null)
                   }}
                   className="w-12 h-10 rounded cursor-pointer"
                 />
               </div>
             </div>
 
-            {/* Clear Color Button */}
-            {(selectedColor || customColor) && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedColor(null)
-                  setCustomColor('')
-                }}
-                className="w-full"
-              >
-                Clear Background Color
-              </Button>
-            )}
-          </div>
-
-          {/* Border Color Picker */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              Border Color
-            </Label>
-            
-            {/* Predefined Border Colors */}
-            <div className="grid grid-cols-5 gap-2">
-              {GROUP_COLORS.map((color) => (
-                <button
-                  key={`border-${color.value}`}
-                  type="button"
-                  onClick={() => {
-                    setSelectedBorderColor(color.value)
-                    setCustomBorderColor('')
-                  }}
-                  className={`
-                    h-10 rounded-md border-4 transition-all bg-background
-                    ${selectedBorderColor === color.value 
-                      ? 'ring-2 ring-primary ring-offset-2' 
-                      : 'hover:ring-1 hover:ring-gray-300'
-                    }
-                  `}
-                  style={{ borderColor: color.value }}
-                  title={`${color.name} Border`}
-                >
-                  <span className="sr-only">{color.name} Border</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Border Color Input */}
+            {/* Custom Border Color */}
             <div className="space-y-2">
-              <Label htmlFor="custom-border-color" className="text-xs text-muted-foreground">
-                Or enter a custom border color
+              <Label htmlFor="custom-border-color" className="text-sm font-normal">
+                Border Color
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -292,7 +263,7 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
                   value={customBorderColor}
                   onChange={(e) => {
                     setCustomBorderColor(e.target.value)
-                    setSelectedBorderColor(null)
+                    setSelectedPreset(null)
                   }}
                   placeholder="#hexcode or rgb()"
                   className="font-mono text-sm"
@@ -302,26 +273,26 @@ export function GroupEditDialog({ open, onOpenChange, groupId }: GroupEditDialog
                   value={customBorderColor || '#3b82f6'}
                   onChange={(e) => {
                     setCustomBorderColor(e.target.value)
-                    setSelectedBorderColor(null)
+                    setSelectedPreset(null)
                   }}
                   className="w-12 h-10 rounded cursor-pointer"
                 />
               </div>
             </div>
 
-            {/* Clear Border Color Button */}
-            {(selectedBorderColor || customBorderColor) && (
+            {/* Clear Custom Colors Button */}
+            {(customBackgroundColor || customBorderColor) && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setSelectedBorderColor(null)
+                  setCustomBackgroundColor('')
                   setCustomBorderColor('')
                 }}
                 className="w-full"
               >
-                Clear Border Color
+                Clear Custom Colors
               </Button>
             )}
           </div>
