@@ -3,7 +3,6 @@ import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { Background, BackgroundVariant, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
 import { useMemo, useRef } from 'react'
-import SelectedNodesToolbar from './SelectedNodesToolbar'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowControls } from './WorkflowControls'
 import { WorkflowEdge } from './edges'
@@ -229,8 +228,6 @@ export function WorkflowCanvas({
                     fitView
                     defaultEdgeOptions={defaultEdgeOptions}
                 >
-                    {/* Toolbar for grouping selected nodes */}
-                    {!isDisabled && <SelectedNodesToolbar />}
                     {showControls && (
                         <WorkflowControls showAddNode={!isDisabled} showExecute={!isDisabled} showUndoRedo={!isDisabled} />
                     )}
