@@ -3,6 +3,7 @@ export { AppSidebar } from "./app-sidebar";
 export * from "./auth";
 export * from "./credential";
 export * from "./customNode";
+export * from "./error";
 export * from "./execution";
 export * from "./layout";
 export * from "./layouts";
