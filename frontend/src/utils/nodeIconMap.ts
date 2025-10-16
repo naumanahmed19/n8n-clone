@@ -47,7 +47,7 @@ export const NODE_ICON_MAP: Record<string, NodeIconConfig> = {
 
   // ===== AI NODES =====
   openai: {
-    icon: "🤖",
+    icon: "svg:openai",
     color: "#10A37F",
     description: "OpenAI (GPT-4, GPT-3.5)",
   },

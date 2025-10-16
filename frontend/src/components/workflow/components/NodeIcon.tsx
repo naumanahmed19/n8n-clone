@@ -1,3 +1,4 @@
+import { getIconComponent, isTextIcon } from '@/utils/iconMapper'
 import { LucideIcon } from 'lucide-react'
 import { memo } from 'react'
 
@@ -73,6 +74,11 @@ export const NodeIcon = memo(function NodeIcon({
   if (config) {
     const { icon, color, isTrigger, imageUrl } = config
     
+    // Get icon component from icon mapper
+    const IconComponent = getIconComponent(icon)
+    const useTextIcon = !IconComponent && isTextIcon(icon)
+    const isSvgPath = typeof IconComponent === 'string'
+    
     return (
       <div className="flex-shrink-0">
         <div 
@@ -87,10 +93,37 @@ export const NodeIcon = memo(function NodeIcon({
               alt={icon || 'Node icon'} 
               className={`w-full h-full object-cover ${isTrigger ? 'rounded-full' : 'rounded-md'}`}
             />
+          ) : isSvgPath ? (
+            // Render custom SVG icon from file
+            <>
+              <img
+                src={IconComponent as string}
+                alt={icon || 'Node icon'}
+                className={`${iconSizeClasses[size]} ${isExecuting ? 'opacity-30' : ''}`}
+                style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+              />
+              {isExecuting && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </>
+          ) : IconComponent ? (
+            // Render Lucide icon component
+            <>
+              {/* @ts-ignore - IconComponent is LucideIcon here */}
+              <IconComponent className={`${iconSizeClasses[size]} ${isExecuting ? 'opacity-30' : ''}`} />
+              {isExecuting && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </>
           ) : (
+            // Fallback to text/emoji
             <>
               <span className={isExecuting ? 'opacity-30' : ''}>
-                {icon || '?'}
+                {useTextIcon ? icon : (icon || '?')}
               </span>
               {isExecuting && (
                 <div className="absolute inset-0 flex items-center justify-center">

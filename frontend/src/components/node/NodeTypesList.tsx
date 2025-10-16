@@ -11,22 +11,16 @@ import { globalToastManager } from '@/hooks/useToast'
 import { nodeTypeService } from '@/services/nodeType'
 import { useNodeTypes } from '@/stores'
 import { NodeType } from '@/types'
+import { getIconComponent } from '@/utils/iconMapper'
 import {
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Code,
-  Command,
-  Database,
-  FolderOpen,
-  Globe,
-  GripVertical,
-  Play,
-  Power,
-  PowerOff,
-  Settings,
-  Trash2,
-  Zap
+    ChevronDown,
+    ChevronRight,
+    Command,
+    FolderOpen,
+    GripVertical,
+    Power,
+    PowerOff,
+    Trash2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -39,40 +33,6 @@ interface ExtendedNodeType extends NodeType {
 }
 
 interface NodeTypesListProps {}
-
-// Icon mapping for different node types
-const getNodeIcon = (nodeType: NodeType) => {
-  if (nodeType.icon?.startsWith('fa:')) {
-    // Font Awesome icons - map to Lucide equivalents
-    switch (nodeType.icon) {
-      case 'fa:globe':
-        return Globe
-      case 'fa:code':
-        return Code
-      default:
-        return Command
-    }
-  }
-  
-  // Default icons based on node type or group
-  if (nodeType.group.includes('trigger')) {
-    return Play
-  } else if (nodeType.group.includes('transform')) {
-    return Zap
-  } else if (nodeType.type.toLowerCase().includes('http')) {
-    return Globe
-  } else if (nodeType.type.toLowerCase().includes('json')) {
-    return Code
-  } else if (nodeType.type.toLowerCase().includes('set')) {
-    return Settings
-  } else if (nodeType.type.toLowerCase().includes('schedule') || nodeType.type.toLowerCase().includes('cron')) {
-    return Clock
-  } else if (nodeType.type.toLowerCase().includes('database')) {
-    return Database
-  }
-  
-  return Command
-}
 
 export function NodeTypesList({}: NodeTypesListProps) {
   const { 
@@ -365,7 +325,8 @@ export function NodeTypesList({}: NodeTypesListProps) {
           {expandedCategories[group.category] && (
             <div className="p-3 space-y-0">
               {group.nodeTypes.map((nodeType) => {
-                const IconComponent = getNodeIcon(nodeType)
+                // Get icon component using the utility function
+                const IconComponent = getIconComponent(nodeType.icon, nodeType.type, nodeType.group) || Command
                 
                 
                 const nodeElement = (
@@ -394,10 +355,24 @@ export function NodeTypesList({}: NodeTypesListProps) {
                     }}
                   >
                     <div 
-                      className="w-4 h-4 shrink-0 flex items-center justify-center rounded mt-0.5"
-                      style={{ color: nodeType.color || '#666' }}
+                      className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md mt-0.5"
+                      style={{ backgroundColor: nodeType.color || '#666' }}
                     >
-                      <IconComponent className="h-4 w-4" />
+                      {IconComponent && typeof IconComponent !== 'string' ? (
+                        <IconComponent className="h-4 w-4 text-white" />
+                      ) : typeof IconComponent === 'string' ? (
+                        // SVG icon from file
+                        <img 
+                          src={IconComponent} 
+                          alt={nodeType.displayName}
+                          className="h-4 w-4"
+                          style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+                        />
+                      ) : (
+                        <span className="text-white text-xs font-bold">
+                          {nodeType.icon || nodeType.displayName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="font-medium truncate flex items-center gap-2">
