@@ -10,6 +10,7 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 const mockLogin = vi.fn()
+const mockLoginAsGuest = vi.fn()
 const mockClearError = vi.fn()
 
 const renderLoginForm = () => {
@@ -24,6 +25,7 @@ describe('LoginForm', () => {
   beforeEach(() => {
     vi.mocked(useAuthStore).mockReturnValue({
       login: mockLogin,
+      loginAsGuest: mockLoginAsGuest,
       isLoading: false,
       error: null,
       clearError: mockClearError,
@@ -95,6 +97,7 @@ describe('LoginForm', () => {
   it('should display error message when login fails', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       login: mockLogin,
+      loginAsGuest: mockLoginAsGuest,
       isLoading: false,
       error: 'Invalid credentials',
       clearError: mockClearError,
@@ -115,6 +118,7 @@ describe('LoginForm', () => {
   it('should show loading state when submitting', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       login: mockLogin,
+      loginAsGuest: mockLoginAsGuest,
       isLoading: true,
       error: null,
       clearError: mockClearError,
@@ -129,7 +133,7 @@ describe('LoginForm', () => {
 
     renderLoginForm()
     
-    const submitButton = screen.getByRole('button', { name: 'Sign in' })
+    const submitButton = screen.getByRole('button', { name: /signing in/i })
     expect(submitButton).toBeDisabled()
   })
 })
