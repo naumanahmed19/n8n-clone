@@ -183,6 +183,7 @@ export function BaseNodeWrapper({
     handleDelete,
     handleToggleLock,
     handleUngroup,
+    handleGroup,
     handleOutputClick,
     handleToggleDisabled
   } = useNodeActions(id)
@@ -191,9 +192,18 @@ export function BaseNodeWrapper({
   const { copy, cut, paste, canCopy, canPaste } = useCopyPasteStore()
   
   // Import useReactFlow to check if node is in a group
-  const { getNode } = useReactFlow()
+  const { getNode, getNodes } = useReactFlow()
   const currentNode = getNode(id)
   const isInGroup = !!currentNode?.parentId
+
+  // Check if we can group (need at least 1 selected node that isn't a group or in a group)
+  const selectedNodesForGrouping = getNodes().filter(
+    (node) =>
+      node.selected &&
+      !node.parentId &&
+      node.type !== 'group'
+  )
+  const canGroup = selectedNodesForGrouping.length >= 1
 
   // Use execution hook for toolbar functionality
   const { 
@@ -339,11 +349,13 @@ export function BaseNodeWrapper({
                   onCut={cut || undefined}
                   onPaste={paste || undefined}
                   onUngroup={isInGroup ? handleUngroup : undefined}
+                  onGroup={canGroup ? handleGroup : undefined}
                   isLocked={!!data.locked}
                   readOnly={isReadOnly}
                   canCopy={canCopy}
                   canPaste={canPaste}
                   isInGroup={isInGroup}
+                  canGroup={canGroup}
                 />
               </ContextMenu>
             </div>
@@ -456,11 +468,13 @@ export function BaseNodeWrapper({
           onCut={cut || undefined}
           onPaste={paste || undefined}
           onUngroup={isInGroup ? handleUngroup : undefined}
+          onGroup={canGroup ? handleGroup : undefined}
           isLocked={!!data.locked}
           readOnly={isReadOnly}
           canCopy={canCopy}
           canPaste={canPaste}
           isInGroup={isInGroup}
+          canGroup={canGroup}
         />
       </ContextMenu>
     )
@@ -535,11 +549,13 @@ export function BaseNodeWrapper({
         onCut={cut || undefined}
         onPaste={paste || undefined}
         onUngroup={isInGroup ? handleUngroup : undefined}
+        onGroup={canGroup ? handleGroup : undefined}
         isLocked={!!data.locked}
         readOnly={isReadOnly}
         canCopy={canCopy}
         canPaste={canPaste}
         isInGroup={isInGroup}
+        canGroup={canGroup}
       />
     </ContextMenu>
   )

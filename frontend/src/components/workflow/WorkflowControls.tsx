@@ -282,20 +282,20 @@ export function WorkflowControls({ className, showAddNode = true, showExecute = 
           </Tooltip>
 
           {/* Group Selected Nodes / Add Group */}
-          {selectedNodeCount >= 1 ? (
+          {selectedNodeCount >= 2 ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={handleGroupSelectedNodes}
                   className="flex h-8 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  aria-label={`Group ${selectedNodeCount} selected ${selectedNodeCount === 1 ? 'node' : 'nodes'}`}
+                  aria-label={`Group ${selectedNodeCount} selected nodes`}
                 >
                   <Box className="h-4 w-4" />
                   <span className="text-xs font-medium">{selectedNodeCount}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">
-                <p>Group {selectedNodeCount} selected {selectedNodeCount === 1 ? 'node' : 'nodes'}</p>
+                <p>Group {selectedNodeCount} selected nodes</p>
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -305,13 +305,13 @@ export function WorkflowControls({ className, showAddNode = true, showExecute = 
                   onClick={handleAddGroup}
                   disabled={true}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  aria-label="Add Group (Select nodes first)"
+                  aria-label="Add Group (Select at least 2 nodes)"
                 >
                   <Box className="h-4 w-4" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">
-                <p>Select nodes to group</p>
+                <p>Select at least 2 nodes to group</p>
               </TooltipContent>
             </Tooltip>
           )}
