@@ -1,4 +1,4 @@
-import { ExecutionToolbar, WorkflowEditorWrapper } from '@/components'
+import { ErrorPage, ExecutionToolbar, WorkflowEditorWrapper } from '@/components'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   SidebarInset,
@@ -15,9 +15,9 @@ import { executionService } from '@/services/execution'
 import { socketService } from '@/services/socket'
 import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, Workflow } from '@/types'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 export function WorkflowEditorPage() {
   const { id, executionId } = useParams<{ id: string; executionId?: string }>()
@@ -335,38 +335,16 @@ export function WorkflowEditorPage() {
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen w-screen bg-gray-50">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Workflow</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/workflows')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Back to Workflows
-          </button>
-        </div>
-      </div>
-    )
+    return <ErrorPage message={error} />
   }
 
   if (!workflow) {
     return (
-      <div className="flex items-center justify-center h-screen w-screen bg-gray-50">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workflow Not Found</h2>
-          <p className="text-gray-600 mb-4">The requested workflow could not be found.</p>
-          <button
-            onClick={() => navigate('/workflows')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Back to Workflows
-          </button>
-        </div>
-      </div>
+      <ErrorPage 
+        title="Workflow Not Found" 
+        message="The requested workflow could not be found."
+        showRefresh={false}
+      />
     )
   }
 
