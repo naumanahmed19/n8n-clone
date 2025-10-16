@@ -10,6 +10,9 @@ export interface WorkflowNode {
   locked?: boolean;
   mockData?: any;
   mockDataPinned?: boolean;
+  // Visual properties
+  icon?: string;
+  color?: string;
   // Group node properties
   parentId?: string;
   extent?: "parent" | [number, number, number, number];

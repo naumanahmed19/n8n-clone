@@ -51,6 +51,7 @@ export type IconType = LucideIcon | string;
 /**
  * Registry of custom SVG icons
  * Maps icon names to SVG file paths in assets/icons
+ * Note: file: prefix icons are automatically handled via backend API
  */
 const SVG_ICON_REGISTRY: Record<string, string> = {
   openai: "/src/assets/icons/openai.svg",
@@ -152,8 +153,8 @@ const FA_TO_LUCIDE_MAP: Record<string, string> = {
 /**
  * Parse icon string and return the appropriate icon component or SVG path
  *
- * @param iconString - Icon identifier (e.g., "lucide:play", "fa:globe", "svg:openai", "⚡", "H")
- * @param nodeType - Optional node type for fallback logic
+ * @param iconString - Icon identifier (e.g., "lucide:play", "fa:globe", "svg:openai", "file:postgres.svg", "⚡", "H")
+ * @param nodeType - Optional node type for fallback logic and file: icon resolution
  * @param nodeGroup - Optional node group array for category-based icons
  * @returns Lucide icon component, SVG path string, or null
  */
@@ -165,6 +166,16 @@ export function getIconComponent(
   // No icon string provided
   if (!iconString) {
     return getFallbackIcon(nodeType, nodeGroup);
+  }
+
+  // Check for file: prefix (custom node SVG files from backend)
+  if (iconString.startsWith("file:")) {
+    if (!nodeType) {
+      console.warn("file: icon requires nodeType parameter");
+      return null;
+    }
+    // Return backend API endpoint for the node's icon
+    return `/api/nodes/${nodeType}/icon`;
   }
 
   // Check for svg: prefix (custom SVG files)
@@ -283,6 +294,11 @@ export function isTextIcon(iconString?: string): boolean {
  */
 export function isSvgIcon(iconString?: string): boolean {
   if (!iconString) return false;
+
+  // file: icons are SVG files served from backend
+  if (iconString.startsWith("file:")) {
+    return true;
+  }
 
   if (iconString.startsWith("svg:")) {
     const svgName = iconString.replace("svg:", "").toLowerCase();

@@ -22,8 +22,7 @@ const PostgresNode = {
       type: "credential",
       required: true,
       default: "",
-      description:
-        "Select PostgreSQL credentials to connect to the database",
+      description: "Select PostgreSQL credentials to connect to the database",
       placeholder: "Select credentials...",
       allowedTypes: ["postgresDb"],
     },
@@ -218,6 +217,14 @@ const PostgresNode = {
       description: "Fields to return after insert/update (e.g., id,name or *)",
       placeholder: "*",
     },
+    {
+      displayName: "Continue On Fail",
+      name: "continueOnFail",
+      type: "boolean",
+      default: false,
+      description:
+        "If enabled, the node will continue execution even if the database operation fails. The error information will be returned as output data instead of stopping the workflow.",
+    },
   ],
 
   execute: async function (inputData) {
@@ -227,14 +234,19 @@ const PostgresNode = {
     // If no input items, create a default item to ensure query executes at least once
     const itemsToProcess = items.length > 0 ? items : [{ json: {} }];
 
+    // Get continueOnFail setting
+    const continueOnFail = await this.getNodeParameter("continueOnFail");
+
     // Get connection parameters from credentials
     let host, port, database, user, password, ssl;
 
     try {
       const credentials = await this.getCredentials("postgresDb");
-      
+
       if (!credentials || !credentials.host) {
-        throw new Error("PostgreSQL credentials are required. Please select credentials in the Authentication field.");
+        throw new Error(
+          "PostgreSQL credentials are required. Please select credentials in the Authentication field."
+        );
       }
 
       host = credentials.host;
@@ -243,7 +255,7 @@ const PostgresNode = {
       user = credentials.user;
       password = credentials.password;
       ssl = credentials.ssl || false;
-      
+
       this.logger.info("Using PostgreSQL credentials from authentication");
     } catch (error) {
       // If credentials are not available, throw an error
@@ -300,11 +312,13 @@ const PostgresNode = {
 
             case "select": {
               const table = await this.getNodeParameter("table");
-              const columns = await this.getNodeParameter("columns") || "*";
+              const columns = (await this.getNodeParameter("columns")) || "*";
               const where = await this.getNodeParameter("where");
               const whereParamsStr = await this.getNodeParameter("whereParams");
               const returnAll = await this.getNodeParameter("returnAll");
-              const limit = returnAll ? null : await this.getNodeParameter("limit");
+              const limit = returnAll
+                ? null
+                : await this.getNodeParameter("limit");
               const orderBy = await this.getNodeParameter("orderBy");
 
               queryText = `SELECT ${columns} FROM ${table}`;
@@ -339,7 +353,8 @@ const PostgresNode = {
             case "insert": {
               const table = await this.getNodeParameter("table");
               const dataStr = await this.getNodeParameter("data");
-              const returnFields = await this.getNodeParameter("returnFields") || "*";
+              const returnFields =
+                (await this.getNodeParameter("returnFields")) || "*";
 
               let data;
               try {
@@ -375,7 +390,8 @@ const PostgresNode = {
               const dataStr = await this.getNodeParameter("data");
               const where = await this.getNodeParameter("where");
               const whereParamsStr = await this.getNodeParameter("whereParams");
-              const returnFields = await this.getNodeParameter("returnFields") || "*";
+              const returnFields =
+                (await this.getNodeParameter("returnFields")) || "*";
 
               if (!where) {
                 throw new Error(
@@ -454,14 +470,20 @@ const PostgresNode = {
           }
         } catch (error) {
           // Handle errors for individual items
-          results.push({
-            json: {
-              ...item.json,
-              error: true,
-              errorMessage: error.message,
-              errorDetails: error.toString(),
-            },
-          });
+          if (continueOnFail) {
+            // If continueOnFail is enabled, return error as output data
+            results.push({
+              json: {
+                ...item.json,
+                error: true,
+                errorMessage: error.message,
+                errorDetails: error.toString(),
+              },
+            });
+          } else {
+            // If continueOnFail is disabled, throw the error to stop workflow
+            throw error;
+          }
         }
       }
     } finally {
@@ -485,7 +507,7 @@ const PostgresNode = {
 
       try {
         const credentials = await this.getCredentials("postgresDb");
-        
+
         if (!credentials || !credentials.host) {
           return [
             {

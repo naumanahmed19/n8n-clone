@@ -13,6 +13,7 @@ interface NodeIconProps {
     color?: string
     isTrigger?: boolean
     imageUrl?: string
+    nodeType?: string  // Added to support file: icons
   }
   /** Whether the node is currently executing */
   isExecuting?: boolean
@@ -72,10 +73,10 @@ export const NodeIcon = memo(function NodeIcon({
   
   // Mode 2: Node config is provided
   if (config) {
-    const { icon, color, isTrigger, imageUrl } = config
+    const { icon, color, isTrigger, imageUrl, nodeType } = config
     
-    // Get icon component from icon mapper
-    const IconComponent = getIconComponent(icon)
+    // Get icon component from icon mapper, passing nodeType for file: icons
+    const IconComponent = getIconComponent(icon, nodeType)
     const useTextIcon = !IconComponent && isTextIcon(icon)
     const isSvgPath = typeof IconComponent === 'string'
     

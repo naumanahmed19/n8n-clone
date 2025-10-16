@@ -77,6 +77,7 @@ export interface BaseNodeWrapperProps {
     inputs?: string[]
     outputs?: string[]
     imageUrl?: string
+    nodeType?: string  // Added to support file: icons
   }
   
   /** Custom metadata to render below node (like NodeMetadata component) */
