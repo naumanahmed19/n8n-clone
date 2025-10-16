@@ -114,7 +114,7 @@ This is a workflow automation platform similar to n8n, built with a modern tech 
 ### DO NOT:
 
 - ⛔ Include documentation from `/docs` folder unless explicitly asked
-- ⛔ Create new documentation files or markdown guides
+- ⛔ Create new documentation files or markdown guides only when asked
 - ⛔ Reference or read existing documentation files
 - Use `any` type in TypeScript (use proper types or `unknown`)
 - Commit sensitive data or API keys

@@ -75,6 +75,11 @@ export const NODE_ICON_MAP: Record<string, NodeIconConfig> = {
     color: "#4CAF50",
     description: "Set values",
   },
+  code: {
+    icon: "lucide:code",
+    color: "#FF6B6B",
+    description: "Execute code",
+  },
   json: {
     icon: "fa:code",
     color: "#FF9800",
@@ -208,7 +213,7 @@ export function getIconsByCategory(
       "google-sheets-trigger",
     ],
     action: ["http-request", "workflow-trigger"],
-    transform: ["set", "json"],
+    transform: ["set", "code", "json"],
     logic: ["if", "switch"],
     ai: ["openai", "anthropic"],
     integration: ["google-sheets-trigger"],

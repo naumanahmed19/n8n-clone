@@ -17,6 +17,7 @@ export function FormGenerator({
   showRequiredIndicator = true,
   requiredIndicator = <span className="text-destructive ml-1">*</span>,
   nodeId,
+  nodeType,
 }: FormGeneratorProps) {
   const [internalErrors, setInternalErrors] = useState<Record<string, string>>({})
   
@@ -129,6 +130,7 @@ export function FormGenerator({
                 allFields={fields}
                 onFieldChange={handleFieldChange}
                 nodeId={nodeId}
+                nodeType={nodeType}
               />
             </div>
             <FormFieldDescription field={field} />

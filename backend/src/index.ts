@@ -32,6 +32,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 // Import services
 import { PrismaClient } from "@prisma/client";
+import { CredentialService } from "./services/CredentialService";
 import { NodeLoader } from "./services/NodeLoader";
 import { NodeService } from "./services/NodeService";
 import { SocketService } from "./services/SocketService";
@@ -46,7 +47,8 @@ const PORT = process.env.PORT || 4000;
 // Initialize services
 const prisma = new PrismaClient();
 const nodeService = new NodeService(prisma);
-const nodeLoader = new NodeLoader(nodeService, prisma);
+const credentialService = new CredentialService();
+const nodeLoader = new NodeLoader(nodeService, credentialService, prisma);
 const socketService = new SocketService(httpServer);
 
 // Make services available globally for other services
@@ -54,11 +56,13 @@ declare global {
   var socketService: SocketService;
   var nodeLoader: NodeLoader;
   var nodeService: NodeService;
+  var credentialService: CredentialService;
   var prisma: PrismaClient;
 }
 global.socketService = socketService;
 global.nodeLoader = nodeLoader;
 global.nodeService = nodeService;
+global.credentialService = credentialService;
 global.prisma = prisma;
 
 // Initialize node systems

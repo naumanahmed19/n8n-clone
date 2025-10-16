@@ -11,11 +11,14 @@ export interface CredentialData {
 export interface CredentialType {
   name: string;
   displayName: string;
-  description: string;
+  description?: string;
   properties: CredentialProperty[];
   icon?: string;
   color?: string;
   testable?: boolean;
+  test?: (
+    data: CredentialData
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 export interface CredentialProperty {
@@ -51,6 +54,7 @@ export class CredentialService {
   private prisma: PrismaClient;
   private encryptionKey: string;
   private algorithm = "aes-256-cbc";
+  private credentialTypeRegistry = new Map<string, CredentialType>();
 
   constructor() {
     this.prisma = new PrismaClient();
@@ -64,6 +68,25 @@ export class CredentialService {
     }
 
     this.encryptionKey = keyString;
+  }
+
+  /**
+   * Register a credential type from a custom node
+   */
+  registerCredentialType(credentialType: CredentialType): void {
+    this.credentialTypeRegistry.set(credentialType.name, credentialType);
+    logger.info("Registered credential type", {
+      name: credentialType.name,
+      displayName: credentialType.displayName,
+    });
+  }
+
+  /**
+   * Unregister a credential type
+   */
+  unregisterCredentialType(credentialTypeName: string): void {
+    this.credentialTypeRegistry.delete(credentialTypeName);
+    logger.info("Unregistered credential type", { name: credentialTypeName });
   }
 
   /**
@@ -379,7 +402,19 @@ export class CredentialService {
       };
     }
 
-    // Perform type-specific testing
+    // Check if credential type has a custom test method
+    if (credentialType.test && typeof credentialType.test === "function") {
+      try {
+        return await credentialType.test(data);
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : "Test failed",
+        };
+      }
+    }
+
+    // Perform type-specific testing for built-in types
     switch (type) {
       case "httpBasicAuth":
         return this.testHttpBasicAuth(data);
@@ -462,7 +497,8 @@ export class CredentialService {
    * Get available credential types
    */
   getCredentialTypes(): CredentialType[] {
-    return [
+    // Built-in credential types
+    const builtInTypes: CredentialType[] = [
       {
         name: "httpBasicAuth",
         displayName: "HTTP Basic Auth",
@@ -628,6 +664,10 @@ export class CredentialService {
         testable: true,
       },
     ];
+
+    // Combine built-in types with registered types from custom nodes
+    const registeredTypes = Array.from(this.credentialTypeRegistry.values());
+    return [...builtInTypes, ...registeredTypes];
   }
 
   /**

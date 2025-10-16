@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays } from 'lucide-react'
 import { getCustomComponent } from './CustomComponentRegistry'
+import { DynamicAutocomplete } from './DynamicAutocomplete'
 import { ExpressionInput } from './ExpressionInput'
 import { RepeatingField } from './RepeatingField'
 import { FormFieldRendererProps } from './types'
@@ -28,6 +29,7 @@ export function FieldRenderer({
   allFields,
   onFieldChange,
   nodeId,
+  nodeType,
 }: FormFieldRendererProps) {
   const handleChange = (newValue: any) => {
     onChange(newValue)
@@ -323,7 +325,46 @@ export function FieldRenderer({
       )
 
     case 'autocomplete': {
-      // Convert field options to AutoComplete format
+      // Check if this field has dynamic loading
+      const loadOptionsMethod = field.typeOptions?.loadOptionsMethod;
+
+      if (loadOptionsMethod && nodeType) {
+        // Get credentials from form values
+        const credentials: Record<string, any> = {};
+        allFields.forEach((f) => {
+          if (f.type === 'credential' && allValues[f.name]) {
+            credentials[f.name] = allValues[f.name];
+          }
+        });
+
+        console.log('FieldRenderer - DynamicAutocomplete setup:', {
+          nodeType,
+          loadOptionsMethod,
+          hasCredentials: Object.keys(credentials).length > 0,
+          credentials,
+          allValues,
+          credentialFields: allFields.filter(f => f.type === 'credential'),
+        });
+
+        return (
+          <DynamicAutocomplete
+            nodeType={nodeType}
+            loadOptionsMethod={loadOptionsMethod}
+            value={String(value || '')}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+            searchPlaceholder={`Search ${field.displayName.toLowerCase()}...`}
+            disabled={disabled || field.disabled}
+            error={error}
+            required={field.required}
+            displayName={field.displayName}
+            parameters={allValues}
+            credentials={credentials}
+          />
+        );
+      }
+
+      // Fall back to static options
       const autocompleteOptions: AutoCompleteOption[] = (field.options || []).map((option) => ({
         id: String(option.value),
         label: option.name,

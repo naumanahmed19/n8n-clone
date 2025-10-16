@@ -169,4 +169,48 @@ router.post(
   })
 );
 
+// POST /api/nodes/:type/load-options - Load dynamic options for a field
+router.post(
+  "/:type/load-options",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { method, parameters = {}, credentials = {} } = req.body;
+
+    if (!method) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          code: "MISSING_METHOD",
+          message: "loadOptions method name is required",
+        },
+      };
+      return res.status(400).json(response);
+    }
+
+    const result = await getNodeService().loadNodeOptions(
+      req.params.type,
+      method,
+      parameters,
+      credentials
+    );
+
+    const response: ApiResponse = {
+      success: result.success,
+      data: result.success ? result.data : undefined,
+      error: result.error
+        ? {
+            code: "LOAD_OPTIONS_ERROR",
+            message: result.error.message,
+          }
+        : undefined,
+    };
+
+    if (!result.success) {
+      return res.status(400).json(response);
+    }
+
+    res.json(response);
+  })
+);
+
 export { router as nodeRoutes };

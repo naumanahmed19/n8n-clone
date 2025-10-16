@@ -1002,4 +1002,133 @@ export class NodeService {
   private canExecuteIndividually(nodeDefinition: NodeDefinition): boolean {
     return nodeDefinition.group.includes("trigger");
   }
+
+  /**
+   * Load dynamic options for a node field
+   */
+  async loadNodeOptions(
+    nodeType: string,
+    method: string,
+    parameters: Record<string, any> = {},
+    credentials: Record<string, any> = {}
+  ): Promise<{
+    success: boolean;
+    data?: Array<{ name: string; value: any; description?: string }>;
+    error?: { message: string };
+  }> {
+    try {
+      const nodeDefinition = this.nodeRegistry.get(nodeType);
+
+      if (!nodeDefinition) {
+        return {
+          success: false,
+          error: { message: `Node type '${nodeType}' not found` },
+        };
+      }
+
+      // Check if node has loadOptions methods
+      if (!nodeDefinition.loadOptions || typeof nodeDefinition.loadOptions !== 'object') {
+        return {
+          success: false,
+          error: { message: `Node '${nodeType}' does not support dynamic options loading` },
+        };
+      }
+
+      // Check if the specific method exists
+      const loadOptionsMethod = (nodeDefinition.loadOptions as any)[method];
+      if (typeof loadOptionsMethod !== 'function') {
+        return {
+          success: false,
+          error: { message: `Load options method '${method}' not found for node '${nodeType}'` },
+        };
+      }
+
+      // Build credential type mapping from node properties
+      // Map credential field names to their types (e.g., "authentication" -> "postgresDb")
+      const credentialTypeMap: Record<string, string> = {};
+      if (nodeDefinition.properties) {
+        const properties = typeof nodeDefinition.properties === 'function' 
+          ? nodeDefinition.properties() 
+          : nodeDefinition.properties;
+          
+        for (const property of properties) {
+          if (property.type === 'credential' && property.allowedTypes && property.allowedTypes.length > 0) {
+            // Use the first allowed type as the credential type
+            credentialTypeMap[property.name] = property.allowedTypes[0];
+          }
+        }
+      }
+
+      // Create execution context for loadOptions
+      const context: any = {
+        getNodeParameter: (paramName: string) => {
+          return parameters[paramName];
+        },
+        getCredentials: async (credentialType: string) => {
+          // Get credential service
+          const credentialService = global.credentialService;
+          if (!credentialService) {
+            throw new Error("Credential service not initialized");
+          }
+
+          // Try to get credential ID from credentials object
+          // First try by credential type, then by field name
+          let credentialId = credentials[credentialType];
+          
+          if (!credentialId) {
+            // Look for field name that maps to this credential type
+            for (const [fieldName, mappedType] of Object.entries(credentialTypeMap)) {
+              if (mappedType === credentialType && credentials[fieldName]) {
+                credentialId = credentials[fieldName];
+                break;
+              }
+            }
+          }
+
+          if (credentialId) {
+            if (typeof credentialId === 'string' || typeof credentialId === 'number') {
+              const credential = await credentialService.getCredentialById(String(credentialId));
+              if (credential) {
+                return credential.data;
+              }
+            }
+            // If it's already the data object, return it
+            return credentialId;
+          }
+
+          return null;
+        },
+        logger: {
+          info: (message: string, data?: any) => logger.info(message, data),
+          error: (message: string, data?: any) => logger.error(message, data),
+          warn: (message: string, data?: any) => logger.warn(message, data),
+          debug: (message: string, data?: any) => logger.debug(message, data),
+        },
+      };
+
+      // Execute the loadOptions method
+      const options = await loadOptionsMethod.call(context);
+
+      // Validate the returned options format
+      if (!Array.isArray(options)) {
+        return {
+          success: false,
+          error: { message: `Load options method '${method}' did not return an array` },
+        };
+      }
+
+      return {
+        success: true,
+        data: options,
+      };
+    } catch (error) {
+      logger.error(`Failed to load options for node '${nodeType}', method '${method}'`, { error });
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : "Unknown error loading options",
+        },
+      };
+    }
+  }
 }

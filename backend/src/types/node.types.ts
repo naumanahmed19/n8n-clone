@@ -30,6 +30,11 @@ export interface NodeDefinition {
   executionCapability?: "trigger" | "action" | "transform" | "condition";
   canExecuteIndividually?: boolean;
   canBeDisabled?: boolean;
+  // Dynamic options loading
+  loadOptions?: Record<
+    string,
+    (this: NodeExecutionContext) => Promise<Array<{ name: string; value: any; description?: string }>>
+  >;
 }
 
 export interface NodePropertyOption {
