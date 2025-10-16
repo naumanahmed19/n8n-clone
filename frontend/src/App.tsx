@@ -8,6 +8,7 @@ import {
     CustomNodesPage,
     ExecutionsPage,
     LoginPage,
+    ProfilePage,
     RegisterPage,
     WorkflowEditorPage
 } from '@/pages'
@@ -90,6 +91,7 @@ function App() {
             <Route path="executions" element={<ExecutionsPage />} />
             <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           
           </Route>
 

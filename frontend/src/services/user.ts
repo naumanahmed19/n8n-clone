@@ -16,7 +16,40 @@ export interface UserPreferences {
   // Future: language, etc.
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  role: "ADMIN" | "USER";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export class UserService {
+  /**
+   * Get current user's profile
+   */
+  async getProfile(): Promise<UserProfile> {
+    const response = await apiClient.get<{ user: UserProfile }>(
+      "/users/profile"
+    );
+    return response.data?.user as UserProfile;
+  }
+
+  /**
+   * Update current user's profile
+   */
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+  }): Promise<UserProfile> {
+    const response = await apiClient.put<{ user: UserProfile }>(
+      "/users/profile",
+      data
+    );
+    return response.data?.user as UserProfile;
+  }
+
   /**
    * Get current user's preferences
    */

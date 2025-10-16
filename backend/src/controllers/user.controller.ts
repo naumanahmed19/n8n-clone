@@ -131,3 +131,105 @@ export const patchPreferences = asyncHandler(
     res.json(response);
   }
 );
+
+/**
+ * GET /api/users/profile
+ * Get current user's profile information
+ */
+export const getProfile = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      throw new AppError("User not authenticated", 401, "UNAUTHORIZED");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new AppError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        user,
+      },
+    };
+
+    res.json(response);
+  }
+);
+
+/**
+ * PUT /api/users/profile
+ * Update current user's profile information
+ */
+export const updateProfile = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      throw new AppError("User not authenticated", 401, "UNAUTHORIZED");
+    }
+
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+      throw new AppError(
+        "No profile data provided",
+        400,
+        "NO_DATA"
+      );
+    }
+
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new AppError("Invalid email format", 400, "INVALID_EMAIL");
+      }
+
+      // Check if email is already taken by another user
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser && existingUser.id !== req.user.id) {
+        throw new AppError("Email already in use", 400, "EMAIL_IN_USE");
+      }
+    }
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        user,
+      },
+    };
+
+    res.json(response);
+  }
+);
