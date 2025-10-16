@@ -1,18 +1,19 @@
 import { Badge } from '@/components/ui/badge'
 import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
+import { fuzzyFilter } from '@/utils/fuzzySearch'
 import { getIconComponent, isTextIcon } from '@/utils/iconMapper'
 import { useReactFlow } from '@xyflow/react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface AddNodeCommandDialogProps {
   open: boolean
@@ -28,6 +29,8 @@ export function AddNodeCommandDialog({
   const { addNode, addConnection, removeConnection, workflow, updateNode } = useWorkflowStore()
   const { insertionContext } = useAddNodeDialogStore()
   const reactFlowInstance = useReactFlow()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   
   // Get only active node types from the store
   const { activeNodeTypes, fetchNodeTypes } = useNodeTypes()
@@ -39,11 +42,51 @@ export function AddNodeCommandDialog({
     }
   }, [activeNodeTypes.length, fetchNodeTypes])
 
-  // Group nodes by category - only active nodes will be shown
+  // Reset search when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery('')
+      setDebouncedSearchQuery('')
+    }
+  }, [open])
+
+  // Debounce search query for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 150) // Small delay for debouncing
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Memoize the getter function to avoid creating new arrays on every render
+  const nodeSearchGetter = useCallback((node: NodeType) => [
+    node.displayName,
+    node.description,
+    node.type,
+    ...node.group
+  ], [])
+
+  // Filter nodes using fuzzy search when there's a search query
+  const filteredNodeTypes = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) {
+      return activeNodeTypes
+    }
+    
+    // Use fuzzy search to filter and sort nodes
+    return fuzzyFilter(
+      activeNodeTypes,
+      debouncedSearchQuery,
+      nodeSearchGetter
+    )
+  }, [activeNodeTypes, debouncedSearchQuery, nodeSearchGetter])
+
+  // Group nodes by category - only filtered nodes will be shown
   const groupedNodes = useMemo(() => {
+    const hasSearch = debouncedSearchQuery.trim().length > 0
     const groups = new Map<string, NodeType[]>()
     
-    activeNodeTypes.forEach(node => {
+    filteredNodeTypes.forEach(node => {
       node.group.forEach(group => {
         if (!groups.has(group)) {
           groups.set(group, [])
@@ -52,27 +95,34 @@ export function AddNodeCommandDialog({
       })
     })
 
-    // Sort groups and nodes within groups
-    return Array.from(groups.entries())
+    // Sort groups alphabetically
+    const sortedGroups = Array.from(groups.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([groupName, nodes]) => ({
-        name: groupName,
-        nodes: nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
-      }))
-  }, [activeNodeTypes])
+    
+    // When searching, fuzzy filter already sorted by relevance - don't re-sort
+    // When not searching, sort nodes alphabetically within groups
+    return sortedGroups.map(([groupName, nodes]) => ({
+      name: groupName,
+      nodes: hasSearch ? nodes : nodes.sort((a, b) => a.displayName.localeCompare(b.displayName))
+    }))
+  }, [filteredNodeTypes, debouncedSearchQuery])
 
   const handleSelectNode = useCallback((nodeType: NodeType) => {
+    if (!reactFlowInstance) return
+    
     // Calculate position where to add the node
     let nodePosition = { x: 300, y: 300 }
     let parentGroupId: string | undefined = undefined
+    let sourceNodeIdForConnection: string | undefined = undefined
     
-    if (insertionContext && reactFlowInstance) {
+    if (insertionContext) {
       // Check if this is a connection drop (source but no target)
       const isConnectionDrop = insertionContext.sourceNodeId && !insertionContext.targetNodeId
       
       if (isConnectionDrop) {
         // Connection was dropped on canvas - position near the source node
         const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
+        sourceNodeIdForConnection = insertionContext.sourceNodeId
         
         if (sourceNode) {
           // Check if source node is in a group
@@ -164,20 +214,36 @@ export function AddNodeCommandDialog({
           }
         }
       }
-    } else if (position) {
-      // If position is provided (e.g., from output connector click), use it
-      // Convert screen coordinates to flow coordinates
-      if (reactFlowInstance) {
-        nodePosition = reactFlowInstance.screenToFlowPosition(position)
-      } else {
+    } else {
+      // No insertion context - check if there's a selected node to connect from
+      const selectedNodes = reactFlowInstance.getNodes().filter(node => node.selected)
+      
+      if (selectedNodes.length === 1) {
+        // Single node selected - position new node to the right and connect
+        const selectedNode = selectedNodes[0]
+        sourceNodeIdForConnection = selectedNode.id
+        
+        // Check if selected node is in a group
+        if (selectedNode.parentId) {
+          parentGroupId = selectedNode.parentId
+        }
+        
+        // Position to the right of the selected node
+        nodePosition = {
+          x: selectedNode.position.x + 250,
+          y: selectedNode.position.y
+        }
+      } else if (position) {
+        // Position is already in flow coordinates from openDialog caller
+        // (either from WorkflowEditor's viewport center or from connection drag)
         nodePosition = position
+      } else {
+        // Get center of viewport as fallback
+        nodePosition = reactFlowInstance.screenToFlowPosition({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        })
       }
-    } else if (reactFlowInstance) {
-      // Get center of viewport as fallback
-      nodePosition = reactFlowInstance.screenToFlowPosition({
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-      })
     }
 
     // Initialize parameters with defaults from node type
@@ -211,12 +277,15 @@ export function AddNodeCommandDialog({
     // Add the node first
     addNode(newNode)
 
-    // If we have insertion context, create connections
-    if (insertionContext && insertionContext.sourceNodeId) {
-      // Check if this is inserting between nodes or just connecting from source
-      const isInsertingBetweenNodes = insertionContext.targetNodeId && insertionContext.targetNodeId !== ''
+    // Create connection if we have a source node
+    // Either from insertionContext (drag from connector) or sourceNodeIdForConnection (selected node)
+    const effectiveSourceNodeId = insertionContext?.sourceNodeId || sourceNodeIdForConnection
+    
+    if (effectiveSourceNodeId) {
+      // Check if this is inserting between nodes (only possible with insertionContext)
+      const isInsertingBetweenNodes = insertionContext?.targetNodeId && insertionContext.targetNodeId !== ''
       
-      if (isInsertingBetweenNodes) {
+      if (isInsertingBetweenNodes && insertionContext) {
         // First, find and remove the existing connection between source and target
         const existingConnection = workflow?.connections.find(
           conn =>
@@ -233,17 +302,17 @@ export function AddNodeCommandDialog({
 
       // Create connection from source node to new node
       const sourceConnection: WorkflowConnection = {
-        id: `${insertionContext.sourceNodeId}-${newNode.id}-${Date.now()}`,
-        sourceNodeId: insertionContext.sourceNodeId,
-        sourceOutput: insertionContext.sourceOutput || 'main',
+        id: `${effectiveSourceNodeId}-${newNode.id}-${Date.now()}`,
+        sourceNodeId: effectiveSourceNodeId,
+        sourceOutput: insertionContext?.sourceOutput || 'main',
         targetNodeId: newNode.id,
         targetInput: 'main',
       }
 
       addConnection(sourceConnection)
 
-      // If there's a target node specified, wire the new node to it
-      if (isInsertingBetweenNodes && insertionContext.targetNodeId) {
+      // If there's a target node specified (inserting between nodes), wire the new node to it
+      if (isInsertingBetweenNodes && insertionContext?.targetNodeId) {
         const targetConnection: WorkflowConnection = {
           id: `${newNode.id}-${insertionContext.targetNodeId}-${Date.now() + 1}`,
           sourceNodeId: newNode.id,
@@ -256,81 +325,105 @@ export function AddNodeCommandDialog({
       }
     }
 
+    // Auto-select the newly added node
+    // First, deselect all existing nodes
+    reactFlowInstance.setNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        selected: node.id === newNode.id, // Only select the new node
+      }))
+    )
+
     onOpenChange(false)
   }, [addNode, addConnection, removeConnection, updateNode, workflow, onOpenChange, position, reactFlowInstance, insertionContext])
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search nodes..." />
+      <CommandInput 
+        placeholder="Search nodes..." 
+        value={searchQuery}
+        onValueChange={setSearchQuery}
+      />
       <CommandList>
         <CommandEmpty>No nodes found.</CommandEmpty>
-        {groupedNodes.map((group, index) => (
-          <div key={group.name}>
-            {index > 0 && <CommandSeparator />}
-            <CommandGroup heading={group.name}>
-              {group.nodes.map((node) => {
-                // Get the appropriate icon component
-                const IconComponent = getIconComponent(node.icon, node.type, node.group)
-                const useTextIcon = !IconComponent && isTextIcon(node.icon)
-                const isSvgPath = typeof IconComponent === 'string'
-                
-                return (
-                  <CommandItem
-                    key={node.type}
-                    value={`${node.displayName} ${node.description} ${node.group.join(' ')}`}
-                    onSelect={() => handleSelectNode(node)}
-                    className="flex items-center gap-3 p-3"
-                  >
-                    <div 
-                      className={`w-8 h-8 flex items-center justify-center text-white flex-shrink-0 ${node.group.includes('trigger') ? 'rounded-full' : 'rounded-md'} shadow-sm`}
-                      style={{ backgroundColor: node.color || '#6b7280' }}
+        {(() => {
+          // Track which nodes have already been rendered to avoid duplicates
+          const renderedNodeTypes = new Set<string>()
+          
+          return groupedNodes.map((group, index) => (
+            <div key={group.name}>
+              {index > 0 && <CommandSeparator />}
+              <CommandGroup>
+                {group.nodes.map((node) => {
+                  // Skip if this node has already been rendered in a previous group
+                  if (renderedNodeTypes.has(node.type)) {
+                    return null
+                  }
+                  renderedNodeTypes.add(node.type)
+                  
+                  // Get the appropriate icon component
+                  const IconComponent = getIconComponent(node.icon, node.type, node.group)
+                  const useTextIcon = !IconComponent && isTextIcon(node.icon)
+                  const isSvgPath = typeof IconComponent === 'string'
+                  
+                  return (
+                    <CommandItem
+                      key={node.type}
+                      value={`${node.displayName} ${node.description} ${node.group.join(' ')}`}
+                      onSelect={() => handleSelectNode(node)}
+                      className="flex items-center gap-3 p-3"
                     >
-                      {isSvgPath ? (
-                        <img 
-                          src={IconComponent as string} 
-                          alt={node.displayName}
-                          className="w-4 h-4"
-                          style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
-                        />
-                      ) : IconComponent ? (
-                        // @ts-ignore - IconComponent is LucideIcon here
-                        <IconComponent className="w-4 h-4 text-white" />
-                      ) : useTextIcon ? (
-                        <span className="text-xs font-bold">{node.icon}</span>
-                      ) : (
-                        <span className="text-xs font-bold">{node.displayName.charAt(0).toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">
-                        {node.displayName}
+                      <div 
+                        className={`w-8 h-8 flex items-center justify-center text-white flex-shrink-0 ${node.group.includes('trigger') ? 'rounded-full' : 'rounded-md'} shadow-sm`}
+                        style={{ backgroundColor: node.color || '#6b7280' }}
+                      >
+                        {isSvgPath ? (
+                          <img 
+                            src={IconComponent as string} 
+                            alt={node.displayName}
+                            className="w-4 h-4"
+                            style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+                          />
+                        ) : IconComponent ? (
+                          // @ts-ignore - IconComponent is LucideIcon here
+                          <IconComponent className="w-4 h-4 text-white" />
+                        ) : useTextIcon ? (
+                          <span className="text-xs font-bold">{node.icon}</span>
+                        ) : (
+                          <span className="text-xs font-bold">{node.displayName.charAt(0).toUpperCase()}</span>
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {node.description}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm">
+                          {node.displayName}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {node.description}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-1 flex-wrap">
-                      {node.group.slice(0, 2).map((g) => (
-                        <Badge 
-                          key={g} 
-                          variant="secondary" 
-                          className="text-xs h-5"
-                        >
-                          {g}
-                        </Badge>
-                      ))}
-                      {node.group.length > 2 && (
-                        <Badge variant="outline" className="text-xs h-5">
-                          +{node.group.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  </CommandItem>
-                )
-              })}
-            </CommandGroup>
-          </div>
-        ))}
+                      <div className="flex gap-1 flex-wrap">
+                        {node.group.slice(0, 2).map((g) => (
+                          <Badge 
+                            key={g} 
+                            variant="secondary" 
+                            className="text-xs h-5"
+                          >
+                            {g}
+                          </Badge>
+                        ))}
+                        {node.group.length > 2 && (
+                          <Badge variant="outline" className="text-xs h-5">
+                            +{node.group.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </div>
+          ))
+        })()}
       </CommandList>
     </CommandDialog>
   )

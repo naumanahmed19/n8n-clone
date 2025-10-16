@@ -107,28 +107,35 @@ export function fuzzyFilter<T>(
   search: string,
   getterFn: (item: T) => string | string[]
 ): T[] {
-  if (!search) {
+  if (!search || !search.trim()) {
     return items;
   }
 
-  const scoredItems = items.map((item) => {
-    const values = Array.isArray(getterFn(item))
-      ? (getterFn(item) as string[])
-      : [getterFn(item) as string];
+  const searchTrimmed = search.trim();
+  const scoredItems: Array<{ item: T; score: number }> = [];
+
+  for (const item of items) {
+    const values = getterFn(item);
+    const valueArray = Array.isArray(values) ? values : [values];
 
     // Get best score across all searchable fields
-    const bestScore = Math.max(
-      ...values.map((value) => fuzzyMatch(search, value).score)
-    );
+    let bestScore = 0;
+    for (const value of valueArray) {
+      if (!value) continue; // Skip empty strings
+      const score = fuzzyMatch(searchTrimmed, value).score;
+      if (score > bestScore) {
+        bestScore = score;
+      }
+    }
 
-    return { item, score: bestScore };
-  });
+    // Only include items with a match
+    if (bestScore > 0) {
+      scoredItems.push({ item, score: bestScore });
+    }
+  }
 
-  // Filter out non-matches and sort by score (descending)
-  return scoredItems
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(({ item }) => item);
+  // Sort by score (descending) and return items
+  return scoredItems.sort((a, b) => b.score - a.score).map(({ item }) => item);
 }
 
 /**
