@@ -21,6 +21,7 @@ The Load Options system enables nodes to dynamically load dropdown options from 
 ### Components
 
 1. **Backend**
+
    - `POST /api/nodes/:type/load-options` - API endpoint
    - `NodeService.loadNodeOptions()` - Orchestrates option loading
    - Node's `loadOptions` object - Contains load methods
@@ -86,54 +87,54 @@ Create a credential definition in `backend/custom-nodes/[node-name]/credentials/
 ```javascript
 // Example: postgresDb.credentials.js
 module.exports = {
-  name: 'postgresDb',
-  displayName: 'PostgreSQL Database',
+  name: "postgresDb",
+  displayName: "PostgreSQL Database",
   properties: [
     {
-      displayName: 'Host',
-      name: 'host',
-      type: 'string',
-      default: 'localhost',
+      displayName: "Host",
+      name: "host",
+      type: "string",
+      default: "localhost",
       required: true,
     },
     {
-      displayName: 'Port',
-      name: 'port',
-      type: 'number',
+      displayName: "Port",
+      name: "port",
+      type: "number",
       default: 5432,
     },
     {
-      displayName: 'Database',
-      name: 'database',
-      type: 'string',
+      displayName: "Database",
+      name: "database",
+      type: "string",
       required: true,
     },
     {
-      displayName: 'User',
-      name: 'user',
-      type: 'string',
+      displayName: "User",
+      name: "user",
+      type: "string",
       required: true,
     },
     {
-      displayName: 'Password',
-      name: 'password',
-      type: 'password',
+      displayName: "Password",
+      name: "password",
+      type: "password",
       required: true,
     },
     {
-      displayName: 'SSL',
-      name: 'ssl',
-      type: 'boolean',
+      displayName: "SSL",
+      name: "ssl",
+      type: "boolean",
       default: false,
     },
   ],
-  test: async function(credential) {
+  test: async function (credential) {
     // Test connection logic
-    const { Pool } = require('pg');
+    const { Pool } = require("pg");
     const pool = new Pool(credential);
     try {
-      await pool.query('SELECT 1');
-      return { success: true, message: 'Connection successful' };
+      await pool.query("SELECT 1");
+      return { success: true, message: "Connection successful" };
     } catch (error) {
       return { success: false, message: error.message };
     } finally {
@@ -149,17 +150,17 @@ module.exports = {
 // In your node definition
 properties: [
   {
-    displayName: 'Authentication',
-    name: 'authentication',
-    type: 'credential',
+    displayName: "Authentication",
+    name: "authentication",
+    type: "credential",
     required: true,
-    default: '',
-    description: 'Select credentials to connect',
-    placeholder: 'Select credentials...',
-    allowedTypes: ['postgresDb'], // Maps to credential type
+    default: "",
+    description: "Select credentials to connect",
+    placeholder: "Select credentials...",
+    allowedTypes: ["postgresDb"], // Maps to credential type
   },
   // ... other fields
-]
+];
 ```
 
 ### Step 3: Add Autocomplete Field with loadOptionsMethod
@@ -168,18 +169,18 @@ properties: [
 properties: [
   // ... credential field above
   {
-    displayName: 'Table',
-    name: 'table',
-    type: 'autocomplete',
+    displayName: "Table",
+    name: "table",
+    type: "autocomplete",
     typeOptions: {
-      loadOptionsMethod: 'getTables', // Name of the load method
+      loadOptionsMethod: "getTables", // Name of the load method
     },
-    default: '',
+    default: "",
     required: true,
-    description: 'Select a table from the database',
-    placeholder: 'Search and select table...',
+    description: "Select a table from the database",
+    placeholder: "Search and select table...",
   },
-]
+];
 ```
 
 ### Step 4: Implement loadOptions Method
@@ -187,7 +188,7 @@ properties: [
 ```javascript
 module.exports = {
   // ... node definition
-  
+
   loadOptions: {
     /**
      * Get list of tables from the database
@@ -195,14 +196,14 @@ module.exports = {
     async getTables() {
       try {
         // 1. Get credentials
-        const credentials = await this.getCredentials('postgresDb');
-        
+        const credentials = await this.getCredentials("postgresDb");
+
         if (!credentials || !credentials.host) {
           return [
             {
-              name: 'No credentials selected',
-              value: '',
-              description: 'Please select credentials first',
+              name: "No credentials selected",
+              value: "",
+              description: "Please select credentials first",
             },
           ];
         }
@@ -211,7 +212,7 @@ module.exports = {
         const { host, port, database, user, password, ssl } = credentials;
 
         // 3. Connect and fetch data
-        const { Pool } = require('pg');
+        const { Pool } = require("pg");
         const pool = new Pool({
           host,
           port: port || 5432,
@@ -232,27 +233,27 @@ module.exports = {
 
         // 4. Format results
         return result.rows.map((row) => ({
-          name: row.table_name,           // Display name
-          value: row.table_name,          // Actual value
+          name: row.table_name, // Display name
+          value: row.table_name, // Actual value
           description: `Table: ${row.table_name}`, // Subtitle
         }));
       } catch (error) {
-        this.logger.error('Failed to load tables', { error });
-        
+        this.logger.error("Failed to load tables", { error });
+
         // Return error as option
         return [
           {
-            name: 'Error loading tables',
-            value: '',
+            name: "Error loading tables",
+            value: "",
             description: error.message,
           },
         ];
       }
     },
-    
+
     // Add more load methods as needed
     async getColumns() {
-      const tableName = this.getNodeParameter('table');
+      const tableName = this.getNodeParameter("table");
       // ... implementation
     },
   },
@@ -264,16 +265,16 @@ module.exports = {
 ```javascript
 execute: async function (inputData) {
   const items = inputData.main?.[0] || [];
-  
+
   // Get credentials
   const credentials = await this.getCredentials('postgresDb');
-  
+
   // Get the selected table (loaded via loadOptions)
   const table = this.getNodeParameter('table');
-  
+
   // Use the value
   const query = `SELECT * FROM ${table}`;
-  
+
   // ... rest of execution logic
 }
 ```
@@ -398,21 +399,37 @@ Complete implementation showing all components working together:
 ```javascript
 // backend/custom-nodes/postgres/credentials/postgresDb.credentials.js
 module.exports = {
-  name: 'postgresDb',
-  displayName: 'PostgreSQL Database',
+  name: "postgresDb",
+  displayName: "PostgreSQL Database",
   properties: [
-    { displayName: 'Host', name: 'host', type: 'string', default: 'localhost', required: true },
-    { displayName: 'Port', name: 'port', type: 'number', default: 5432 },
-    { displayName: 'Database', name: 'database', type: 'string', required: true },
-    { displayName: 'User', name: 'user', type: 'string', required: true },
-    { displayName: 'Password', name: 'password', type: 'password', required: true },
-    { displayName: 'SSL', name: 'ssl', type: 'boolean', default: false },
+    {
+      displayName: "Host",
+      name: "host",
+      type: "string",
+      default: "localhost",
+      required: true,
+    },
+    { displayName: "Port", name: "port", type: "number", default: 5432 },
+    {
+      displayName: "Database",
+      name: "database",
+      type: "string",
+      required: true,
+    },
+    { displayName: "User", name: "user", type: "string", required: true },
+    {
+      displayName: "Password",
+      name: "password",
+      type: "password",
+      required: true,
+    },
+    { displayName: "SSL", name: "ssl", type: "boolean", default: false },
   ],
-  test: async function(credential) {
-    const { Pool } = require('pg');
+  test: async function (credential) {
+    const { Pool } = require("pg");
     const pool = new Pool(credential);
     try {
-      await pool.query('SELECT 1');
+      await pool.query("SELECT 1");
       return { success: true };
     } catch (error) {
       return { success: false, message: error.message };
@@ -427,51 +444,57 @@ module.exports = {
 
 ```javascript
 // backend/custom-nodes/postgres/nodes/postgres.node.js
-const { Pool } = require('pg');
+const { Pool } = require("pg");
 
 module.exports = {
-  type: 'postgres',
-  displayName: 'PostgreSQL',
+  type: "postgres",
+  displayName: "PostgreSQL",
   properties: [
     {
-      displayName: 'Authentication',
-      name: 'authentication',
-      type: 'credential',
+      displayName: "Authentication",
+      name: "authentication",
+      type: "credential",
       required: true,
-      allowedTypes: ['postgresDb'],
+      allowedTypes: ["postgresDb"],
     },
     {
-      displayName: 'Table',
-      name: 'table',
-      type: 'autocomplete',
+      displayName: "Table",
+      name: "table",
+      type: "autocomplete",
       typeOptions: {
-        loadOptionsMethod: 'getTables',
+        loadOptionsMethod: "getTables",
       },
       required: true,
-      description: 'Select a table from the database',
+      description: "Select a table from the database",
     },
   ],
-  
+
   execute: async function (inputData) {
-    const credentials = await this.getCredentials('postgresDb');
-    const table = this.getNodeParameter('table');
-    
+    const credentials = await this.getCredentials("postgresDb");
+    const table = this.getNodeParameter("table");
+
     const pool = new Pool(credentials);
     const result = await pool.query(`SELECT * FROM ${table}`);
     await pool.end();
-    
+
     return [{ main: [{ json: { rows: result.rows } }] }];
   },
-  
+
   loadOptions: {
     async getTables() {
       try {
-        const credentials = await this.getCredentials('postgresDb');
-        
+        const credentials = await this.getCredentials("postgresDb");
+
         if (!credentials) {
-          return [{ name: 'No credentials selected', value: '', description: 'Please select credentials first' }];
+          return [
+            {
+              name: "No credentials selected",
+              value: "",
+              description: "Please select credentials first",
+            },
+          ];
         }
-        
+
         const pool = new Pool(credentials);
         const result = await pool.query(`
           SELECT table_name 
@@ -480,15 +503,21 @@ module.exports = {
           ORDER BY table_name
         `);
         await pool.end();
-        
-        return result.rows.map(row => ({
+
+        return result.rows.map((row) => ({
           name: row.table_name,
           value: row.table_name,
           description: `Table: ${row.table_name}`,
         }));
       } catch (error) {
-        this.logger.error('Failed to load tables', { error });
-        return [{ name: 'Error loading tables', value: '', description: error.message }];
+        this.logger.error("Failed to load tables", { error });
+        return [
+          {
+            name: "Error loading tables",
+            value: "",
+            description: error.message,
+          },
+        ];
       }
     },
   },
@@ -502,11 +531,13 @@ module.exports = {
 ### 1. Credential Handling
 
 ✅ **DO:**
+
 - Always check if credentials exist before using them
 - Provide helpful error messages when credentials are missing
 - Use credentials as the single source of truth for connection parameters
 
 ❌ **DON'T:**
+
 - Don't duplicate credential fields in node properties
 - Don't store sensitive data in node parameters
 - Don't skip credential validation
@@ -514,19 +545,20 @@ module.exports = {
 ### 2. Error Handling
 
 ✅ **DO:**
+
 ```javascript
 async getTables() {
   try {
     const credentials = await this.getCredentials('postgresDb');
-    
+
     if (!credentials || !credentials.host) {
       return [
         { name: 'No credentials selected', value: '', description: 'Please select credentials first' }
       ];
     }
-    
+
     // ... fetch data
-    
+
   } catch (error) {
     this.logger.error('Failed to load tables', { error });
     return [
@@ -537,6 +569,7 @@ async getTables() {
 ```
 
 ❌ **DON'T:**
+
 ```javascript
 // Don't let errors crash the UI
 async getTables() {
@@ -553,22 +586,24 @@ Always return an array of objects with this structure:
 ```javascript
 [
   {
-    name: 'Display Name',        // Required: shown to user
-    value: 'actual_value',        // Required: stored in form
-    description: 'Optional info'  // Optional: shown as subtitle
-  }
-]
+    name: "Display Name", // Required: shown to user
+    value: "actual_value", // Required: stored in form
+    description: "Optional info", // Optional: shown as subtitle
+  },
+];
 ```
 
 ### 4. Performance
 
 ✅ **DO:**
+
 - Cache results when appropriate
 - Limit query results (use LIMIT, pagination)
 - Close connections properly (use try/finally)
 - Use connection pooling
 
 ❌ **DON'T:**
+
 - Don't fetch large datasets without pagination
 - Don't leave connections open
 - Don't make unnecessary API calls
@@ -576,12 +611,14 @@ Always return an array of objects with this structure:
 ### 5. User Experience
 
 ✅ **DO:**
+
 - Provide clear error messages
 - Show loading states (handled by DynamicAutocomplete)
 - Use descriptive option names and descriptions
 - Sort options alphabetically or by relevance
 
 ❌ **DON'T:**
+
 - Don't show technical error details to users
 - Don't return empty arrays without context
 - Don't use cryptic option names
@@ -595,6 +632,7 @@ Always return an array of objects with this structure:
 **Cause:** Credentials not passed correctly from frontend
 
 **Solution:**
+
 1. Verify credential field has `type: 'credential'`
 2. Check `allowedTypes` matches credential type name
 3. Ensure user has selected credentials in the UI
@@ -604,6 +642,7 @@ Always return an array of objects with this structure:
 **Cause:** API call failing or response format incorrect
 
 **Debug Steps:**
+
 1. Check browser console for detailed error
 2. Check Network tab for API response
 3. Verify backend logs for errors
@@ -614,6 +653,7 @@ Always return an array of objects with this structure:
 **Cause:** Frontend not detecting credential changes
 
 **Solution:**
+
 1. Verify DynamicAutocomplete is monitoring credentials
 2. Check if `credentialsKey` memoization is working
 3. Ensure `hasLoadedRef` resets on credential change
@@ -623,6 +663,7 @@ Always return an array of objects with this structure:
 **Cause:** Backend credential service not set up
 
 **Solution:**
+
 1. Check `global.credentialService` is set in server.ts
 2. Verify CredentialService is imported and instantiated
 3. Restart backend server
@@ -632,6 +673,7 @@ Always return an array of objects with this structure:
 **Cause:** Response format mismatch
 
 **Solution:**
+
 1. Verify API returns `{ success: true, data: [...] }`
 2. Check DynamicAutocomplete handles both wrapped and direct array responses
 3. Inspect console logs for formatting errors
@@ -645,12 +687,13 @@ Always return an array of objects with this structure:
 **Endpoint:** `POST /api/nodes/:type/load-options`
 
 **Request Body:**
+
 ```json
 {
   "method": "getTables",
   "parameters": {
     "operation": "select",
-    "limit": 50,
+    "limit": 50
     // ... other node parameters
   },
   "credentials": {
@@ -660,6 +703,7 @@ Always return an array of objects with this structure:
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -682,7 +726,7 @@ Available in `loadOptions` methods:
 Returns decrypted credential data.
 
 ```javascript
-const credentials = await this.getCredentials('postgresDb');
+const credentials = await this.getCredentials("postgresDb");
 // Returns: { host: 'localhost', port: 5432, database: 'mydb', ... }
 ```
 
@@ -691,8 +735,8 @@ const credentials = await this.getCredentials('postgresDb');
 Returns the value of a node parameter.
 
 ```javascript
-const table = this.getNodeParameter('table');
-const operation = this.getNodeParameter('operation');
+const table = this.getNodeParameter("table");
+const operation = this.getNodeParameter("operation");
 ```
 
 #### `this.logger`
@@ -700,10 +744,10 @@ const operation = this.getNodeParameter('operation');
 Logging methods.
 
 ```javascript
-this.logger.info('Loading tables');
-this.logger.error('Failed to connect', { error });
-this.logger.warn('Slow query detected');
-this.logger.debug('Debug info', { data });
+this.logger.info("Loading tables");
+this.logger.error("Failed to connect", { error });
+this.logger.warn("Slow query detected");
+this.logger.debug("Debug info", { data });
 ```
 
 ---

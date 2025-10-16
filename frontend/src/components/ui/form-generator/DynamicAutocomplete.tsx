@@ -1,6 +1,6 @@
 import { AutoComplete, AutoCompleteOption } from '@/components/ui/autocomplete';
-import { useEffect, useState, useRef, useMemo } from 'react';
 import { apiClient } from '@/services/api';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface DynamicAutocompleteProps {
   nodeType: string;

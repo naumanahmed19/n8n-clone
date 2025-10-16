@@ -33,7 +33,9 @@ export interface NodeDefinition {
   // Dynamic options loading
   loadOptions?: Record<
     string,
-    (this: NodeExecutionContext) => Promise<Array<{ name: string; value: any; description?: string }>>
+    (
+      this: NodeExecutionContext
+    ) => Promise<Array<{ name: string; value: any; description?: string }>>
   >;
 }
 

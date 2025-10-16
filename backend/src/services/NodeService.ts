@@ -1027,19 +1027,26 @@ export class NodeService {
       }
 
       // Check if node has loadOptions methods
-      if (!nodeDefinition.loadOptions || typeof nodeDefinition.loadOptions !== 'object') {
+      if (
+        !nodeDefinition.loadOptions ||
+        typeof nodeDefinition.loadOptions !== "object"
+      ) {
         return {
           success: false,
-          error: { message: `Node '${nodeType}' does not support dynamic options loading` },
+          error: {
+            message: `Node '${nodeType}' does not support dynamic options loading`,
+          },
         };
       }
 
       // Check if the specific method exists
       const loadOptionsMethod = (nodeDefinition.loadOptions as any)[method];
-      if (typeof loadOptionsMethod !== 'function') {
+      if (typeof loadOptionsMethod !== "function") {
         return {
           success: false,
-          error: { message: `Load options method '${method}' not found for node '${nodeType}'` },
+          error: {
+            message: `Load options method '${method}' not found for node '${nodeType}'`,
+          },
         };
       }
 
@@ -1047,12 +1054,17 @@ export class NodeService {
       // Map credential field names to their types (e.g., "authentication" -> "postgresDb")
       const credentialTypeMap: Record<string, string> = {};
       if (nodeDefinition.properties) {
-        const properties = typeof nodeDefinition.properties === 'function' 
-          ? nodeDefinition.properties() 
-          : nodeDefinition.properties;
-          
+        const properties =
+          typeof nodeDefinition.properties === "function"
+            ? nodeDefinition.properties()
+            : nodeDefinition.properties;
+
         for (const property of properties) {
-          if (property.type === 'credential' && property.allowedTypes && property.allowedTypes.length > 0) {
+          if (
+            property.type === "credential" &&
+            property.allowedTypes &&
+            property.allowedTypes.length > 0
+          ) {
             // Use the first allowed type as the credential type
             credentialTypeMap[property.name] = property.allowedTypes[0];
           }
@@ -1074,10 +1086,12 @@ export class NodeService {
           // Try to get credential ID from credentials object
           // First try by credential type, then by field name
           let credentialId = credentials[credentialType];
-          
+
           if (!credentialId) {
             // Look for field name that maps to this credential type
-            for (const [fieldName, mappedType] of Object.entries(credentialTypeMap)) {
+            for (const [fieldName, mappedType] of Object.entries(
+              credentialTypeMap
+            )) {
               if (mappedType === credentialType && credentials[fieldName]) {
                 credentialId = credentials[fieldName];
                 break;
@@ -1086,8 +1100,13 @@ export class NodeService {
           }
 
           if (credentialId) {
-            if (typeof credentialId === 'string' || typeof credentialId === 'number') {
-              const credential = await credentialService.getCredentialById(String(credentialId));
+            if (
+              typeof credentialId === "string" ||
+              typeof credentialId === "number"
+            ) {
+              const credential = await credentialService.getCredentialById(
+                String(credentialId)
+              );
               if (credential) {
                 return credential.data;
               }
@@ -1113,7 +1132,9 @@ export class NodeService {
       if (!Array.isArray(options)) {
         return {
           success: false,
-          error: { message: `Load options method '${method}' did not return an array` },
+          error: {
+            message: `Load options method '${method}' did not return an array`,
+          },
         };
       }
 
@@ -1122,11 +1143,17 @@ export class NodeService {
         data: options,
       };
     } catch (error) {
-      logger.error(`Failed to load options for node '${nodeType}', method '${method}'`, { error });
+      logger.error(
+        `Failed to load options for node '${nodeType}', method '${method}'`,
+        { error }
+      );
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : "Unknown error loading options",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unknown error loading options",
         },
       };
     }

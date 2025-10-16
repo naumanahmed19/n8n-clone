@@ -1322,11 +1322,11 @@ export class ExecutionService {
         ...node.parameters,
         ...(parameters || {}),
       };
-      
+
       // Build credentials mapping from parameters
       // Extract credential field values and map them to credential types
       let credentialsMapping: Record<string, string> = {};
-      
+
       if (nodeTypeInfo.properties) {
         const properties = Array.isArray(nodeTypeInfo.properties)
           ? nodeTypeInfo.properties
@@ -1334,15 +1334,19 @@ export class ExecutionService {
 
         for (const property of properties) {
           // Check if this is a credential field
-          if (property.type === 'credential' && property.allowedTypes && property.allowedTypes.length > 0) {
+          if (
+            property.type === "credential" &&
+            property.allowedTypes &&
+            property.allowedTypes.length > 0
+          ) {
             // Get the credential ID from parameters using the field name
             const credentialId = nodeParameters[property.name];
-            
+
             if (credentialId) {
               // Map credential type to ID
               // property.allowedTypes[0] is the credential type (e.g., "postgresDb")
               credentialsMapping[property.allowedTypes[0]] = credentialId;
-              
+
               logger.info(`Mapped credential for execution`, {
                 nodeId,
                 fieldName: property.name,
