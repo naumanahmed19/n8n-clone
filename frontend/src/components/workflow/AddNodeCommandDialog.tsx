@@ -1,15 +1,16 @@
 import { Badge } from '@/components/ui/badge'
 import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
 } from '@/components/ui/command'
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
+import { getIconComponent, isTextIcon } from '@/utils/iconMapper'
 import { useReactFlow } from '@xyflow/react'
 import { useCallback, useEffect, useMemo } from 'react'
 
@@ -267,45 +268,66 @@ export function AddNodeCommandDialog({
           <div key={group.name}>
             {index > 0 && <CommandSeparator />}
             <CommandGroup heading={group.name}>
-              {group.nodes.map((node) => (
-                <CommandItem
-                  key={node.type}
-                  value={`${node.displayName} ${node.description} ${node.group.join(' ')}`}
-                  onSelect={() => handleSelectNode(node)}
-                  className="flex items-center gap-3 p-3"
-                >
-                  <div 
-                    className="w-8 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: node.color || '#6b7280' }}
+              {group.nodes.map((node) => {
+                // Get the appropriate icon component
+                const IconComponent = getIconComponent(node.icon, node.type, node.group)
+                const useTextIcon = !IconComponent && isTextIcon(node.icon)
+                const isSvgPath = typeof IconComponent === 'string'
+                
+                return (
+                  <CommandItem
+                    key={node.type}
+                    value={`${node.displayName} ${node.description} ${node.group.join(' ')}`}
+                    onSelect={() => handleSelectNode(node)}
+                    className="flex items-center gap-3 p-3"
                   >
-                    {node?.icon || node.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">
-                      {node.displayName}
+                    <div 
+                      className={`w-8 h-8 flex items-center justify-center text-white flex-shrink-0 ${node.group.includes('trigger') ? 'rounded-full' : 'rounded-md'} shadow-sm`}
+                      style={{ backgroundColor: node.color || '#6b7280' }}
+                    >
+                      {isSvgPath ? (
+                        <img 
+                          src={IconComponent as string} 
+                          alt={node.displayName}
+                          className="w-4 h-4"
+                          style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+                        />
+                      ) : IconComponent ? (
+                        // @ts-ignore - IconComponent is LucideIcon here
+                        <IconComponent className="w-4 h-4 text-white" />
+                      ) : useTextIcon ? (
+                        <span className="text-xs font-bold">{node.icon}</span>
+                      ) : (
+                        <span className="text-xs font-bold">{node.displayName.charAt(0).toUpperCase()}</span>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {node.description}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm">
+                        {node.displayName}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {node.description}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1 flex-wrap">
-                    {node.group.slice(0, 2).map((g) => (
-                      <Badge 
-                        key={g} 
-                        variant="secondary" 
-                        className="text-xs h-5"
-                      >
-                        {g}
-                      </Badge>
-                    ))}
-                    {node.group.length > 2 && (
-                      <Badge variant="outline" className="text-xs h-5">
-                        +{node.group.length - 2}
-                      </Badge>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
+                    <div className="flex gap-1 flex-wrap">
+                      {node.group.slice(0, 2).map((g) => (
+                        <Badge 
+                          key={g} 
+                          variant="secondary" 
+                          className="text-xs h-5"
+                        >
+                          {g}
+                        </Badge>
+                      ))}
+                      {node.group.length > 2 && (
+                        <Badge variant="outline" className="text-xs h-5">
+                          +{node.group.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  </CommandItem>
+                )
+              })}
             </CommandGroup>
           </div>
         ))}

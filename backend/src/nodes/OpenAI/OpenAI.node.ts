@@ -14,8 +14,8 @@ export const OpenAINode: NodeDefinition = {
   group: ["ai", "transform"],
   version: 1,
   description: "Interact with OpenAI models (GPT-4, GPT-3.5, etc.)",
-  icon: "🤖",
-  color: "#10A37F",
+  icon: "svg:openai",
+  color: "#000",
   defaults: {
     model: "gpt-4o-mini",
     temperature: 0.7,
