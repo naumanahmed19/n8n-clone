@@ -1,7 +1,7 @@
 import {
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
 } from '@/components/ui/context-menu'
 import { Box, Clipboard, Copy, Lock, Play, Scissors, Settings, Trash2, Ungroup, Unlock } from 'lucide-react'
 

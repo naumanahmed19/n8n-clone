@@ -67,10 +67,7 @@ export function useNodeActions(nodeId: string) {
     // Get all selected nodes that are not groups and not in groups
     const allNodes = getNodes();
     const selectedNodes = allNodes.filter(
-      (node) =>
-        node.selected &&
-        !node.parentId &&
-        node.type !== "group"
+      (node) => node.selected && !node.parentId && node.type !== "group"
     );
 
     // Need at least 1 node to create a group
