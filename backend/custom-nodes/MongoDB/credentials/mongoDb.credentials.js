@@ -10,6 +10,7 @@ const MongoDbCredentials = {
       displayName: "Configuration Type",
       name: "configurationType",
       type: "options",
+      required: true,
       options: [
         {
           name: "Connection String",

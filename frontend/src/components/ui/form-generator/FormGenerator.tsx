@@ -37,15 +37,17 @@ export const FormGenerator = forwardRef<FormGeneratorRef, FormGeneratorProps>(({
   // Expose validation methods via ref
   useImperativeHandle(ref, () => ({
     validate: () => {
-      const errors = FieldValidator.validateForm(fields, values)
+      // Only validate visible fields, not hidden ones
+      const errors = FieldValidator.validateForm(visibleFields, values)
       setInternalErrors(errors)
       return errors
     },
     isValid: () => {
-      const errors = FieldValidator.validateForm(fields, values)
+      // Only validate visible fields, not hidden ones
+      const errors = FieldValidator.validateForm(visibleFields, values)
       return Object.keys(errors).length === 0
     }
-  }), [fields, values])
+  }), [visibleFields, values])
 
   // Handle field value changes
   const handleFieldChange = (fieldName: string, value: any) => {
