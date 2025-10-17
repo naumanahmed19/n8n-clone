@@ -436,7 +436,9 @@ const MySQLNode = {
 
               const columns = Object.keys(data);
               const values = Object.values(data);
-              const setClause = columns.map((col) => `\`${col}\` = ?`).join(", ");
+              const setClause = columns
+                .map((col) => `\`${col}\` = ?`)
+                .join(", ");
 
               queryParams = [...values];
 
@@ -593,13 +595,16 @@ const MySQLNode = {
         });
 
         // Query to get all tables from the database
-        const [rows] = await connection.execute(`
+        const [rows] = await connection.execute(
+          `
           SELECT table_name 
           FROM information_schema.tables 
           WHERE table_schema = ? 
           AND table_type = 'BASE TABLE'
           ORDER BY table_name
-        `, [database]);
+        `,
+          [database]
+        );
 
         await connection.end();
 

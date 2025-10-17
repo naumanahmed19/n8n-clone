@@ -48,10 +48,12 @@ Set up MySQL database credentials:
 Execute custom SQL queries with parameterized inputs.
 
 **Fields:**
+
 - **Query**: SQL query with placeholders (?, ?, etc.)
 - **Query Parameters**: Comma-separated values for placeholders
 
 **Example:**
+
 ```sql
 Query: SELECT * FROM users WHERE status = ? AND age > ?
 Query Parameters: active,18
@@ -62,8 +64,9 @@ Query Parameters: active,18
 Retrieve data from a table with various filters.
 
 **Fields:**
+
 - **Table**: Select table from dropdown
-- **Columns**: Columns to select (default: *)
+- **Columns**: Columns to select (default: \*)
 - **Return All**: Return all rows or limit results
 - **Limit**: Maximum rows to return (when Return All is false)
 - **Where Clause**: Filter conditions (e.g., id = ? AND status = ?)
@@ -75,11 +78,13 @@ Retrieve data from a table with various filters.
 Insert new rows into a table.
 
 **Fields:**
+
 - **Table**: Target table
 - **Data**: JSON object with column-value pairs
-- **Return Fields**: Fields to return after insert (default: *)
+- **Return Fields**: Fields to return after insert (default: \*)
 
 **Example:**
+
 ```json
 {
   "name": "John Doe",
@@ -93,6 +98,7 @@ Insert new rows into a table.
 Update existing rows in a table.
 
 **Fields:**
+
 - **Table**: Target table
 - **Data**: JSON object with updated values
 - **Where Clause**: Required filter to identify rows
@@ -104,6 +110,7 @@ Update existing rows in a table.
 Delete rows from a table.
 
 **Fields:**
+
 - **Table**: Target table
 - **Where Clause**: Required filter (safety measure)
 - **Where Parameters**: Values for WHERE placeholders
@@ -160,6 +167,7 @@ Query Parameters: 2024-01-01
 ## Error Handling
 
 Enable "Continue On Fail" to:
+
 - Continue workflow execution even if database operations fail
 - Receive error information as output data
 - Handle errors gracefully in your workflow

@@ -100,12 +100,12 @@ const MySQLDbCredentials = {
         const [rows] = await connection.execute(
           "SELECT NOW() as current_time, VERSION() as version"
         );
-        
+
         await connection.end();
 
         if (rows && rows.length > 0) {
           const version = rows[0].version;
-          
+
           return {
             success: true,
             message: `Connected successfully to MySQL ${version} at ${
