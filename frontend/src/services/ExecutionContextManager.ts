@@ -298,12 +298,15 @@ export class ExecutionContextManager {
 
       // FIX: Find the most recent execution (running OR completed/failed)
       // This ensures single node execution status persists after completion
-      let mostRecentExecution: { executionId: string; context: ExecutionContext } | null = null;
-      
+      let mostRecentExecution: {
+        executionId: string;
+        context: ExecutionContext;
+      } | null = null;
+
       for (const executionId of executions) {
         const context = this.executions.get(executionId);
         if (!context) continue;
-        
+
         // Prioritize running executions
         if (context.status === "running") {
           return {
@@ -312,16 +315,22 @@ export class ExecutionContextManager {
             lastUpdated: Date.now(),
           };
         }
-        
+
         // Track most recent completed/failed execution
-        if (!mostRecentExecution || context.startTime > mostRecentExecution.context.startTime) {
+        if (
+          !mostRecentExecution ||
+          context.startTime > mostRecentExecution.context.startTime
+        ) {
           mostRecentExecution = { executionId, context };
         }
       }
-      
+
       // If no running execution, return status from most recent completed execution
       if (mostRecentExecution) {
-        const nodeStatus = this.getNodeStatusInExecution(nodeId, mostRecentExecution.executionId);
+        const nodeStatus = this.getNodeStatusInExecution(
+          nodeId,
+          mostRecentExecution.executionId
+        );
         // Only return completed/failed status, not idle
         if (nodeStatus !== NodeExecutionStatus.IDLE) {
           return {

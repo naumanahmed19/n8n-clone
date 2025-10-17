@@ -1645,7 +1645,9 @@ export const useWorkflowStore = create<WorkflowStore>()(
 
             // Initialize execution context for single node execution
             const { executionManager } = get();
-            executionManager.startExecution(result.executionId, nodeId, [nodeId]);
+            executionManager.startExecution(result.executionId, nodeId, [
+              nodeId,
+            ]);
             executionManager.setCurrentExecution(result.executionId);
             executionManager.setNodeRunning(result.executionId, nodeId);
             set({ executionManager });
@@ -1718,7 +1720,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               executionManager.setNodeFailed(result.executionId, nodeId);
               executionManager.completeExecution(result.executionId);
             }
-            
+
             set({ executionManager });
 
             get().updateNodeExecutionState(nodeId, visualStatus, {
