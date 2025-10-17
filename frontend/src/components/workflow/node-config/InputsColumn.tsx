@@ -1,41 +1,42 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@/components/ui/tabs'
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useWorkflowStore } from '@/stores'
 import { WorkflowNode } from '@/types'
 import { getNodeExecutionCapability } from '@/utils/nodeTypeClassification'
 import {
-    ArrowLeft,
-    ChevronDown,
-    ChevronRight,
-    Code,
-    FolderOpen,
-    GitBranch,
-    Info,
-    Settings,
-    Table,
-    Zap
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Code,
+  FolderOpen,
+  GitBranch,
+  Info,
+  Play,
+  Settings,
+  Table,
+  Zap
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -72,6 +73,7 @@ interface SchemaViewerProps {
  * @param onExpandedChange - Callback to update expansion state
  * @param getNodeIcon - Function to get appropriate icon for node type
  * @param getNodeStatusBadge - Function to get status badge for execution state
+ * @param onExecuteNode - Callback to execute a specific node
  */
 interface UnifiedTreeNodeProps {
   node: WorkflowNode
@@ -82,6 +84,7 @@ interface UnifiedTreeNodeProps {
   onExpandedChange: (key: string, expanded: boolean) => void
   getNodeIcon: (type: string) => React.ReactNode
   getNodeStatusBadge: (status?: string) => React.ReactNode
+  onExecuteNode: (nodeId: string) => void
 }
 
 /**
@@ -110,7 +113,8 @@ function UnifiedTreeNode({
   expandedState, 
   onExpandedChange,
   getNodeIcon,
-  getNodeStatusBadge 
+  getNodeStatusBadge,
+  onExecuteNode
 }: UnifiedTreeNodeProps) {
   const isNodeExpanded = expandedState[inputNode.id] || false
   const nodeData = nodeExecutionResult?.data ? getRelevantData(nodeExecutionResult.data) : null
@@ -170,11 +174,34 @@ function UnifiedTreeNode({
               )}
             </div>
             
-            {nodeExecutionResult && (
-              <div className="flex-shrink-0">
-                {getNodeStatusBadge(nodeExecutionResult.status)}
-              </div>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onExecuteNode(inputNode.id)
+                      }}
+                    >
+                      <Play className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Execute {inputNode.name}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {nodeExecutionResult && (
+                <div>
+                  {getNodeStatusBadge(nodeExecutionResult.status)}
+                </div>
+              )}
+            </div>
           </div>
         </CollapsibleTrigger>
 
@@ -426,11 +453,29 @@ function getRelevantData(executionData: any): any {
  * - Connection details moved to tooltips for cleaner interface
  */
 export function InputsColumn({ node }: InputsColumnProps) {
-  const { workflow, getNodeExecutionResult } = useWorkflowStore()
+  const { workflow, getNodeExecutionResult, executeNode } = useWorkflowStore()
 
   // State management for tree expansion and active tab view
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<'schema' | 'json' | 'table'>('schema')
+
+  // Handle node execution
+  const handleExecuteNode = (nodeId: string) => {
+    const nodeToExecute = workflow?.nodes.find(n => n.id === nodeId)
+    if (nodeToExecute) {
+      // Check if it's a trigger node to determine execution mode
+      const triggerNodeTypes = [
+        "manual-trigger",
+        "webhook-trigger",
+        "schedule-trigger",
+        "workflow-called",
+      ];
+      const mode = triggerNodeTypes.includes(nodeToExecute.type) ? "workflow" : "single";
+      
+      // Execute with undefined inputData (will use data from connected nodes)
+      executeNode(nodeId, undefined, mode)
+    }
+  }
 
   // Get connected input nodes - these are nodes that feed data into current node
   // Memoize to prevent recreating arrays on every render
@@ -598,6 +643,7 @@ export function InputsColumn({ node }: InputsColumnProps) {
                     }}
                     getNodeIcon={getNodeIcon}
                     getNodeStatusBadge={getNodeStatusBadge}
+                    onExecuteNode={handleExecuteNode}
                   />
                 )
               })}
