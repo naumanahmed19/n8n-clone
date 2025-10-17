@@ -7,7 +7,7 @@ interface DocsTabProps {
 
 export function DocsTab({ nodeType }: DocsTabProps) {
   return (
-    <div className="h-full p-4">
+       <div className="h-[calc(100dvh-222px)] overflow-y-auto p-4">
       <NodeDocumentation nodeType={nodeType} />
     </div>
   )

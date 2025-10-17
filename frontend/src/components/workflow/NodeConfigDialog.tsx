@@ -1,14 +1,14 @@
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-    VisuallyHidden,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  VisuallyHidden,
 } from '@/components/ui/dialog'
 import {
-    ResizableHandle,
-    ResizablePanel,
-    ResizablePanelGroup,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { useCredentialStore, useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
@@ -80,12 +80,6 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose, readOnly = f
     if (readOnly) return
     
     if (hasUnsavedChanges) {
-      console.log('💾 NodeConfigDialog - Saving node with settings:', {
-        nodeId: node.id,
-        nodeSettings,
-        hasSettings: !!nodeSettings && Object.keys(nodeSettings).length > 0
-      });
-      
       updateNode(node.id, { 
         parameters, 
         name: nodeName, 
