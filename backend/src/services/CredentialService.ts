@@ -686,7 +686,7 @@ export class CredentialService {
     allProperties: any[]
   ): boolean {
     const displayOptions = property.displayOptions;
-    
+
     if (!displayOptions) {
       return true; // No display options means always visible
     }

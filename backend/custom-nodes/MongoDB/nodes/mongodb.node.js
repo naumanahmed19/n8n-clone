@@ -1,5 +1,40 @@
 const { MongoClient, ObjectId } = require("mongodb");
 
+/**
+ * Helper function to build MongoDB connection string
+ * Automatically detects MongoDB Atlas and uses appropriate protocol
+ */
+function buildConnectionString(credentials) {
+  if (credentials.configurationType === "connectionString") {
+    return credentials.connectionString;
+  }
+
+  const auth =
+    credentials.user && credentials.password
+      ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(
+          credentials.password
+        )}@`
+      : "";
+
+  // Detect if this is a MongoDB Atlas cluster (contains .mongodb.net)
+  const isAtlas = credentials.host.includes(".mongodb.net");
+
+  if (isAtlas) {
+    // MongoDB Atlas requires SRV connection string and always uses SSL
+    const authSource = "authSource=admin";
+    const retryWrites = "retryWrites=true";
+    const w = "w=majority";
+
+    return `mongodb+srv://${auth}${credentials.host}/${credentials.database}?${authSource}&${retryWrites}&${w}`;
+  } else {
+    // Standard MongoDB connection
+    const port = credentials.port || 27017;
+    const sslParam = credentials.ssl ? "?ssl=true" : "";
+
+    return `mongodb://${auth}${credentials.host}:${port}/${credentials.database}${sslParam}`;
+  }
+}
+
 const MongoDBNode = {
   type: "mongodb",
   displayName: "MongoDB",
@@ -379,21 +414,8 @@ const MongoDBNode = {
         );
       }
 
-      // Build connection string based on configuration type
-      if (credentials.configurationType === "connectionString") {
-        connectionString = credentials.connectionString;
-      } else {
-        const auth =
-          credentials.user && credentials.password
-            ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(
-                credentials.password
-              )}@`
-            : "";
-        const port = credentials.port || 27017;
-        const sslParam = credentials.ssl ? "?ssl=true" : "";
-
-        connectionString = `mongodb://${auth}${credentials.host}:${port}/${credentials.database}${sslParam}`;
-      }
+      // Build connection string using helper function
+      connectionString = buildConnectionString(credentials);
 
       this.logger.info("Using MongoDB credentials");
     } catch (error) {
@@ -719,21 +741,8 @@ const MongoDBNode = {
           ];
         }
 
-        // Build connection string based on configuration type
-        if (credentials.configurationType === "connectionString") {
-          connectionString = credentials.connectionString;
-        } else {
-          const auth =
-            credentials.user && credentials.password
-              ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(
-                  credentials.password
-                )}@`
-              : "";
-          const port = credentials.port || 27017;
-          const sslParam = credentials.ssl ? "?ssl=true" : "";
-
-          connectionString = `mongodb://${auth}${credentials.host}:${port}/${credentials.database}${sslParam}`;
-        }
+        // Build connection string using helper function
+        connectionString = buildConnectionString(credentials);
       } catch (error) {
         return [
           {

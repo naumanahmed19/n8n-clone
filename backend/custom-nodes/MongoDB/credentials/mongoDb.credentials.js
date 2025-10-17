@@ -52,8 +52,9 @@ const MongoDbCredentials = {
       },
       required: true,
       default: "localhost",
-      description: "MongoDB server host",
-      placeholder: "localhost or IP address",
+      description:
+        "MongoDB server host. For Atlas: cluster0.mongodb.net (SRV connection is automatic). For local: localhost or IP address",
+      placeholder: "e.g., localhost or cluster0.9wbrf.mongodb.net",
     },
     {
       displayName: "Port",
@@ -64,9 +65,9 @@ const MongoDbCredentials = {
           configurationType: ["values"],
         },
       },
-      required: true,
+      required: false,
       default: 27017,
-      description: "MongoDB server port",
+      description: "MongoDB server port (ignored for MongoDB Atlas clusters)",
     },
     {
       displayName: "Database",
@@ -156,10 +157,24 @@ const MongoDbCredentials = {
               data.password
             )}@`
           : "";
-      const port = data.port || 27017;
-      const sslParam = data.ssl ? "?ssl=true" : "";
 
-      connectionString = `mongodb://${auth}${data.host}:${port}/${data.database}${sslParam}`;
+      // Detect if this is a MongoDB Atlas cluster (contains .mongodb.net)
+      const isAtlas = data.host.includes(".mongodb.net");
+
+      if (isAtlas) {
+        // MongoDB Atlas requires SRV connection string and always uses SSL
+        const authSource = "authSource=admin";
+        const retryWrites = "retryWrites=true";
+        const w = "w=majority";
+
+        connectionString = `mongodb+srv://${auth}${data.host}/${data.database}?${authSource}&${retryWrites}&${w}`;
+      } else {
+        // Standard MongoDB connection
+        const port = data.port || 27017;
+        const sslParam = data.ssl ? "?ssl=true" : "";
+
+        connectionString = `mongodb://${auth}${data.host}:${port}/${data.database}${sslParam}`;
+      }
     }
 
     // Try to connect to MongoDB
@@ -167,8 +182,8 @@ const MongoDbCredentials = {
       const { MongoClient } = require("mongodb");
 
       const client = new MongoClient(connectionString, {
-        serverSelectionTimeoutMS: 5000, // 5 second timeout
-        connectTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 10000, // 10 second timeout (Atlas may need more time)
+        connectTimeoutMS: 10000,
       });
 
       try {
