@@ -9,12 +9,12 @@ const MyNode = {
   type: "myNode",
   displayName: "My Node",
   // ... other properties
-  
+
   // Define which settings this node supports
   settings: {
     // Enable these default settings for this node type
     defaultEnabled: ["continueOnFail", "retryOnFail", "timeout", "notes"],
-    
+
     // Optional: Add custom settings specific to this node
     custom: {
       cacheResults: {
@@ -26,13 +26,13 @@ const MyNode = {
       },
     },
   },
-  
+
   execute: async function (inputData) {
     // Access settings via this.settings
     const continueOnFail = this.settings?.continueOnFail ?? false;
     const timeout = this.settings?.timeout ?? 30000;
     const cacheResults = this.settings?.cacheResults ?? false;
-    
+
     // Use settings in your logic
     try {
       // Your node logic here
@@ -49,15 +49,15 @@ const MyNode = {
 
 ### 2. Available Default Settings
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `continueOnFail` | boolean | false | Continue workflow even if node fails |
-| `alwaysOutputData` | boolean | false | Output data even on errors (requires continueOnFail) |
-| `retryOnFail` | boolean | false | Automatically retry on failure |
-| `maxRetries` | number | 3 | Maximum retry attempts |
-| `retryDelay` | number | 1000 | Delay between retries (ms) |
-| `timeout` | number | 30000 | Execution timeout (ms) |
-| `notes` | string | "" | Documentation notes |
+| Setting            | Type    | Default | Description                                          |
+| ------------------ | ------- | ------- | ---------------------------------------------------- |
+| `continueOnFail`   | boolean | false   | Continue workflow even if node fails                 |
+| `alwaysOutputData` | boolean | false   | Output data even on errors (requires continueOnFail) |
+| `retryOnFail`      | boolean | false   | Automatically retry on failure                       |
+| `maxRetries`       | number  | 3       | Maximum retry attempts                               |
+| `retryDelay`       | number  | 1000    | Delay between retries (ms)                           |
+| `timeout`          | number  | 30000   | Execution timeout (ms)                               |
+| `notes`            | string  | ""      | Documentation notes                                  |
 
 ### 3. Custom Settings Types
 
@@ -71,7 +71,7 @@ custom: {
     default: false,
     description: "Enable special feature",
   },
-  
+
   // Number setting
   batchSize: {
     displayName: "Batch Size",
@@ -80,7 +80,7 @@ custom: {
     default: 100,
     description: "Number of items to process per batch",
   },
-  
+
   // String setting
   apiVersion: {
     displayName: "API Version",
@@ -90,7 +90,7 @@ custom: {
     description: "API version to use",
     placeholder: "v1, v2, etc.",
   },
-  
+
   // Options setting
   mode: {
     displayName: "Mode",
@@ -104,7 +104,7 @@ custom: {
     ],
     description: "Processing mode",
   },
-  
+
   // JSON setting
   config: {
     displayName: "Configuration",
@@ -146,6 +146,7 @@ custom: {
 ### 5. Migration from Properties to Settings
 
 **Before:**
+
 ```javascript
 properties: [
   {
@@ -163,6 +164,7 @@ execute: async function (inputData) {
 ```
 
 **After:**
+
 ```javascript
 properties: [
   // Remove continueOnFail from properties
@@ -200,6 +202,7 @@ Settings Tab:
 ☑ Continue On Fail: [●] Enabled
 ☑ Always Output Data: [●] Enabled
 ```
+
 Result: Node outputs error data instead of stopping workflow
 
 #### 2. Retry Failed Operations
@@ -210,6 +213,7 @@ Settings Tab:
 ☑ Max Retries: [3]
 ☑ Retry Delay: [2000] ms
 ```
+
 Result: Node retries up to 3 times with 2-second delays
 
 #### 3. Set Custom Timeout
@@ -218,6 +222,7 @@ Result: Node retries up to 3 times with 2-second delays
 Settings Tab:
 ☑ Timeout: [60000] ms
 ```
+
 Result: Node times out after 60 seconds instead of default 30
 
 #### 4. Document Your Workflow
@@ -227,6 +232,7 @@ Settings Tab:
 ☑ Notes: [This node fetches user data from the API.
          It runs every hour as part of the sync process.]
 ```
+
 Result: Team members can see notes about what the node does
 
 ## Best Practices
@@ -352,6 +358,7 @@ settings: {
 ## Support
 
 For questions or issues with the settings system:
+
 1. Check documentation: `/docs/NODE_SETTINGS_SYSTEM.md`
 2. Review examples in existing nodes
 3. Ask in development channel

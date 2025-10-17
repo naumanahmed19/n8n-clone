@@ -1,6 +1,6 @@
 /**
  * Node Settings Manager
- * 
+ *
  * Manages node settings at different levels (global, workflow, node type, node instance)
  * and provides methods to resolve the final settings for a node.
  */
@@ -164,9 +164,7 @@ export class NodeSettingsManager {
   /**
    * Get enabled settings for a node based on its configuration
    */
-  public getEnabledSettings(
-    nodeSettings: NodeSettingsConfig
-  ): NodeSettings {
+  public getEnabledSettings(nodeSettings: NodeSettingsConfig): NodeSettings {
     const enabled: NodeSettings = {};
 
     // Get enabled default settings
@@ -209,8 +207,7 @@ export class NodeSettingsManager {
     // Validate each setting
     Object.entries(settings).forEach(([key, value]) => {
       const settingDef =
-        DEFAULT_NODE_SETTINGS[key] ||
-        settingsConfig.customSettings?.[key];
+        DEFAULT_NODE_SETTINGS[key] || settingsConfig.customSettings?.[key];
 
       if (!settingDef) {
         errors.push(`Unknown setting: ${key}`);

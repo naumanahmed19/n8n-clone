@@ -1,16 +1,16 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,17 +19,17 @@ import { NodeType, WorkflowNode } from '@/types'
 import { getIconComponent } from '@/utils/iconMapper'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
-    AlertCircle,
-    Database,
-    FileText,
-    Info,
-    Loader2,
-    MoreVertical,
-    Play,
-    Settings,
-    ToggleLeft,
-    ToggleRight,
-    Trash2
+  AlertCircle,
+  Database,
+  FileText,
+  Info,
+  Loader2,
+  MoreVertical,
+  Play,
+  Settings,
+  ToggleLeft,
+  ToggleRight,
+  Trash2
 } from 'lucide-react'
 import { ConfigTab } from './tabs/ConfigTab'
 import { DocsTab } from './tabs/DocsTab'

@@ -25,13 +25,13 @@ Settings can be configured at multiple levels, with higher levels overriding low
 
 ```typescript
 {
-  continueOnFail: boolean        // Continue workflow on error
-  alwaysOutputData: boolean      // Output data even on errors
-  retryOnFail: boolean           // Automatically retry on failure
-  maxRetries: number             // Maximum retry attempts
-  retryDelay: number             // Delay between retries (ms)
-  timeout: number                // Execution timeout (ms)
-  notes: string                  // Documentation notes for the node
+  continueOnFail: boolean; // Continue workflow on error
+  alwaysOutputData: boolean; // Output data even on errors
+  retryOnFail: boolean; // Automatically retry on failure
+  maxRetries: number; // Maximum retry attempts
+  retryDelay: number; // Delay between retries (ms)
+  timeout: number; // Execution timeout (ms)
+  notes: string; // Documentation notes for the node
 }
 ```
 
@@ -46,12 +46,17 @@ export const HttpRequestNode: NodeDefinition = {
   type: "httpRequest",
   displayName: "HTTP Request",
   // ... other properties
-  
+
   // Settings configuration
   settings: {
     // Specify which default settings this node type should enable
-    defaultEnabled: ["continueOnFail", "alwaysOutputData", "retryOnFail", "timeout"],
-    
+    defaultEnabled: [
+      "continueOnFail",
+      "alwaysOutputData",
+      "retryOnFail",
+      "timeout",
+    ],
+
     // Optional: Add custom settings specific to this node type
     custom: {
       followRedirects: {
@@ -74,7 +79,9 @@ Each node instance stores its settings configuration:
 {
   "id": "node-1",
   "type": "httpRequest",
-  "parameters": { /* regular parameters */ },
+  "parameters": {
+    /* regular parameters */
+  },
   "settings": {
     "enabledSettings": ["continueOnFail", "timeout"],
     "values": {
@@ -92,9 +99,9 @@ When a node executes, settings are resolved in this order:
 ```typescript
 const settingsManager = NodeSettingsManager.getInstance();
 const resolvedSettings = settingsManager.resolveSettings(
-  nodeType,        // "httpRequest"
-  workflowId,      // "workflow-123"
-  nodeSettings     // Node instance settings
+  nodeType, // "httpRequest"
+  workflowId, // "workflow-123"
+  nodeSettings // Node instance settings
 );
 
 // resolvedSettings contains the final merged settings
@@ -107,7 +114,7 @@ execute: async function (inputData: NodeInputData): Promise<NodeOutputData[]> {
   // Get settings (provided by execution context)
   const continueOnFail = this.settings?.continueOnFail ?? false;
   const timeout = this.settings?.timeout ?? 30000;
-  
+
   try {
     // Execute node logic
     const result = await doWork();
@@ -189,7 +196,7 @@ properties: [
     description: "Continue on error",
   },
   // ... other properties
-]
+];
 ```
 
 **After:**
@@ -269,11 +276,13 @@ Returns: Updated workflow settings
 ## Next Steps
 
 ### Phase 1: Backend (Completed ✅)
+
 - ✅ Settings type definitions
 - ✅ NodeSettingsManager service
 - ✅ Updated NodeDefinition type
 
 ### Phase 2: Frontend (To Do)
+
 - [ ] Create SettingsTab component
 - [ ] Update NodeDialog to show Settings tab
 - [ ] Create settings UI controls
@@ -281,12 +290,14 @@ Returns: Updated workflow settings
 - [ ] Implement settings validation
 
 ### Phase 3: Migration (To Do)
+
 - [ ] Update HTTP Request node to use settings
 - [ ] Update MySQL node to use settings
 - [ ] Update PostgreSQL node to use settings
 - [ ] Remove duplicate properties from all nodes
 
 ### Phase 4: Advanced Features (Future)
+
 - [ ] Global settings page
 - [ ] Node type defaults page
 - [ ] Settings presets/templates
@@ -303,10 +314,15 @@ export const HttpRequestNode: NodeDefinition = {
   group: ["transform"],
   version: 1,
   description: "Make HTTP requests to any URL",
-  
+
   // Enable settings
   settings: {
-    defaultEnabled: ["continueOnFail", "alwaysOutputData", "retryOnFail", "timeout"],
+    defaultEnabled: [
+      "continueOnFail",
+      "alwaysOutputData",
+      "retryOnFail",
+      "timeout",
+    ],
     custom: {
       followRedirects: {
         displayName: "Follow Redirects",
@@ -317,7 +333,7 @@ export const HttpRequestNode: NodeDefinition = {
       },
     },
   },
-  
+
   properties: [
     // Remove continueOnFail, alwaysOutputData, timeout from here
     {
@@ -328,13 +344,13 @@ export const HttpRequestNode: NodeDefinition = {
     },
     // ... other properties
   ],
-  
+
   execute: async function (inputData) {
     // Access settings via this.settings
     const continueOnFail = this.settings?.continueOnFail ?? false;
     const timeout = this.settings?.timeout ?? 30000;
     const retryOnFail = this.settings?.retryOnFail ?? false;
-    
+
     // Use settings in execution logic
     // ...
   },
@@ -344,18 +360,18 @@ export const HttpRequestNode: NodeDefinition = {
 ## Testing
 
 ```typescript
-import { nodeSettingsManager } from './NodeSettingsManager';
+import { nodeSettingsManager } from "./NodeSettingsManager";
 
 // Test settings resolution
 const resolved = nodeSettingsManager.resolveSettings(
-  'httpRequest',
-  'workflow-123',
+  "httpRequest",
+  "workflow-123",
   {
-    enabledSettings: ['continueOnFail', 'timeout'],
+    enabledSettings: ["continueOnFail", "timeout"],
     values: {
       continueOnFail: true,
-      timeout: 60000
-    }
+      timeout: 60000,
+    },
   }
 );
 

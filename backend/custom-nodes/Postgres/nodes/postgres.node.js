@@ -233,7 +233,8 @@ const PostgresNode = {
       name: "ssl",
       type: "boolean",
       default: false,
-      description: "Enable SSL connection (uses credentials SSL setting by default)",
+      description:
+        "Enable SSL connection (uses credentials SSL setting by default)",
     },
   },
 
@@ -494,9 +495,12 @@ const PostgresNode = {
           }
         } catch (error) {
           // Handle errors for individual items
-          this.logger.error(`[Postgres] Error caught in item loop:`, error.message);
+          this.logger.error(
+            `[Postgres] Error caught in item loop:`,
+            error.message
+          );
           this.logger.info(`[Postgres] continueOnFail is: ${continueOnFail}`);
-          
+
           if (continueOnFail) {
             // If continueOnFail is enabled, return error as output data
             this.logger.info(`[Postgres] Adding error to results array`);

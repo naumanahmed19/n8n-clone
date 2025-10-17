@@ -1,6 +1,6 @@
 /**
  * Node Settings System
- * 
+ *
  * This module defines the settings system for nodes. Settings are common
  * configuration options that appear in a separate "Settings" tab in the
  * node configuration dialog, separate from the main "Parameters" tab.

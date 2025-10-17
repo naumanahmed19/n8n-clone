@@ -261,10 +261,13 @@ const MySQLNode = {
       user = credentials.user;
       password = credentials.password;
       ssl = credentials.ssl || false;
-      
+
       // Get connectionTimeout from settings first, fallback to credentials, then default
-      connectionTimeout = this.settings?.connectionTimeout ?? credentials.connectionTimeout ?? 10000;
-      
+      connectionTimeout =
+        this.settings?.connectionTimeout ??
+        credentials.connectionTimeout ??
+        10000;
+
       this.logger.info("Using MySQL credentials from authentication", {
         connectionTimeout,
         fromSettings: !!this.settings?.connectionTimeout,
@@ -582,7 +585,10 @@ const MySQLNode = {
         password = credentials.password;
         ssl = credentials.ssl || false;
         // Use settings first, then fall back to credentials
-        connectionTimeout = this.settings?.connectionTimeout ?? credentials.connectionTimeout ?? 10000;
+        connectionTimeout =
+          this.settings?.connectionTimeout ??
+          credentials.connectionTimeout ??
+          10000;
       } catch (error) {
         return [
           {
