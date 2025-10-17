@@ -553,45 +553,23 @@ export function InputsColumn({ node }: InputsColumnProps) {
             <h3 className="font-medium">Inputs</h3>
             <Badge variant="outline">{inputNodes.length}</Badge>
           </div>
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-80" side="bottom" align="end">
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Input Connections</h4>
-                <p className="text-sm text-gray-600">
-                  This panel shows input connections with different view modes: Schema, JSON, and Table.
-                </p>
-                <div className="text-xs text-gray-500">
-                  • Schema: Structured node view<br/>
-                  • JSON: Raw execution data<br/>
-                  • Table: Tabular data representation<br/>
-                  • Click tabs to switch views
-                </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+            <TabsList>
+              <TabsTrigger value="schema" className="flex items-center gap-2 text-xs">
+                <Settings className="h-3 w-3" />
+                Schema
+              </TabsTrigger>
+              <TabsTrigger value="json" className="flex items-center gap-2 text-xs">
+                <Code className="h-3 w-3" />
+                JSON
+              </TabsTrigger>
+              <TabsTrigger value="table" className="flex items-center gap-2 text-xs">
+                <Table className="h-3 w-3" />
+                Table
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-        
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="px-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="schema" className="flex items-center gap-2 text-xs">
-              <Settings className="h-3 w-3" />
-              Schema
-            </TabsTrigger>
-            <TabsTrigger value="json" className="flex items-center gap-2 text-xs">
-              <Code className="h-3 w-3" />
-              JSON
-            </TabsTrigger>
-            <TabsTrigger value="table" className="flex items-center gap-2 text-xs">
-              <Table className="h-3 w-3" />
-              Table
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
       
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
