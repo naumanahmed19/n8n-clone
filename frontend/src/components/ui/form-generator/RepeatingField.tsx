@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Copy, GripVertical, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { FieldRenderer } from './FieldRenderer'
+import { FormGenerator } from './FormGenerator'
 import { FormFieldConfig } from './types'
 
 export interface RepeatingFieldItem {
@@ -331,41 +331,18 @@ export function RepeatingField({
 
                   {/* Fields */}
                   {!isCollapsed && (
-                    <div className="space-y-3 pl-6">
-                      {fields.map((field) => {
-                        const fieldValue = item.values[field.name]
-                        const fieldError = itemErrors[field.name]
-
-                        return (
-                          <div key={field.name} className="space-y-1">
-                            <label className="text-sm font-medium">
-                              {field.displayName}
-                              {field.required && (
-                                <span className="text-destructive ml-1">*</span>
-                              )}
-                            </label>
-                            <FieldRenderer
-                              field={field}
-                              value={fieldValue}
-                              error={fieldError}
-                              onChange={(newValue) =>
-                                handleFieldChange(item.id, field.name, newValue)
-                              }
-                              disabled={disabled}
-                              allValues={item.values}
-                              allFields={fields}
-                            />
-                            {field.description && (
-                              <p className="text-xs text-muted-foreground">
-                                {field.description}
-                              </p>
-                            )}
-                            {fieldError && (
-                              <p className="text-xs text-destructive">{fieldError}</p>
-                            )}
-                          </div>
-                        )
-                      })}
+                    <div className="pl-6">
+                      <FormGenerator
+                        fields={fields}
+                        values={item.values}
+                        errors={itemErrors}
+                        onChange={(fieldName, fieldValue) =>
+                          handleFieldChange(item.id, fieldName, fieldValue)
+                        }
+                        disabled={disabled}
+                        disableAutoValidation={true}
+                        showRequiredIndicator={true}
+                      />
                     </div>
                   )}
                 </CardContent>

@@ -31,30 +31,39 @@ npm install
 ## Field Types
 
 ### Text
+
 Single-line text input with optional placeholder and default value.
 
 ### Email
+
 Email address input with built-in validation.
 
 ### Number
+
 Numeric input with min/max value configuration.
 
 ### Textarea
+
 Multi-line text input with configurable rows.
 
 ### Select
+
 Dropdown selection with custom options.
 
 ### Checkbox
+
 Single checkbox for yes/no values.
 
 ### Radio
+
 Radio button group for single selection from multiple options.
 
 ### Date
+
 Date picker for date selection.
 
 ### File
+
 File upload input with file type restrictions.
 
 ## Output

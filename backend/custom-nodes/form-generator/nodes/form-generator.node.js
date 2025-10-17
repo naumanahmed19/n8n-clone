@@ -125,7 +125,8 @@ const FormGeneratorNode = {
             type: "string",
             default: "",
             required: false,
-            description: "Unique name/key for the field (used in output data). If not provided, will be generated from the field label.",
+            description:
+              "Unique name/key for the field (used in output data). If not provided, will be generated from the field label.",
             placeholder: "email",
           },
           {
@@ -256,13 +257,26 @@ const FormGeneratorNode = {
     const formFields = await this.getNodeParameter("formFields");
     const submitButtonText = await this.getNodeParameter("submitButtonText");
     const submittedFormData = await this.getNodeParameter("submittedFormData");
-    
+
     console.log("=== FORM GENERATOR DEBUG ===");
     console.log("formTitle:", formTitle, "type:", typeof formTitle);
-    console.log("formDescription:", formDescription, "type:", typeof formDescription);
+    console.log(
+      "formDescription:",
+      formDescription,
+      "type:",
+      typeof formDescription
+    );
     console.log("formFields:", JSON.stringify(formFields, null, 2));
-    console.log("submitButtonText:", submitButtonText, "type:", typeof submitButtonText);
-    console.log("submittedFormData:", JSON.stringify(submittedFormData, null, 2));
+    console.log(
+      "submitButtonText:",
+      submitButtonText,
+      "type:",
+      typeof submitButtonText
+    );
+    console.log(
+      "submittedFormData:",
+      JSON.stringify(submittedFormData, null, 2)
+    );
     console.log("=== END DEBUG ===");
 
     // For trigger nodes, this executes when form is submitted
@@ -272,12 +286,36 @@ const FormGeneratorNode = {
     const results = [];
 
     // If we have submitted form data from the frontend
-    if (submittedFormData && typeof submittedFormData === 'object') {
+    if (submittedFormData && typeof submittedFormData === "object") {
+      // Process form fields for output
+      const processedFields = Array.isArray(formFields)
+        ? formFields.map((field) => {
+            const fieldData = field.values || field;
+            return {
+              type: fieldData.fieldType,
+              label: fieldData.fieldLabel,
+              name: fieldData.fieldName,
+              required: fieldData.required,
+              placeholder: fieldData.placeholder,
+              defaultValue: fieldData.defaultValue,
+              options: fieldData.options,
+              helpText: fieldData.helpText,
+              min: fieldData.min,
+              max: fieldData.max,
+              rows: fieldData.rows,
+              accept: fieldData.accept,
+            };
+          })
+        : [];
+
       results.push({
         json: {
           formData: submittedFormData, // Wrap form data in formData object
+          formFields: processedFields, // Include form fields configuration
           _meta: {
             formTitle,
+            formDescription,
+            submitButtonText,
             submittedAt: new Date().toISOString(),
             submissionId: `form_${Date.now()}_${Math.random()
               .toString(36)
@@ -288,6 +326,27 @@ const FormGeneratorNode = {
     }
     // If we have input items (from form submission via inputData)
     else if (items.length > 0) {
+      // Process form fields for output
+      const processedFields = Array.isArray(formFields)
+        ? formFields.map((field) => {
+            const fieldData = field.values || field;
+            return {
+              type: fieldData.fieldType,
+              label: fieldData.fieldLabel,
+              name: fieldData.fieldName,
+              required: fieldData.required,
+              placeholder: fieldData.placeholder,
+              defaultValue: fieldData.defaultValue,
+              options: fieldData.options,
+              helpText: fieldData.helpText,
+              min: fieldData.min,
+              max: fieldData.max,
+              rows: fieldData.rows,
+              accept: fieldData.accept,
+            };
+          })
+        : [];
+
       for (const item of items) {
         // Extract form data from the item
         const formData = item.json || item;
@@ -296,8 +355,11 @@ const FormGeneratorNode = {
         results.push({
           json: {
             formData, // Wrap form data in formData object
+            formFields: processedFields, // Include form fields configuration
             _meta: {
               formTitle,
+              formDescription,
+              submitButtonText,
               submittedAt: new Date().toISOString(),
               submissionId: `form_${Date.now()}_${Math.random()
                 .toString(36)
@@ -309,7 +371,7 @@ const FormGeneratorNode = {
     } else {
       // No submission yet - return form configuration for preview
       // formFields comes as array of {id, values} from RepeatingField
-      const processedFields = Array.isArray(formFields) 
+      const processedFields = Array.isArray(formFields)
         ? formFields.map((field) => {
             // Handle RepeatingField structure: {id, values: {fieldType, fieldLabel, ...}}
             const fieldData = field.values || field;

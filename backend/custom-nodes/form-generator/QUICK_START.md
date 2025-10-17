@@ -1,17 +1,21 @@
 # Form Generator Node - Quick Start 🚀
 
 ## What is it?
+
 A visual form builder node that creates interactive forms and triggers workflows when submitted.
 
 ## Quick Setup (3 steps)
 
 ### 1️⃣ Add Node to Workflow
+
 Drag "Form Generator" from the node palette to your canvas.
 
 ### 2️⃣ Configure Form Fields
+
 Open node properties → Add fields using the repeater:
 
 **Example Contact Form:**
+
 ```
 Field 1:
   - Type: Text
@@ -34,6 +38,7 @@ Field 3:
 ```
 
 ### 3️⃣ Use the Form
+
 1. Expand the node (double-click or toggle)
 2. Fill out the form
 3. Click Submit
@@ -41,21 +46,22 @@ Field 3:
 
 ## Field Types
 
-| Type | Description | Example Use Case |
-|------|-------------|------------------|
-| 📝 Text | Single-line text | Name, Address, Phone |
-| 📧 Email | Email with validation | Contact Email |
-| 🔢 Number | Numeric input | Age, Quantity, Price |
-| 📄 Textarea | Multi-line text | Message, Description |
-| 📋 Select | Dropdown menu | Country, Category |
-| ☑️ Checkbox | Yes/No checkbox | Newsletter subscription |
-| ⭕ Radio | Single choice | Gender, Plan type |
-| 📅 Date | Date picker | Birth date, Event date |
-| 📎 File | File upload | Resume, Photo |
+| Type        | Description           | Example Use Case        |
+| ----------- | --------------------- | ----------------------- |
+| 📝 Text     | Single-line text      | Name, Address, Phone    |
+| 📧 Email    | Email with validation | Contact Email           |
+| 🔢 Number   | Numeric input         | Age, Quantity, Price    |
+| 📄 Textarea | Multi-line text       | Message, Description    |
+| 📋 Select   | Dropdown menu         | Country, Category       |
+| ☑️ Checkbox | Yes/No checkbox       | Newsletter subscription |
+| ⭕ Radio    | Single choice         | Gender, Plan type       |
+| 📅 Date     | Date picker           | Birth date, Event date  |
+| 📎 File     | File upload           | Resume, Photo           |
 
 ## Field Properties
 
 ### Common Properties (All Fields)
+
 - **Field Label**: Display name (e.g., "Full Name")
 - **Field Name**: Output key (e.g., "name")
 - **Required**: Make field mandatory
@@ -64,17 +70,21 @@ Field 3:
 ### Type-Specific Properties
 
 #### Text/Email/Number/Textarea
+
 - **Placeholder**: Example text
 - **Default Value**: Pre-filled value
 
 #### Number
+
 - **Min Value**: Minimum allowed
 - **Max Value**: Maximum allowed
 
 #### Textarea
+
 - **Rows**: Number of visible lines
 
 #### Select/Radio
+
 - **Options**: One per line or comma-separated
   ```
   Option 1
@@ -87,6 +97,7 @@ Field 3:
   ```
 
 #### File
+
 - **Accept**: File type restrictions
   ```
   .pdf,.doc,.docx
@@ -119,6 +130,7 @@ Access in next node: `{{$json.name}}`, `{{$json.email}}`, etc.
 ## Common Patterns
 
 ### 📮 Contact Form
+
 ```
 1. Text → Full Name → name
 2. Email → Email → email
@@ -127,6 +139,7 @@ Access in next node: `{{$json.name}}`, `{{$json.email}}`, etc.
 ```
 
 ### 📝 Registration Form
+
 ```
 1. Text → Username → username
 2. Email → Email → email
@@ -137,6 +150,7 @@ Access in next node: `{{$json.name}}`, `{{$json.email}}`, etc.
 ```
 
 ### 📊 Survey Form
+
 ```
 1. Text → Name → name
 2. Radio → Satisfaction → satisfaction
@@ -146,6 +160,7 @@ Access in next node: `{{$json.name}}`, `{{$json.email}}`, etc.
 ```
 
 ### 🛒 Order Form
+
 ```
 1. Text → Product Name → product
 2. Number → Quantity → quantity (Min: 1)
@@ -157,12 +172,14 @@ Access in next node: `{{$json.name}}`, `{{$json.email}}`, etc.
 ## Tips & Tricks
 
 ### ✅ Best Practices
+
 - Use lowercase field names without spaces (e.g., "email_address" or "emailAddress")
 - Add help text for fields that need explanation
 - Mark required fields to ensure data quality
 - Test form before connecting to other nodes
 
 ### ⚡ Workflow Integration
+
 ```
 Form Generator → Code → HTTP Request → Email
      ↓                ↓         ↓          ↓
@@ -171,12 +188,15 @@ Form Generator → Code → HTTP Request → Email
 ```
 
 ### 🎨 Form Customization
+
 - **Form Title**: Main heading of your form
 - **Form Description**: Subtitle/explanation text
 - **Submit Button Text**: Customize button label
 
 ### 🔍 Validation
+
 Built-in validation for:
+
 - ✓ Required fields (shows error if empty)
 - ✓ Email format (validates email@domain.com)
 - ✓ Number ranges (min/max values)
@@ -202,6 +222,7 @@ Built-in validation for:
 ## Examples
 
 ### Simple Contact Form
+
 ```yaml
 Form Title: "Get in Touch"
 Form Description: "We'd love to hear from you!"
@@ -214,6 +235,7 @@ Fields:
 ```
 
 **Output:**
+
 ```json
 {
   "name": "Jane Smith",
@@ -223,6 +245,7 @@ Fields:
 ```
 
 ### Event Registration
+
 ```yaml
 Form Title: "Event Registration"
 Form Description: "Register for our upcoming conference"
@@ -238,6 +261,7 @@ Fields:
 ```
 
 **Output:**
+
 ```json
 {
   "full_name": "Bob Johnson",

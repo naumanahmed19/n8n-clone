@@ -19,25 +19,36 @@ The **Form Generator** node is a custom node that allows users to build interact
 ### Backend Components
 
 #### 1. Node Definition (`form-generator.node.js`)
+
 - **Type**: `form-generator`
 - **Group**: `["input", "trigger"]`
 - **Execution Capability**: `trigger`
 - **Properties**: Uses `fixedCollection` type with `multipleValues` for repeater fields
 
 #### 2. Field Configuration Structure
+
 ```javascript
 {
   formFields: {
     fields: [
       {
-        fieldType: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'date' | 'file',
-        fieldLabel: 'Display Label',
-        fieldName: 'outputKey',
-        placeholder: 'Optional placeholder',
-        required: true/false,
+        fieldType:
+          "text" |
+          "email" |
+          "number" |
+          "textarea" |
+          "select" |
+          "checkbox" |
+          "radio" |
+          "date" |
+          "file",
+        fieldLabel: "Display Label",
+        fieldName: "outputKey",
+        placeholder: "Optional placeholder",
+        required: true / false,
         // Type-specific options...
-      }
-    ]
+      },
+    ];
   }
 }
 ```
@@ -45,6 +56,7 @@ The **Form Generator** node is a custom node that allows users to build interact
 ### Frontend Components
 
 #### 1. FormGeneratorNode Component (`FormGeneratorNode.tsx`)
+
 - Uses `BaseNodeWrapper` for consistent node behavior
 - Implements dynamic form rendering based on field configuration
 - Handles form submission and workflow execution trigger
@@ -81,6 +93,7 @@ frontend/src/components/workflow/nodes/
 ## Usage Flow
 
 ### 1. Configuration Phase
+
 ```
 User opens node properties
   → Configures form title & description
@@ -91,6 +104,7 @@ User opens node properties
 ```
 
 ### 2. Interaction Phase
+
 ```
 User expands node
   → Form is rendered with all configured fields
@@ -101,6 +115,7 @@ User expands node
 ```
 
 ### 3. Execution Phase
+
 ```
 Form data is passed to node execution
   → Node processes form values
@@ -132,7 +147,7 @@ execute: async function (inputData) {
       }
     }));
   }
-  
+
   // Return preview data if no submission
   return [{ main: [{ json: { /* form config */ } }] }];
 }
@@ -141,35 +156,39 @@ execute: async function (inputData) {
 ### Frontend: Form Submission Handler
 
 ```typescript
-const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-  e?.preventDefault()
-  
-  // Validate form
-  if (!validateForm()) return
-  
-  // Update node with form data
-  updateNode(id, {
-    parameters: {
-      ...parameters,
-      lastSubmission: formValues
-    }
-  })
-  
-  // Trigger workflow execution
-  await executeWorkflow(id, {
-    formData: formValues,
-    formTitle,
-    submittedAt: new Date().toISOString()
-  })
-  
-  // Reset form after submission
-  setFormValues(resetValues)
-}, [validateForm, formValues, executeWorkflow])
+const handleSubmit = useCallback(
+  async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    // Validate form
+    if (!validateForm()) return;
+
+    // Update node with form data
+    updateNode(id, {
+      parameters: {
+        ...parameters,
+        lastSubmission: formValues,
+      },
+    });
+
+    // Trigger workflow execution
+    await executeWorkflow(id, {
+      formData: formValues,
+      formTitle,
+      submittedAt: new Date().toISOString(),
+    });
+
+    // Reset form after submission
+    setFormValues(resetValues);
+  },
+  [validateForm, formValues, executeWorkflow]
+);
 ```
 
 ## Field Type Examples
 
 ### Text Field Configuration
+
 ```javascript
 {
   fieldType: 'text',
@@ -182,6 +201,7 @@ const handleSubmit = useCallback(async (e?: React.FormEvent) => {
 ```
 
 ### Email Field Configuration
+
 ```javascript
 {
   fieldType: 'email',
@@ -193,6 +213,7 @@ const handleSubmit = useCallback(async (e?: React.FormEvent) => {
 ```
 
 ### Select Field Configuration
+
 ```javascript
 {
   fieldType: 'select',
@@ -204,6 +225,7 @@ const handleSubmit = useCallback(async (e?: React.FormEvent) => {
 ```
 
 ### Checkbox Field Configuration
+
 ```javascript
 {
   fieldType: 'checkbox',
@@ -217,6 +239,7 @@ const handleSubmit = useCallback(async (e?: React.FormEvent) => {
 ## Output Data Structure
 
 ### Simple Form Submission
+
 ```json
 {
   "name": "John Doe",
@@ -234,39 +257,46 @@ const handleSubmit = useCallback(async (e?: React.FormEvent) => {
 ## Validation Rules
 
 ### Built-in Validation
+
 - **Required Fields**: Checks if value exists and is not empty
 - **Email Format**: Validates email with regex pattern
 - **Number Range**: Validates min/max values for number fields
 - **Field Types**: Browser-native validation for email, number, date inputs
 
 ### Custom Error Messages
+
 ```typescript
 const errors = {
   name: "Name is required",
   email: "Please enter a valid email address",
   age: "Value must be at least 18",
-  _form: "Failed to submit form: Server error"
-}
+  _form: "Failed to submit form: Server error",
+};
 ```
 
 ## Integration Points
 
 ### 1. Node Registration
+
 The node is automatically discovered and registered by the NodeLoader service when the backend starts.
 
 ### 2. Frontend Integration
+
 The component is registered in `WorkflowEditor.tsx`:
+
 ```typescript
 const nodeTypes = {
-  'form-generator': FormGeneratorNode,
+  "form-generator": FormGeneratorNode,
   // ... other node types
-}
+};
 ```
 
 ### 3. Workflow Execution
+
 Uses the same execution pattern as ChatInterfaceNode:
+
 ```typescript
-await executeWorkflow(id, formData)
+await executeWorkflow(id, formData);
 ```
 
 ## Testing the Node
@@ -274,21 +304,24 @@ await executeWorkflow(id, formData)
 ### Manual Testing Steps
 
 1. **Start Backend & Frontend**
+
    ```bash
    # Backend
    cd backend && npm run dev
-   
+
    # Frontend (in another terminal)
    cd frontend && npm run dev
    ```
 
 2. **Create a Workflow**
+
    - Add Form Generator node
    - Open node properties
    - Configure form fields
    - Save configuration
 
 3. **Test Form Interaction**
+
    - Expand the node
    - Fill out the form
    - Submit the form
@@ -311,21 +344,25 @@ await executeWorkflow(id, formData)
 ## Troubleshooting
 
 ### Node Not Appearing in Palette
+
 - Restart the backend server
 - Check browser console for errors
 - Verify node is registered: Check database `NodeType` table
 
 ### Form Not Submitting
+
 - Check browser console for JavaScript errors
 - Verify workflow execution is not already running
 - Ensure form validation is passing
 
 ### Data Not Flowing to Next Node
+
 - Check workflow connections
 - Verify node is not disabled
 - Inspect execution results in ExecutionPanel
 
 ### Field Not Rendering
+
 - Check field configuration in properties
 - Verify fieldType is spelled correctly
 - Check browser console for component errors
@@ -333,6 +370,7 @@ await executeWorkflow(id, formData)
 ## Future Enhancements
 
 ### Potential Improvements
+
 - [ ] Multi-step forms with pagination
 - [ ] Conditional field visibility based on other field values
 - [ ] File upload with actual file handling (not just metadata)
@@ -345,6 +383,7 @@ await executeWorkflow(id, formData)
 - [ ] Custom validation rules per field
 
 ### API Enhancements
+
 - [ ] Webhook URL for external form submissions
 - [ ] Public form sharing link
 - [ ] Embedded form widget
@@ -354,12 +393,14 @@ await executeWorkflow(id, formData)
 ## Best Practices
 
 ### Configuration
+
 1. Use descriptive field names (lowercase, no spaces)
 2. Add help text for complex fields
 3. Mark required fields appropriately
 4. Test form before deploying workflow
 
 ### Development
+
 1. Follow BaseNodeWrapper patterns
 2. Use useMemo for expensive computations
 3. Implement proper TypeScript types
@@ -367,6 +408,7 @@ await executeWorkflow(id, formData)
 5. Validate user input thoroughly
 
 ### Performance
+
 1. Avoid unnecessary re-renders with useMemo/useCallback
 2. Debounce field validation for better UX
 3. Limit form field count for optimal performance
@@ -382,6 +424,7 @@ await executeWorkflow(id, formData)
 ## Support & Questions
 
 For issues or questions about the Form Generator node:
+
 1. Check this implementation guide
 2. Review the code comments in source files
 3. Test with the provided examples
