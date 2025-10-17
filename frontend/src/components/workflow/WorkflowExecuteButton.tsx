@@ -99,9 +99,27 @@ export function WorkflowExecuteButton({
     return `${nodeName} (${displayName})`
   }
 
-  // Don't render if no triggers found
+  // No triggers - render disabled button
   if (triggerNodes.length === 0) {
-    return null
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-block">
+            <Button
+              disabled={true}
+              variant="outline"
+              size="sm"
+              className={`h-7 w-7 p-0 ${className}`}
+            >
+              <Play className="h-3.5 w-3.5 text-gray-400" />
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Add a trigger node to execute workflow</p>
+        </TooltipContent>
+      </Tooltip>
+    )
   }
 
   // Single trigger - render simple button
