@@ -34,6 +34,7 @@ import {
 import { ConfigTab } from './tabs/ConfigTab'
 import { DocsTab } from './tabs/DocsTab'
 import { ResponseTab } from './tabs/ResponseTab'
+import { SettingsTab } from './tabs/SettingsTab'
 import { TestTab } from './tabs/TestTab'
 
 interface MiddleColumnProps {
@@ -221,13 +222,20 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-4 border-b border-gray-200">
           <div className="flex space-x-0 -mb-px">
-            <TabsList className="h-auto p-0 bg-transparent grid w-full grid-cols-4 shadow-none">
+            <TabsList className="h-auto p-0 bg-transparent grid w-full grid-cols-5 shadow-none">
               <TabsTrigger 
                 value="config" 
                 className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span className="font-medium">Config</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="settings" 
+                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span className="font-medium">Settings</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="test" 
@@ -257,6 +265,10 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
         <div className="flex-1 overflow-hidden">
           <TabsContent value="config" className="h-full mt-0">
             <ConfigTab node={node} nodeType={nodeType} readOnly={readOnly} />
+          </TabsContent>
+
+          <TabsContent value="settings" className="h-full mt-0">
+            <SettingsTab node={node} nodeType={nodeType} readOnly={readOnly} />
           </TabsContent>
 
           <TabsContent value="test" className="h-full mt-0">

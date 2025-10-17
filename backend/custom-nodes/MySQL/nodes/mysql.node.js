@@ -217,15 +217,18 @@ const MySQLNode = {
       description: "Fields to return after insert/update (e.g., id,name or *)",
       placeholder: "*",
     },
-    {
-      displayName: "Continue On Fail",
-      name: "continueOnFail",
-      type: "boolean",
-      default: false,
-      description:
-        "If enabled, the node will continue execution even if the database operation fails. The error information will be returned as output data instead of stopping the workflow.",
-    },
   ],
+
+  // Custom settings specific to MySQL
+  settings: {
+    connectionTimeout: {
+      displayName: "Connection Timeout (ms)",
+      name: "connectionTimeout",
+      type: "number",
+      default: 10000,
+      description: "Maximum time to wait for database connection",
+    },
+  },
 
   execute: async function (inputData) {
     const items = inputData.main?.[0] || [];
@@ -234,8 +237,11 @@ const MySQLNode = {
     // If no input items, create a default item to ensure query executes at least once
     const itemsToProcess = items.length > 0 ? items : [{ json: {} }];
 
-    // Get continueOnFail setting
-    const continueOnFail = await this.getNodeParameter("continueOnFail");
+    // Get settings (from Settings tab)
+    const continueOnFail = this.settings?.continueOnFail ?? false;
+
+    this.logger.info(`[MySQL] continueOnFail setting: ${continueOnFail}`);
+    this.logger.info(`[MySQL] Settings object:`, this.settings);
 
     // Get connection parameters from credentials
     let host, port, database, user, password, ssl, connectionTimeout;
@@ -255,9 +261,14 @@ const MySQLNode = {
       user = credentials.user;
       password = credentials.password;
       ssl = credentials.ssl || false;
-      connectionTimeout = credentials.connectionTimeout || 10000;
-
-      this.logger.info("Using MySQL credentials from authentication");
+      
+      // Get connectionTimeout from settings first, fallback to credentials, then default
+      connectionTimeout = this.settings?.connectionTimeout ?? credentials.connectionTimeout ?? 10000;
+      
+      this.logger.info("Using MySQL credentials from authentication", {
+        connectionTimeout,
+        fromSettings: !!this.settings?.connectionTimeout,
+      });
     } catch (error) {
       // If credentials are not available, throw an error
       throw new Error(`Failed to get credentials: ${error.message}`);
@@ -570,7 +581,8 @@ const MySQLNode = {
         user = credentials.user;
         password = credentials.password;
         ssl = credentials.ssl || false;
-        connectionTimeout = credentials.connectionTimeout || 10000;
+        // Use settings first, then fall back to credentials
+        connectionTimeout = this.settings?.connectionTimeout ?? credentials.connectionTimeout ?? 10000;
       } catch (error) {
         return [
           {

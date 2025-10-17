@@ -1528,7 +1528,8 @@ export class ExecutionService {
             `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             userId, // Pass the actual userId so credentials can be looked up
             undefined, // options
-            workflowId // Pass workflowId for variable resolution
+            workflowId, // Pass workflowId for variable resolution
+            (node as any).settings || {} // Pass node settings
           );
 
           const endTime = Date.now();

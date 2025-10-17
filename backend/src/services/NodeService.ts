@@ -13,6 +13,7 @@ import {
   NodeValidationResult,
   StandardizedNodeOutput,
 } from "../types/node.types";
+import { NodeSettingsConfig } from "../types/settings.types";
 import { logger } from "../utils/logger";
 import {
   extractJsonData,
@@ -400,7 +401,8 @@ export class NodeService {
     executionId?: string,
     userId?: string,
     options?: SecureExecutionOptions,
-    workflowId?: string
+    workflowId?: string,
+    settings?: NodeSettingsConfig
   ): Promise<NodeExecutionResult> {
     const execId =
       executionId ||
@@ -436,7 +438,8 @@ export class NodeService {
         executingUserId,
         execId,
         options,
-        workflowId
+        workflowId,
+        settings
       );
 
       // Execute the node in secure context

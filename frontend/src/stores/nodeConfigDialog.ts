@@ -1,4 +1,4 @@
-import { NodeType, WorkflowNode } from "@/types";
+import { NodeSettingsConfig, NodeType, WorkflowNode } from "@/types";
 import { ValidationError } from "@/utils/nodeValidation";
 import { create } from "zustand";
 
@@ -20,6 +20,7 @@ interface NodeConfigDialogState {
   credentials: Record<string, string>;
   mockData: any;
   mockDataPinned: boolean;
+  nodeSettings: NodeSettingsConfig;
 
   // UI state
   validationErrors: ValidationError[];
@@ -41,6 +42,7 @@ interface NodeConfigDialogState {
   ) => void;
   updateMockData: (data: any) => void;
   toggleMockDataPinned: () => void;
+  updateNodeSettings: (settings: NodeSettingsConfig) => void;
   setValidationErrors: (errors: ValidationError[]) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
   setIsEditingName: (isEditing: boolean) => void;
@@ -62,6 +64,7 @@ const initialState = {
   credentials: {},
   mockData: null,
   mockDataPinned: false,
+  nodeSettings: {},
   validationErrors: [],
   hasUnsavedChanges: false,
   isEditingName: false,
@@ -100,6 +103,7 @@ export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
         credentials: credentialsMap,
         mockData: node.mockData || null,
         mockDataPinned: node.mockDataPinned || false,
+        nodeSettings: node.settings || {},
         hasUnsavedChanges: false,
         validationErrors: [],
         mockDataEditor: {
@@ -168,6 +172,13 @@ export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
     toggleMockDataPinned: () => {
       set({
         mockDataPinned: !get().mockDataPinned,
+        hasUnsavedChanges: true,
+      });
+    },
+
+    updateNodeSettings: (settings: NodeSettingsConfig) => {
+      set({
+        nodeSettings: settings,
         hasUnsavedChanges: true,
       });
     },

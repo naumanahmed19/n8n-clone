@@ -159,7 +159,8 @@ export class SecureExecutionService {
     userId: string,
     executionId: string,
     options: SecureExecutionOptions = {},
-    workflowId?: string
+    workflowId?: string,
+    settings?: Record<string, any>
   ): Promise<NodeExecutionContext> {
     const limits = this.mergeLimits(options);
 
@@ -171,6 +172,7 @@ export class SecureExecutionService {
       : credentialIds; // Use the mapping directly
 
     return {
+      settings: settings || {}, // Node settings from Settings tab
       getNodeParameter: async (parameterName: string, itemIndex?: number) => {
         // Validate parameter access
         if (typeof parameterName !== "string") {

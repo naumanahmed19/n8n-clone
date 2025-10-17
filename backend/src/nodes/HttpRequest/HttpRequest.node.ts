@@ -26,8 +26,6 @@ export const HttpRequestNode: NodeDefinition = {
     timeout: 30000,
     followRedirects: true,
     maxRedirects: 5,
-    continueOnFail: false,
-    alwaysOutputData: false,
   },
   inputs: ["main"],
   outputs: ["main"],
@@ -119,29 +117,6 @@ export const HttpRequestNode: NodeDefinition = {
         },
       },
     },
-    {
-      displayName: "Continue On Fail",
-      name: "continueOnFail",
-      type: "boolean",
-      required: false,
-      default: false,
-      description:
-        "If enabled, the node will continue execution even if the request fails. The error information will be returned as output data instead of stopping the workflow.",
-    },
-    {
-      displayName: "Always Output Data",
-      name: "alwaysOutputData",
-      type: "boolean",
-      required: false,
-      default: false,
-      description:
-        "If enabled, the node will always output data, including error responses (like 4xx and 5xx status codes). Useful when you want to process error responses in your workflow.",
-      displayOptions: {
-        show: {
-          continueOnFail: [true],
-        },
-      },
-    },
   ],
   execute: async function (
     inputData: NodeInputData
@@ -168,10 +143,14 @@ export const HttpRequestNode: NodeDefinition = {
     )) as boolean;
     const maxRedirects =
       ((await this.getNodeParameter("maxRedirects")) as number) || 5;
-    const continueOnFail =
-      ((await this.getNodeParameter("continueOnFail")) as boolean) || false;
-    const alwaysOutputData =
-      ((await this.getNodeParameter("alwaysOutputData")) as boolean) || false;
+
+    // Get settings from Settings tab
+    const continueOnFail = this.settings?.continueOnFail ?? false;
+    const alwaysOutputData = this.settings?.alwaysOutputData ?? false;
+
+    this.logger.info(
+      `[HTTP Request] Settings - continueOnFail: ${continueOnFail}, alwaysOutputData: ${alwaysOutputData}`
+    );
 
     if (!url) {
       throw new Error("URL is required");

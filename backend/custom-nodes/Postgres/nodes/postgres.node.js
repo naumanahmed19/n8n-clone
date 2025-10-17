@@ -217,15 +217,25 @@ const PostgresNode = {
       description: "Fields to return after insert/update (e.g., id,name or *)",
       placeholder: "*",
     },
-    {
-      displayName: "Continue On Fail",
-      name: "continueOnFail",
+  ],
+
+  // Custom settings specific to PostgreSQL
+  settings: {
+    connectionTimeout: {
+      displayName: "Connection Timeout (ms)",
+      name: "connectionTimeout",
+      type: "number",
+      default: 2000,
+      description: "Maximum time to wait for database connection",
+    },
+    ssl: {
+      displayName: "Use SSL",
+      name: "ssl",
       type: "boolean",
       default: false,
-      description:
-        "If enabled, the node will continue execution even if the database operation fails. The error information will be returned as output data instead of stopping the workflow.",
+      description: "Enable SSL connection (uses credentials SSL setting by default)",
     },
-  ],
+  },
 
   execute: async function (inputData) {
     const items = inputData.main?.[0] || [];
@@ -234,8 +244,11 @@ const PostgresNode = {
     // If no input items, create a default item to ensure query executes at least once
     const itemsToProcess = items.length > 0 ? items : [{ json: {} }];
 
-    // Get continueOnFail setting
-    const continueOnFail = await this.getNodeParameter("continueOnFail");
+    // Get settings (from Settings tab)
+    const continueOnFail = this.settings?.continueOnFail ?? false;
+
+    this.logger.info(`[Postgres] continueOnFail setting: ${continueOnFail}`);
+    this.logger.info(`[Postgres] Settings object:`, this.settings);
 
     // Get connection parameters from credentials
     let host, port, database, user, password, ssl;
@@ -254,15 +267,26 @@ const PostgresNode = {
       database = credentials.database;
       user = credentials.user;
       password = credentials.password;
-      ssl = credentials.ssl || false;
+      // Use settings first, then fall back to credentials
+      ssl = this.settings?.ssl ?? credentials.ssl ?? false;
 
-      this.logger.info("Using PostgreSQL credentials from authentication");
+      this.logger.info("Using PostgreSQL credentials", {
+        sslFromSettings: !!this.settings?.ssl,
+        ssl,
+      });
     } catch (error) {
       // If credentials are not available, throw an error
       throw new Error(`Failed to get credentials: ${error.message}`);
     }
 
     const operation = await this.getNodeParameter("operation");
+
+    // Use settings for connection timeout, fall back to default
+    const connectionTimeout = this.settings?.connectionTimeout ?? 2000;
+    this.logger.info("Using connection timeout", {
+      timeout: connectionTimeout,
+      fromSettings: !!this.settings?.connectionTimeout,
+    });
 
     // Create connection pool
     const pool = new Pool({
@@ -274,7 +298,7 @@ const PostgresNode = {
       ssl: ssl ? { rejectUnauthorized: false } : false,
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: connectionTimeout,
     });
 
     try {
@@ -470,8 +494,12 @@ const PostgresNode = {
           }
         } catch (error) {
           // Handle errors for individual items
+          this.logger.error(`[Postgres] Error caught in item loop:`, error.message);
+          this.logger.info(`[Postgres] continueOnFail is: ${continueOnFail}`);
+          
           if (continueOnFail) {
             // If continueOnFail is enabled, return error as output data
+            this.logger.info(`[Postgres] Adding error to results array`);
             results.push({
               json: {
                 ...item.json,
@@ -482,6 +510,7 @@ const PostgresNode = {
             });
           } else {
             // If continueOnFail is disabled, throw the error to stop workflow
+            this.logger.info(`[Postgres] Throwing error to stop workflow`);
             throw error;
           }
         }
@@ -490,6 +519,9 @@ const PostgresNode = {
       // Always close the pool
       await pool.end();
     }
+
+    this.logger.info(`[Postgres] Returning results, count: ${results.length}`);
+    this.logger.info(`[Postgres] Results:`, JSON.stringify(results, null, 2));
 
     return [{ main: results }];
   },
@@ -523,7 +555,8 @@ const PostgresNode = {
         database = credentials.database;
         user = credentials.user;
         password = credentials.password;
-        ssl = credentials.ssl || false;
+        // Use settings first, then fall back to credentials
+        ssl = this.settings?.ssl ?? credentials.ssl ?? false;
       } catch (error) {
         return [
           {
@@ -535,6 +568,8 @@ const PostgresNode = {
       }
 
       // Create connection pool
+      // Use settings for connection timeout, fall back to default for loadOptions
+      const connectionTimeout = this.settings?.connectionTimeout ?? 5000;
       const pool = new Pool({
         host,
         port,
@@ -543,7 +578,7 @@ const PostgresNode = {
         password,
         ssl: ssl ? { rejectUnauthorized: false } : false,
         max: 1,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: connectionTimeout,
       });
 
       try {

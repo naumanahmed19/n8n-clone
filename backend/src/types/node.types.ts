@@ -1,5 +1,7 @@
 // Node system type definitions
 
+import { NodeSettings, NodeSettingsConfig } from "./settings.types";
+
 export interface CredentialSelectorConfig {
   displayName: string;
   description?: string;
@@ -37,6 +39,8 @@ export interface NodeDefinition {
       this: NodeExecutionContext
     ) => Promise<Array<{ name: string; value: any; description?: string }>>
   >;
+  // Custom settings specific to this node type (flat object)
+  settings?: NodeSettings;
 }
 
 export interface NodePropertyOption {
@@ -123,6 +127,7 @@ export interface NodeExecutionContext {
   getInputData(inputName?: string): NodeInputData;
   helpers: NodeHelpers;
   logger: NodeLogger;
+  settings?: NodeSettingsConfig; // Node settings from Settings tab
   // Utility functions for common node operations
   resolveValue: (value: string | any, item: any) => any;
   resolvePath: (obj: any, path: string) => any;

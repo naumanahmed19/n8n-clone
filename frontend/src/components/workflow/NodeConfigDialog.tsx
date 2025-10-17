@@ -44,6 +44,7 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose, readOnly = f
     credentials,
     mockData,
     mockDataPinned,
+    nodeSettings,
     hasUnsavedChanges,
     setValidationErrors,
     setIsExecuting,
@@ -79,13 +80,20 @@ export function NodeConfigDialog({ node, nodeType, isOpen, onClose, readOnly = f
     if (readOnly) return
     
     if (hasUnsavedChanges) {
+      console.log('💾 NodeConfigDialog - Saving node with settings:', {
+        nodeId: node.id,
+        nodeSettings,
+        hasSettings: !!nodeSettings && Object.keys(nodeSettings).length > 0
+      });
+      
       updateNode(node.id, { 
         parameters, 
         name: nodeName, 
         disabled: isDisabled,
         credentials: Object.values(credentials).filter(Boolean) as string[],
         mockData,
-        mockDataPinned
+        mockDataPinned,
+        settings: nodeSettings
       })
       setHasUnsavedChanges(false)
     }
