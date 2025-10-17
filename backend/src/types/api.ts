@@ -50,6 +50,7 @@ export const CreateWorkflowSchema = z.object({
         mockData: z.any().optional(),
         mockDataPinned: z.boolean().optional(),
         locked: z.boolean().optional(),
+        settings: z.record(z.any()).optional(), // Node-level settings
         // Group node properties
         parentId: z.string().optional(),
         extent: z

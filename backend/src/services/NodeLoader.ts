@@ -1,10 +1,11 @@
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { watch, FSWatcher } from 'chokidar';
-import { PrismaClient } from '@prisma/client';
-import { NodeDefinition, NodeValidationResult, NodeValidationError } from '../types/node.types';
-import { NodeService } from './NodeService';
-import { logger } from '../utils/logger';
+import { PrismaClient } from "@prisma/client";
+import { FSWatcher, watch } from "chokidar";
+import { promises as fs } from "fs";
+import * as path from "path";
+import { NodeDefinition } from "../types/node.types";
+import { logger } from "../utils/logger";
+import { CredentialService } from "./CredentialService";
+import { NodeService } from "./NodeService";
 
 export interface NodePackageInfo {
   name: string;
@@ -40,17 +41,25 @@ export interface NodePackageValidationResult {
 
 export class NodeLoader {
   private nodeService: NodeService;
+  private credentialService: CredentialService;
   private prisma: PrismaClient;
   private watchers = new Map<string, FSWatcher>();
   private loadedPackages = new Map<string, NodePackageInfo>();
   private customNodesPath: string;
   private hotReloadEnabled: boolean;
 
-  constructor(nodeService: NodeService, prisma: PrismaClient, customNodesPath?: string) {
+  constructor(
+    nodeService: NodeService,
+    credentialService: CredentialService,
+    prisma: PrismaClient,
+    customNodesPath?: string
+  ) {
     this.nodeService = nodeService;
+    this.credentialService = credentialService;
     this.prisma = prisma;
-    this.customNodesPath = customNodesPath || path.join(process.cwd(), 'custom-nodes');
-    this.hotReloadEnabled = process.env.NODE_ENV === 'development';
+    this.customNodesPath =
+      customNodesPath || path.join(process.cwd(), "custom-nodes");
+    this.hotReloadEnabled = process.env.NODE_ENV === "development";
   }
 
   /**
@@ -60,16 +69,16 @@ export class NodeLoader {
     try {
       // Ensure custom nodes directory exists
       await this.ensureCustomNodesDirectory();
-      
+
       // Load existing custom nodes
       await this.loadAllCustomNodes();
-      
-      logger.info('NodeLoader initialized', { 
+
+      logger.info("NodeLoader initialized", {
         customNodesPath: this.customNodesPath,
-        hotReloadEnabled: this.hotReloadEnabled 
+        hotReloadEnabled: this.hotReloadEnabled,
       });
     } catch (error) {
-      logger.error('Failed to initialize NodeLoader', { error });
+      logger.error("Failed to initialize NodeLoader", { error });
       throw error;
     }
   }
@@ -85,25 +94,28 @@ export class NodeLoader {
         return {
           success: false,
           errors: validation.errors,
-          warnings: validation.warnings
+          warnings: validation.warnings,
         };
       }
 
       const packageInfo = validation.packageInfo!;
-      
+
       // Compile the package if needed
       const compilation = await this.compileNodePackage(packagePath);
       if (!compilation.success) {
         return {
           success: false,
           errors: compilation.errors,
-          warnings: compilation.warnings
+          warnings: compilation.warnings,
         };
       }
 
       // Load node definitions
-      const nodeDefinitions = await this.loadNodeDefinitions(packagePath, packageInfo);
-      
+      const nodeDefinitions = await this.loadNodeDefinitions(
+        packagePath,
+        packageInfo
+      );
+
       // Register nodes with NodeService
       const registrationResults: NodeLoadResult[] = [];
       for (const nodeDefinition of nodeDefinitions) {
@@ -111,16 +123,16 @@ export class NodeLoader {
         registrationResults.push({
           success: result.success,
           nodeType: result.nodeType,
-          errors: result.errors
+          errors: result.errors,
         });
       }
 
       // Check if all registrations were successful
-      const failedRegistrations = registrationResults.filter(r => !r.success);
+      const failedRegistrations = registrationResults.filter((r) => !r.success);
       if (failedRegistrations.length > 0) {
         return {
           success: false,
-          errors: failedRegistrations.flatMap(r => r.errors || [])
+          errors: failedRegistrations.flatMap((r) => r.errors || []),
         };
       }
 
@@ -132,21 +144,25 @@ export class NodeLoader {
         await this.setupHotReload(packagePath, packageInfo.name);
       }
 
-      logger.info('Node package loaded successfully', { 
+      logger.info("Node package loaded successfully", {
         packageName: packageInfo.name,
-        nodeCount: nodeDefinitions.length 
+        nodeCount: nodeDefinitions.length,
       });
 
       return {
         success: true,
         nodeType: packageInfo.name,
-        warnings: validation.warnings
+        warnings: validation.warnings,
       };
     } catch (error) {
-      logger.error('Failed to load node package', { error, packagePath });
+      logger.error("Failed to load node package", { error, packagePath });
       return {
         success: false,
-        errors: [`Failed to load package: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [
+          `Failed to load package: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        ],
       };
     }
   }
@@ -179,9 +195,9 @@ export class NodeLoader {
       // Remove from loaded packages
       this.loadedPackages.delete(packageName);
 
-      logger.info('Node package unloaded', { packageName });
+      logger.info("Node package unloaded", { packageName });
     } catch (error) {
-      logger.error('Failed to unload node package', { error, packageName });
+      logger.error("Failed to unload node package", { error, packageName });
       throw error;
     }
   }
@@ -207,17 +223,21 @@ export class NodeLoader {
 
       // Reload package
       const result = await this.loadNodePackage(packagePath);
-      
+
       if (result.success) {
-        logger.info('Node package reloaded successfully', { packageName });
+        logger.info("Node package reloaded successfully", { packageName });
       }
 
       return result;
     } catch (error) {
-      logger.error('Failed to reload node package', { error, packageName });
+      logger.error("Failed to reload node package", { error, packageName });
       return {
         success: false,
-        errors: [`Failed to reload package: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [
+          `Failed to reload package: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        ],
       };
     }
   }
@@ -232,46 +252,52 @@ export class NodeLoader {
   /**
    * Validate a node package structure
    */
-  async validateNodePackage(packagePath: string): Promise<NodePackageValidationResult> {
+  async validateNodePackage(
+    packagePath: string
+  ): Promise<NodePackageValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     try {
       // Check if package.json exists
-      const packageJsonPath = path.join(packagePath, 'package.json');
+      const packageJsonPath = path.join(packagePath, "package.json");
       const packageJsonExists = await this.fileExists(packageJsonPath);
-      
+
       if (!packageJsonExists) {
-        errors.push('package.json not found');
+        errors.push("package.json not found");
         return { valid: false, errors, warnings };
       }
 
       // Parse package.json
-      const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
+      const packageJsonContent = await fs.readFile(packageJsonPath, "utf-8");
       let packageInfo: NodePackageInfo;
-      
+
       try {
         packageInfo = JSON.parse(packageJsonContent);
       } catch (parseError) {
-        errors.push('Invalid package.json format');
+        errors.push("Invalid package.json format");
         return { valid: false, errors, warnings };
       }
 
       // Validate required fields
       if (!packageInfo.name) {
-        errors.push('Package name is required');
+        errors.push("Package name is required");
       }
 
       if (!packageInfo.version) {
-        errors.push('Package version is required');
+        errors.push("Package version is required");
       }
 
       if (!packageInfo.main) {
-        errors.push('Package main entry point is required');
+        errors.push("Package main entry point is required");
       }
 
-      if (!packageInfo.nodes || !Array.isArray(packageInfo.nodes) || packageInfo.nodes.length === 0) {
-        errors.push('Package must define at least one node');
+      if (
+        !packageInfo.nodes ||
+        !Array.isArray(packageInfo.nodes) ||
+        packageInfo.nodes.length === 0
+      ) {
+        errors.push("Package must define at least one node");
       }
 
       // Check if main file exists
@@ -297,8 +323,10 @@ export class NodeLoader {
       // Check for TypeScript files and warn about compilation
       if (packageInfo.nodes) {
         for (const nodePath of packageInfo.nodes) {
-          if (nodePath.endsWith('.ts')) {
-            warnings.push(`TypeScript file detected: ${nodePath}. Make sure to compile before loading.`);
+          if (nodePath.endsWith(".ts")) {
+            warnings.push(
+              `TypeScript file detected: ${nodePath}. Make sure to compile before loading.`
+            );
           }
         }
       }
@@ -307,10 +335,14 @@ export class NodeLoader {
         valid: errors.length === 0,
         errors,
         warnings,
-        packageInfo: errors.length === 0 ? packageInfo : undefined
+        packageInfo: errors.length === 0 ? packageInfo : undefined,
       };
     } catch (error) {
-      errors.push(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Validation failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
       return { valid: false, errors, warnings };
     }
   }
@@ -318,41 +350,51 @@ export class NodeLoader {
   /**
    * Compile a node package (TypeScript to JavaScript)
    */
-  async compileNodePackage(packagePath: string): Promise<NodeCompilationResult> {
+  async compileNodePackage(
+    packagePath: string
+  ): Promise<NodeCompilationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     try {
       // Check if TypeScript files exist
       const hasTypeScript = await this.hasTypeScriptFiles(packagePath);
-      
+
       if (!hasTypeScript) {
         // No compilation needed
-        return { success: true, warnings: ['No TypeScript files found, skipping compilation'] };
+        return {
+          success: true,
+          warnings: ["No TypeScript files found, skipping compilation"],
+        };
       }
 
       // Check if TypeScript is available
       try {
-        require.resolve('typescript');
+        require.resolve("typescript");
       } catch {
-        errors.push('TypeScript is required for compilation but not found');
+        errors.push("TypeScript is required for compilation but not found");
         return { success: false, errors };
       }
 
       // Check for tsconfig.json
-      const tsconfigPath = path.join(packagePath, 'tsconfig.json');
+      const tsconfigPath = path.join(packagePath, "tsconfig.json");
       const tsconfigExists = await this.fileExists(tsconfigPath);
-      
+
       if (!tsconfigExists) {
-        warnings.push('tsconfig.json not found, using default TypeScript configuration');
+        warnings.push(
+          "tsconfig.json not found, using default TypeScript configuration"
+        );
       }
 
       // Compile TypeScript files
-      const typescript = require('typescript');
+      const typescript = require("typescript");
       const configPath = tsconfigExists ? tsconfigPath : undefined;
-      
+
       // Read TypeScript config
-      const configFile = typescript.readConfigFile(configPath || 'tsconfig.json', typescript.sys.readFile);
+      const configFile = typescript.readConfigFile(
+        configPath || "tsconfig.json",
+        typescript.sys.readFile
+      );
       const compilerOptions = typescript.parseJsonConfigFileContent(
         configFile.config || {},
         typescript.sys,
@@ -365,33 +407,43 @@ export class NodeLoader {
           ...compilerOptions.options,
           target: typescript.ScriptTarget.ES2020,
           module: typescript.ModuleKind.CommonJS,
-          outDir: path.join(packagePath, 'dist'),
+          outDir: path.join(packagePath, "dist"),
           rootDir: packagePath,
           strict: true,
           esModuleInterop: true,
           skipLibCheck: true,
-          forceConsistentCasingInFileNames: true
+          forceConsistentCasingInFileNames: true,
         };
       }
 
       // Get TypeScript files
       const tsFiles = await this.getTypeScriptFiles(packagePath);
-      
+
       // Create TypeScript program
-      const program = typescript.createProgram(tsFiles, compilerOptions.options);
-      
+      const program = typescript.createProgram(
+        tsFiles,
+        compilerOptions.options
+      );
+
       // Emit compiled files
       const emitResult = program.emit();
-      
+
       // Check for compilation errors
-      const allDiagnostics = typescript.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
-      
+      const allDiagnostics = typescript
+        .getPreEmitDiagnostics(program)
+        .concat(emitResult.diagnostics);
+
       for (const diagnostic of allDiagnostics) {
-        const message = typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        
+        const message = typescript.flattenDiagnosticMessageText(
+          diagnostic.messageText,
+          "\n"
+        );
+
         if (diagnostic.category === typescript.DiagnosticCategory.Error) {
           errors.push(`TypeScript Error: ${message}`);
-        } else if (diagnostic.category === typescript.DiagnosticCategory.Warning) {
+        } else if (
+          diagnostic.category === typescript.DiagnosticCategory.Warning
+        ) {
           warnings.push(`TypeScript Warning: ${message}`);
         }
       }
@@ -400,15 +452,20 @@ export class NodeLoader {
         return { success: false, errors, warnings };
       }
 
-      const compiledPath = compilerOptions.options.outDir || path.join(packagePath, 'dist');
-      
+      const compiledPath =
+        compilerOptions.options.outDir || path.join(packagePath, "dist");
+
       return {
         success: true,
         compiledPath,
-        warnings
+        warnings,
       };
     } catch (error) {
-      errors.push(`Compilation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Compilation failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
       return { success: false, errors, warnings };
     }
   }
@@ -416,18 +473,45 @@ export class NodeLoader {
   /**
    * Load node definitions from a package
    */
-  private async loadNodeDefinitions(packagePath: string, packageInfo: NodePackageInfo): Promise<NodeDefinition[]> {
+  private async loadNodeDefinitions(
+    packagePath: string,
+    packageInfo: NodePackageInfo
+  ): Promise<NodeDefinition[]> {
     const nodeDefinitions: NodeDefinition[] = [];
 
+    // First, load credentials if any
+    if (packageInfo.credentials && Array.isArray(packageInfo.credentials)) {
+      for (const credentialPath of packageInfo.credentials) {
+        try {
+          await this.loadAndRegisterCredential(
+            path.join(packagePath, credentialPath)
+          );
+        } catch (error) {
+          logger.error("Failed to load credential type", {
+            error,
+            credentialPath,
+          });
+          // Don't throw - continue loading other credentials
+        }
+      }
+    }
+
+    // Then load nodes
     for (const nodePath of packageInfo.nodes) {
       try {
-        const nodeDefinition = await this.loadSingleNodeDefinition(path.join(packagePath, nodePath));
+        const nodeDefinition = await this.loadSingleNodeDefinition(
+          path.join(packagePath, nodePath)
+        );
         if (nodeDefinition) {
           nodeDefinitions.push(nodeDefinition);
         }
       } catch (error) {
-        logger.error('Failed to load node definition', { error, nodePath });
-        throw new Error(`Failed to load node from ${nodePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        logger.error("Failed to load node definition", { error, nodePath });
+        throw new Error(
+          `Failed to load node from ${nodePath}: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
       }
     }
 
@@ -435,32 +519,87 @@ export class NodeLoader {
   }
 
   /**
+   * Load and register a credential type
+   */
+  private async loadAndRegisterCredential(
+    credentialPath: string
+  ): Promise<void> {
+    try {
+      // Clear require cache to ensure fresh load
+      delete require.cache[require.resolve(credentialPath)];
+
+      // Load the credential module
+      const credentialModule = require(credentialPath);
+
+      // Extract credential definition
+      const credentialType = credentialModule.default || credentialModule;
+
+      if (!credentialType || typeof credentialType !== "object") {
+        throw new Error("Invalid credential type format");
+      }
+
+      // Validate credential type has required fields
+      if (
+        !credentialType.name ||
+        !credentialType.displayName ||
+        !credentialType.properties
+      ) {
+        throw new Error(
+          "Credential type must have name, displayName, and properties"
+        );
+      }
+
+      // Register with credential service
+      this.credentialService.registerCredentialType(credentialType);
+
+      logger.info("Loaded and registered credential type", {
+        name: credentialType.name,
+        displayName: credentialType.displayName,
+      });
+    } catch (error) {
+      logger.error("Failed to load credential type", { error, credentialPath });
+      throw error;
+    }
+  }
+
+  /**
    * Load a single node definition
    */
-  private async loadSingleNodeDefinition(nodePath: string): Promise<NodeDefinition | null> {
+  private async loadSingleNodeDefinition(
+    nodePath: string
+  ): Promise<NodeDefinition | null> {
     try {
       // Clear require cache to ensure fresh load
       delete require.cache[require.resolve(nodePath)];
-      
+
       // Load the node module
       const nodeModule = require(nodePath);
-      
+
       // Extract node definition (could be default export or named export)
-      const nodeDefinition = nodeModule.default || nodeModule.nodeDefinition || nodeModule;
-      
-      if (!nodeDefinition || typeof nodeDefinition !== 'object') {
-        throw new Error('Invalid node definition format');
+      const nodeDefinition =
+        nodeModule.default || nodeModule.nodeDefinition || nodeModule;
+
+      if (!nodeDefinition || typeof nodeDefinition !== "object") {
+        throw new Error("Invalid node definition format");
       }
 
       // Validate the node definition
-      const validation = this.nodeService.validateNodeDefinition(nodeDefinition);
+      const validation =
+        this.nodeService.validateNodeDefinition(nodeDefinition);
       if (!validation.valid) {
-        throw new Error(`Node validation failed: ${validation.errors.map(e => e.message).join(', ')}`);
+        throw new Error(
+          `Node validation failed: ${validation.errors
+            .map((e) => e.message)
+            .join(", ")}`
+        );
       }
 
       return nodeDefinition;
     } catch (error) {
-      logger.error('Failed to load single node definition', { error, nodePath });
+      logger.error("Failed to load single node definition", {
+        error,
+        nodePath,
+      });
       return null;
     }
   }
@@ -468,7 +607,10 @@ export class NodeLoader {
   /**
    * Set up hot reload for a package
    */
-  private async setupHotReload(packagePath: string, packageName: string): Promise<void> {
+  private async setupHotReload(
+    packagePath: string,
+    packageName: string
+  ): Promise<void> {
     if (!this.hotReloadEnabled) {
       return;
     }
@@ -484,31 +626,45 @@ export class NodeLoader {
       const watcher = watch(packagePath, {
         ignored: /(^|[\/\\])\../, // ignore dotfiles
         persistent: true,
-        ignoreInitial: true
+        ignoreInitial: true,
       });
 
       // Set up event handlers
-      watcher.on('change', async (filePath) => {
-        logger.info('Node file changed, reloading package', { packageName, filePath });
-        
+      watcher.on("change", async (filePath) => {
+        logger.info("Node file changed, reloading package", {
+          packageName,
+          filePath,
+        });
+
         try {
           await this.reloadNodePackage(packageName);
-          logger.info('Package reloaded successfully', { packageName });
+          logger.info("Package reloaded successfully", { packageName });
         } catch (error) {
-          logger.error('Failed to reload package after file change', { error, packageName, filePath });
+          logger.error("Failed to reload package after file change", {
+            error,
+            packageName,
+            filePath,
+          });
         }
       });
 
-      watcher.on('error', (error) => {
-        logger.error('File watcher error', { error, packageName });
+      watcher.on("error", (error) => {
+        logger.error("File watcher error", { error, packageName });
       });
 
       // Store watcher
       this.watchers.set(packageName, watcher);
-      
-      logger.info('Hot reload set up for package', { packageName, packagePath });
+
+      logger.info("Hot reload set up for package", {
+        packageName,
+        packagePath,
+      });
     } catch (error) {
-      logger.error('Failed to set up hot reload', { error, packageName, packagePath });
+      logger.error("Failed to set up hot reload", {
+        error,
+        packageName,
+        packagePath,
+      });
     }
   }
 
@@ -519,35 +675,38 @@ export class NodeLoader {
     try {
       const customNodesDir = this.customNodesPath;
       const dirExists = await this.directoryExists(customNodesDir);
-      
+
       if (!dirExists) {
-        logger.info('Custom nodes directory does not exist, skipping auto-load', { customNodesDir });
+        logger.info(
+          "Custom nodes directory does not exist, skipping auto-load",
+          { customNodesDir }
+        );
         return;
       }
 
       const entries = await fs.readdir(customNodesDir, { withFileTypes: true });
-      const packageDirs = entries.filter(entry => entry.isDirectory());
+      const packageDirs = entries.filter((entry) => entry.isDirectory());
 
       for (const packageDir of packageDirs) {
         const packagePath = path.join(customNodesDir, packageDir.name);
-        
+
         try {
           await this.loadNodePackage(packagePath);
         } catch (error) {
-          logger.error('Failed to auto-load custom node package', { 
-            error, 
+          logger.error("Failed to auto-load custom node package", {
+            error,
             packageName: packageDir.name,
-            packagePath 
+            packagePath,
           });
         }
       }
 
-      logger.info('Custom nodes auto-load completed', { 
+      logger.info("Custom nodes auto-load completed", {
         packagesFound: packageDirs.length,
-        packagesLoaded: this.loadedPackages.size 
+        packagesLoaded: this.loadedPackages.size,
       });
     } catch (error) {
-      logger.error('Failed to load custom nodes', { error });
+      logger.error("Failed to load custom nodes", { error });
     }
   }
 
@@ -559,10 +718,15 @@ export class NodeLoader {
       const dirExists = await this.directoryExists(this.customNodesPath);
       if (!dirExists) {
         await fs.mkdir(this.customNodesPath, { recursive: true });
-        logger.info('Created custom nodes directory', { path: this.customNodesPath });
+        logger.info("Created custom nodes directory", {
+          path: this.customNodesPath,
+        });
       }
     } catch (error) {
-      logger.error('Failed to create custom nodes directory', { error, path: this.customNodesPath });
+      logger.error("Failed to create custom nodes directory", {
+        error,
+        path: this.customNodesPath,
+      });
       throw error;
     }
   }
@@ -622,16 +786,20 @@ export class NodeLoader {
    */
   private async getTypeScriptFiles(packagePath: string): Promise<string[]> {
     const tsFiles: string[] = [];
-    
+
     const scanDirectory = async (dirPath: string): Promise<void> => {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
-        
-        if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== 'dist') {
+
+        if (
+          entry.isDirectory() &&
+          entry.name !== "node_modules" &&
+          entry.name !== "dist"
+        ) {
           await scanDirectory(fullPath);
-        } else if (entry.isFile() && entry.name.endsWith('.ts')) {
+        } else if (entry.isFile() && entry.name.endsWith(".ts")) {
           tsFiles.push(fullPath);
         }
       }
@@ -650,18 +818,18 @@ export class NodeLoader {
       for (const [packageName, watcher] of this.watchers) {
         try {
           await watcher.close();
-          logger.info('Closed file watcher', { packageName });
+          logger.info("Closed file watcher", { packageName });
         } catch (error) {
-          logger.error('Failed to close file watcher', { error, packageName });
+          logger.error("Failed to close file watcher", { error, packageName });
         }
       }
-      
+
       this.watchers.clear();
       this.loadedPackages.clear();
-      
-      logger.info('NodeLoader cleanup completed');
+
+      logger.info("NodeLoader cleanup completed");
     } catch (error) {
-      logger.error('Failed to cleanup NodeLoader', { error });
+      logger.error("Failed to cleanup NodeLoader", { error });
     }
   }
 }

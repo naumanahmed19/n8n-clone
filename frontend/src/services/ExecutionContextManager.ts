@@ -285,7 +285,7 @@ export class ExecutionContextManager {
    * Get the status of a node in the current execution (filtered)
    */
   getNodeStatus(nodeId: string): NodeStatusInfo {
-    // If no current execution, check all active executions
+    // If no current execution, check all executions (including completed ones)
     if (!this.currentExecutionId) {
       const executions = this.nodeToExecutions.get(nodeId);
       if (!executions) {
@@ -296,13 +296,46 @@ export class ExecutionContextManager {
         };
       }
 
-      // Find the most recent active execution
+      // FIX: Find the most recent execution (running OR completed/failed)
+      // This ensures single node execution status persists after completion
+      let mostRecentExecution: {
+        executionId: string;
+        context: ExecutionContext;
+      } | null = null;
+
       for (const executionId of executions) {
         const context = this.executions.get(executionId);
-        if (context && context.status === "running") {
+        if (!context) continue;
+
+        // Prioritize running executions
+        if (context.status === "running") {
           return {
             status: this.getNodeStatusInExecution(nodeId, executionId),
             executionId,
+            lastUpdated: Date.now(),
+          };
+        }
+
+        // Track most recent completed/failed execution
+        if (
+          !mostRecentExecution ||
+          context.startTime > mostRecentExecution.context.startTime
+        ) {
+          mostRecentExecution = { executionId, context };
+        }
+      }
+
+      // If no running execution, return status from most recent completed execution
+      if (mostRecentExecution) {
+        const nodeStatus = this.getNodeStatusInExecution(
+          nodeId,
+          mostRecentExecution.executionId
+        );
+        // Only return completed/failed status, not idle
+        if (nodeStatus !== NodeExecutionStatus.IDLE) {
+          return {
+            status: nodeStatus,
+            executionId: mostRecentExecution.executionId,
             lastUpdated: Date.now(),
           };
         }

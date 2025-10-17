@@ -1,6 +1,7 @@
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCopyPasteStore, useReactFlowUIStore, useWorkflowStore } from '@/stores'
+import { NodeExecutionStatus } from '@/types/execution'
 import { useReactFlow } from '@xyflow/react'
 import { LucideIcon } from 'lucide-react'
 import React, { ReactNode, useCallback } from 'react'
@@ -77,6 +78,7 @@ export interface BaseNodeWrapperProps {
     inputs?: string[]
     outputs?: string[]
     imageUrl?: string
+    nodeType?: string  // Added to support file: icons
   }
   
   /** Custom metadata to render below node (like NodeMetadata component) */
@@ -205,9 +207,10 @@ export function BaseNodeWrapper({
   )
   const canGroup = selectedNodesForGrouping.length >= 1
 
-  // Use execution hook for toolbar functionality
+  // Use execution hook for toolbar functionality and visual state
   const { 
     nodeExecutionState,
+    nodeVisualState,
     handleExecuteNode, 
     handleRetryNode 
   } = useNodeExecution(id, data.nodeType)
@@ -217,6 +220,17 @@ export function BaseNodeWrapper({
   
   // Get compact mode from UI store
   const { compactMode } = useReactFlowUIStore()
+  
+  // Determine effective node status from visual state or data.status
+  // Priority: nodeVisualState > data.status for consistent styling across execution modes
+  const effectiveStatus = nodeVisualState?.status 
+    ? (nodeVisualState.status === NodeExecutionStatus.RUNNING ? 'running' :
+       nodeVisualState.status === NodeExecutionStatus.COMPLETED ? 'success' :
+       nodeVisualState.status === NodeExecutionStatus.FAILED ? 'error' :
+       nodeVisualState.status === NodeExecutionStatus.SKIPPED ? 'skipped' :
+       nodeVisualState.status === NodeExecutionStatus.QUEUED ? 'running' :
+       data.status)
+    : data.status
 
   // Handle double-click to open properties dialog
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -259,7 +273,7 @@ export function BaseNodeWrapper({
                     <div
                       onDoubleClick={handleDoubleClick}
                       className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
-                        getNodeStatusClasses(data.status, selected, data.disabled)
+                        getNodeStatusClasses(effectiveStatus, selected, data.disabled)
                       } ${className}`}
                       style={{ width: effectiveCollapsedWidth }}
                     >
@@ -377,8 +391,9 @@ export function BaseNodeWrapper({
           <div className="relative">
             <div
               onDoubleClick={handleDoubleClick}
-              className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
-                getNodeStatusClasses(data.status, selected, data.disabled)
+              
+              className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-sm transition-all duration-200 hover:shadow-md ${
+               getNodeStatusClasses(effectiveStatus, selected, data.disabled)
               } ${className}`}
               style={{ width: effectiveCollapsedWidth }}
             >
@@ -487,8 +502,9 @@ export function BaseNodeWrapper({
         <div className="relative">
           <div
             onDoubleClick={handleDoubleClick}
-            className={`relative bg-card rounded-lg border shadow-lg transition-all duration-200 hover:shadow-xl ${
-              getNodeStatusClasses(data.status, selected, data.disabled)
+
+            className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-lg transition-all duration-200 hover:shadow-xl ${
+             getNodeStatusClasses(effectiveStatus, selected, data.disabled)
             } ${className}`}
             style={{ width: effectiveExpandedWidth }}
           >

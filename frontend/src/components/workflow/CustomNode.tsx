@@ -1,6 +1,5 @@
 import { useWorkflowStore } from '@/stores'
 import type { NodeType } from '@/types'
-import { getNodeIcon } from '@/utils/nodeIconMap'
 import { Node, NodeProps } from '@xyflow/react'
 import { memo, useMemo } from 'react'
 import { NodeMetadata } from './components/NodeMetadata'
@@ -56,12 +55,17 @@ export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeP
     [data.executionCapability]
   )
 
-  // Memoize icon configuration to prevent calling getNodeIcon on every render
-  const iconConfig = useMemo(() => getNodeIcon(data.nodeType), [data.nodeType])
-  
-  // Memoize derived icon and color values
-  const nodeIcon = useMemo(() => data.icon || iconConfig.icon, [data.icon, iconConfig.icon])
-  const nodeColor = useMemo(() => data.color || iconConfig.color, [data.color, iconConfig.color])
+  // Get icon and color from node type definition using the same utility as NodeTypesList
+  // This will handle file: icons, fa: icons, lucide: icons, and emoji automatically
+  const nodeIcon = useMemo(() => {
+    // If data has icon override, use it; otherwise get from node type definition
+    return data.icon || data.nodeTypeDefinition?.icon
+  }, [data.icon, data.nodeTypeDefinition?.icon])
+
+  const nodeColor = useMemo(() => {
+    // If data has color override, use it; otherwise get from node type definition
+    return data.color || data.nodeTypeDefinition?.color || '#666'
+  }, [data.color, data.nodeTypeDefinition?.color])
 
   // Memoize nodeConfig object to prevent recreation
   const nodeConfig = useMemo(() => ({
@@ -71,7 +75,8 @@ export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeP
     inputs: data.inputs,
     outputs: data.outputs,
     imageUrl: data.parameters?.imageUrl as string,
-  }), [nodeIcon, nodeColor, isTrigger, data.inputs, data.outputs, data.parameters?.imageUrl])
+    nodeType: data.nodeType,  // Pass nodeType for file: icon resolution
+  }), [nodeIcon, nodeColor, isTrigger, data.inputs, data.outputs, data.parameters?.imageUrl, data.nodeType])
 
   // Memoize toolbar config
   const toolbarConfig = useMemo(() => ({

@@ -10,6 +10,11 @@ export interface WorkflowNode {
   locked?: boolean;
   mockData?: any;
   mockDataPinned?: boolean;
+  // Settings configuration
+  settings?: NodeSettingsConfig;
+  // Visual properties
+  icon?: string;
+  color?: string;
   // Group node properties
   parentId?: string;
   extent?: "parent" | [number, number, number, number];
@@ -18,6 +23,26 @@ export interface WorkflowNode {
     height?: number;
     backgroundColor?: string;
     [key: string]: any;
+  };
+}
+
+// Settings are stored as a flat object with key-value pairs
+export type NodeSettingsConfig = Record<string, any>;
+
+export interface NodeSetting {
+  displayName: string;
+  name: string;
+  type: "string" | "number" | "boolean" | "options" | "json";
+  default: any;
+  description: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  hidden?: boolean;
+  options?: Array<{ name: string; value: any; description?: string }>;
+  displayOptions?: {
+    show?: Record<string, any[]>;
+    hide?: Record<string, any[]>;
   };
 }
 
@@ -151,6 +176,8 @@ export interface NodeType {
   executionCapability?: "trigger" | "action" | "transform" | "condition";
   canExecuteIndividually?: boolean;
   canBeDisabled?: boolean;
+  // Custom settings specific to this node type (flat object)
+  settings?: Record<string, NodeSetting>;
 }
 
 export interface CredentialDefinition {

@@ -1323,6 +1323,47 @@ export class ExecutionService {
         ...(parameters || {}),
       };
 
+      // Build credentials mapping from parameters
+      // Extract credential field values and map them to credential types
+      let credentialsMapping: Record<string, string> = {};
+
+      if (nodeTypeInfo.properties) {
+        const properties = Array.isArray(nodeTypeInfo.properties)
+          ? nodeTypeInfo.properties
+          : [];
+
+        for (const property of properties) {
+          // Check if this is a credential field
+          if (
+            property.type === "credential" &&
+            property.allowedTypes &&
+            property.allowedTypes.length > 0
+          ) {
+            // Get the credential ID from parameters using the field name
+            const credentialId = nodeParameters[property.name];
+
+            if (credentialId) {
+              // Map credential type to ID
+              // property.allowedTypes[0] is the credential type (e.g., "postgresDb")
+              credentialsMapping[property.allowedTypes[0]] = credentialId;
+
+              logger.info(`Mapped credential for execution`, {
+                nodeId,
+                fieldName: property.name,
+                credentialType: property.allowedTypes[0],
+                credentialId,
+              });
+            }
+          }
+        }
+      }
+
+      logger.info(`Credentials mapping built`, {
+        nodeId,
+        nodeType: node.type,
+        credentialsMapping,
+      });
+
       // Prepare input data for the node
       const nodeInputData = inputData || { main: [[]] };
 
@@ -1478,56 +1519,7 @@ export class ExecutionService {
             mode: "single",
           });
 
-          // Build credentials mapping: need to map credential types to IDs
-          // node.credentials is an array of credential IDs like ["cred_123"]
-          // We need to figure out which type each credential is
-          let credentialsMapping: Record<string, string> | undefined;
-
-          if (node.credentials && node.credentials.length > 0) {
-            credentialsMapping = {};
-
-            // Get all node types and find the one we need
-            const allNodeTypes = await this.nodeService.getNodeTypes();
-            const nodeTypeInfo = allNodeTypes.find(
-              (nt) => nt.type === node.type
-            );
-
-            logger.info(`Building credentials mapping - Step 1`, {
-              nodeId,
-              nodeType: node.type,
-              rawCredentials: node.credentials,
-              foundNodeType: !!nodeTypeInfo,
-              nodeTypeCredentials: nodeTypeInfo?.credentials,
-            });
-
-            if (nodeTypeInfo && nodeTypeInfo.credentials) {
-              // For each credential definition in the node type
-              for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
-                const credDef = nodeTypeInfo.credentials[i];
-                // Map the credential type to the credential ID from the node
-                if (node.credentials[i]) {
-                  credentialsMapping[credDef.name] = node.credentials[i];
-                  logger.info(`Mapped credential`, {
-                    index: i,
-                    credentialType: credDef.name,
-                    credentialId: node.credentials[i],
-                  });
-                }
-              }
-            }
-
-            logger.info(
-              `Credentials mapping for single node execution - Final`,
-              {
-                nodeId,
-                nodeType: node.type,
-                rawCredentials: node.credentials,
-                credentialsMapping,
-              }
-            );
-          }
-
-          // Execute the actual node
+          // Execute the actual node (credentials mapping already built earlier)
           nodeResult = await this.nodeService.executeNode(
             node.type,
             nodeParameters,
@@ -1536,7 +1528,8 @@ export class ExecutionService {
             `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             userId, // Pass the actual userId so credentials can be looked up
             undefined, // options
-            workflowId // Pass workflowId for variable resolution
+            workflowId, // Pass workflowId for variable resolution
+            (node as any).settings || {} // Pass node settings
           );
 
           const endTime = Date.now();

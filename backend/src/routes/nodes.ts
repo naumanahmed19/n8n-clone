@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Response, Router } from "express";
+import fs from "fs";
+import path from "path";
 import { AuthenticatedRequest, authenticateToken } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
 import { validateQuery } from "../middleware/validation";
@@ -166,6 +168,113 @@ router.post(
     }
 
     res.json(response);
+  })
+);
+
+// POST /api/nodes/:type/load-options - Load dynamic options for a field
+router.post(
+  "/:type/load-options",
+  authenticateToken,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { method, parameters = {}, credentials = {} } = req.body;
+
+    if (!method) {
+      const response: ApiResponse = {
+        success: false,
+        error: {
+          code: "MISSING_METHOD",
+          message: "loadOptions method name is required",
+        },
+      };
+      return res.status(400).json(response);
+    }
+
+    const result = await getNodeService().loadNodeOptions(
+      req.params.type,
+      method,
+      parameters,
+      credentials
+    );
+
+    const response: ApiResponse = {
+      success: result.success,
+      data: result.success ? result.data : undefined,
+      error: result.error
+        ? {
+            code: "LOAD_OPTIONS_ERROR",
+            message: result.error.message,
+          }
+        : undefined,
+    };
+
+    if (!result.success) {
+      return res.status(400).json(response);
+    }
+
+    res.json(response);
+  })
+);
+
+// GET /api/nodes/:type/icon - Serve custom node icon files
+router.get(
+  "/:type/icon",
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { type } = req.params;
+
+    try {
+      // Get the node schema to find its icon path
+      const nodeSchema = await getNodeService().getNodeSchema(type);
+
+      if (!nodeSchema || !nodeSchema.icon) {
+        return res.status(404).json({ error: "Icon not found" });
+      }
+
+      // Check if icon is a file reference (e.g., "file:postgres.svg")
+      if (!nodeSchema.icon.startsWith("file:")) {
+        return res.status(400).json({ error: "Icon is not a file reference" });
+      }
+
+      // Extract filename from icon reference
+      const iconFileName = nodeSchema.icon.replace("file:", "");
+
+      // Find the node's directory in custom-nodes
+      const customNodesDir = path.join(__dirname, "../../custom-nodes");
+
+      // Look for the icon file in the node's directory
+      // The structure is: custom-nodes/{node-package}/nodes/{icon-file}
+      const possiblePaths = [
+        // Try the node's type as directory name
+        path.join(customNodesDir, type, "nodes", iconFileName),
+        // Try common variations
+        path.join(customNodesDir, type.replace("-", ""), "nodes", iconFileName),
+        path.join(customNodesDir, type, iconFileName),
+      ];
+
+      let iconPath: string | null = null;
+      for (const possiblePath of possiblePaths) {
+        if (fs.existsSync(possiblePath)) {
+          iconPath = possiblePath;
+          break;
+        }
+      }
+
+      if (!iconPath) {
+        return res.status(404).json({
+          error: "Icon file not found",
+          searched: possiblePaths,
+        });
+      }
+
+      // Set appropriate content type for SVG
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.setHeader("Cache-Control", "public, max-age=86400"); // Cache for 1 day
+
+      // Send the file
+      res.sendFile(iconPath);
+    } catch (error) {
+      console.error("Error serving icon:", error);
+      res.status(500).json({ error: "Failed to serve icon" });
+    }
   })
 );
 

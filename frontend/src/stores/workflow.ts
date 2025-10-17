@@ -1643,6 +1643,15 @@ export const useWorkflowStore = create<WorkflowStore>()(
               },
             });
 
+            // Initialize execution context for single node execution
+            const { executionManager } = get();
+            executionManager.startExecution(result.executionId, nodeId, [
+              nodeId,
+            ]);
+            executionManager.setCurrentExecution(result.executionId);
+            executionManager.setNodeRunning(result.executionId, nodeId);
+            set({ executionManager });
+
             // Update node execution result
             const endTime = Date.now();
             const startTime = endTime - (result.duration || 0);
@@ -1699,11 +1708,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
               });
             }
 
-            // CRITICAL: Update node visual states for single node execution
-            // This ensures that success/failed icons persist after single node execution
+            // Update node visual states for single node execution
             const visualStatus = isSuccess
               ? NodeExecutionStatus.COMPLETED
               : NodeExecutionStatus.FAILED;
+
+            if (isSuccess) {
+              executionManager.setNodeCompleted(result.executionId, nodeId);
+              executionManager.completeExecution(result.executionId);
+            } else {
+              executionManager.setNodeFailed(result.executionId, nodeId);
+              executionManager.completeExecution(result.executionId);
+            }
+
+            set({ executionManager });
 
             get().updateNodeExecutionState(nodeId, visualStatus, {
               progress: isSuccess ? 100 : undefined,

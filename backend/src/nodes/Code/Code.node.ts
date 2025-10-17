@@ -1,14 +1,14 @@
+import { exec } from "child_process";
+import { promises as fsPromises } from "fs";
+import * as os from "os";
+import * as path from "path";
+import { promisify } from "util";
+import { VM } from "vm2";
 import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
 } from "../../types/node.types";
-import { VM } from "vm2";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { promises as fsPromises } from "fs";
-import * as path from "path";
-import * as os from "os";
 
 const execAsync = promisify(exec);
 
@@ -19,7 +19,7 @@ export const CodeNode: NodeDefinition = {
   group: ["transform"],
   version: 1,
   description: "Execute JavaScript or Python code to process data",
-  icon: "fa:code",
+  icon: "lucide:code",
   color: "#FF6B6B",
   defaults: {
     language: "javascript",
@@ -65,7 +65,8 @@ const results = items.map(item => ({
 }));
 
 return results;`,
-      description: "The code to execute. Access input items via 'items' variable and return the results.",
+      description:
+        "The code to execute. Access input items via 'items' variable and return the results.",
       component: "CodeEditor",
       componentProps: {
         language: "javascript",
@@ -97,7 +98,8 @@ for item in items:
 
 # Output must be JSON
 print(json.dumps(results))`,
-      description: "The Python code to execute. Access input items via 'items' variable and print JSON results.",
+      description:
+        "The Python code to execute. Access input items via 'items' variable and print JSON results.",
       component: "CodeEditor",
       componentProps: {
         language: "python",
@@ -263,7 +265,10 @@ async function executePython(
   try {
     // Create a temporary file for the Python script
     const tempDir = os.tmpdir();
-    tempFile = path.join(tempDir, `code_node_${Date.now()}_${Math.random().toString(36).slice(2)}.py`);
+    tempFile = path.join(
+      tempDir,
+      `code_node_${Date.now()}_${Math.random().toString(36).slice(2)}.py`
+    );
 
     // Prepare the items as JSON string
     const itemsJson = JSON.stringify(items);

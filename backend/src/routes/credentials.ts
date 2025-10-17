@@ -1,7 +1,6 @@
 import { Response, Router } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { AuthenticatedRequest, authenticateToken } from "../middleware/auth";
-import { CredentialService } from "../services/CredentialService";
 import { AppError } from "../utils/errors";
 import {
   credentialCreateSchema,
@@ -9,7 +8,14 @@ import {
 } from "../utils/validation";
 
 const router = Router();
-const credentialService = new CredentialService();
+
+// Use global credential service instance (shared with NodeLoader)
+const getCredentialService = () => {
+  if (!global.credentialService) {
+    throw new Error("CredentialService not initialized");
+  }
+  return global.credentialService;
+};
 
 // Get all credentials for the authenticated user
 router.get(
@@ -18,7 +24,7 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { type } = req.query;
 
-    const credentials = await credentialService.getCredentials(
+    const credentials = await getCredentialService().getCredentials(
       req.user!.id,
       type as string
     );
@@ -35,7 +41,7 @@ router.get(
   "/types",
   authenticateToken,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const credentialTypes = credentialService.getCredentialTypes();
+    const credentialTypes = getCredentialService().getCredentialTypes();
 
     res.json({
       success: true,
@@ -55,10 +61,11 @@ router.get(
       throw new AppError("Warning days must be a positive number", 400);
     }
 
-    const expiringCredentials = await credentialService.getExpiringCredentials(
-      req.user!.id,
-      warningDays
-    );
+    const expiringCredentials =
+      await getCredentialService().getExpiringCredentials(
+        req.user!.id,
+        warningDays
+      );
 
     res.json({
       success: true,
@@ -74,7 +81,10 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
 
-    const credential = await credentialService.getCredential(id, req.user!.id);
+    const credential = await getCredentialService().getCredential(
+      id,
+      req.user!.id
+    );
 
     if (!credential) {
       throw new AppError("Credential not found", 404);
@@ -97,10 +107,8 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
 
-    const credentialData = await credentialService.getCredentialForExecution(
-      id,
-      req.user!.id
-    );
+    const credentialData =
+      await getCredentialService().getCredentialForExecution(id, req.user!.id);
 
     res.json({
       success: true,
@@ -116,7 +124,7 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const validatedData = credentialCreateSchema.parse(req.body);
 
-    const credential = await credentialService.createCredential(
+    const credential = await getCredentialService().createCredential(
       req.user!.id,
       validatedData.name,
       validatedData.type,
@@ -142,7 +150,7 @@ router.put(
     const { id } = req.params;
     const validatedData = credentialUpdateSchema.parse(req.body);
 
-    const credential = await credentialService.updateCredential(
+    const credential = await getCredentialService().updateCredential(
       id,
       req.user!.id,
       {
@@ -169,7 +177,7 @@ router.delete(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
 
-    await credentialService.deleteCredential(id, req.user!.id);
+    await getCredentialService().deleteCredential(id, req.user!.id);
 
     res.json({
       success: true,
@@ -189,7 +197,7 @@ router.post(
       throw new AppError("Credential type and data are required", 400);
     }
 
-    const testResult = await credentialService.testCredential(type, data);
+    const testResult = await getCredentialService().testCredential(type, data);
 
     res.json({
       success: true,
@@ -210,7 +218,7 @@ router.post(
     }
 
     // Get the credential from database
-    const credential = await credentialService.getCredential(
+    const credential = await getCredentialService().getCredential(
       credentialId,
       req.user!.id
     );
@@ -220,7 +228,7 @@ router.post(
     }
 
     // Test the credential with its saved data (includes tokens)
-    const testResult = await credentialService.testCredential(
+    const testResult = await getCredentialService().testCredential(
       credential.type,
       credential.data
     );
@@ -244,7 +252,7 @@ router.post(
       throw new AppError("New credential data is required", 400);
     }
 
-    const rotatedCredential = await credentialService.rotateCredential(
+    const rotatedCredential = await getCredentialService().rotateCredential(
       id,
       req.user!.id,
       data

@@ -267,6 +267,9 @@ export function AddNodeCommandDialog({
       position: nodePosition,
       credentials: [],
       disabled: false,
+      // Add icon and color from node type definition
+      icon: nodeType.icon,
+      color: nodeType.color,
       // If source node is in a group, add new node to the same group
       ...(parentGroupId && { 
         parentId: parentGroupId,

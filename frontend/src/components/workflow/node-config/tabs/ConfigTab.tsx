@@ -146,6 +146,7 @@ export function ConfigTab({ node, nodeType, readOnly = false }: ConfigTabProps) 
             showRequiredIndicator={true}
             fieldClassName="space-y-2"
             nodeId={node.id}
+            nodeType={node.type}
             disabled={readOnly}
           />
         )}

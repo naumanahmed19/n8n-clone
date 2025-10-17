@@ -38,6 +38,7 @@ export interface FormFieldConfig {
   typeOptions?: {
     multipleValues?: boolean;
     multipleValueButtonText?: string;
+    loadOptionsMethod?: string; // Method name for dynamic options loading
   };
   component?: string; // Component name for custom rendering
   componentProps?: {
@@ -84,6 +85,7 @@ export interface FormGeneratorProps {
   showRequiredIndicator?: boolean;
   requiredIndicator?: ReactNode;
   nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
+  nodeType?: string; // Optional: node type for loadOptions API calls
 }
 
 export interface FieldVisibilityOptions {
@@ -102,6 +104,7 @@ export interface FormFieldRendererProps {
   allFields: FormFieldConfig[];
   onFieldChange?: (fieldName: string, value: any) => void; // For updating other fields
   nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
+  nodeType?: string; // Optional: node type for loadOptions API calls
 }
 
 export interface RepeatingFieldItem {
