@@ -391,8 +391,9 @@ export function BaseNodeWrapper({
           <div className="relative">
             <div
               onDoubleClick={handleDoubleClick}
-              className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
-                getNodeStatusClasses(effectiveStatus, selected, data.disabled)
+              
+              className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-sm transition-all duration-200 hover:shadow-md ${
+               getNodeStatusClasses(effectiveStatus, selected, data.disabled)
               } ${className}`}
               style={{ width: effectiveCollapsedWidth }}
             >
@@ -501,8 +502,9 @@ export function BaseNodeWrapper({
         <div className="relative">
           <div
             onDoubleClick={handleDoubleClick}
-            className={`relative bg-card rounded-lg border shadow-lg transition-all duration-200 hover:shadow-xl ${
-              getNodeStatusClasses(effectiveStatus, selected, data.disabled)
+
+            className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-lg transition-all duration-200 hover:shadow-xl ${
+             getNodeStatusClasses(effectiveStatus, selected, data.disabled)
             } ${className}`}
             style={{ width: effectiveExpandedWidth }}
           >
