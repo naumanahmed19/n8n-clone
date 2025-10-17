@@ -91,8 +91,11 @@ export interface FormGeneratorProps {
   validateOnMount?: boolean; // Optional: whether to run validation on mount (default: false) - ignored if disableAutoValidation is true
   validateOnChange?: boolean; // Optional: whether to run validation on value change (default: false for credentials) - ignored if disableAutoValidation is true
   validateOnBlur?: boolean; // Optional: whether to validate fields on blur (default: true) - ignored if disableAutoValidation is true
-  prependFields?: FormFieldConfig[]; // Optional: fields to add before main fields
-  appendFields?: FormFieldConfig[]; // Optional: fields to add after main fields
+}
+
+export interface FormGeneratorRef {
+  validate: () => Record<string, string>;
+  isValid: () => boolean;
 }
 
 export interface FieldVisibilityOptions {

@@ -8,12 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { FormFieldConfig, FormGenerator } from '@/components/ui/form-generator'
-import { FieldValidator } from '@/components/ui/form-generator/FieldValidator'
+import { FormFieldConfig, FormGenerator, FormGeneratorRef } from '@/components/ui/form-generator'
 import { useCredentialStore } from '@/stores'
 import { CreateCredentialRequest, Credential, CredentialType } from '@/types'
 import { CheckCircle, Key, Loader2, TestTube, XCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 interface CredentialModalProps {
   open: boolean
@@ -31,6 +30,7 @@ export function CredentialModal({
   onSave 
 }: CredentialModalProps) {
   const { createCredential, updateCredential, testCredential, isLoading } = useCredentialStore()
+  const formRef = useRef<FormGeneratorRef>(null)
   
   const [formValues, setFormValues] = useState<Record<string, any>>({
     name: credential?.name || '',
@@ -38,6 +38,19 @@ export function CredentialModal({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null)
   const [isTesting, setIsTesting] = useState(false)
+
+  // Memoize fields array to prevent recreating on every render
+  const fields = useMemo((): FormFieldConfig[] => [
+    {
+      name: 'name',
+      displayName: 'Credential Name',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter a name for this credential',
+      description: 'A unique name to identify this credential',
+    },
+    ...(credentialType.properties as FormFieldConfig[])
+  ], [credentialType.properties])
 
   useEffect(() => {
     // Initialize form data with default values
@@ -56,37 +69,26 @@ export function CredentialModal({
     setTestResult(null) // Clear test result
   }, [credentialType, credential, open])
 
-  const handleFieldChange = (name: string, value: any) => {
+  const handleFieldChange = useCallback((name: string, value: any) => {
     setFormValues(prev => ({ ...prev, [name]: value }))
     // Clear error for this field
-    if (formErrors[name]) {
-      setFormErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
-    }
-  }
+    setFormErrors(prev => {
+      if (!prev[name]) return prev // No change needed
+      const newErrors = { ...prev }
+      delete newErrors[name]
+      return newErrors
+    })
+  }, [])
 
-  const validateForm = (): boolean => {
-    const allFields: FormFieldConfig[] = [
-      {
-        name: 'name',
-        displayName: 'Credential Name',
-        type: 'text',
-        required: true,
-        placeholder: 'Enter a name for this credential',
-        description: 'A unique name to identify this credential',
-      },
-      ...(credentialType.properties as FormFieldConfig[])
-    ]
-
-    const errors = FieldValidator.validateForm(allFields, formValues)
+  const validateForm = useCallback((): boolean => {
+    if (!formRef.current) return false
+    
+    const errors = formRef.current.validate()
     setFormErrors(errors)
     return Object.keys(errors).length === 0
-  }
+  }, [])
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!validateForm()) {
       return
     }
@@ -110,9 +112,9 @@ export function CredentialModal({
     } catch (error) {
       console.error('Failed to save credential:', error)
     }
-  }
+  }, [validateForm, formValues, credential, updateCredential, createCredential, credentialType.name, onSave])
 
-  const handleTest = async () => {
+  const handleTest = useCallback(async () => {
     if (!validateForm()) {
       return
     }
@@ -135,7 +137,7 @@ export function CredentialModal({
     } finally {
       setIsTesting(false)
     }
-  }
+  }, [validateForm, formValues, credentialType.name, testCredential])
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -162,17 +164,8 @@ export function CredentialModal({
         {/* Form */}
         <div className="overflow-y-auto max-h-[60vh] px-1">
           <FormGenerator
-            fields={[
-              {
-                name: 'name',
-                displayName: 'Credential Name',
-                type: 'text',
-                required: true,
-                placeholder: 'Enter a name for this credential',
-                description: 'A unique name to identify this credential',
-              },
-              ...(credentialType.properties as FormFieldConfig[])
-            ]}
+            ref={formRef}
+            fields={fields}
             values={formValues}
             errors={formErrors}
             onChange={handleFieldChange}

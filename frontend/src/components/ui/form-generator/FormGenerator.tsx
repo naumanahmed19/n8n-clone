@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { FieldRenderer } from './FieldRenderer'
 import { FieldValidator } from './FieldValidator'
 import { FieldVisibilityManager } from './FieldVisibilityManager'
-import { FormFieldConfig, FormGeneratorProps } from './types'
+import { FormFieldConfig, FormGeneratorProps, FormGeneratorRef } from './types'
 
-export function FormGenerator({
+export const FormGenerator = forwardRef<FormGeneratorRef, FormGeneratorProps>(({
   fields,
   values,
   errors: externalErrors = {},
@@ -22,24 +22,30 @@ export function FormGenerator({
   validateOnMount = false,
   validateOnChange = false,
   validateOnBlur = true,
-  prependFields = [],
-  appendFields = [],
-}: FormGeneratorProps) {
+}, ref) => {
   const [internalErrors, setInternalErrors] = useState<Record<string, string>>({})
   const [hasValidated, setHasValidated] = useState(false) // Track if validation has run at least once
   
   // Combine external and internal errors, with external taking precedence
   const allErrors = { ...internalErrors, ...externalErrors }
 
-  // Combine all fields: prepend + main + append
-  const allFields = useMemo(() => {
-    return [...prependFields, ...fields, ...appendFields]
-  }, [prependFields, fields, appendFields])
-
   // Get visible fields based on current values - memoized to prevent infinite re-renders
   const visibleFields = useMemo(() => {
-    return FieldVisibilityManager.getVisibleFields(allFields, values)
-  }, [allFields, values])
+    return FieldVisibilityManager.getVisibleFields(fields, values)
+  }, [fields, values])
+
+  // Expose validation methods via ref
+  useImperativeHandle(ref, () => ({
+    validate: () => {
+      const errors = FieldValidator.validateForm(fields, values)
+      setInternalErrors(errors)
+      return errors
+    },
+    isValid: () => {
+      const errors = FieldValidator.validateForm(fields, values)
+      return Object.keys(errors).length === 0
+    }
+  }), [fields, values])
 
   // Handle field value changes
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -55,7 +61,7 @@ export function FormGenerator({
     }
 
     // Re-validate dependent fields when this field changes
-    const dependentFields = FieldVisibilityManager.getDependentFields(fieldName, allFields)
+    const dependentFields = FieldVisibilityManager.getDependentFields(fieldName, fields)
     if (dependentFields.length > 0) {
       // Small delay to ensure state has updated
       setTimeout(() => {
@@ -86,7 +92,7 @@ export function FormGenerator({
   const handleFieldBlur = (fieldName: string, value: any) => {
     // Only validate on blur if not disabled and validateOnBlur is true
     if (!disableAutoValidation && validateOnBlur) {
-      const field = allFields.find(f => f.name === fieldName)
+      const field = fields.find(f => f.name === fieldName)
       if (field && !externalErrors[fieldName]) {
         const error = FieldValidator.validateField(field, value)
         if (error) {
@@ -149,7 +155,7 @@ export function FormGenerator({
   return (
     <div className={cn('space-y-6', className)}>
       {visibleFields.map((field) => (
-        <FieldWrapper key={field.name} field={field} values={values} allFields={allFields}>
+        <FieldWrapper key={field.name} field={field} values={values} allFields={fields}>
           <div className={cn('space-y-2', fieldClassName)}>
             <FormFieldLabel 
               field={field}
@@ -178,7 +184,9 @@ export function FormGenerator({
       ))}
     </div>
   )
-}
+})
+
+FormGenerator.displayName = 'FormGenerator'
 
 // Individual form field component
 interface FieldWrapperProps {
