@@ -1,39 +1,21 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form'
+import { FormFieldConfig, FormGenerator } from '@/components/ui/form-generator'
+import { FieldValidator } from '@/components/ui/form-generator/FieldValidator'
 import { Input } from '@/components/ui/input'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { useCredentialStore } from '@/stores'
 import { CreateCredentialRequest, Credential, CredentialType } from '@/types'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Eye, EyeOff, Key, Loader2, Search, TestTube } from 'lucide-react'
+import { ArrowLeft, Key, Loader2, Search, TestTube } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { z } from 'zod'
 
 interface CredentialCreateDialogProps {
   open: boolean
@@ -59,57 +41,12 @@ export function CredentialCreateDialog({
 
   const [step, setStep] = useState<'type' | 'form'>('type')
   const [selectedType, setSelectedType] = useState<CredentialType | null>(null)
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
   const [isTestingCredential, setIsTestingCredential] = useState(false)
   const [typeSearchTerm, setTypeSearchTerm] = useState('')
-
-  // Initialize form schema based on selected credential type
-  const createFormSchema = (credType: CredentialType) => {
-    const schemaFields: Record<string, z.ZodTypeAny> = {
-      name: z.string().min(1, 'Credential name is required'),
-    }
-
-    credType.properties.forEach((prop) => {
-      switch (prop.type) {
-        case 'string':
-        case 'password':
-          if (prop.required) {
-            schemaFields[prop.name] = z.string().min(1, `${prop.displayName} is required`)
-          } else {
-            schemaFields[prop.name] = z.string().optional()
-          }
-          break
-        case 'number':
-          if (prop.required) {
-            schemaFields[prop.name] = z.coerce.number().min(0, `${prop.displayName} is required`)
-          } else {
-            schemaFields[prop.name] = z.coerce.number().optional()
-          }
-          break
-        case 'boolean':
-          schemaFields[prop.name] = z.boolean().default(false)
-          break
-        case 'options':
-          if (prop.required) {
-            schemaFields[prop.name] = z.string().min(1, `${prop.displayName} is required`)
-          } else {
-            schemaFields[prop.name] = z.string().optional()
-          }
-          break
-        default:
-          schemaFields[prop.name] = z.string().optional()
-      }
-    })
-
-    return z.object(schemaFields)
-  }
-
-  const form = useForm({
-    resolver: selectedType ? zodResolver(createFormSchema(selectedType)) : undefined,
-    defaultValues: {
-      name: editingCredential?.name || '',
-    },
+  const [formValues, setFormValues] = useState<Record<string, any>>({
+    name: editingCredential?.name || '',
   })
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (credentialTypes.length === 0) {
@@ -124,31 +61,40 @@ export function CredentialCreateDialog({
         setSelectedType(credType)
         setStep('form')
         // Reset form with editing credential data
-        const defaultValues: Record<string, any> = {
-          name: editingCredential.name,
-        }
-        // Note: We don't pre-fill credential data for security reasons
-        form.reset(defaultValues)
+        setFormValues({ name: editingCredential.name })
       }
     }
-  }, [editingCredential, credentialTypes, form])
+  }, [editingCredential, credentialTypes])
 
   useEffect(() => {
     if (open && !editingCredential) {
       // Reset to type selection for new credentials
       setStep('type')
       setSelectedType(null)
-      form.reset({ name: '' })
-      setShowPasswords({})
+      setFormValues({ name: '' })
+      setFormErrors({})
       setTypeSearchTerm('')
     }
-  }, [open, editingCredential, form])
+  }, [open, editingCredential])
 
   const handleTypeSelect = (credType: CredentialType) => {
     setSelectedType(credType)
     setStep('form')
     // Reset form with new schema
-    form.reset({ name: '' })
+    setFormValues({ name: '' })
+    setFormErrors({})
+  }
+
+  const handleFieldChange = (name: string, value: any) => {
+    setFormValues(prev => ({ ...prev, [name]: value }))
+    // Clear error for this field
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
   }
 
   // Filter credential types based on search term
@@ -162,20 +108,33 @@ export function CredentialCreateDialog({
     )
   }, [credentialTypes, typeSearchTerm])
 
-  const togglePasswordVisibility = (fieldName: string) => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [fieldName]: !prev[fieldName]
-    }))
-  }
-
   const handleTestConnection = async () => {
-    const values = form.getValues()
     if (!selectedType) return
+
+    // Validate all fields using FieldValidator
+    const allFields: FormFieldConfig[] = [
+      {
+        name: 'name',
+        displayName: 'Credential Name',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter a name for this credential',
+        description: 'A unique name to identify this credential',
+      },
+      ...(selectedType.properties as FormFieldConfig[])
+    ]
+
+    const errors = FieldValidator.validateForm(allFields, formValues)
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      toast.error('Please fill in all required fields')
+      return
+    }
 
     try {
       setIsTestingCredential(true)
-      const { name, ...credentialData } = values
+      const { name, ...credentialData } = formValues
       const result = await testCredential({
         type: selectedType.name,
         data: credentialData,
@@ -193,11 +152,33 @@ export function CredentialCreateDialog({
     }
   }
 
-  const onSubmit = async (values: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!selectedType) return
 
+    // Validate all fields using FieldValidator
+    const allFields: FormFieldConfig[] = [
+      {
+        name: 'name',
+        displayName: 'Credential Name',
+        type: 'text',
+        required: true,
+        placeholder: 'Enter a name for this credential',
+        description: 'A unique name to identify this credential',
+      },
+      ...(selectedType.properties as FormFieldConfig[])
+    ]
+
+    const errors = FieldValidator.validateForm(allFields, formValues)
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      toast.error('Please fill in all required fields')
+      return
+    }
+
     try {
-      const { name, ...credentialData } = values
+      const { name, ...credentialData } = formValues
 
       let credential: Credential
       if (editingCredential) {
@@ -285,149 +266,70 @@ export function CredentialCreateDialog({
     if (!selectedType) return null
 
     return (
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-8 h-8 rounded-md flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: selectedType.color || '#6B7280' }}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="w-8 h-8 rounded-md flex items-center justify-center text-white text-sm font-bold"
+            style={{ backgroundColor: selectedType.color || '#6B7280' }}
+          >
+            {selectedType.icon || <Key className="w-4 h-4" />}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold">{selectedType.displayName}</h3>
+            <p className="text-sm text-muted-foreground">{selectedType.description}</p>
+          </div>
+        </div>
+
+        {/* Use FormGenerator for all fields */}
+        <FormGenerator
+          fields={[
+            {
+              name: 'name',
+              displayName: 'Credential Name',
+              type: 'text',
+              required: true,
+              placeholder: 'Enter a name for this credential',
+              description: 'A unique name to identify this credential',
+            },
+            ...((selectedType?.properties || []) as FormFieldConfig[])
+          ]}
+          values={formValues}
+          errors={formErrors}
+          onChange={handleFieldChange}
+          showRequiredIndicator={true}
+          disableAutoValidation={true}
+          className="space-y-4"
+        />
+
+        <DialogFooter>
+          <div className="flex items-center gap-2 justify-end w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTestConnection}
+              disabled={isTestingCredential || isLoading}
             >
-              {selectedType.icon || <Key className="w-4 h-4" />}
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold">{selectedType.displayName}</h3>
-              <p className="text-sm text-muted-foreground">{selectedType.description}</p>
-            </div>
+              {isTestingCredential ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <TestTube className="w-4 h-4 mr-2" />
+              )}
+              Test Connection xxx
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {editingCredential ? 'Update' : 'Create'} Credential
+            </Button>
           </div>
-
-          {/* Credential Name */}
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Credential Name *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter a name for this credential" {...field} />
-                </FormControl>
-                <FormDescription>
-                  A unique name to identify this credential
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Dynamic credential properties */}
-          <div className="space-y-4">
-            {selectedType.properties.map((property) => (
-              <FormField
-                key={property.name}
-                control={form.control}
-                name={property.name}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {property.displayName}
-                      {property.required && <span className="text-destructive ml-1">*</span>}
-                    </FormLabel>
-                    <FormControl>
-                      {property.type === 'password' ? (
-                        <div className="relative">
-                          <Input
-                            type={showPasswords[property.name] ? 'text' : 'password'}
-                            placeholder={property.placeholder || property.description}
-                            {...field}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3"
-                            onClick={() => togglePasswordVisibility(property.name)}
-                          >
-                            {showPasswords[property.name] ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      ) : property.type === 'boolean' ? (
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={field.value || false}
-                            onCheckedChange={field.onChange}
-                          />
-                          <span className="text-sm">{property.description}</span>
-                        </div>
-                      ) : property.type === 'number' ? (
-                        <Input
-                          type="number"
-                          placeholder={property.placeholder || property.description}
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      ) : property.type === 'options' && property.options ? (
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={`Select ${property.displayName}`} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {property.options.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input
-                          placeholder={property.placeholder || property.description}
-                          {...field}
-                        />
-                      )}
-                    </FormControl>
-                    {property.description && property.type !== 'boolean' && (
-                      <FormDescription>{property.description}</FormDescription>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
-
-          <DialogFooter>
-            <div className="flex items-center gap-2 justify-end w-full">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestConnection}
-                disabled={isTestingCredential || isLoading}
-              >
-                {isTestingCredential ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <TestTube className="w-4 h-4 mr-2" />
-                )}
-                Test Connection
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                {editingCredential ? 'Update' : 'Create'} Credential
-              </Button>
-            </div>
-          </DialogFooter>
-        </form>
-      </Form>
+        </DialogFooter>
+      </form>
     )
   }
 

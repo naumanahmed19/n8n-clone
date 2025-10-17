@@ -66,8 +66,9 @@ export function CredentialsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      {showCreateModal && selectedCredentialType && (
+      {selectedCredentialType && (
         <CredentialModal
+          open={showCreateModal}
           credentialType={selectedCredentialType}
           credential={editingCredential || undefined}
           onClose={handleCloseModal}

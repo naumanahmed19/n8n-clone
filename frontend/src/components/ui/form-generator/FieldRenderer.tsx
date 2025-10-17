@@ -1,17 +1,19 @@
 import { UnifiedCredentialSelector } from '@/components/credential/UnifiedCredentialSelector'
 import { AutoComplete, AutoCompleteOption } from '@/components/ui/autocomplete'
+import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 import { getCustomComponent } from './CustomComponentRegistry'
 import { DynamicAutocomplete } from './DynamicAutocomplete'
 import { ExpressionInput } from './ExpressionInput'
@@ -31,6 +33,8 @@ export function FieldRenderer({
   nodeId,
   nodeType,
 }: FormFieldRendererProps) {
+  const [showPassword, setShowPassword] = useState(false)
+
   const handleChange = (newValue: any) => {
     onChange(newValue)
   }
@@ -190,10 +194,10 @@ export function FieldRenderer({
         />
       )
 
-    case 'password':
+    case 'text':
       return (
         <Input
-          type="password"
+          type="text"
           value={value || ''}
           onChange={(e) => handleChange(e.target.value)}
           onBlur={handleBlur}
@@ -201,6 +205,34 @@ export function FieldRenderer({
           disabled={disabled || field.disabled || field.readonly}
           className={error ? 'border-destructive' : ''}
         />
+      )
+
+    case 'password':
+      return (
+        <div className="relative">
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            value={value || ''}
+            onChange={(e) => handleChange(e.target.value)}
+            onBlur={handleBlur}
+            placeholder={field.placeholder}
+            disabled={disabled || field.disabled || field.readonly}
+            className={`pr-10 ${error ? 'border-destructive' : ''}`}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            )}
+          </Button>
+        </div>
       )
 
     case 'email':

@@ -85,7 +85,7 @@ const MongoDBNode = {
         },
       },
       default: "{}",
-      description: "MongoDB query filter as JSON (e.g., {\"status\": \"active\"})",
+      description: 'MongoDB query filter as JSON (e.g., {"status": "active"})',
       placeholder: '{"status": "active"}',
     },
     {
@@ -98,7 +98,7 @@ const MongoDBNode = {
         },
       },
       default: "",
-      description: "Fields to include/exclude (e.g., {\"name\": 1, \"email\": 1})",
+      description: 'Fields to include/exclude (e.g., {"name": 1, "email": 1})',
       placeholder: '{"name": 1, "email": 1}',
     },
     {
@@ -148,7 +148,7 @@ const MongoDBNode = {
         },
       },
       default: "",
-      description: "Sort order as JSON (e.g., {\"createdAt\": -1, \"name\": 1})",
+      description: 'Sort order as JSON (e.g., {"createdAt": -1, "name": 1})',
       placeholder: '{"createdAt": -1}',
     },
     // Insert operation fields
@@ -242,7 +242,7 @@ const MongoDBNode = {
       },
       default: "{}",
       required: true,
-      description: "Filter to match documents (e.g., {\"status\": \"pending\"})",
+      description: 'Filter to match documents (e.g., {"status": "pending"})',
       placeholder: '{"status": "pending"}',
     },
     {
@@ -256,7 +256,7 @@ const MongoDBNode = {
       },
       default: "{}",
       required: true,
-      description: "Update operations (e.g., {\"$set\": {\"status\": \"active\"}})",
+      description: 'Update operations (e.g., {"$set": {"status": "active"}})',
       placeholder: '{"$set": {"status": "active"}}',
     },
     {
@@ -307,7 +307,8 @@ const MongoDBNode = {
       },
       default: "{}",
       required: true,
-      description: "Filter to match documents to delete (e.g., {\"status\": \"archived\"})",
+      description:
+        'Filter to match documents to delete (e.g., {"status": "archived"})',
       placeholder: '{"status": "archived"}',
     },
     // Aggregate operation fields
@@ -323,7 +324,8 @@ const MongoDBNode = {
       default: "[]",
       required: true,
       description: "Aggregation pipeline as JSON array",
-      placeholder: '[{"$match": {"status": "active"}}, {"$group": {"_id": "$category", "count": {"$sum": 1}}}]',
+      placeholder:
+        '[{"$match": {"status": "active"}}, {"$group": {"_id": "$category", "count": {"$sum": 1}}}]',
     },
   ],
 
@@ -381,12 +383,15 @@ const MongoDBNode = {
       if (credentials.configurationType === "connectionString") {
         connectionString = credentials.connectionString;
       } else {
-        const auth = credentials.user && credentials.password 
-          ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(credentials.password)}@` 
-          : "";
+        const auth =
+          credentials.user && credentials.password
+            ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(
+                credentials.password
+              )}@`
+            : "";
         const port = credentials.port || 27017;
         const sslParam = credentials.ssl ? "?ssl=true" : "";
-        
+
         connectionString = `mongodb://${auth}${credentials.host}:${port}/${credentials.database}${sslParam}`;
       }
 
@@ -424,7 +429,9 @@ const MongoDBNode = {
               const queryStr = await this.getNodeParameter("query");
               const projectionStr = await this.getNodeParameter("projection");
               const returnAll = await this.getNodeParameter("returnAll");
-              const limit = returnAll ? 0 : await this.getNodeParameter("limit");
+              const limit = returnAll
+                ? 0
+                : await this.getNodeParameter("limit");
               const skip = await this.getNodeParameter("skip");
               const sortStr = await this.getNodeParameter("sort");
 
@@ -494,9 +501,10 @@ const MongoDBNode = {
                 let document;
 
                 try {
-                  document = typeof documentStr === "string" 
-                    ? JSON.parse(documentStr) 
-                    : documentStr;
+                  document =
+                    typeof documentStr === "string"
+                      ? JSON.parse(documentStr)
+                      : documentStr;
                 } catch (e) {
                   throw new Error(`Invalid document JSON: ${e.message}`);
                 }
@@ -515,9 +523,10 @@ const MongoDBNode = {
                 let documents;
 
                 try {
-                  documents = typeof documentsStr === "string" 
-                    ? JSON.parse(documentsStr) 
-                    : documentsStr;
+                  documents =
+                    typeof documentsStr === "string"
+                      ? JSON.parse(documentsStr)
+                      : documentsStr;
                 } catch (e) {
                   throw new Error(`Invalid documents JSON: ${e.message}`);
                 }
@@ -531,7 +540,9 @@ const MongoDBNode = {
                 results.push({
                   json: {
                     ...item.json,
-                    insertedIds: Object.values(result.insertedIds).map(id => id.toString()),
+                    insertedIds: Object.values(result.insertedIds).map((id) =>
+                      id.toString()
+                    ),
                     insertedCount: result.insertedCount,
                     acknowledged: result.acknowledged,
                   },
@@ -549,17 +560,19 @@ const MongoDBNode = {
               let filter, update;
 
               try {
-                filter = typeof filterStr === "string" 
-                  ? JSON.parse(filterStr) 
-                  : filterStr;
+                filter =
+                  typeof filterStr === "string"
+                    ? JSON.parse(filterStr)
+                    : filterStr;
               } catch (e) {
                 throw new Error(`Invalid filter JSON: ${e.message}`);
               }
 
               try {
-                update = typeof updateStr === "string" 
-                  ? JSON.parse(updateStr) 
-                  : updateStr;
+                update =
+                  typeof updateStr === "string"
+                    ? JSON.parse(updateStr)
+                    : updateStr;
               } catch (e) {
                 throw new Error(`Invalid update JSON: ${e.message}`);
               }
@@ -592,9 +605,10 @@ const MongoDBNode = {
               let filter;
 
               try {
-                filter = typeof filterStr === "string" 
-                  ? JSON.parse(filterStr) 
-                  : filterStr;
+                filter =
+                  typeof filterStr === "string"
+                    ? JSON.parse(filterStr)
+                    : filterStr;
               } catch (e) {
                 throw new Error(`Invalid filter JSON: ${e.message}`);
               }
@@ -621,9 +635,10 @@ const MongoDBNode = {
               let pipeline;
 
               try {
-                pipeline = typeof pipelineStr === "string" 
-                  ? JSON.parse(pipelineStr) 
-                  : pipelineStr;
+                pipeline =
+                  typeof pipelineStr === "string"
+                    ? JSON.parse(pipelineStr)
+                    : pipelineStr;
               } catch (e) {
                 throw new Error(`Invalid pipeline JSON: ${e.message}`);
               }
@@ -648,7 +663,10 @@ const MongoDBNode = {
               throw new Error(`Unknown operation: ${operation}`);
           }
         } catch (error) {
-          this.logger.error(`[MongoDB] Error caught in item loop:`, error.message);
+          this.logger.error(
+            `[MongoDB] Error caught in item loop:`,
+            error.message
+          );
           this.logger.info(`[MongoDB] continueOnFail is: ${continueOnFail}`);
 
           if (continueOnFail) {
@@ -705,12 +723,15 @@ const MongoDBNode = {
         if (credentials.configurationType === "connectionString") {
           connectionString = credentials.connectionString;
         } else {
-          const auth = credentials.user && credentials.password 
-            ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(credentials.password)}@` 
-            : "";
+          const auth =
+            credentials.user && credentials.password
+              ? `${encodeURIComponent(credentials.user)}:${encodeURIComponent(
+                  credentials.password
+                )}@`
+              : "";
           const port = credentials.port || 27017;
           const sslParam = credentials.ssl ? "?ssl=true" : "";
-          
+
           connectionString = `mongodb://${auth}${credentials.host}:${port}/${credentials.database}${sslParam}`;
         }
       } catch (error) {
@@ -733,10 +754,10 @@ const MongoDBNode = {
       try {
         await client.connect();
         const db = client.db();
-        
+
         // Get list of collections
         const collections = await db.listCollections().toArray();
-        
+
         await client.close();
 
         // Format results for dropdown

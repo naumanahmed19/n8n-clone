@@ -25,12 +25,16 @@ export interface CredentialType {
 export interface CredentialProperty {
   displayName: string;
   name: string;
-  type: "string" | "password" | "number" | "boolean" | "options";
+  type: "string" | "text" | "password" | "number" | "boolean" | "options";
   required?: boolean;
   default?: any;
   description?: string;
   options?: Array<{ name: string; value: any }>;
   placeholder?: string;
+  displayOptions?: {
+    show?: Record<string, any[]>;
+    hide?: Record<string, any[]>;
+  };
 }
 
 export interface CredentialData {

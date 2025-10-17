@@ -9,7 +9,7 @@ const MySQLDbCredentials = {
     {
       displayName: "Host",
       name: "host",
-      type: "string",
+      type: "text",
       required: true,
       default: "localhost",
       description: "MySQL server host",
@@ -26,7 +26,7 @@ const MySQLDbCredentials = {
     {
       displayName: "Database",
       name: "database",
-      type: "string",
+      type: "text",
       required: true,
       default: "",
       description: "Database name",
@@ -35,7 +35,7 @@ const MySQLDbCredentials = {
     {
       displayName: "User",
       name: "user",
-      type: "string",
+      type: "text",
       required: true,
       default: "",
       description: "Database user",
@@ -44,7 +44,7 @@ const MySQLDbCredentials = {
     {
       displayName: "Password",
       name: "password",
-      type: "string",
+      type: "password",
       typeOptions: {
         password: true,
       },

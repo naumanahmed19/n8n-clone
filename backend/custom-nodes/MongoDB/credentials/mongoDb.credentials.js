@@ -28,7 +28,7 @@ const MongoDbCredentials = {
     {
       displayName: "Connection String",
       name: "connectionString",
-      type: "string",
+      type: "text",
       displayOptions: {
         show: {
           configurationType: ["connectionString"],
@@ -36,13 +36,14 @@ const MongoDbCredentials = {
       },
       required: true,
       default: "",
-      description: "MongoDB connection string (e.g., mongodb://localhost:27017/mydb or mongodb+srv://...)",
+      description:
+        "MongoDB connection string (e.g., mongodb://localhost:27017/mydb or mongodb+srv://...)",
       placeholder: "mongodb://localhost:27017/mydb",
     },
     {
       displayName: "Host",
       name: "host",
-      type: "string",
+      type: "text",
       displayOptions: {
         show: {
           configurationType: ["values"],
@@ -69,7 +70,7 @@ const MongoDbCredentials = {
     {
       displayName: "Database",
       name: "database",
-      type: "string",
+      type: "text",
       displayOptions: {
         show: {
           configurationType: ["values"],
@@ -83,7 +84,7 @@ const MongoDbCredentials = {
     {
       displayName: "User",
       name: "user",
-      type: "string",
+      type: "text",
       displayOptions: {
         show: {
           configurationType: ["values"],
@@ -97,7 +98,7 @@ const MongoDbCredentials = {
     {
       displayName: "Password",
       name: "password",
-      type: "string",
+      type: "password",
       typeOptions: {
         password: true,
       },
@@ -148,12 +149,15 @@ const MongoDbCredentials = {
         };
       }
 
-      const auth = data.user && data.password 
-        ? `${encodeURIComponent(data.user)}:${encodeURIComponent(data.password)}@` 
-        : "";
+      const auth =
+        data.user && data.password
+          ? `${encodeURIComponent(data.user)}:${encodeURIComponent(
+              data.password
+            )}@`
+          : "";
       const port = data.port || 27017;
       const sslParam = data.ssl ? "?ssl=true" : "";
-      
+
       connectionString = `mongodb://${auth}${data.host}:${port}/${data.database}${sslParam}`;
     }
 
@@ -196,12 +200,18 @@ const MongoDbCredentials = {
           success: false,
           message: `Cannot resolve host. Please check the hostname.`,
         };
-      } else if (error.code === "ETIMEDOUT" || error.name === "MongoServerSelectionError") {
+      } else if (
+        error.code === "ETIMEDOUT" ||
+        error.name === "MongoServerSelectionError"
+      ) {
         return {
           success: false,
           message: `Connection timeout. Please check firewall and network settings.`,
         };
-      } else if (error.code === 18 || error.message.includes("Authentication failed")) {
+      } else if (
+        error.code === 18 ||
+        error.message.includes("Authentication failed")
+      ) {
         return {
           success: false,
           message: "Authentication failed. Invalid username or password.",

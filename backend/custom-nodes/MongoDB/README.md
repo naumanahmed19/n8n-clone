@@ -32,18 +32,23 @@ npm install
 ## Operations
 
 ### Find Documents
+
 Query documents from a collection with optional filters, projection, sorting, and limits.
 
 ### Insert
+
 Add one or more documents to a collection.
 
 ### Update
+
 Modify documents matching a filter. Supports update operators and options.
 
 ### Delete
+
 Remove documents matching a filter from a collection.
 
 ### Aggregate
+
 Execute MongoDB aggregation pipelines for complex data transformations.
 
 ## Settings
@@ -54,6 +59,7 @@ Execute MongoDB aggregation pipelines for complex data transformations.
 ## Example Workflows
 
 ### Find Users by Status
+
 ```json
 {
   "operation": "find",
@@ -64,6 +70,7 @@ Execute MongoDB aggregation pipelines for complex data transformations.
 ```
 
 ### Insert New Document
+
 ```json
 {
   "operation": "insert",
@@ -73,6 +80,7 @@ Execute MongoDB aggregation pipelines for complex data transformations.
 ```
 
 ### Update Documents
+
 ```json
 {
   "operation": "update",

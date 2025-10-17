@@ -183,10 +183,11 @@ export function UnifiedCredentialSelector({
       </div>
 
       {/* Credential Creation Modal */}
-      {showCreateModal && selectedCredentialType && (() => {
+      {selectedCredentialType && (() => {
         const credType = credentialTypes.find(ct => ct.name === selectedCredentialType)
         return credType ? (
           <CredentialModal
+            open={showCreateModal}
             credentialType={credType}
             onClose={() => {
               setShowCreateModal(false)

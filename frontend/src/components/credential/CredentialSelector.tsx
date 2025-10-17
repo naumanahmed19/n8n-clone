@@ -138,8 +138,9 @@ export function CredentialSelector({
         </div>
       )}
 
-      {showModal && credentialTypeInfo && (
+      {credentialTypeInfo && (
         <CredentialModal
+          open={showModal}
           credentialType={credentialTypeInfo}
           onClose={() => setShowModal(false)}
           onSave={handleCredentialCreated}
