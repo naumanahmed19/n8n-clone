@@ -187,15 +187,13 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
   )
   
   // Collapsed content
-  const collapsedContent = useMemo(() => (
-    <div className="text-xs text-muted-foreground text-center py-1">
-      {formFieldConfigs.length === 0 ? (
-        <p>Configure form fields in properties</p>
-      ) : (
-        <p>Click to expand and view form</p>
-      )}
-    </div>
-  ), [formFieldConfigs.length])
+    const collapsedContent = useMemo(() => (
+      <>
+        {formFieldConfigs.length === 0 ? (
+          <div className="text-xs text-muted-foreground text-center "><p>Configure form fields in properties</p></div>
+        ) : null}
+      </>
+    ), [formFieldConfigs.length])
   
   // Expanded content
   const expandedContent = useMemo(() => (
