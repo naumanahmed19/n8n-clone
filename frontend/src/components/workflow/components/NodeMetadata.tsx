@@ -23,7 +23,7 @@ export const NodeMetadata = memo(function NodeMetadata({ nodeVisualState }: Node
   )
   
   const hasProgress = useMemo(() => 
-    nodeVisualState?.progress && nodeVisualState.progress > 0,
+    !!(nodeVisualState?.progress && nodeVisualState.progress > 0),
     [nodeVisualState?.progress]
   )
   
