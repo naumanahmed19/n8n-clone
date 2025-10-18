@@ -53,19 +53,19 @@ const FormGeneratorNode = {
       },
       component: "RepeatingField",
       componentProps: {
-        titleField: "fieldLabel",
+        titleField: "displayName",
         fields: [
           {
             displayName: "Field Type",
-            name: "fieldType",
+            name: "type",
             type: "options",
-            default: "text",
+            default: "string",
             required: true,
             tooltip: "Select the type of form field to add",
             options: [
               {
                 name: "Text",
-                value: "text",
+                value: "string",
                 description: "Single-line text input",
               },
               {
@@ -84,36 +84,26 @@ const FormGeneratorNode = {
                 description: "Multi-line text input",
               },
               {
-                name: "Select",
-                value: "select",
+                name: "Select/Dropdown",
+                value: "options",
                 description: "Dropdown selection",
               },
               {
                 name: "Checkbox",
-                value: "checkbox",
+                value: "boolean",
                 description: "Single checkbox",
               },
               {
-                name: "Radio",
-                value: "radio",
-                description: "Radio button group",
-              },
-              {
                 name: "Date",
-                value: "date",
+                value: "dateTime",
                 description: "Date picker",
-              },
-              {
-                name: "File",
-                value: "file",
-                description: "File upload",
               },
             ],
             description: "Type of form field",
           },
           {
             displayName: "Field Label",
-            name: "fieldLabel",
+            name: "displayName",
             type: "string",
             default: "",
             required: true,
@@ -122,7 +112,7 @@ const FormGeneratorNode = {
           },
           {
             displayName: "Field Name",
-            name: "fieldName",
+            name: "name",
             type: "string",
             default: "",
             required: false,
@@ -139,7 +129,7 @@ const FormGeneratorNode = {
             placeholder: "Enter your email...",
             displayOptions: {
               show: {
-                fieldType: ["text", "email", "number", "textarea"],
+                type: ["string", "email", "number", "textarea"],
               },
             },
           },
@@ -152,15 +142,23 @@ const FormGeneratorNode = {
           },
           {
             displayName: "Default Value",
-            name: "defaultValue",
+            name: "default",
             type: "string",
             default: "",
             tooltip: "Default value for the field",
             displayOptions: {
               show: {
-                fieldType: ["text", "email", "number", "textarea", "date"],
+                type: ["string", "email", "number", "textarea", "dateTime"],
               },
             },
+          },
+          {
+            displayName: "Description",
+            name: "description",
+            type: "string",
+            default: "",
+            tooltip: "Optional help text shown below the field",
+            placeholder: "We'll never share your email",
           },
           {
             displayName: "Options",
@@ -171,36 +169,42 @@ const FormGeneratorNode = {
             },
             default: "",
             tooltip:
-              "Options for select/radio fields (one per line or comma-separated)",
+              "Options for select/dropdown fields (one per line or comma-separated)",
             placeholder: "Option 1\nOption 2\nOption 3",
             displayOptions: {
               show: {
-                fieldType: ["select", "radio"],
+                type: ["options"],
               },
             },
           },
           {
-            displayName: "Min Value",
-            name: "min",
-            type: "number",
-            default: 0,
-            tooltip: "Minimum value for number fields",
+            displayName: "Validation",
+            name: "validation",
+            type: "collection",
+            default: {},
+            tooltip: "Validation rules for the field",
             displayOptions: {
               show: {
-                fieldType: ["number"],
+                type: ["number"],
               },
             },
-          },
-          {
-            displayName: "Max Value",
-            name: "max",
-            type: "number",
-            default: 100,
-            tooltip: "Maximum value for number fields",
-            displayOptions: {
-              show: {
-                fieldType: ["number"],
-              },
+            componentProps: {
+              fields: [
+                {
+                  displayName: "Min Value",
+                  name: "min",
+                  type: "number",
+                  default: 0,
+                  tooltip: "Minimum value",
+                },
+                {
+                  displayName: "Max Value",
+                  name: "max",
+                  type: "number",
+                  default: 100,
+                  tooltip: "Maximum value",
+                },
+              ],
             },
           },
           {
@@ -211,30 +215,9 @@ const FormGeneratorNode = {
             tooltip: "Number of rows for textarea",
             displayOptions: {
               show: {
-                fieldType: ["textarea"],
+                type: ["textarea"],
               },
             },
-          },
-          {
-            displayName: "Accept File Types",
-            name: "accept",
-            type: "string",
-            default: "",
-            tooltip: "Accepted file types (e.g., .pdf,.doc,.docx or image/*)",
-            placeholder: ".pdf,.doc,.docx",
-            displayOptions: {
-              show: {
-                fieldType: ["file"],
-              },
-            },
-          },
-          {
-            displayName: "Help Text",
-            name: "helpText",
-            type: "string",
-            default: "",
-            tooltip: "Optional help text shown below the field",
-            placeholder: "We'll never share your email",
           },
         ],
       },
@@ -285,33 +268,35 @@ const FormGeneratorNode = {
 
     const results = [];
 
+    // Process form fields - now using standardized structure
+    const processFormFields = (fields) => {
+      if (!Array.isArray(fields)) return [];
+      return fields.map((field) => {
+        const fieldData = field.values || field;
+        // Direct mapping - no conversion needed
+        return {
+          name: fieldData.name,
+          displayName: fieldData.displayName,
+          type: fieldData.type,
+          required: fieldData.required,
+          default: fieldData.default,
+          description: fieldData.description,
+          placeholder: fieldData.placeholder,
+          options: fieldData.options,
+          rows: fieldData.rows,
+          validation: fieldData.validation,
+        };
+      });
+    };
+
+    const processedFields = processFormFields(formFields);
+
     // If we have submitted form data from the frontend
     if (submittedFormData && typeof submittedFormData === "object") {
-      // Process form fields for output
-      const processedFields = Array.isArray(formFields)
-        ? formFields.map((field) => {
-            const fieldData = field.values || field;
-            return {
-              type: fieldData.fieldType,
-              label: fieldData.fieldLabel,
-              name: fieldData.fieldName,
-              required: fieldData.required,
-              placeholder: fieldData.placeholder,
-              defaultValue: fieldData.defaultValue,
-              options: fieldData.options,
-              helpText: fieldData.helpText,
-              min: fieldData.min,
-              max: fieldData.max,
-              rows: fieldData.rows,
-              accept: fieldData.accept,
-            };
-          })
-        : [];
-
       results.push({
         json: {
-          formData: submittedFormData, // Wrap form data in formData object
-          formFields: processedFields, // Include form fields configuration
+          formData: submittedFormData,
+          formFields: processedFields,
           _meta: {
             formTitle,
             formDescription,
@@ -326,36 +311,12 @@ const FormGeneratorNode = {
     }
     // If we have input items (from form submission via inputData)
     else if (items.length > 0) {
-      // Process form fields for output
-      const processedFields = Array.isArray(formFields)
-        ? formFields.map((field) => {
-            const fieldData = field.values || field;
-            return {
-              type: fieldData.fieldType,
-              label: fieldData.fieldLabel,
-              name: fieldData.fieldName,
-              required: fieldData.required,
-              placeholder: fieldData.placeholder,
-              defaultValue: fieldData.defaultValue,
-              options: fieldData.options,
-              helpText: fieldData.helpText,
-              min: fieldData.min,
-              max: fieldData.max,
-              rows: fieldData.rows,
-              accept: fieldData.accept,
-            };
-          })
-        : [];
-
       for (const item of items) {
-        // Extract form data from the item
         const formData = item.json || item;
-
-        // Build output with clean form data
         results.push({
           json: {
-            formData, // Wrap form data in formData object
-            formFields: processedFields, // Include form fields configuration
+            formData,
+            formFields: processedFields,
             _meta: {
               formTitle,
               formDescription,
@@ -370,28 +331,6 @@ const FormGeneratorNode = {
       }
     } else {
       // No submission yet - return form configuration for preview
-      // formFields comes as array of {id, values} from RepeatingField
-      const processedFields = Array.isArray(formFields)
-        ? formFields.map((field) => {
-            // Handle RepeatingField structure: {id, values: {fieldType, fieldLabel, ...}}
-            const fieldData = field.values || field;
-            return {
-              type: fieldData.fieldType,
-              label: fieldData.fieldLabel,
-              name: fieldData.fieldName,
-              required: fieldData.required,
-              placeholder: fieldData.placeholder,
-              defaultValue: fieldData.defaultValue,
-              options: fieldData.options,
-              helpText: fieldData.helpText,
-              min: fieldData.min,
-              max: fieldData.max,
-              rows: fieldData.rows,
-              accept: fieldData.accept,
-            };
-          })
-        : [];
-
       results.push({
         json: {
           formTitle,

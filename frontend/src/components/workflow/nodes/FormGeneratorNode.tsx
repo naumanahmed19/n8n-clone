@@ -46,7 +46,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
   const formDescription = useMemo(() => parameters.formDescription || '', [parameters.formDescription])
   const submitButtonText = useMemo(() => parameters.submitButtonText || 'Submit', [parameters.submitButtonText])
   
-  // Parse form fields from RepeatingField format and convert to FormFieldConfig
+  // Parse form fields - now using same structure as FormFieldConfig
   const formFieldConfigs = useMemo<FormFieldConfig[]>(() => {
     const rawFields = parameters.formFields || []
     if (!Array.isArray(rawFields)) return []
@@ -54,27 +54,12 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
     return rawFields.map((field: any, index: number) => {
       const fieldData = field.values || field
       
-      // Generate fieldName from fieldLabel if missing
-      const fieldName = fieldData.fieldName || 
-        fieldData.fieldLabel?.toLowerCase().replace(/\s+/g, '_') || 
+      // Generate name from displayName if missing
+      const fieldName = fieldData.name || 
+        fieldData.displayName?.toLowerCase().replace(/\s+/g, '_') || 
         `field_${index}`
       
-      // Map field type to FormFieldConfig type
-      const getFieldType = (type: string): FormFieldConfig['type'] => {
-        switch (type) {
-          case 'text': return 'string'
-          case 'email': return 'email'
-          case 'number': return 'number'
-          case 'textarea': return 'textarea'
-          case 'select': return 'options'
-          case 'radio': return 'options'
-          case 'checkbox': return 'boolean'
-          case 'date': return 'dateTime'
-          default: return 'string'
-        }
-      }
-      
-      // Parse options for select/radio
+      // Parse options string for select/dropdown fields
       const parseOptions = (optionsStr: string) => {
         if (!optionsStr) return []
         return optionsStr.split(/[\n,]/)
@@ -83,23 +68,27 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
           .map(opt => ({ name: opt, value: opt }))
       }
       
-      return {
+      // Build field config - mostly direct mapping now
+      const config: FormFieldConfig = {
         name: fieldName,
-        displayName: fieldData.fieldLabel || fieldName,
-        type: getFieldType(fieldData.fieldType),
+        displayName: fieldData.displayName || fieldName,
+        type: fieldData.type || 'string',
         required: fieldData.required || false,
-        default: fieldData.defaultValue || '',
-        description: fieldData.helpText || '',
+        default: fieldData.default || '',
+        description: fieldData.description || '',
         placeholder: fieldData.placeholder || '',
-        options: (fieldData.fieldType === 'select' || fieldData.fieldType === 'radio') 
-          ? parseOptions(fieldData.options || '')
-          : undefined,
         rows: fieldData.rows,
-        validation: fieldData.fieldType === 'number' ? {
-          min: fieldData.min,
-          max: fieldData.max,
-        } : undefined,
-      } as FormFieldConfig
+        validation: fieldData.validation,
+      }
+      
+      // Parse options string if it's a string, otherwise use as-is
+      if (fieldData.type === 'options' && fieldData.options) {
+        config.options = typeof fieldData.options === 'string' 
+          ? parseOptions(fieldData.options)
+          : fieldData.options
+      }
+      
+      return config
     })
   }, [parameters.formFields])
   
@@ -210,18 +199,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
         <>
           {/* Scrollable Form Area */}
           <div className="max-h-[300px] overflow-y-auto px-4 pt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Form Title and Description */}
-              {formTitle && (
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold">{formTitle}</h3>
-                  {formDescription && (
-                    <p className="text-sm text-muted-foreground mt-1">{formDescription}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Use FormGenerator component */}
+            {/* Use FormGenerator component */}
               <FormGenerator
                 ref={formGeneratorRef}
                 fields={formFieldConfigs}
@@ -233,13 +211,6 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
                 showRequiredIndicator={true}
               />
 
-              {/* Form Error */}
-              {errors._form && (
-                <div className="text-sm text-red-500 mt-2">
-                  {errors._form}
-                </div>
-              )}
-            </form>
           </div>
 
           {/* Fixed Submit Button Footer */}
