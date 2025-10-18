@@ -319,48 +319,56 @@ const FormGeneratorNode = {
         const itemData = item.json || item;
 
         // Extract the actual form field data
-        // The trigger sends data wrapped as: { json: { formData: {...}, formId, submittedAt, ... } }
-        // But execution engine wraps it further as: main: [[{ json: {...} }]]
-        // So we need to check if formData contains the wrapped structure or actual data
+        // For public form submission, triggerData contains the actual submitted form data
+        // The structure is: { timestamp, source, triggerNodeId, formId, submittedAt, submissionId }
+        // We need to get formData from the node parameters (submittedFormData)
 
-        let actualFormData;
+        let actualFormData = submittedFormData;
         let submissionMeta = {};
-        let submittedAt = new Date().toISOString();
-        let submissionId = `form_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
+        let submittedAt = itemData.submittedAt || new Date().toISOString();
+        let submissionId =
+          itemData.submissionId ||
+          `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Check if itemData.formData is the wrapped execution structure
-        if (
-          itemData.formData &&
-          itemData.formData.main &&
-          Array.isArray(itemData.formData.main)
-        ) {
-          // Unwrap: main[0][0].formData contains the actual field values
-          console.log("=== UNWRAPPING NESTED STRUCTURE ===");
-          const unwrapped = itemData.formData.main[0]?.[0];
-          if (unwrapped) {
-            actualFormData = unwrapped.formData || unwrapped;
-            submissionMeta = unwrapped._meta || itemData._meta || {};
-            submittedAt =
-              unwrapped.submittedAt || itemData.submittedAt || submittedAt;
-            submissionId =
-              unwrapped.submissionId || itemData.submissionId || submissionId;
+        // If actualFormData is not available from parameters, try to extract from itemData
+        if (!actualFormData || Object.keys(actualFormData).length === 0) {
+          // Check if itemData has formData property
+          if (
+            itemData.formData &&
+            itemData.formData.main &&
+            Array.isArray(itemData.formData.main)
+          ) {
+            // Unwrap: main[0][0].formData contains the actual field values
+            console.log("=== UNWRAPPING NESTED STRUCTURE ===");
+            const unwrapped = itemData.formData.main[0]?.[0];
+            if (unwrapped) {
+              actualFormData = unwrapped.formData || unwrapped;
+              submissionMeta = unwrapped._meta || itemData._meta || {};
+              submittedAt =
+                unwrapped.submittedAt || itemData.submittedAt || submittedAt;
+              submissionId =
+                unwrapped.submissionId || itemData.submissionId || submissionId;
+            }
+          } else if (
+            itemData.formData &&
+            typeof itemData.formData === "object"
+          ) {
+            // Direct structure: formData contains actual field values
+            actualFormData = itemData.formData;
+            submissionMeta = itemData._meta || {};
+            submittedAt = itemData.submittedAt || submittedAt;
+            submissionId = itemData.submissionId || submissionId;
           }
-        } else if (itemData.formData && typeof itemData.formData === "object") {
-          // Direct structure: formData contains actual field values
-          actualFormData = itemData.formData;
-          submissionMeta = itemData._meta || {};
-          submittedAt = itemData.submittedAt || submittedAt;
-          submissionId = itemData.submissionId || submissionId;
-        } else {
-          // Fallback: use the item data directly
-          actualFormData = itemData;
         }
 
         console.log("=== EXTRACTED FORM DATA ===");
         console.log("actualFormData:", JSON.stringify(actualFormData, null, 2));
+        console.log(
+          "submittedFormData:",
+          JSON.stringify(submittedFormData, null, 2)
+        );
         console.log("=== END EXTRACTION ===");
+        console.log("-----------------------1");
 
         results.push({
           json: {
@@ -380,17 +388,13 @@ const FormGeneratorNode = {
     }
     // Priority 2: If we have submitted form data from the frontend UI node
     else if (submittedFormData && typeof submittedFormData === "object") {
-      console.log("=== USING SUBMITTED FORM DATA (UI) ===");
-      console.log(
-        "submittedFormData:",
-        JSON.stringify(submittedFormData, null, 2)
-      );
-
+      console.log("-----------------------2");
       results.push({
         json: {
           formData: submittedFormData,
           formFields: processedFields,
           _meta: {
+            test: "test1",
             formTitle,
             formDescription,
             submitButtonText,
@@ -404,6 +408,7 @@ const FormGeneratorNode = {
     }
     // Priority 3: Preview mode - no submission yet
     else {
+      console.log("-----------------------3");
       // No submission yet - return form configuration for preview
       results.push({
         json: {

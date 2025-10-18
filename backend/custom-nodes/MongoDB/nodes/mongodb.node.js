@@ -214,7 +214,7 @@ const MongoDBNode = {
     {
       displayName: "Document",
       name: "document",
-      type: "json",
+      type: "string",
       displayOptions: {
         show: {
           operation: ["insert"],
@@ -399,9 +399,6 @@ const MongoDBNode = {
     // Get settings
     const continueOnFail = this.settings?.continueOnFail ?? false;
 
-    this.logger.info(`[MongoDB] continueOnFail setting: ${continueOnFail}`);
-    this.logger.info(`[MongoDB] Settings object:`, this.settings);
-
     // Get connection parameters from credentials
     let connectionString = "";
 
@@ -416,8 +413,6 @@ const MongoDBNode = {
 
       // Build connection string using helper function
       connectionString = buildConnectionString(credentials);
-
-      this.logger.info("Using MongoDB credentials");
     } catch (error) {
       throw new Error(`Failed to get credentials: ${error.message}`);
     }
@@ -685,14 +680,9 @@ const MongoDBNode = {
               throw new Error(`Unknown operation: ${operation}`);
           }
         } catch (error) {
-          this.logger.error(
-            `[MongoDB] Error caught in item loop:`,
-            error.message
-          );
-          this.logger.info(`[MongoDB] continueOnFail is: ${continueOnFail}`);
+          this.logger.error(`[MongoDB] Error in operation:`, error.message);
 
           if (continueOnFail) {
-            this.logger.info(`[MongoDB] Adding error to results array`);
             results.push({
               json: {
                 ...item.json,
@@ -702,7 +692,6 @@ const MongoDBNode = {
               },
             });
           } else {
-            this.logger.info(`[MongoDB] Throwing error to stop workflow`);
             throw error;
           }
         }
@@ -711,9 +700,6 @@ const MongoDBNode = {
       // Always close the connection
       await client.close();
     }
-
-    this.logger.info(`[MongoDB] Returning results, count: ${results.length}`);
-    this.logger.info(`[MongoDB] Results:`, JSON.stringify(results, null, 2));
 
     return [{ main: results }];
   },

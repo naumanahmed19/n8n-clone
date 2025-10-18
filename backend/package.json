@@ -15,7 +15,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx src/scripts/seed.ts",
-    "db:studio": "prisma studio",
+    "studio": "prisma studio",
     "node-cli": "tsx src/cli/node-cli.ts",
     "nodes:register": "tsx src/scripts/register-nodes.ts",
     "nodes:list": "tsx src/scripts/node-cli.ts list",

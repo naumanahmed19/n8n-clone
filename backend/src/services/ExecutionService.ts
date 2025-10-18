@@ -1346,36 +1346,13 @@ export class ExecutionService {
               // Map credential type to ID
               // property.allowedTypes[0] is the credential type (e.g., "postgresDb")
               credentialsMapping[property.allowedTypes[0]] = credentialId;
-
-              logger.info(`Mapped credential for execution`, {
-                nodeId,
-                fieldName: property.name,
-                credentialType: property.allowedTypes[0],
-                credentialId,
-              });
             }
           }
         }
       }
 
-      logger.info(`Credentials mapping built`, {
-        nodeId,
-        nodeType: node.type,
-        credentialsMapping,
-      });
-
       // Prepare input data for the node
       const nodeInputData = inputData || { main: [[]] };
-
-      logger.info(`Executing node`, {
-        nodeId,
-        nodeType: node.type,
-        mode,
-        workflowId,
-        userId,
-        nodeParameters,
-        inputDataSize: JSON.stringify(nodeInputData).length,
-      });
 
       try {
         if (mode === "workflow") {

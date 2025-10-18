@@ -334,9 +334,9 @@ export class SecureExecutionService {
         // Use the credentials mapping to find the credential ID for this type
         const credentialId = credentialsMapping[type];
         if (!credentialId) {
-          console.error(`No credential found for type '${type}'`, {
+          logger.error(`No credential found for type '${type}'`, {
             requestedType: type,
-            availableCredentials: credentialsMapping,
+            availableCredentials: Object.keys(credentialsMapping),
           });
           throw new Error(`No credential of type '${type}' available`);
         }

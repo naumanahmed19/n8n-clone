@@ -235,7 +235,10 @@ router.post(
           id: true,
           name: true,
           nodes: true,
+          connections: true,
+          settings: true,
           active: true,
+          userId: true,
         },
       });
 
@@ -279,63 +282,94 @@ router.post(
         `✅ Triggering workflow: ${targetWorkflow.name} (ID: ${targetWorkflow.id})`
       );
 
-      // Prepare trigger data similar to webhook
+      // Prepare trigger data in the same format as manual execution
+      // This matches the expected structure from the working execution payload
+      const timestamp = new Date().toISOString();
+      const submissionId = `form_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
       const triggerData = {
-        formData,
-        formId,
-        submittedAt: new Date().toISOString(),
-        submissionId: `form_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`,
-        _meta: {
-          formTitle: formNode.parameters?.formTitle || "Form",
-          formDescription: formNode.parameters?.formDescription || "",
-          workflowId: targetWorkflow.id,
-          workflowName: targetWorkflow.name,
-        },
-      };
-
-      // Initialize TriggerService to execute workflow
-      const triggerService = await ensureTriggerServiceInitialized();
-
-      // Create a trigger execution request similar to webhook handling
-      const triggerRequest: any = {
-        triggerId: formId,
-        triggerType: "form",
-        workflowId: targetWorkflow.id,
-        userId: "public", // Public form submission
+        timestamp,
+        source: "public-form",
+        triggeredBy: "public",
+        workflowName: targetWorkflow.name,
+        nodeCount: workflowNodes.length,
         triggerNodeId: formNode.id,
-        triggerData,
-        options: {
-          isolatedExecution: true,
-          priority: 2,
-          triggerTimeout: 60000, // 60 second timeout
-        },
+        triggerNodeType: "form-generator",
+        // Form-specific data
+        formId,
+        submittedAt: timestamp,
+        submissionId,
       };
 
-      // Use trigger manager to execute
-      const result = await (
-        triggerService as any
-      ).triggerManager.executeTrigger(triggerRequest);
+      // Build workflowData structure like manual execution does
+      const workflowData = {
+        nodes: workflowNodes,
+        connections:
+          typeof targetWorkflow.connections === "string"
+            ? JSON.parse(targetWorkflow.connections as string)
+            : (targetWorkflow.connections as any[]) || [],
+        settings:
+          typeof targetWorkflow.settings === "string"
+            ? JSON.parse(targetWorkflow.settings as string)
+            : (targetWorkflow.settings as any) || {},
+      };
 
-      if (!result.success) {
-        console.error(`❌ Workflow execution failed: ${result.reason}`);
+      // Update the form node parameters with submitted data (like manual execution does)
+      const updatedNodes = workflowData.nodes.map((node: any) => {
+        if (node.id === formNode.id) {
+          return {
+            ...node,
+            parameters: {
+              ...node.parameters,
+              submittedFormData: formData,
+              lastSubmission: formData,
+              submittedAt: timestamp,
+            },
+          };
+        }
+        return node;
+      });
+
+      workflowData.nodes = updatedNodes;
+
+      // Use ExecutionService directly like manual execution does
+      const executionResult = await getExecutionService().executeWorkflow(
+        targetWorkflow.id,
+        targetWorkflow.userId, // Use actual workflow owner's user ID
+        triggerData,
+        {
+          timeout: 300000, // 5 minutes like manual execution
+          manual: true, // Mark as manual-like execution
+        },
+        formNode.id, // triggerNodeId
+        workflowData // Pass the workflow data with updated node parameters
+      );
+
+      // Check execution result
+      if (!executionResult.success) {
+        console.error(
+          `❌ Workflow execution failed: ${executionResult.error?.message}`
+        );
         return res.status(500).json({
           success: false,
           error: "Failed to process form submission",
-          message: result.reason,
+          message: executionResult.error?.message || "Unknown error",
         });
       }
 
+      const executionId = executionResult.data?.executionId;
+
       console.log(
-        `✅ Workflow execution started - Execution ID: ${result.executionId}`
+        `✅ Workflow execution started - Execution ID: ${executionId}`
       );
 
       res.json({
         success: true,
         message: "Form submitted successfully",
-        executionId: result.executionId,
-        submissionId: triggerData.submissionId,
+        executionId,
+        submissionId: submissionId,
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {

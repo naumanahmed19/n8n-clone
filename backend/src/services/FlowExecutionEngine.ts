@@ -632,13 +632,6 @@ export class FlowExecutionEngine extends EventEmitter {
         nodeState.error = result.error;
 
         if (result.status === FlowNodeStatus.COMPLETED) {
-          logger.info("Node execution completed successfully", {
-            nodeId,
-            nodeType: workflow.nodes.find((n) => n.id === nodeId)?.type,
-            dependents: nodeState.dependents,
-            executionId: context.executionId,
-          });
-
           // Log execution completion
           const nodeName =
             workflow.nodes.find((n) => n.id === nodeId)?.name || "Unknown Node";
@@ -778,34 +771,37 @@ export class FlowExecutionEngine extends EventEmitter {
       nodeState.inputData = inputData;
 
       // Build credentials mapping: need to map credential types to IDs
-      // node.credentials is an array of credential IDs like ["cred_123"]
-      // We need to figure out which type each credential is
+      // For custom nodes, credentials are stored in parameters with credential type fields
       let credentialsMapping: Record<string, string> | undefined;
 
-      if (node.credentials && node.credentials.length > 0) {
+      // Get all node types and find the one we need
+      const allNodeTypes = await this.nodeService.getNodeTypes();
+      const nodeTypeInfo = allNodeTypes.find((nt) => nt.type === node.type);
+
+      if (nodeTypeInfo && nodeTypeInfo.properties) {
         credentialsMapping = {};
 
-        // Get all node types and find the one we need
-        const allNodeTypes = await this.nodeService.getNodeTypes();
-        const nodeTypeInfo = allNodeTypes.find((nt) => nt.type === node.type);
+        const properties = Array.isArray(nodeTypeInfo.properties)
+          ? nodeTypeInfo.properties
+          : [];
 
-        if (nodeTypeInfo && nodeTypeInfo.credentials) {
-          // For each credential definition in the node type
-          for (let i = 0; i < nodeTypeInfo.credentials.length; i++) {
-            const credDef = nodeTypeInfo.credentials[i];
-            // Map the credential type to the credential ID from the node
-            if (node.credentials[i]) {
-              credentialsMapping[credDef.name] = node.credentials[i];
+        // Find credential-type properties and extract their values from node parameters
+        for (const property of properties) {
+          if (
+            property.type === "credential" &&
+            property.allowedTypes &&
+            property.allowedTypes.length > 0
+          ) {
+            // Get the credential ID from parameters using the field name
+            const credentialId = node.parameters?.[property.name];
+
+            if (credentialId && typeof credentialId === "string") {
+              // Map credential type to ID
+              // property.allowedTypes[0] is the credential type (e.g., "mongoDb")
+              credentialsMapping[property.allowedTypes[0]] = credentialId;
             }
           }
         }
-
-        logger.info(`FlowExecutionEngine - Credentials mapping for node`, {
-          nodeId,
-          nodeType: node.type,
-          rawCredentials: node.credentials,
-          credentialsMapping,
-        });
       }
 
       const nodeResult = await this.nodeService.executeNode(
