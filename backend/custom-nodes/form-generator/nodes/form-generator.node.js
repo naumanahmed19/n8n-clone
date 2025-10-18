@@ -346,25 +346,7 @@ const FormGeneratorNode = {
         });
       }
     }
-    // Priority 2: If we have submitted form data from the frontend UI node
-    else if (submittedFormData && typeof submittedFormData === "object") {
-      results.push({
-        json: {
-          formData: submittedFormData,
-          formFields: processedFields,
-          _meta: {
-            test: "test1",
-            formTitle,
-            formDescription,
-            submitButtonText,
-            submittedAt: new Date().toISOString(),
-            submissionId: `form_${Date.now()}_${Math.random()
-              .toString(36)
-              .substr(2, 9)}`,
-          },
-        },
-      });
-    }
+
     // Priority 3: Preview mode - no submission yet
     else {
       // No submission yet - return form configuration for preview
