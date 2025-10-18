@@ -1,7 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response, Router } from "express";
+import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import { asyncHandler } from "../middleware/asyncHandler";
+import {
+  rateLimitConfig,
+  shouldSkipRateLimit,
+} from "../rate-limit/rate-limit.config";
 import { CredentialService } from "../services/CredentialService";
 import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import { ExecutionService } from "../services/ExecutionService";
@@ -13,6 +18,43 @@ import {
 } from "../services/triggerServiceSingleton";
 
 const router = Router();
+
+// Rate limiter for form fetching (GET requests)
+// Allow more frequent reads since they're less expensive
+const formFetchLimiter = rateLimit({
+  windowMs: rateLimitConfig.publicFormFetch.windowMs,
+  max: rateLimitConfig.publicFormFetch.max,
+  message: {
+    success: false,
+    error: rateLimitConfig.publicFormFetch.message,
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => shouldSkipRateLimit(req.ip),
+});
+
+// Rate limiter for form submission (POST requests)
+// More restrictive to prevent spam and abuse
+const formSubmitLimiter = rateLimit({
+  windowMs: rateLimitConfig.publicFormSubmit.windowMs,
+  max: rateLimitConfig.publicFormSubmit.max,
+  message: {
+    success: false,
+    error: rateLimitConfig.publicFormSubmit.message,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => shouldSkipRateLimit(req.ip),
+  // Custom handler for when limit is exceeded
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      error:
+        "Too many form submissions from this IP, please try again after 15 minutes",
+      retryAfter: Math.ceil(rateLimitConfig.publicFormSubmit.windowMs / 1000), // seconds
+    });
+  },
+});
 const prisma = new PrismaClient();
 
 // Use lazy initialization to get services when needed
@@ -68,9 +110,11 @@ const ensureTriggerServiceInitialized = async () => {
  * GET /api/public/forms/:formId
  * Fetch form configuration for public display
  * No authentication required
+ * Rate limited: 30 requests per minute per IP
  */
 router.get(
   "/:formId",
+  formFetchLimiter, // Apply rate limiting
   asyncHandler(async (req: Request, res: Response) => {
     const { formId } = req.params;
 
@@ -191,9 +235,11 @@ router.get(
  * POST /api/public/forms/:formId/submit
  * Handle public form submission and trigger workflow
  * No authentication required
+ * Rate limited: 5 submissions per 15 minutes per IP
  */
 router.post(
   "/:formId/submit",
+  formSubmitLimiter, // Apply rate limiting
   asyncHandler(async (req: Request, res: Response) => {
     const { formId } = req.params;
     const { formData, workflowId } = req.body;
