@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
@@ -147,6 +147,7 @@ export function FieldRenderer({
     // Get nested fields from componentProps
     const nestedFields = field.componentProps?.fields || []
     const buttonText = field.typeOptions?.multipleValueButtonText || 'Add Item'
+    const titleField = field.componentProps?.titleField // Get titleField from componentProps
     
     return (
       <RepeatingField
@@ -155,14 +156,10 @@ export function FieldRenderer({
         value={Array.isArray(value) ? value : []}
         onChange={handleChange}
         addButtonText={buttonText}
+        titleField={titleField}
         disabled={disabled}
         minItems={field.validation?.min}
         maxItems={field.validation?.max}
-        itemHeaderRenderer={(item, index) => {
-          // Try to show meaningful header from outputName or first field
-          const displayValue = item.values?.outputName || item.values?.name || `Item ${index + 1}`
-          return <span>{displayValue}</span>
-        }}
       />
     )
   }

@@ -53,6 +53,7 @@ const FormGeneratorNode = {
       },
       component: "RepeatingField",
       componentProps: {
+        titleField: "fieldLabel",
         fields: [
           {
             displayName: "Field Type",
