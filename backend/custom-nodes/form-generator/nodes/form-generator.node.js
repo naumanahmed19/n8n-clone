@@ -25,7 +25,7 @@ const FormGeneratorNode = {
       type: "string",
       default: "Custom Form",
       required: true,
-      description: "Title displayed at the top of the form",
+      tooltip: "Title displayed at the top of the form",
       placeholder: "My Custom Form",
     },
     {
@@ -36,7 +36,7 @@ const FormGeneratorNode = {
         rows: 2,
       },
       default: "",
-      description: "Optional description shown below the form title",
+      tooltip: "Optional description shown below the form title",
       placeholder: "Fill out this form to...",
     },
     {
@@ -45,7 +45,7 @@ const FormGeneratorNode = {
       type: "collection",
       required: false,
       default: [],
-      description:
+      tooltip:
         "Define the fields for your form. Click 'Add Field' to create form fields.",
       typeOptions: {
         multipleValues: true,
@@ -60,7 +60,7 @@ const FormGeneratorNode = {
             type: "options",
             default: "text",
             required: true,
-            description: "Select the type of form field to add",
+            tooltip: "Select the type of form field to add",
             options: [
               {
                 name: "Text",
@@ -116,7 +116,7 @@ const FormGeneratorNode = {
             type: "string",
             default: "",
             required: true,
-            description: "Label displayed for the field",
+            tooltip: "Label displayed for the field",
             placeholder: "Email Address",
           },
           {
@@ -125,7 +125,7 @@ const FormGeneratorNode = {
             type: "string",
             default: "",
             required: false,
-            description:
+            tooltip:
               "Unique name/key for the field (used in output data). If not provided, will be generated from the field label.",
             placeholder: "email",
           },
@@ -134,7 +134,7 @@ const FormGeneratorNode = {
             name: "placeholder",
             type: "string",
             default: "",
-            description: "Placeholder text shown in the input",
+            tooltip: "Placeholder text shown in the input",
             placeholder: "Enter your email...",
             displayOptions: {
               show: {
@@ -147,14 +147,14 @@ const FormGeneratorNode = {
             name: "required",
             type: "boolean",
             default: false,
-            description: "Whether this field is required",
+            tooltip: "Whether this field is required",
           },
           {
             displayName: "Default Value",
             name: "defaultValue",
             type: "string",
             default: "",
-            description: "Default value for the field",
+            tooltip: "Default value for the field",
             displayOptions: {
               show: {
                 fieldType: ["text", "email", "number", "textarea", "date"],
@@ -169,7 +169,7 @@ const FormGeneratorNode = {
               rows: 3,
             },
             default: "",
-            description:
+            tooltip:
               "Options for select/radio fields (one per line or comma-separated)",
             placeholder: "Option 1\nOption 2\nOption 3",
             displayOptions: {
@@ -183,7 +183,7 @@ const FormGeneratorNode = {
             name: "min",
             type: "number",
             default: 0,
-            description: "Minimum value for number fields",
+            tooltip: "Minimum value for number fields",
             displayOptions: {
               show: {
                 fieldType: ["number"],
@@ -195,7 +195,7 @@ const FormGeneratorNode = {
             name: "max",
             type: "number",
             default: 100,
-            description: "Maximum value for number fields",
+            tooltip: "Maximum value for number fields",
             displayOptions: {
               show: {
                 fieldType: ["number"],
@@ -207,7 +207,7 @@ const FormGeneratorNode = {
             name: "rows",
             type: "number",
             default: 3,
-            description: "Number of rows for textarea",
+            tooltip: "Number of rows for textarea",
             displayOptions: {
               show: {
                 fieldType: ["textarea"],
@@ -219,8 +219,7 @@ const FormGeneratorNode = {
             name: "accept",
             type: "string",
             default: "",
-            description:
-              "Accepted file types (e.g., .pdf,.doc,.docx or image/*)",
+            tooltip: "Accepted file types (e.g., .pdf,.doc,.docx or image/*)",
             placeholder: ".pdf,.doc,.docx",
             displayOptions: {
               show: {
@@ -233,7 +232,7 @@ const FormGeneratorNode = {
             name: "helpText",
             type: "string",
             default: "",
-            description: "Optional help text shown below the field",
+            tooltip: "Optional help text shown below the field",
             placeholder: "We'll never share your email",
           },
         ],
@@ -245,7 +244,7 @@ const FormGeneratorNode = {
       type: "string",
       default: "Submit",
       required: true,
-      description: "Text displayed on the submit button",
+      tooltip: "Text displayed on the submit button",
       placeholder: "Submit Form",
     },
   ],

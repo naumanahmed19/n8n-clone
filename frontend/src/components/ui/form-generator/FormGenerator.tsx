@@ -1,4 +1,6 @@
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { HelpCircle } from 'lucide-react'
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { FieldRenderer } from './FieldRenderer'
 import { FieldValidator } from './FieldValidator'
@@ -223,9 +225,23 @@ function FormFieldLabel({ field, showRequiredIndicator, requiredIndicator }: For
   }
 
   return (
-    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-      {field.displayName}
-      {field.required && showRequiredIndicator && requiredIndicator}
+    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1.5">
+      <span>
+        {field.displayName}
+        {field.required && showRequiredIndicator && requiredIndicator}
+      </span>
+      {field.tooltip && (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p>{field.tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </label>
   )
 }
