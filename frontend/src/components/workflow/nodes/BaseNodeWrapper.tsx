@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useCopyPasteStore, useReactFlowUIStore, useWorkflowStore } from '@/stores'
 import { NodeExecutionStatus } from '@/types/execution'
 import { useReactFlow } from '@xyflow/react'
-import { LucideIcon } from 'lucide-react'
+import { ChevronDown, LucideIcon } from 'lucide-react'
 import React, { ReactNode, useCallback } from 'react'
 import { NodeContextMenu } from '../components/NodeContextMenu'
 import { NodeHandles } from '../components/NodeHandles'
@@ -336,11 +336,22 @@ export function BaseNodeWrapper({
                           
                           {/* Optional collapsed content */}
                           {collapsedContent && (
-                            <div className="px-3 pb-3">
+                            <div>
                               {collapsedContent}
                             </div>
                           )}
                         </>
+                      )}
+                      
+                      {/* Bottom Expand Button - Only in compact mode when collapsed and can expand */}
+                      {canExpand && !!expandedContent && (
+                        <button
+                          onClick={handleToggleExpandClick}
+                          className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:shadow-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all z-10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          aria-label="Expand node"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
                       )}
                     </div>
 
@@ -456,11 +467,22 @@ export function BaseNodeWrapper({
                   
                   {/* Optional collapsed content */}
                   {collapsedContent && (
-                    <div className="px-3 pb-3">
+                    <div>
                       {collapsedContent}
                     </div>
                   )}
                 </>
+              )}
+              
+              {/* Bottom Expand Button - Only in compact mode when collapsed and can expand */}
+              {compactMode && canExpand && !!expandedContent && (
+                <button
+                  onClick={handleToggleExpandClick}
+                  className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-card border border-border shadow-sm hover:shadow-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all z-10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  aria-label="Expand node"
+                >
+                  <ChevronDown className="h-3 w-3" />
+                </button>
               )}
             </div>
 
