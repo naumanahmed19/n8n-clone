@@ -25,6 +25,7 @@ import triggerRoutes from "./routes/triggers";
 import userRoutes from "./routes/user.routes";
 import variableRoutes from "./routes/variables";
 import webhookRoutes from "./routes/webhook";
+import { publicFormsRoutes } from "./routes/public-forms";
 import { workflowRoutes } from "./routes/workflows";
 
 // Import middleware
@@ -139,6 +140,8 @@ app.get("/", (req, res) => {
       oauth: "/api/oauth",
       google: "/api/google",
       health: "/health",
+      publicForms: "/api/public/forms/{formId}",
+      publicFormSubmit: "/api/public/forms/{formId}/submit",
     },
   });
 });
@@ -161,6 +164,9 @@ app.use("/api/execution-history", executionHistoryRoutes);
 app.use("/api/execution-recovery", executionRecoveryRoutes);
 app.use("/api/oauth", oauthRoutes);
 app.use("/api/google", googleRoutes);
+
+// Public API routes (no authentication required)
+app.use("/api/public/forms", publicFormsRoutes);
 
 // Webhook routes (public endpoints without /api prefix for easier external integration)
 app.use("/webhook", webhookRoutes);

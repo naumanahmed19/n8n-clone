@@ -4,6 +4,7 @@ export * from "./ExecutionDetailPage";
 export * from "./ExecutionsPage";
 export * from "./LoginPage";
 export * from "./ProfilePage";
+export * from "./PublicFormPage";
 export * from "./RegisterPage";
 export * from "./WorkflowEditorPage";
 export * from "./WorkflowsPage";

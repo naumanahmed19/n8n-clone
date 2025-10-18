@@ -158,8 +158,8 @@ export const FormGenerator = forwardRef<FormGeneratorRef, FormGeneratorProps>(({
 
   return (
     <div className={cn('space-y-6', className)}>
-      {visibleFields.map((field) => (
-        <FieldWrapper key={field.name} field={field} values={values} allFields={fields}>
+      {visibleFields.map((field, index) => (
+        <FieldWrapper key={`${field.name}-${index}`} field={field} values={values} allFields={fields}>
           <div className={cn('space-y-2', fieldClassName)}>
             <FormFieldLabel 
               field={field}

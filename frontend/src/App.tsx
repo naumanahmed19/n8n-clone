@@ -9,6 +9,7 @@ import {
     ExecutionsPage,
     LoginPage,
     ProfilePage,
+    PublicFormPage,
     RegisterPage,
     WorkflowEditorPage
 } from '@/pages'
@@ -39,6 +40,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* Public form route - no authentication required */}
+          <Route path="/form/:formId" element={<PublicFormPage />} />
 
           {/* OAuth callback route - requires auth */}
           <Route
