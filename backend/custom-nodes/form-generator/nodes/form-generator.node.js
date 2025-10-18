@@ -254,27 +254,6 @@ const FormGeneratorNode = {
     const submitButtonText = await this.getNodeParameter("submitButtonText");
     const submittedFormData = await this.getNodeParameter("submittedFormData");
 
-    console.log("=== FORM GENERATOR DEBUG ===");
-    console.log("formTitle:", formTitle, "type:", typeof formTitle);
-    console.log(
-      "formDescription:",
-      formDescription,
-      "type:",
-      typeof formDescription
-    );
-    console.log("formFields:", JSON.stringify(formFields, null, 2));
-    console.log(
-      "submitButtonText:",
-      submitButtonText,
-      "type:",
-      typeof submitButtonText
-    );
-    console.log(
-      "submittedFormData:",
-      JSON.stringify(submittedFormData, null, 2)
-    );
-    console.log("=== END DEBUG ===");
-
     // For trigger nodes, this executes when form is submitted
     // Check if we have submitted form data
     const items = inputData.main?.[0] || [];
@@ -304,18 +283,9 @@ const FormGeneratorNode = {
 
     const processedFields = processFormFields(formFields);
 
-    console.log("=== CHECKING INPUT DATA ===");
-    console.log("items.length:", items.length);
-    console.log("items:", JSON.stringify(items, null, 2));
-    console.log("=== END INPUT DATA CHECK ===");
-
     // Priority 1: Check if we have input items (from trigger/public form submission)
     if (items.length > 0) {
       for (const item of items) {
-        console.log("=== INPUT ITEM DEBUG ===");
-        console.log("item:", JSON.stringify(item, null, 2));
-        console.log("=== END INPUT ITEM DEBUG ===");
-
         const itemData = item.json || item;
 
         // Extract the actual form field data
@@ -339,7 +309,6 @@ const FormGeneratorNode = {
             Array.isArray(itemData.formData.main)
           ) {
             // Unwrap: main[0][0].formData contains the actual field values
-            console.log("=== UNWRAPPING NESTED STRUCTURE ===");
             const unwrapped = itemData.formData.main[0]?.[0];
             if (unwrapped) {
               actualFormData = unwrapped.formData || unwrapped;
@@ -361,15 +330,6 @@ const FormGeneratorNode = {
           }
         }
 
-        console.log("=== EXTRACTED FORM DATA ===");
-        console.log("actualFormData:", JSON.stringify(actualFormData, null, 2));
-        console.log(
-          "submittedFormData:",
-          JSON.stringify(submittedFormData, null, 2)
-        );
-        console.log("=== END EXTRACTION ===");
-        console.log("-----------------------1");
-
         results.push({
           json: {
             formData: actualFormData,
@@ -388,7 +348,6 @@ const FormGeneratorNode = {
     }
     // Priority 2: If we have submitted form data from the frontend UI node
     else if (submittedFormData && typeof submittedFormData === "object") {
-      console.log("-----------------------2");
       results.push({
         json: {
           formData: submittedFormData,
@@ -408,7 +367,6 @@ const FormGeneratorNode = {
     }
     // Priority 3: Preview mode - no submission yet
     else {
-      console.log("-----------------------3");
       // No submission yet - return form configuration for preview
       results.push({
         json: {

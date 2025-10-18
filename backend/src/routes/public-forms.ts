@@ -74,8 +74,6 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { formId } = req.params;
 
-    console.log(`📋 Public form request: ${formId}`);
-
     try {
       // Find workflow with form generator node that has this formId
       const workflows = await prisma.workflow.findMany({
@@ -90,8 +88,6 @@ router.get(
         },
       });
 
-      console.log(`📊 Found ${workflows.length} active workflow(s)`);
-
       let formConfig = null;
       let workflowId = null;
       let workflowName = null;
@@ -103,26 +99,11 @@ router.get(
             ? JSON.parse(workflow.nodes)
             : workflow.nodes;
 
-        console.log(`🔍 Checking workflow: ${workflow.name}`);
-        console.log(
-          `📝 Nodes in workflow:`,
-          Array.isArray(workflowNodes) ? workflowNodes.length : "not an array"
-        );
-
         // Find form-generator node with matching formId
         const formNode = (workflowNodes as any[])?.find((node: any) => {
           const isFormGenerator = node.type === "form-generator";
           const hasFormUrl = node.parameters?.formUrl;
           const matches = hasFormUrl === formId;
-
-          if (isFormGenerator) {
-            console.log(`  📋 Found form-generator node:`, {
-              nodeId: node.id,
-              formUrl: hasFormUrl,
-              searching: formId,
-              matches,
-            });
-          }
 
           return isFormGenerator && matches;
         });
@@ -184,14 +165,11 @@ router.get(
       }
 
       if (!formConfig) {
-        console.log(`❌ Form not found: ${formId}`);
         return res.status(404).json({
           success: false,
           error: "Form not found or is not active",
         });
       }
-
-      console.log(`✅ Form found: ${workflowName} (ID: ${workflowId})`);
 
       res.json({
         success: true,
@@ -200,7 +178,6 @@ router.get(
         workflowId,
       });
     } catch (error: any) {
-      console.error(`❌ Error fetching form:`, error);
       res.status(500).json({
         success: false,
         error: "Failed to fetch form configuration",
@@ -221,10 +198,6 @@ router.post(
     const { formId } = req.params;
     const { formData, workflowId } = req.body;
 
-    console.log(`📨 Public form submission: ${formId}`);
-    console.log(`📝 Form data:`, formData);
-    console.log(`🔗 Workflow ID:`, workflowId);
-
     try {
       // Fetch the specific workflow directly using workflowId
       const targetWorkflow = await prisma.workflow.findUnique({
@@ -243,7 +216,6 @@ router.post(
       });
 
       if (!targetWorkflow) {
-        console.log(`❌ Workflow not found: ${workflowId}`);
         return res.status(404).json({
           success: false,
           error: "Workflow not found",
@@ -251,7 +223,6 @@ router.post(
       }
 
       if (!targetWorkflow.active) {
-        console.log(`❌ Workflow is not active: ${workflowId}`);
         return res.status(403).json({
           success: false,
           error: "Workflow is not active",
@@ -271,16 +242,11 @@ router.post(
       );
 
       if (!formNode) {
-        console.log(`❌ Form not found in workflow: ${formId}`);
         return res.status(404).json({
           success: false,
           error: "Form not found or is not active",
         });
       }
-
-      console.log(
-        `✅ Triggering workflow: ${targetWorkflow.name} (ID: ${targetWorkflow.id})`
-      );
 
       // Prepare trigger data in the same format as manual execution
       // This matches the expected structure from the working execution payload
@@ -349,9 +315,6 @@ router.post(
 
       // Check execution result
       if (!executionResult.success) {
-        console.error(
-          `❌ Workflow execution failed: ${executionResult.error?.message}`
-        );
         return res.status(500).json({
           success: false,
           error: "Failed to process form submission",
@@ -361,10 +324,6 @@ router.post(
 
       const executionId = executionResult.data?.executionId;
 
-      console.log(
-        `✅ Workflow execution started - Execution ID: ${executionId}`
-      );
-
       res.json({
         success: true,
         message: "Form submitted successfully",
@@ -373,7 +332,6 @@ router.post(
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error(`❌ Error submitting form:`, error);
       res.status(500).json({
         success: false,
         error: "Failed to submit form",
