@@ -27,7 +27,7 @@ import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
-import { AnnotationNode, ChatInterfaceNode, GroupNode, ImagePreviewNode } from './nodes'
+import { AnnotationNode, ChatInterfaceNode, FormGeneratorNode, GroupNode, ImagePreviewNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
 import {
@@ -39,6 +39,7 @@ const nodeTypes = {
     custom: CustomNode,
     chat: ChatInterfaceNode,
     'image-preview': ImagePreviewNode,
+    'form-generator': FormGeneratorNode,
     group: GroupNode,
     annotation: AnnotationNode,
 } as NodeTypes

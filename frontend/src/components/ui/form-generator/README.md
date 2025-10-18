@@ -14,18 +14,22 @@ A powerful, extensible form generator built with React and shadcn/ui components.
 
 ## Supported Field Types
 
-- `string` - Text input
+- `string` - Text input with expression/variable support (for workflow nodes)
+- `text` - Simple text input (for credentials and basic forms)
 - `number` - Number input with min/max validation
 - `boolean` - Checkbox input
 - `switch` - Toggle switch
 - `options` - Single select dropdown
 - `multiOptions` - Multiple checkbox selection
-- `textarea` - Multi-line text input
-- `password` - Password input
+- `textarea` - Multi-line text input with expression support
+- `password` - Password input with visibility toggle
 - `email` - Email input with validation
 - `url` - URL input with validation
 - `json` - JSON editor with syntax validation
 - `dateTime` - Date and time picker
+- `credential` - Credential selector
+- `autocomplete` - Autocomplete dropdown with search
+- `collection` - Nested repeating fields
 - `custom` - Custom component integration
 
 ## Basic Usage

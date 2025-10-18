@@ -9,7 +9,7 @@ const PostgresDbCredentials = {
     {
       displayName: "Host",
       name: "host",
-      type: "string",
+      type: "text",
       required: true,
       default: "localhost",
       description: "PostgreSQL server host",
@@ -26,7 +26,7 @@ const PostgresDbCredentials = {
     {
       displayName: "Database",
       name: "database",
-      type: "string",
+      type: "text",
       required: true,
       default: "",
       description: "Database name",
@@ -35,7 +35,7 @@ const PostgresDbCredentials = {
     {
       displayName: "User",
       name: "user",
-      type: "string",
+      type: "text",
       required: true,
       default: "",
       description: "Database user",
@@ -44,7 +44,7 @@ const PostgresDbCredentials = {
     {
       displayName: "Password",
       name: "password",
-      type: "string",
+      type: "password",
       typeOptions: {
         password: true,
       },

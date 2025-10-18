@@ -11,6 +11,7 @@ export interface FormFieldConfig {
   displayName: string;
   type:
     | "string"
+    | "text"
     | "number"
     | "boolean"
     | "options"
@@ -86,6 +87,15 @@ export interface FormGeneratorProps {
   requiredIndicator?: ReactNode;
   nodeId?: string; // Optional: node ID for dynamic field suggestions in ExpressionInput
   nodeType?: string; // Optional: node type for loadOptions API calls
+  disableAutoValidation?: boolean; // Optional: disable all automatic validation (default: false)
+  validateOnMount?: boolean; // Optional: whether to run validation on mount (default: false) - ignored if disableAutoValidation is true
+  validateOnChange?: boolean; // Optional: whether to run validation on value change (default: false for credentials) - ignored if disableAutoValidation is true
+  validateOnBlur?: boolean; // Optional: whether to validate fields on blur (default: true) - ignored if disableAutoValidation is true
+}
+
+export interface FormGeneratorRef {
+  validate: () => Record<string, string>;
+  isValid: () => boolean;
 }
 
 export interface FieldVisibilityOptions {

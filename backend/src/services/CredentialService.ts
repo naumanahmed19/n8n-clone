@@ -678,7 +678,79 @@ export class CredentialService {
   }
 
   /**
+   * Check if a property should be visible based on displayOptions
+   */
+  private shouldShowProperty(
+    property: any,
+    data: CredentialData,
+    allProperties: any[]
+  ): boolean {
+    const displayOptions = property.displayOptions;
+
+    if (!displayOptions) {
+      return true; // No display options means always visible
+    }
+
+    // Check "show" conditions
+    if (displayOptions.show) {
+      const shouldShow = Object.entries(displayOptions.show).every(
+        ([dependentFieldName, expectedValues]: [string, any]) => {
+          let currentValue = data[dependentFieldName];
+
+          // If value is undefined, try to get the default value
+          if (currentValue === undefined) {
+            const dependentProperty = allProperties.find(
+              (p) => p.name === dependentFieldName
+            );
+            currentValue = dependentProperty?.default;
+          }
+
+          // Check if current value matches any of the expected values
+          return (
+            currentValue !== undefined &&
+            (expectedValues as any[]).includes(currentValue)
+          );
+        }
+      );
+
+      if (!shouldShow) {
+        return false;
+      }
+    }
+
+    // Check "hide" conditions
+    if (displayOptions.hide) {
+      const shouldHide = Object.entries(displayOptions.hide).some(
+        ([dependentFieldName, expectedValues]: [string, any]) => {
+          let currentValue = data[dependentFieldName];
+
+          // If value is undefined, try to get the default value
+          if (currentValue === undefined) {
+            const dependentProperty = allProperties.find(
+              (p) => p.name === dependentFieldName
+            );
+            currentValue = dependentProperty?.default;
+          }
+
+          // Check if current value matches any of the values that should hide this field
+          return (
+            currentValue !== undefined &&
+            (expectedValues as any[]).includes(currentValue)
+          );
+        }
+      );
+
+      if (shouldHide) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
    * Validate credential data against type definition
+   * Only validates visible properties based on displayOptions
    */
   private validateCredentialData(
     credentialType: CredentialType,
@@ -687,6 +759,11 @@ export class CredentialService {
     const errors: string[] = [];
 
     for (const property of credentialType.properties) {
+      // Check if property should be visible
+      if (!this.shouldShowProperty(property, data, credentialType.properties)) {
+        continue; // Skip validation for hidden properties
+      }
+
       const value = data[property.name];
 
       if (

@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { FieldRenderer } from './FieldRenderer'
 import { FieldValidator } from './FieldValidator'
 import { FieldVisibilityManager } from './FieldVisibilityManager'
-import { FormFieldConfig, FormGeneratorProps } from './types'
+import { FormFieldConfig, FormGeneratorProps, FormGeneratorRef } from './types'
 
-export function FormGenerator({
+export const FormGenerator = forwardRef<FormGeneratorRef, FormGeneratorProps>(({
   fields,
   values,
   errors: externalErrors = {},
@@ -18,8 +18,13 @@ export function FormGenerator({
   requiredIndicator = <span className="text-destructive ml-1">*</span>,
   nodeId,
   nodeType,
-}: FormGeneratorProps) {
+  disableAutoValidation = false,
+  validateOnMount = false,
+  validateOnChange = false,
+  validateOnBlur = true,
+}, ref) => {
   const [internalErrors, setInternalErrors] = useState<Record<string, string>>({})
+  const [hasValidated, setHasValidated] = useState(false) // Track if validation has run at least once
   
   // Combine external and internal errors, with external taking precedence
   const allErrors = { ...internalErrors, ...externalErrors }
@@ -28,6 +33,21 @@ export function FormGenerator({
   const visibleFields = useMemo(() => {
     return FieldVisibilityManager.getVisibleFields(fields, values)
   }, [fields, values])
+
+  // Expose validation methods via ref
+  useImperativeHandle(ref, () => ({
+    validate: () => {
+      // Only validate visible fields, not hidden ones
+      const errors = FieldValidator.validateForm(visibleFields, values)
+      setInternalErrors(errors)
+      return errors
+    },
+    isValid: () => {
+      // Only validate visible fields, not hidden ones
+      const errors = FieldValidator.validateForm(visibleFields, values)
+      return Object.keys(errors).length === 0
+    }
+  }), [visibleFields, values])
 
   // Handle field value changes
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -72,12 +92,14 @@ export function FormGenerator({
 
   // Handle field blur events
   const handleFieldBlur = (fieldName: string, value: any) => {
-    // Validate field on blur
-    const field = fields.find(f => f.name === fieldName)
-    if (field && !externalErrors[fieldName]) {
-      const error = FieldValidator.validateField(field, value)
-      if (error) {
-        setInternalErrors(prev => ({ ...prev, [fieldName]: error }))
+    // Only validate on blur if not disabled and validateOnBlur is true
+    if (!disableAutoValidation && validateOnBlur) {
+      const field = fields.find(f => f.name === fieldName)
+      if (field && !externalErrors[fieldName]) {
+        const error = FieldValidator.validateField(field, value)
+        if (error) {
+          setInternalErrors(prev => ({ ...prev, [fieldName]: error }))
+        }
       }
     }
 
@@ -89,8 +111,28 @@ export function FormGenerator({
 
   // Validate all visible fields when they change
   useEffect(() => {
+    // Skip all validation if disableAutoValidation is true
+    if (disableAutoValidation) {
+      if (!hasValidated) setHasValidated(true)
+      return
+    }
+
+    // Skip validation on mount if validateOnMount is false
+    if (!hasValidated && !validateOnMount) {
+      setHasValidated(true)
+      return
+    }
+
+    // Skip validation if validateOnChange is false and this isn't the first validation
+    if (!validateOnChange && hasValidated) {
+      return
+    }
+
     // Only validate if there are no external errors to avoid conflicts
-    if (!externalErrors || Object.keys(externalErrors).length === 0) {
+    // Check if external errors exist and have actual error messages
+    const hasExternalErrors = externalErrors && Object.keys(externalErrors).length > 0
+    
+    if (!hasExternalErrors) {
       const errors = FieldValidator.validateForm(visibleFields, values)
       setInternalErrors(prev => {
         // Only update if errors have actually changed
@@ -106,7 +148,11 @@ export function FormGenerator({
         return prev
       })
     }
-  }, [visibleFields, values, externalErrors])
+
+    if (!hasValidated) {
+      setHasValidated(true)
+    }
+  }, [visibleFields, values, externalErrors, validateOnMount, validateOnChange, hasValidated])
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -140,7 +186,9 @@ export function FormGenerator({
       ))}
     </div>
   )
-}
+})
+
+FormGenerator.displayName = 'FormGenerator'
 
 // Individual form field component
 interface FieldWrapperProps {

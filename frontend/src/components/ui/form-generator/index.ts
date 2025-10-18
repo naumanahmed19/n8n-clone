@@ -1,4 +1,4 @@
-export * from "./CustomComponentRegistry";
+export * from "./CustomComponentRegistry.tsx";
 export { FieldRenderer } from "./FieldRenderer";
 export { FieldValidator } from "./FieldValidator";
 export { FieldVisibilityManager } from "./FieldVisibilityManager";
