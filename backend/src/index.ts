@@ -21,11 +21,11 @@ import googleRoutes from "./routes/google";
 import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
 import oauthRoutes from "./routes/oauth";
+import { publicFormsRoutes } from "./routes/public-forms";
 import triggerRoutes from "./routes/triggers";
 import userRoutes from "./routes/user.routes";
 import variableRoutes from "./routes/variables";
 import webhookRoutes from "./routes/webhook";
-import { publicFormsRoutes } from "./routes/public-forms";
 import { workflowRoutes } from "./routes/workflows";
 
 // Import middleware

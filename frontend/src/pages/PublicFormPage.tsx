@@ -1,12 +1,12 @@
-import { FormGenerator } from '@/components/ui/form-generator/FormGenerator'
-import { FormFieldConfig, FormGeneratorRef } from '@/components/ui/form-generator/types'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, CheckCircle, XCircle, ExternalLink } from 'lucide-react'
+import { FormGenerator } from '@/components/ui/form-generator/FormGenerator'
+import { FormFieldConfig, FormGeneratorRef } from '@/components/ui/form-generator/types'
+import axios from 'axios'
+import { CheckCircle, ExternalLink, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
 
 interface FormConfig {
   formTitle: string
