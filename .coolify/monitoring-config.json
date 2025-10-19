@@ -1,0 +1,42 @@
+{
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "outputs": ["console", "file"],
+    "retention": {
+      "days": 30,
+      "maxSize": "100MB"
+    },
+    "structured": true
+  },
+  "healthChecks": {
+    "interval": "30s",
+    "timeout": "10s",
+    "retries": 3,
+    "endpoints": {
+      "backend": "/health",
+      "frontend": "/",
+      "database": "pg_isready",
+      "redis": "ping"
+    }
+  },
+  "metrics": {
+    "enabled": true,
+    "interval": "60s",
+    "endpoints": {
+      "backend": "/metrics",
+      "system": "/system-metrics"
+    }
+  },
+  "alerting": {
+    "enabled": true,
+    "channels": ["webhook", "email"],
+    "thresholds": {
+      "responseTime": "5000ms",
+      "errorRate": "5%",
+      "uptime": "99%",
+      "memoryUsage": "80%",
+      "cpuUsage": "80%"
+    }
+  }
+}
