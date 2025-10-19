@@ -39,6 +39,11 @@ import { NodeLoader } from "./services/NodeLoader";
 import { NodeService } from "./services/NodeService";
 import { SocketService } from "./services/SocketService";
 
+// Import config and utilities
+import { checkDatabaseConnection } from "./config/database";
+import { checkRedisConnection } from "./config/redis";
+import { logger } from "./utils/logger";
+
 // Load environment variables
 dotenv.config();
 
@@ -112,17 +117,53 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
+// Health check endpoint with comprehensive monitoring
+app.get("/health", async (req, res) => {
+  const healthCheck = {
     status: "ok",
     timestamp: new Date().toISOString(),
     service: "n8n-clone-backend",
     version: "1.0.0",
+    uptime: process.uptime(),
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      external: Math.round(process.memoryUsage().external / 1024 / 1024),
+    },
     websocket: {
       connected_users: socketService.getConnectedUsersCount(),
     },
-  });
+    checks: {
+      database: "unknown",
+      redis: "unknown",
+    },
+  };
+
+  try {
+    // Check database connection
+    const dbHealthy = await checkDatabaseConnection();
+    healthCheck.checks.database = dbHealthy ? "healthy" : "unhealthy";
+    
+    // Check Redis connection
+    const redisHealthy = await checkRedisConnection();
+    healthCheck.checks.redis = redisHealthy ? "healthy" : "unhealthy";
+
+    // Determine overall status
+    const allHealthy = healthCheck.checks.database === "healthy" && 
+                      healthCheck.checks.redis === "healthy";
+    
+    if (!allHealthy) {
+      healthCheck.status = "degraded";
+      return res.status(503).json(healthCheck);
+    }
+
+    res.status(200).json(healthCheck);
+  } catch (error) {
+    logger.error("Health check failed:", error);
+    healthCheck.status = "error";
+    healthCheck.checks.database = "error";
+    res.status(503).json(healthCheck);
+  }
 });
 
 // Basic route

@@ -1,0 +1,117 @@
+{
+  "postgres_backup_strategy": {
+    "backup_types": {
+      "full_backup": {
+        "schedule": "0 2 * * *",
+        "description": "Daily full database backup at 2 AM",
+        "format": "custom",
+        "compression": 9,
+        "retention_days": 7,
+        "enabled": true
+      },
+      "incremental_backup": {
+        "schedule": "0 */6 * * *",
+        "description": "Incremental backup every 6 hours",
+        "format": "wal",
+        "retention_hours": 48,
+        "enabled": true
+      },
+      "pre_migration_backup": {
+        "trigger": "before_migration",
+        "description": "Backup before running migrations",
+        "format": "custom",
+        "compression": 9,
+        "retention_days": 30,
+        "enabled": true
+      },
+      "manual_backup": {
+        "trigger": "on_demand",
+        "description": "Manual backup triggered by user",
+        "format": "custom",
+        "compression": 9,
+        "retention_days": 14,
+        "enabled": true
+      }
+    },
+    "backup_locations": {
+      "local": {
+        "path": "/backups/postgres",
+        "enabled": true,
+        "max_size_gb": 50
+      },
+      "remote": {
+        "type": "s3",
+        "bucket": "${BACKUP_S3_BUCKET}",
+        "region": "${BACKUP_S3_REGION}",
+        "access_key": "${BACKUP_S3_ACCESS_KEY}",
+        "secret_key": "${BACKUP_S3_SECRET_KEY}",
+        "enabled": false
+      }
+    },
+    "retention_policy": {
+      "daily_backups": 7,
+      "weekly_backups": 4,
+      "monthly_backups": 3,
+      "yearly_backups": 1,
+      "cleanup_schedule": "0 3 * * 0"
+    },
+    "monitoring": {
+      "backup_success_notification": true,
+      "backup_failure_notification": true,
+      "backup_size_threshold_mb": 1000,
+      "backup_duration_threshold_minutes": 30,
+      "webhook_url": "${BACKUP_WEBHOOK_URL}",
+      "email_notifications": {
+        "enabled": false,
+        "smtp_host": "${SMTP_HOST}",
+        "smtp_port": "${SMTP_PORT}",
+        "smtp_user": "${SMTP_USER}",
+        "smtp_password": "${SMTP_PASSWORD}",
+        "from_email": "${BACKUP_FROM_EMAIL}",
+        "to_emails": ["${BACKUP_TO_EMAIL}"]
+      }
+    },
+    "recovery": {
+      "point_in_time_recovery": {
+        "enabled": true,
+        "wal_archive_path": "/backups/postgres/wal",
+        "max_wal_retention_days": 7
+      },
+      "automated_recovery_testing": {
+        "enabled": false,
+        "schedule": "0 4 * * 0",
+        "test_database": "n8n_clone_recovery_test"
+      }
+    }
+  },
+  "backup_scripts": {
+    "full_backup_script": "/app/scripts/postgres-full-backup.sh",
+    "incremental_backup_script": "/app/scripts/postgres-incremental-backup.sh",
+    "restore_script": "/app/scripts/postgres-restore.sh",
+    "cleanup_script": "/app/scripts/postgres-cleanup-backups.sh",
+    "monitoring_script": "/app/scripts/postgres-backup-monitor.sh"
+  },
+  "coolify_integration": {
+    "backup_service": {
+      "name": "n8n-clone-postgres-backup",
+      "image": "postgres:15-alpine",
+      "schedule": "0 2 * * *",
+      "volumes": [
+        "postgres_backups:/backups",
+        "./scripts:/app/scripts:ro"
+      ],
+      "environment": {
+        "POSTGRES_HOST": "postgres",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_USER": "${POSTGRES_USER}",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD}",
+        "POSTGRES_DB": "${POSTGRES_DB}",
+        "BACKUP_DIR": "/backups",
+        "RETENTION_DAYS": "7"
+      },
+      "command": "/app/scripts/postgres-full-backup.sh",
+      "restart_policy": "no",
+      "networks": ["internal"]
+    }
+  }
+}

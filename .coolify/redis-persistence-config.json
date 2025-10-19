@@ -1,0 +1,104 @@
+{
+  "redis_persistence_configuration": {
+    "volume_name": "n8n-clone-redis-data",
+    "mount_point": "/data",
+    "driver": "local",
+    "configuration": {
+      "driver_opts": {
+        "type": "none",
+        "o": "bind", 
+        "device": "/var/lib/coolify/volumes/n8n-clone-redis-data"
+      }
+    },
+    "permissions": {
+      "owner": "redis",
+      "group": "redis",
+      "mode": "0755"
+    },
+    "persistence_settings": {
+      "appendonly": "yes",
+      "appendfsync": "everysec",
+      "save_intervals": [
+        "900 1",
+        "300 10", 
+        "60 10000"
+      ],
+      "auto_aof_rewrite_percentage": 100,
+      "auto_aof_rewrite_min_size": "64mb",
+      "aof_load_truncated": "yes"
+    },
+    "memory_management": {
+      "maxmemory": "256mb",
+      "maxmemory_policy": "allkeys-lru",
+      "maxmemory_samples": 5
+    },
+    "backup_configuration": {
+      "backup_volume": "n8n-clone-redis-backups",
+      "backup_schedule": "0 3 * * *",
+      "retention_days": 7,
+      "backup_script": "/usr/local/bin/redis-backup.sh"
+    }
+  },
+  "redis_configuration": {
+    "config_file_content": [
+      "# Redis configuration for n8n-clone production",
+      "# Persistence configuration",
+      "appendonly yes",
+      "appendfsync everysec", 
+      "save 900 1",
+      "save 300 10",
+      "save 60 10000",
+      "",
+      "# Memory management",
+      "maxmemory 256mb",
+      "maxmemory-policy allkeys-lru",
+      "maxmemory-samples 5",
+      "",
+      "# Security",
+      "protected-mode yes",
+      "bind 0.0.0.0",
+      "",
+      "# Performance",
+      "tcp-keepalive 300",
+      "timeout 0",
+      "tcp-backlog 511",
+      "",
+      "# Logging",
+      "loglevel notice",
+      "logfile \"\"",
+      "",
+      "# AOF rewrite configuration", 
+      "auto-aof-rewrite-percentage 100",
+      "auto-aof-rewrite-min-size 64mb",
+      "aof-load-truncated yes",
+      "",
+      "# Slow log configuration",
+      "slowlog-log-slower-than 10000",
+      "slowlog-max-len 128"
+    ]
+  },
+  "monitoring": {
+    "health_check": {
+      "command": "redis-cli ping",
+      "expected_response": "PONG",
+      "interval": "30s",
+      "timeout": "10s",
+      "retries": 5
+    },
+    "metrics_collection": {
+      "info_sections": [
+        "memory",
+        "stats", 
+        "clients",
+        "persistence",
+        "replication"
+      ],
+      "collection_interval": "60s"
+    },
+    "alerts": {
+      "memory_usage_threshold": 90,
+      "connection_threshold": 80,
+      "slow_query_threshold": 100
+    }
+  }
+}

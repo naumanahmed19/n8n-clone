@@ -1,0 +1,71 @@
+{
+  "postgres_volume_configuration": {
+    "volume_name": "n8n-clone-postgres-data",
+    "mount_point": "/var/lib/postgresql/data",
+    "driver": "local",
+    "backup_mount": "/backups",
+    "init_scripts_mount": "/docker-entrypoint-initdb.d",
+    "configuration": {
+      "driver_opts": {
+        "type": "none",
+        "o": "bind",
+        "device": "/var/lib/coolify/volumes/n8n-clone-postgres-data"
+      }
+    },
+    "permissions": {
+      "owner": "postgres",
+      "group": "postgres",
+      "mode": "0700"
+    },
+    "backup_configuration": {
+      "backup_volume": "n8n-clone-postgres-backups",
+      "backup_mount_point": "/backups",
+      "retention_policy": {
+        "daily_backups": 7,
+        "weekly_backups": 4,
+        "monthly_backups": 3
+      }
+    },
+    "monitoring": {
+      "disk_usage_threshold": 80,
+      "inode_usage_threshold": 90,
+      "alert_on_threshold": true
+    }
+  },
+  "volume_initialization": {
+    "init_scripts": [
+      {
+        "name": "01-init-database.sql",
+        "source": "./backend/prisma/init.sql",
+        "description": "Initialize database schema and basic configuration"
+      },
+      {
+        "name": "02-create-extensions.sql", 
+        "content": "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"; CREATE EXTENSION IF NOT EXISTS \"pg_stat_statements\";",
+        "description": "Create required PostgreSQL extensions"
+      }
+    ],
+    "post_init_scripts": [
+      {
+        "name": "run-migrations.sh",
+        "content": "#!/bin/bash\ncd /app && npx prisma migrate deploy",
+        "description": "Run Prisma migrations after database initialization"
+      }
+    ]
+  },
+  "performance_tuning": {
+    "postgresql_conf_overrides": {
+      "shared_buffers": "256MB",
+      "effective_cache_size": "1GB", 
+      "maintenance_work_mem": "64MB",
+      "checkpoint_completion_target": "0.9",
+      "wal_buffers": "16MB",
+      "default_statistics_target": "100",
+      "random_page_cost": "1.1",
+      "effective_io_concurrency": "200",
+      "work_mem": "4MB",
+      "min_wal_size": "1GB",
+      "max_wal_size": "4GB"
+    }
+  }
+}

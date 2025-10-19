@@ -1,0 +1,148 @@
+{
+  "services": {
+    "frontend": {
+      "name": "n8n-clone-frontend",
+      "type": "application",
+      "build": {
+        "context": "./frontend",
+        "dockerfile": "Dockerfile",
+        "target": "production",
+        "args": {
+          "VITE_API_URL": "${VITE_API_URL}"
+        }
+      },
+      "port": 3000,
+      "health_check": {
+        "endpoint": "/health",
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": 3,
+        "start_period": "30s"
+      },
+      "environment": {
+        "NGINX_HOST": "${NGINX_HOST:-localhost}"
+      },
+      "depends_on": ["backend"],
+      "networks": ["external"],
+      "domains": {
+        "primary": "${FRONTEND_DOMAIN}",
+        "ssl": true,
+        "redirect_www": true
+      },
+      "resources": {
+        "memory": "256M",
+        "cpu": "0.5"
+      }
+    },
+    "backend": {
+      "name": "n8n-clone-backend", 
+      "type": "application",
+      "build": {
+        "context": "./backend",
+        "dockerfile": "Dockerfile",
+        "target": "production"
+      },
+      "port": 4000,
+      "health_check": {
+        "endpoint": "/health",
+        "interval": "30s", 
+        "timeout": "10s",
+        "retries": 5,
+        "start_period": "60s"
+      },
+      "environment": {
+        "NODE_ENV": "production",
+        "DATABASE_URL": "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}",
+        "REDIS_URL": "redis://redis:6379",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "SESSION_SECRET": "${SESSION_SECRET}",
+        "PORT": "4000",
+        "LOG_LEVEL": "${LOG_LEVEL:-info}",
+        "CORS_ORIGIN": "${CORS_ORIGIN}",
+        "WEBHOOK_URL": "${WEBHOOK_URL}"
+      },
+      "depends_on": ["postgres", "redis"],
+      "networks": ["internal", "external"],
+      "domains": {
+        "primary": "${BACKEND_DOMAIN}",
+        "ssl": true
+      },
+      "resources": {
+        "memory": "1G",
+        "cpu": "1.0"
+      }
+    },
+    "postgres": {
+      "name": "n8n-clone-postgres",
+      "type": "database",
+      "image": "postgres:15-alpine",
+      "port": 5432,
+      "internal_only": true,
+      "health_check": {
+        "command": "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        "interval": "30s",
+        "timeout": "10s", 
+        "retries": 5,
+        "start_period": "30s"
+      },
+      "environment": {
+        "POSTGRES_DB": "${POSTGRES_DB:-n8n_clone}",
+        "POSTGRES_USER": "${POSTGRES_USER:-postgres}",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD}"
+      },
+      "volumes": {
+        "postgres_data": "/var/lib/postgresql/data",
+        "./backend/prisma/init.sql": "/docker-entrypoint-initdb.d/init.sql:ro"
+      },
+      "networks": ["internal"],
+      "resources": {
+        "memory": "512M",
+        "cpu": "0.5"
+      }
+    },
+    "redis": {
+      "name": "n8n-clone-redis",
+      "type": "cache", 
+      "image": "redis:7-alpine",
+      "port": 6379,
+      "internal_only": true,
+      "command": "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru",
+      "health_check": {
+        "command": "redis-cli ping",
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": 5,
+        "start_period": "10s"
+      },
+      "volumes": {
+        "redis_data": "/data"
+      },
+      "networks": ["internal"],
+      "resources": {
+        "memory": "256M",
+        "cpu": "0.25"
+      }
+    }
+  },
+  "networks": {
+    "internal": {
+      "driver": "bridge",
+      "internal": true,
+      "name": "n8n-clone-internal"
+    },
+    "external": {
+      "driver": "bridge", 
+      "name": "n8n-clone-external"
+    }
+  },
+  "volumes": {
+    "postgres_data": {
+      "driver": "local",
+      "name": "n8n-clone-postgres-data"
+    },
+    "redis_data": {
+      "driver": "local",
+      "name": "n8n-clone-redis-data"
+    }
+  }
+}

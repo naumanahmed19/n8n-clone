@@ -1,0 +1,133 @@
+{
+  "database_migration_configuration": {
+    "migration_strategy": "prisma",
+    "migration_environment": "production",
+    "auto_migrate": false,
+    "migration_timeout": 300,
+    "rollback_enabled": true,
+    "backup_before_migration": true,
+    "migration_scripts": {
+      "pre_migration": [
+        {
+          "name": "backup-database.sh",
+          "description": "Create database backup before migration",
+          "script": "./scripts/backup-database.sh",
+          "required": true
+        },
+        {
+          "name": "check-database-health.sh", 
+          "description": "Verify database health before migration",
+          "script": "./scripts/check-database-health.sh",
+          "required": true
+        }
+      ],
+      "migration": [
+        {
+          "name": "prisma-migrate-deploy",
+          "description": "Deploy Prisma migrations",
+          "command": "npx prisma migrate deploy",
+          "working_directory": "/app/backend",
+          "required": true
+        },
+        {
+          "name": "prisma-generate",
+          "description": "Generate Prisma client",
+          "command": "npx prisma generate",
+          "working_directory": "/app/backend", 
+          "required": true
+        }
+      ],
+      "post_migration": [
+        {
+          "name": "seed-database.sh",
+          "description": "Seed database with initial data",
+          "script": "./scripts/seed-database.sh",
+          "required": false
+        },
+        {
+          "name": "verify-migration.sh",
+          "description": "Verify migration completed successfully",
+          "script": "./scripts/verify-migration.sh",
+          "required": true
+        }
+      ]
+    },
+    "rollback_scripts": [
+      {
+        "name": "rollback-migration.sh",
+        "description": "Rollback to previous migration state",
+        "script": "./scripts/rollback-migration.sh"
+      },
+      {
+        "name": "restore-backup.sh",
+        "description": "Restore database from backup",
+        "script": "./scripts/restore-backup.sh"
+      }
+    ]
+  },
+  "initialization_configuration": {
+    "init_container": {
+      "image": "node:18-alpine",
+      "working_directory": "/app/backend",
+      "environment": {
+        "DATABASE_URL": "${DATABASE_URL}",
+        "NODE_ENV": "production"
+      },
+      "volumes": [
+        "./backend:/app/backend",
+        "./scripts:/app/scripts"
+      ],
+      "depends_on": ["postgres"]
+    },
+    "init_sequence": [
+      {
+        "step": 1,
+        "name": "wait-for-database",
+        "command": "sh -c 'until pg_isready -h postgres -p 5432 -U ${POSTGRES_USER}; do echo waiting for database; sleep 2; done;'",
+        "timeout": 60
+      },
+      {
+        "step": 2,
+        "name": "install-dependencies",
+        "command": "npm ci --only=production",
+        "timeout": 300
+      },
+      {
+        "step": 3,
+        "name": "generate-prisma-client",
+        "command": "npx prisma generate",
+        "timeout": 60
+      },
+      {
+        "step": 4,
+        "name": "run-migrations",
+        "command": "npx prisma migrate deploy",
+        "timeout": 300
+      },
+      {
+        "step": 5,
+        "name": "seed-database",
+        "command": "npm run db:seed",
+        "timeout": 120,
+        "optional": true
+      }
+    ]
+  },
+  "health_checks": {
+    "database_connectivity": {
+      "command": "pg_isready -h postgres -p 5432 -U ${POSTGRES_USER}",
+      "interval": "10s",
+      "timeout": "5s",
+      "retries": 5
+    },
+    "migration_status": {
+      "command": "npx prisma migrate status",
+      "working_directory": "/app/backend",
+      "expected_output": "Database is up to date"
+    },
+    "schema_validation": {
+      "command": "npx prisma validate",
+      "working_directory": "/app/backend"
+    }
+  }
+}

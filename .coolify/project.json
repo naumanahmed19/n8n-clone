@@ -1,0 +1,56 @@
+{
+  "name": "n8n-clone",
+  "description": "Workflow automation platform similar to n8n with visual workflow builder",
+  "type": "docker-compose",
+  "repository": {
+    "url": "https://github.com/your-username/n8n-clone.git",
+    "branch": "main",
+    "auto_deploy": true,
+    "dockerfile": "docker-compose.prod.yml"
+  },
+  "environment": "production",
+  "services": {
+    "frontend": {
+      "type": "application",
+      "port": 3000,
+      "domain": "${FRONTEND_DOMAIN}",
+      "ssl": true,
+      "redirect_www": true,
+      "health_check": "/health"
+    },
+    "backend": {
+      "type": "application", 
+      "port": 4000,
+      "domain": "${BACKEND_DOMAIN}",
+      "ssl": true,
+      "health_check": "/health"
+    },
+    "postgres": {
+      "type": "database",
+      "internal_only": true,
+      "persistent_storage": true
+    },
+    "redis": {
+      "type": "cache",
+      "internal_only": true,
+      "persistent_storage": true
+    }
+  },
+  "networks": {
+    "internal": {
+      "driver": "bridge",
+      "internal": true
+    },
+    "external": {
+      "driver": "bridge"
+    }
+  },
+  "volumes": {
+    "postgres_data": {
+      "driver": "local"
+    },
+    "redis_data": {
+      "driver": "local"
+    }
+  }
+}

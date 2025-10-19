@@ -1,0 +1,331 @@
+{
+  "project": {
+    "name": "n8n-clone",
+    "description": "Workflow automation platform with visual workflow builder",
+    "version": "1.0.0",
+    "environment": "production"
+  },
+  "environment_variables": {
+    "secrets": {
+      "POSTGRES_PASSWORD": {
+        "description": "PostgreSQL database password - auto-generated secure password",
+        "type": "secret",
+        "generate": "password",
+        "length": 32,
+        "required": true,
+        "validation": {
+          "min_length": 16,
+          "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{}|;:,.<>?]).{16,}$"
+        },
+        "security_level": "high"
+      },
+      "JWT_SECRET": {
+        "description": "JWT signing secret for authentication tokens",
+        "type": "secret",
+        "generate": "random",
+        "length": 64,
+        "required": true,
+        "validation": {
+          "min_length": 32,
+          "pattern": "^[A-Za-z0-9!@#$%^&*()_+\\-=]{32,}$"
+        },
+        "security_level": "high"
+      },
+      "SESSION_SECRET": {
+        "description": "Session encryption secret for secure sessions",
+        "type": "secret",
+        "generate": "random",
+        "length": 32,
+        "required": true,
+        "validation": {
+          "min_length": 16,
+          "pattern": "^[A-Za-z0-9!@#$%^&*()_+\\-=]{16,}$"
+        },
+        "security_level": "high"
+      },
+      "ENCRYPTION_KEY": {
+        "description": "32-character encryption key for sensitive data",
+        "type": "secret",
+        "generate": "hex",
+        "length": 32,
+        "required": true,
+        "validation": {
+          "exact_length": 32,
+          "pattern": "^[A-Fa-f0-9]{32}$"
+        },
+        "security_level": "high"
+      },
+      "WEBHOOK_SIGNING_SECRET": {
+        "description": "Secret for webhook payload signing and verification",
+        "type": "secret",
+        "generate": "random",
+        "length": 48,
+        "required": false,
+        "validation": {
+          "min_length": 32,
+          "pattern": "^[A-Za-z0-9]{32,}$"
+        },
+        "security_level": "medium"
+      }
+    },
+    "required": {
+      "FRONTEND_DOMAIN": {
+        "description": "Frontend domain name (without protocol)",
+        "type": "domain",
+        "required": true,
+        "example": "yourdomain.com",
+        "validation": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9\\-]{1,61}[a-zA-Z0-9]\\.[a-zA-Z]{2,}$"
+        }
+      },
+      "BACKEND_DOMAIN": {
+        "description": "Backend API domain name (without protocol)",
+        "type": "domain",
+        "required": true,
+        "example": "api.yourdomain.com",
+        "validation": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9\\-]{1,61}[a-zA-Z0-9]\\.[a-zA-Z]{2,}$"
+        }
+      },
+      "CORS_ORIGIN": {
+        "description": "Frontend domain for CORS configuration",
+        "type": "url",
+        "required": true,
+        "example": "https://yourdomain.com",
+        "validation": {
+          "pattern": "^https://[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}$"
+        }
+      },
+      "VITE_API_URL": {
+        "description": "Backend API URL for frontend application",
+        "type": "url",
+        "required": true,
+        "example": "https://api.yourdomain.com",
+        "validation": {
+          "pattern": "^https://[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}$"
+        }
+      },
+      "WEBHOOK_URL": {
+        "description": "Base URL for webhook endpoints",
+        "type": "url",
+        "required": true,
+        "example": "https://yourdomain.com",
+        "validation": {
+          "pattern": "^https://[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}$"
+        }
+      }
+    },
+    "database": {
+      "POSTGRES_DB": {
+        "description": "PostgreSQL database name",
+        "type": "string",
+        "default": "n8n_clone",
+        "required": false,
+        "validation": {
+          "pattern": "^[a-zA-Z0-9_]+$",
+          "max_length": 63
+        }
+      },
+      "POSTGRES_USER": {
+        "description": "PostgreSQL username",
+        "type": "string",
+        "default": "postgres",
+        "required": false,
+        "validation": {
+          "pattern": "^[a-zA-Z0-9_]+$",
+          "max_length": 63
+        }
+      }
+    },
+    "application": {
+      "NODE_ENV": {
+        "description": "Node.js environment mode",
+        "type": "enum",
+        "default": "production",
+        "required": false,
+        "options": ["production", "staging", "development"],
+        "validation": {
+          "enum": ["production", "staging", "development"]
+        }
+      },
+      "LOG_LEVEL": {
+        "description": "Application logging level",
+        "type": "enum",
+        "default": "info",
+        "required": false,
+        "options": ["error", "warn", "info", "debug"],
+        "validation": {
+          "enum": ["error", "warn", "info", "debug"]
+        }
+      },
+      "PORT": {
+        "description": "Backend server port",
+        "type": "number",
+        "default": 4000,
+        "required": false,
+        "validation": {
+          "min": 1024,
+          "max": 65535
+        }
+      },
+      "FRONTEND_PORT": {
+        "description": "Frontend server port",
+        "type": "number",
+        "default": 3000,
+        "required": false,
+        "validation": {
+          "min": 1024,
+          "max": 65535
+        }
+      }
+    },
+    "computed": {
+      "DATABASE_URL": {
+        "description": "Generated PostgreSQL connection string",
+        "type": "computed",
+        "template": "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}",
+        "required": true
+      },
+      "REDIS_URL": {
+        "description": "Generated Redis connection string",
+        "type": "computed",
+        "template": "redis://redis:6379",
+        "required": true
+      }
+    },
+    "security": {
+      "JWT_EXPIRES_IN": {
+        "description": "JWT token expiration time",
+        "type": "string",
+        "default": "7d",
+        "required": false,
+        "validation": {
+          "pattern": "^\\d+[smhd]$"
+        }
+      },
+      "BCRYPT_ROUNDS": {
+        "description": "BCrypt hashing rounds for password security",
+        "type": "number",
+        "default": 12,
+        "required": false,
+        "validation": {
+          "min": 10,
+          "max": 15
+        }
+      },
+      "SESSION_COOKIE_SECURE": {
+        "description": "Enable secure session cookies",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
+      "SESSION_COOKIE_HTTP_ONLY": {
+        "description": "Enable HTTP-only session cookies",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
+      "SESSION_COOKIE_SAME_SITE": {
+        "description": "Session cookie SameSite policy",
+        "type": "enum",
+        "default": "strict",
+        "options": ["strict", "lax", "none"],
+        "required": false
+      }
+    },
+    "optional": {
+      "NGINX_HOST": {
+        "description": "Nginx server name configuration",
+        "type": "string",
+        "default": "localhost",
+        "required": false
+      },
+      "UPLOAD_MAX_SIZE": {
+        "description": "Maximum file upload size in bytes",
+        "type": "number",
+        "default": 10485760,
+        "required": false
+      },
+      "RATE_LIMIT_ENABLED": {
+        "description": "Enable API rate limiting",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      },
+      "METRICS_ENABLED": {
+        "description": "Enable application metrics collection",
+        "type": "boolean",
+        "default": true,
+        "required": false
+      }
+    }
+  },
+  "coolify_configuration": {
+    "project_settings": {
+      "auto_deploy": true,
+      "build_pack": "docker-compose",
+      "compose_file": "coolify.yaml",
+      "health_checks": true,
+      "ssl_enabled": true,
+      "ssl_redirect": true
+    },
+    "service_mapping": {
+      "frontend": {
+        "type": "application",
+        "port": 3000,
+        "health_check": "/health",
+        "environment_variables": [
+          "VITE_API_URL",
+          "NGINX_HOST",
+          "FRONTEND_PORT"
+        ]
+      },
+      "backend": {
+        "type": "application",
+        "port": 4000,
+        "health_check": "/health",
+        "environment_variables": [
+          "NODE_ENV",
+          "DATABASE_URL",
+          "REDIS_URL",
+          "JWT_SECRET",
+          "SESSION_SECRET",
+          "ENCRYPTION_KEY",
+          "PORT",
+          "LOG_LEVEL",
+          "CORS_ORIGIN",
+          "WEBHOOK_URL"
+        ]
+      },
+      "postgres": {
+        "type": "database",
+        "port": 5432,
+        "internal_only": true,
+        "environment_variables": [
+          "POSTGRES_DB",
+          "POSTGRES_USER",
+          "POSTGRES_PASSWORD"
+        ]
+      },
+      "redis": {
+        "type": "cache",
+        "port": 6379,
+        "internal_only": true,
+        "environment_variables": []
+      }
+    },
+    "validation_rules": {
+      "domain_consistency": [
+        "CORS_ORIGIN should match https://${FRONTEND_DOMAIN}",
+        "VITE_API_URL should match https://${BACKEND_DOMAIN}",
+        "WEBHOOK_URL should match https://${FRONTEND_DOMAIN}"
+      ],
+      "security_requirements": [
+        "All secrets must be at least 16 characters",
+        "Production environment must use HTTPS",
+        "JWT_SECRET must be at least 32 characters",
+        "POSTGRES_PASSWORD must meet complexity requirements"
+      ]
+    }
+  }
+}
