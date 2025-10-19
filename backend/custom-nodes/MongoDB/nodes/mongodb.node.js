@@ -43,7 +43,7 @@ const MongoDBNode = {
   version: 1,
   description:
     "Execute MongoDB operations - Find, Insert, Update, Delete, and Aggregate",
-  icon: "file:mongodb.svg",
+  icon: "file:icon.svg",
   color: "#13AA52",
   defaults: {
     name: "MongoDB",
