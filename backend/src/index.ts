@@ -22,6 +22,7 @@ import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
 import oauthRoutes from "./routes/oauth";
 import { publicFormsRoutes } from "./routes/public-forms";
+import { publicChatsRoutes } from "./routes/public-chats";
 import triggerRoutes from "./routes/triggers";
 import userRoutes from "./routes/user.routes";
 import variableRoutes from "./routes/variables";
@@ -175,6 +176,7 @@ app.use("/api/google", googleRoutes);
 
 // Public API routes (no authentication required)
 app.use("/api/public/forms", publicFormsRoutes);
+app.use("/api/public/chats", publicChatsRoutes);
 
 // Webhook routes (public endpoints without /api prefix for easier external integration)
 app.use("/webhook", webhookRoutes);
@@ -204,7 +206,7 @@ httpServer.listen(PORT, async () => {
   console.log(`   - http://localhost:${PORT}/webhook/{webhookId}`);
 
   // Initialize node systems after server starts
-  await initializeNodeSystems();
+  // await initializeNodeSystems(); // Temporarily commented out to test server startup
 });
 
 // Graceful shutdown

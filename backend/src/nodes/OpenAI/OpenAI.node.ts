@@ -34,6 +34,16 @@ export const OpenAINode: NodeDefinition = {
   ],
   properties: [
     {
+      displayName: "Authentication",
+      name: "authentication",
+      type: "credential",
+      required: true,
+      default: "",
+      description: "Select PostgreSQL credentials to connect to the database",
+      placeholder: "Select credentials...",
+      allowedTypes: ["apiKey"],
+    },
+    {
       displayName: "Model",
       name: "model",
       type: "options",
@@ -120,14 +130,34 @@ export const OpenAINode: NodeDefinition = {
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
     // Get parameters - getNodeParameter automatically resolves {{...}} expressions
-    const model = this.getNodeParameter("model") as string;
-    const systemPrompt = this.getNodeParameter("systemPrompt") as string;
-    const userMessage = this.getNodeParameter("userMessage") as string;
-    const temperature = this.getNodeParameter("temperature") as number;
-    const maxTokens = this.getNodeParameter("maxTokens") as number;
-    const enableMemory = this.getNodeParameter("enableMemory") as boolean;
-    const sessionId = this.getNodeParameter("sessionId") as string;
-    const jsonMode = this.getNodeParameter("jsonMode") as boolean;
+    const model = await this.getNodeParameter("model") as string;
+    const systemPrompt = await this.getNodeParameter("systemPrompt") as string;
+    const temperature = await this.getNodeParameter("temperature") as number;
+    const maxTokens = await this.getNodeParameter("maxTokens") as number;
+    const enableMemory = await this.getNodeParameter("enableMemory") as boolean;
+    const sessionId = await this.getNodeParameter("sessionId") as string;
+    const jsonMode = await this.getNodeParameter("jsonMode") as boolean;
+
+    // Get user message - check input data first, then fall back to parameter
+    let userMessage = "";
+
+    // Check if we have input data from a previous node
+    if (inputData?.main?.[0]?.length && inputData.main[0].length > 0) {
+      const inputItem = inputData.main[0][0];
+      if (inputItem?.json) {
+        // Try to get message from various possible fields
+        userMessage = inputItem.json.message ||
+          inputItem.json.userMessage ||
+          inputItem.json.text ||
+          inputItem.json.content ||
+          "";
+      }
+    }
+
+    // If no message from input data, get from parameter
+    if (!userMessage) {
+      userMessage = await this.getNodeParameter("userMessage") as string;
+    }
 
     // Get credentials
     const credentials = await this.getCredentials("apiKey");

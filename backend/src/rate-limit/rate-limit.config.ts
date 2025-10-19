@@ -42,6 +42,24 @@ export const rateLimitConfig = {
   },
 
   /**
+   * Rate limit for public chat fetching (GET requests)
+   */
+  publicChatFetch: {
+    windowMs: parseInt(process.env.CHAT_FETCH_WINDOW_MS || "60000"), // 1 minute default
+    max: parseInt(process.env.CHAT_FETCH_MAX_REQUESTS || "30"), // 30 requests default
+    message: "Too many chat requests, please try again later",
+  },
+
+  /**
+   * Rate limit for public chat message submission (POST requests)
+   */
+  publicChatSubmit: {
+    windowMs: parseInt(process.env.CHAT_SUBMIT_WINDOW_MS || "60000"), // 1 minute default
+    max: parseInt(process.env.CHAT_SUBMIT_MAX_REQUESTS || "10"), // 10 messages default
+    message: "Too many messages, please slow down",
+  },
+
+  /**
    * Whether to skip rate limiting in development for localhost
    */
   skipLocalhost: process.env.RATE_LIMIT_SKIP_LOCALHOST !== "false",

@@ -251,10 +251,10 @@ export class ExecutionService {
         // Pass workflow snapshot
         parsedWorkflow
           ? {
-              nodes: parsedWorkflow.nodes,
-              connections: parsedWorkflow.connections,
-              settings: parsedWorkflow.settings,
-            }
+            nodes: parsedWorkflow.nodes,
+            connections: parsedWorkflow.connections,
+            settings: parsedWorkflow.settings,
+          }
           : undefined
       );
 
@@ -292,6 +292,13 @@ export class ExecutionService {
           failedNodes: flowResult.failedNodes,
           duration: flowResult.totalDuration,
           hasFailures: flowResult.failedNodes.length > 0,
+          // Include the actual execution data
+          executionData: {
+            nodeResults: Object.fromEntries(flowResult.nodeResults),
+            resultData: {
+              runData: this.convertNodeResultsToRunData(flowResult.nodeResults)
+            }
+          }
         },
         error: executionError,
       };
@@ -385,10 +392,10 @@ export class ExecutionService {
         // Pass workflow snapshot
         parsedWorkflow
           ? {
-              nodes: parsedWorkflow.nodes,
-              connections: parsedWorkflow.connections,
-              settings: parsedWorkflow.settings,
-            }
+            nodes: parsedWorkflow.nodes,
+            connections: parsedWorkflow.connections,
+            settings: parsedWorkflow.settings,
+          }
           : undefined
       );
 
@@ -793,9 +800,9 @@ export class ExecutionService {
             error:
               flowStatus.failedNodes.length > 0
                 ? {
-                    message: "Some nodes failed during execution",
-                    timestamp: new Date(),
-                  }
+                  message: "Some nodes failed during execution",
+                  timestamp: new Date(),
+                }
                 : undefined,
           };
         }
@@ -857,13 +864,13 @@ export class ExecutionService {
           finishedAt: execution.finishedAt || undefined,
           error: execution.error
             ? {
-                message: (execution.error as any).message || "Execution failed",
-                stack: (execution.error as any).stack,
-                nodeId: (execution.error as any).nodeId,
-                timestamp: new Date(
-                  (execution.error as any).timestamp || execution.finishedAt
-                ),
-              }
+              message: (execution.error as any).message || "Execution failed",
+              stack: (execution.error as any).stack,
+              nodeId: (execution.error as any).nodeId,
+              timestamp: new Date(
+                (execution.error as any).timestamp || execution.finishedAt
+              ),
+            }
             : undefined,
         };
       }
@@ -1040,7 +1047,7 @@ export class ExecutionService {
         // Determine if node succeeded or failed - fix the logic here
         const eventType =
           nodeEventData.status === "FAILED" ||
-          nodeEventData.result?.status === "failed"
+            nodeEventData.result?.status === "failed"
             ? "node-failed"
             : "node-completed";
 
@@ -1269,11 +1276,10 @@ export class ExecutionService {
         return {
           success: false,
           error: {
-            message: `Failed to load node type schema: ${
-              schemaError instanceof Error
-                ? schemaError.message
-                : "Unknown error"
-            }`,
+            message: `Failed to load node type schema: ${schemaError instanceof Error
+              ? schemaError.message
+              : "Unknown error"
+              }`,
             stack: schemaError instanceof Error ? schemaError.stack : undefined,
             timestamp: new Date(),
             nodeId: nodeId,
@@ -1535,24 +1541,24 @@ export class ExecutionService {
               // Save workflow snapshot for single node execution too
               workflowSnapshot: workflowData
                 ? {
-                    nodes: workflowData.nodes,
-                    connections: workflowData.connections || [],
-                    settings: workflowData.settings || {},
-                  }
+                  nodes: workflowData.nodes,
+                  connections: workflowData.connections || [],
+                  settings: workflowData.settings || {},
+                }
                 : {
-                    nodes: workflowNodes,
-                    connections: [], // We don't have connections in this context
-                    settings: {},
-                  },
+                  nodes: workflowNodes,
+                  connections: [], // We don't have connections in this context
+                  settings: {},
+                },
               error: nodeResult.success
                 ? undefined
                 : {
-                    message: nodeResult.error
-                      ? String(nodeResult.error)
-                      : "Node execution failed",
-                    nodeId: nodeId,
-                    timestamp: new Date(),
-                  },
+                  message: nodeResult.error
+                    ? String(nodeResult.error)
+                    : "Node execution failed",
+                  nodeId: nodeId,
+                  timestamp: new Date(),
+                },
             },
           });
 
@@ -1577,8 +1583,8 @@ export class ExecutionService {
               error: nodeResult.success
                 ? undefined
                 : nodeResult.error
-                ? String(nodeResult.error)
-                : "Unknown error",
+                  ? String(nodeResult.error)
+                  : "Unknown error",
             },
           });
 
@@ -1645,8 +1651,8 @@ export class ExecutionService {
           flowError instanceof Error
             ? flowError.message
             : typeof flowError === "string"
-            ? flowError
-            : "Flow execution failed with unknown error";
+              ? flowError
+              : "Flow execution failed with unknown error";
 
         return {
           success: false,
@@ -1712,6 +1718,26 @@ export class ExecutionService {
   }
 
   /**
+   * Convert node results to the format expected by the response extraction logic
+   */
+  private convertNodeResultsToRunData(nodeResults: Map<string, any>): any {
+    const runData: any = {};
+
+    for (const [nodeId, result] of nodeResults) {
+      if (result.data && result.status === 'completed') {
+        // Convert the standardized output back to the expected format
+        runData[nodeId] = [{
+          data: {
+            main: result.data.main || [[]]
+          }
+        }];
+      }
+    }
+
+    return runData;
+  }
+
+  /**
    * Create execution record for flow execution in database
    */
   private async createFlowExecutionRecord(
@@ -1754,10 +1780,10 @@ export class ExecutionService {
           error:
             flowResult.status === "failed" || flowResult.status === "partial"
               ? {
-                  message: "Flow execution failed",
-                  failedNodes: flowResult.failedNodes,
-                  executionPath: flowResult.executionPath,
-                }
+                message: "Flow execution failed",
+                failedNodes: flowResult.failedNodes,
+                executionPath: flowResult.executionPath,
+              }
               : undefined,
         },
       });
@@ -1804,7 +1830,7 @@ export class ExecutionService {
             startedAt: new Date(),
             finishedAt: new Date(Date.now() + nodeResult.duration),
             inputData: {}, // TODO: Add actual input data
-            outputData: nodeResult.data || undefined,
+            outputData: nodeResult.data ? JSON.parse(JSON.stringify(nodeResult.data)) : undefined,
             error: errorData,
           },
         });

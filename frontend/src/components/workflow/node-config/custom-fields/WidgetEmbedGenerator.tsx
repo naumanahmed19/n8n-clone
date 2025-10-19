@@ -7,7 +7,9 @@ import { Check, Code, Copy, Info } from "lucide-react";
 import { useState } from "react";
 
 interface WidgetEmbedGeneratorProps {
-  formUrl?: string; // From dependsOn
+  formUrl?: string; // From dependsOn (for form widgets)
+  chatUrl?: string; // From dependsOn (for chat widgets)
+  widgetType?: 'form' | 'chat'; // To distinguish between widget types
   disabled?: boolean;
   value?: string;
   onChange?: (value: string) => void;
@@ -15,10 +17,12 @@ interface WidgetEmbedGeneratorProps {
 
 export function WidgetEmbedGenerator({
   formUrl,
+  chatUrl,
+  widgetType = 'form',
   disabled = false,
 }: WidgetEmbedGeneratorProps) {
-  // Extract formId from formUrl (it's the UUID part)
-  const formId = formUrl || '';
+  // Extract ID from URL based on widget type
+  const widgetId = widgetType === 'chat' ? (chatUrl || '') : (formUrl || '');
   const [copiedAuto, setCopiedAuto] = useState(false);
   const [copiedManual, setCopiedManual] = useState(false);
   const [copiedES, setCopiedES] = useState(false);
@@ -28,7 +32,12 @@ export function WidgetEmbedGenerator({
     const baseUrl = import.meta.env.VITE_WIDGET_URL || 
                    import.meta.env.VITE_APP_URL || 
                    "https://yourdomain.com";
-    return `${baseUrl}/n8n-form-widget.umd.js`;
+    
+    if (widgetType === 'chat') {
+      return `${baseUrl}/widgets/chat/n8n-chat-widget.umd.js`;
+    } else {
+      return `${baseUrl}/widgets/form/n8n-form-widget.umd.js`;
+    }
   };
 
   const getApiUrl = () => {
@@ -38,8 +47,9 @@ export function WidgetEmbedGenerator({
   const widgetUrl = getWidgetUrl();
   const apiUrl = getApiUrl();
 
-  // Show message if form ID not available yet
-  if (!formId) {
+  // Show message if widget ID not available yet
+  if (!widgetId) {
+    const widgetTypeName = widgetType === 'chat' ? 'chat' : 'form';
     return (
       <Card>
         <CardContent className="pt-6">
@@ -48,7 +58,7 @@ export function WidgetEmbedGenerator({
             <div>
               <strong>Widget embed code will be available after activating the workflow.</strong>
               <br />
-              Save and activate this workflow to generate the form ID and get the embed code.
+              Save and activate this workflow to generate the {widgetTypeName} ID and get the embed code.
             </div>
           </div>
         </CardContent>
@@ -56,16 +66,68 @@ export function WidgetEmbedGenerator({
     );
   }
 
-  // Generate embed codes
-  const autoInitCode = `<!-- Add this to your HTML -->
-<div data-n8n-form="${formId}" 
+  // Generate embed codes based on widget type
+  const generateEmbedCodes = () => {
+    if (widgetType === 'chat') {
+      return {
+        autoInitCode: `<!-- Add this to your HTML -->
+<div data-n8n-chat="${widgetId}" 
+     data-api-url="${apiUrl}"
+     data-theme="light"
+     data-position="bottom-right"></div>
+
+<!-- Add the widget script -->
+<script src="${widgetUrl}"></script>`,
+
+        manualInitCode: `<!-- Load widget script -->
+<script src="${widgetUrl}"></script>
+
+<!-- Initialize with JavaScript -->
+<script>
+  const widget = new window.N8nChatWidget();
+  
+  widget.init({
+    chatId: '${widgetId}',
+    apiUrl: '${apiUrl}',
+    theme: 'light', // 'light', 'dark', or 'auto'
+    position: 'bottom-right', // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
+    onMessage: (message) => {
+      console.log('User sent:', message);
+      // Your custom message handling
+    },
+    onResponse: (response) => {
+      console.log('AI responded:', response);
+      // Your custom response handling
+    },
+    onError: (error) => {
+      console.error('Chat error:', error);
+      // Your custom error handling
+    }
+  });
+</script>`,
+
+        esModuleCode: `import { N8nChatWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
+
+const widget = new N8nChatWidget();
+
+widget.init({
+  chatId: '${widgetId}',
+  apiUrl: '${apiUrl}',
+  theme: 'auto',
+  position: 'bottom-right'
+});`
+      };
+    } else {
+      return {
+        autoInitCode: `<!-- Add this to your HTML -->
+<div data-n8n-form="${widgetId}" 
      data-api-url="${apiUrl}"
      data-theme="light"></div>
 
 <!-- Add the widget script -->
-<script src="${widgetUrl}"></script>`;
+<script src="${widgetUrl}"></script>`,
 
-  const manualInitCode = `<!-- Add container -->
+        manualInitCode: `<!-- Add container -->
 <div id="my-form"></div>
 
 <!-- Load widget script -->
@@ -76,7 +138,7 @@ export function WidgetEmbedGenerator({
   const widget = new window.N8nFormWidget();
   
   widget.init({
-    formId: '${formId}',
+    formId: '${widgetId}',
     apiUrl: '${apiUrl}',
     container: '#my-form',
     theme: 'light', // 'light', 'dark', or 'auto'
@@ -90,18 +152,23 @@ export function WidgetEmbedGenerator({
       // Your custom error handling
     }
   });
-</script>`;
+</script>`,
 
-  const esModuleCode = `import { N8nFormWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
+        esModuleCode: `import { N8nFormWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
 
 const widget = new N8nFormWidget();
 
 widget.init({
-  formId: '${formId}',
+  formId: '${widgetId}',
   apiUrl: '${apiUrl}',
   container: document.getElementById('form-container'),
   theme: 'auto'
-});`;
+});`
+      };
+    }
+  };
+
+  const { autoInitCode, manualInitCode, esModuleCode } = generateEmbedCodes();
 
   // Copy to clipboard
   const copyToClipboard = async (text: string, type: 'auto' | 'manual' | 'es') => {
@@ -148,7 +215,7 @@ widget.init({
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Simple Auto-Initialize</CardTitle>
               <CardDescription className="text-xs">
-                Just add a div with data attributes. The widget auto-initializes on page load.
+                Just add a div with data attributes. The {widgetType} widget auto-initializes on page load.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -188,6 +255,11 @@ widget.init({
                 <Info className="h-3.5 w-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <strong>Best for:</strong> Quick embeds, WordPress sites, static pages
+                  {widgetType === 'chat' && (
+                    <span className="block mt-1">
+                      The chat bubble will appear automatically in the configured position.
+                    </span>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -200,7 +272,7 @@ widget.init({
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Manual Initialization</CardTitle>
               <CardDescription className="text-xs">
-                Full control with JavaScript. Add callbacks for success/error handling.
+                Full control with JavaScript. Add callbacks for {widgetType === 'chat' ? 'message/response' : 'success/error'} handling.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -294,23 +366,50 @@ widget.init({
         <CardContent>
           <div className="space-y-2 text-xs">
             <div className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5">
-              <code className="text-xs bg-white px-2 py-1 rounded">formId</code>
-              <span className="text-muted-foreground">Your form ID (required)</span>
-              
-              <code className="text-xs bg-white px-2 py-1 rounded">apiUrl</code>
-              <span className="text-muted-foreground">Backend API URL (optional)</span>
-              
-              <code className="text-xs bg-white px-2 py-1 rounded">container</code>
-              <span className="text-muted-foreground">Selector or element (optional)</span>
-              
-              <code className="text-xs bg-white px-2 py-1 rounded">theme</code>
-              <span className="text-muted-foreground">'light', 'dark', or 'auto'</span>
-              
-              <code className="text-xs bg-white px-2 py-1 rounded">onSuccess</code>
-              <span className="text-muted-foreground">Callback on success</span>
-              
-              <code className="text-xs bg-white px-2 py-1 rounded">onError</code>
-              <span className="text-muted-foreground">Callback on error</span>
+              {widgetType === 'chat' ? (
+                <>
+                  <code className="text-xs bg-white px-2 py-1 rounded">chatId</code>
+                  <span className="text-muted-foreground">Your chat ID (required)</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">apiUrl</code>
+                  <span className="text-muted-foreground">Backend API URL (optional)</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">theme</code>
+                  <span className="text-muted-foreground">'light', 'dark', or 'auto'</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">position</code>
+                  <span className="text-muted-foreground">'bottom-right', 'bottom-left', etc.</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">onMessage</code>
+                  <span className="text-muted-foreground">Callback when user sends message</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">onResponse</code>
+                  <span className="text-muted-foreground">Callback when AI responds</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">onError</code>
+                  <span className="text-muted-foreground">Callback on error</span>
+                </>
+              ) : (
+                <>
+                  <code className="text-xs bg-white px-2 py-1 rounded">formId</code>
+                  <span className="text-muted-foreground">Your form ID (required)</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">apiUrl</code>
+                  <span className="text-muted-foreground">Backend API URL (optional)</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">container</code>
+                  <span className="text-muted-foreground">Selector or element (optional)</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">theme</code>
+                  <span className="text-muted-foreground">'light', 'dark', or 'auto'</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">onSuccess</code>
+                  <span className="text-muted-foreground">Callback on success</span>
+                  
+                  <code className="text-xs bg-white px-2 py-1 rounded">onError</code>
+                  <span className="text-muted-foreground">Callback on error</span>
+                </>
+              )}
             </div>
           </div>
         </CardContent>

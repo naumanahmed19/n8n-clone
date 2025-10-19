@@ -85,9 +85,9 @@ export const ImagePreviewNode: NodeDefinition = {
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
     // getNodeParameter now automatically resolves {{...}} placeholders from the first item
-    const imageUrl = this.getNodeParameter("imageUrl") as string;
-    const altText = this.getNodeParameter("altText") as string;
-    const displayInOutput = this.getNodeParameter("displayInOutput") as boolean;
+    const imageUrl = await this.getNodeParameter("imageUrl") as string;
+    const altText = await this.getNodeParameter("altText") as string;
+    const displayInOutput = await this.getNodeParameter("displayInOutput") as boolean;
 
     // Get dimensions from frontend (if available)
     let imageDimensions: any = {};

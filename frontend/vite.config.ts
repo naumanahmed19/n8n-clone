@@ -25,11 +25,7 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
-      // Proxy widget requests to the widget build
-      "/widgets": {
-        target: "http://localhost:3000",
-        rewrite: (path) => path.replace(/^\/widgets/, "/widgets"),
-      },
+
     },
   },
   build: {
