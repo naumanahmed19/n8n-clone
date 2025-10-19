@@ -435,10 +435,11 @@ const initializeAutoWidgets = (): void => {
       try {
         // Initialize chat widget automatically
         const widget = new N8nChatWidget()
+        
         widget.init({
           chatId: chatId.trim(),
           apiUrl,
-          container: htmlElement,
+          // Don't pass container for auto-init, let widget create its own positioned container
           theme: validThemes.includes(theme) ? theme : 'auto',
           position: validPositions.includes(position) ? position : 'bottom-right',
           onMessage: getGlobalCallback(onMessageCallback),

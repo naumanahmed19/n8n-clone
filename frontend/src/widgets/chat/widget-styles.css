@@ -59,6 +59,16 @@
   }
 }
 
+/* Pulse animation for error indicator */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* Ensure widget is always on top */
 .n8n-chat-widget {
   z-index: 2147483647 !important;

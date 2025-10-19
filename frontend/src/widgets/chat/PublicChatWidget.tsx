@@ -69,6 +69,7 @@ export function PublicChatWidget({
   const [currentMessage, setCurrentMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showErrorPopup, setShowErrorPopup] = useState(false)
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -145,12 +146,14 @@ export function PublicChatWidget({
         } else {
           const errorMsg = data.error || 'Chat not found'
           setError(errorMsg)
+          setShowErrorPopup(true)
           onError?.(errorMsg)
         }
       } catch (error: any) {
         console.error('Error fetching chat config:', error)
         const errorMessage = error.message || 'Failed to load chat configuration'
         setError(errorMessage)
+        setShowErrorPopup(true)
         onError?.(errorMessage)
       } finally {
         setLoading(false)
@@ -324,26 +327,56 @@ export function PublicChatWidget({
         ...getPositionStyles(),
         width: '60px',
         height: '60px',
-        backgroundColor: bubbleColor,
+        backgroundColor: error ? '#dc2626' : bubbleColor,
         borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        boxShadow: error 
+          ? '0 4px 12px rgba(220, 38, 38, 0.3)' 
+          : '0 4px 12px rgba(0,0,0,0.15)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
       }}
-      onClick={toggleChat}
+      onClick={error ? () => setShowErrorPopup(true) : toggleChat}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'scale(1.1)'
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)'
+        e.currentTarget.style.boxShadow = error 
+          ? '0 6px 16px rgba(220, 38, 38, 0.4)' 
+          : '0 6px 16px rgba(0,0,0,0.2)'
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'scale(1)'
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+        e.currentTarget.style.boxShadow = error 
+          ? '0 4px 12px rgba(220, 38, 38, 0.3)' 
+          : '0 4px 12px rgba(0,0,0,0.15)'
       }}
     >
-      <MessageCircle size={24} color="white" />
+      {error ? (
+        <span style={{ fontSize: '24px' }}>⚠️</span>
+      ) : (
+        <MessageCircle size={24} color="white" />
+      )}
+      
+      {/* Error indicator badge */}
+      {error && (
+        <div style={{
+          position: 'absolute',
+          top: '-2px',
+          right: '-2px',
+          width: '16px',
+          height: '16px',
+          backgroundColor: '#fbbf24',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '10px',
+          animation: 'pulse 2s infinite'
+        }}>
+          !
+        </div>
+      )}
     </div>
   )
 
@@ -352,7 +385,142 @@ export function PublicChatWidget({
   }
 
   if (error || !chatConfig) {
-    return <ChatBubble />
+    return (
+      <>
+        <ChatBubble />
+        {/* Error popup for invalid chat ID */}
+        {showErrorPopup && error && (
+          <div
+            style={{
+              ...getPopupPositionStyles(),
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              border: '1px solid #fecaca',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              maxWidth: '350px',
+            }}
+          >
+            {/* Error Header */}
+            <div
+              style={{
+                backgroundColor: '#fef2f2',
+                color: '#dc2626',
+                padding: isMobile ? '20px' : '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid #fecaca',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
+                  Chat Unavailable
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowErrorPopup(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  padding: isMobile ? '8px' : '4px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: isMobile ? '44px' : 'auto',
+                  minHeight: isMobile ? '44px' : 'auto',
+                }}
+              >
+                <X size={isMobile ? 24 : 20} />
+              </button>
+            </div>
+
+            {/* Error Content */}
+            <div style={{ padding: '16px' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  backgroundColor: '#fecaca',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px'
+                }}>
+                  ⚠️
+                </div>
+                <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                  Configuration Error
+                </span>
+              </div>
+              
+              <p style={{ 
+                margin: '0 0 12px 0', 
+                fontSize: '14px', 
+                color: '#6b7280',
+                lineHeight: '1.4'
+              }}>
+                {error.includes('Chat not found') || error.includes('404') 
+                  ? `The chat ID "${chatId}" was not found. Please check that:`
+                  : 'There was an error loading the chat:'
+                }
+              </p>
+              
+              {(error.includes('Chat not found') || error.includes('404')) && (
+                <ul style={{ 
+                  margin: '0 0 12px 0', 
+                  paddingLeft: '20px',
+                  fontSize: '13px',
+                  color: '#6b7280'
+                }}>
+                  <li>The chat workflow is published and active</li>
+                  <li>The chat ID matches your workflow configuration</li>
+                  <li>The backend server is running</li>
+                </ul>
+              )}
+              
+              <div style={{
+                backgroundColor: '#f9fafb',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                padding: '8px',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                color: '#374151',
+                wordBreak: 'break-all'
+              }}>
+                Chat ID: {chatId}
+              </div>
+              
+              {error && !error.includes('Chat not found') && !error.includes('404') && (
+                <div style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  padding: '8px',
+                  fontSize: '12px',
+                  color: '#dc2626',
+                  marginTop: '8px'
+                }}>
+                  Error: {error}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </>
+    )
   }
 
   return (

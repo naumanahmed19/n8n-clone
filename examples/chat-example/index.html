@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Widget Demo - Auto Initialize</title>
+    <title>N8n Chat Widget</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            background: hsl(0 0% 98%);
+            color: hsl(222.2 84% 4.9%);
         }
 
         .container {
@@ -25,232 +25,139 @@
             padding: 2rem;
         }
 
-        .hero {
+        .header {
             text-align: center;
-            color: white;
             margin-bottom: 3rem;
         }
 
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+        .header h1 {
+            font-size: 2.5rem;
             font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, hsl(222.2 84% 4.9%) 0%, hsl(210 40% 60%) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
+        .header p {
+            font-size: 1.125rem;
+            color: hsl(215.4 16.3% 46.9%);
+            margin: 0;
         }
 
-        .demo-section {
+        .card {
             background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid hsl(214.3 31.8% 91.4%);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
 
-        .demo-section h2 {
-            color: #333;
-            margin-bottom: 1rem;
-            font-size: 1.8rem;
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+            color: hsl(222.2 84% 4.9%);
         }
 
-        .demo-section p {
-            color: #666;
-            margin-bottom: 1.5rem;
+        .card p {
+            color: hsl(215.4 16.3% 46.9%);
+            margin: 0 0 1rem 0;
         }
 
         .code-block {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
+            background: hsl(210 40% 98%);
+            border: 1px solid hsl(214.3 31.8% 91.4%);
+            border-radius: 0.5rem;
             padding: 1rem;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 0.9rem;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.875rem;
             overflow-x: auto;
             margin: 1rem 0;
         }
 
-        .features {
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+            color: hsl(222.2 84% 4.9%);
+        }
+
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
             margin-top: 2rem;
         }
 
-        .feature {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature h3 {
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .feature p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .chat-trigger {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            transition: all 0.3s ease;
-            z-index: 999;
-        }
-
-        .chat-trigger:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        }
-
-        .status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .status.online {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status.offline {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2rem;
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
             }
-            
-            .container {
-                padding: 1rem;
-            }
-            
-            .chat-trigger {
-                bottom: 10px;
-                left: 10px;
-                padding: 10px 16px;
-                font-size: 0.9rem;
-            }
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            border: 1px solid hsl(214.3 31.8% 91.4%);
+            background: hsl(210 40% 98%);
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: hsl(222.2 84% 4.9%);
+            margin-bottom: 1rem;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <div class="hero">
-            <h1>🤖 AI Chat Widget Demo</h1>
-            <p>Experience our intelligent chat widget with automatic initialization. The chat bubble will appear in the bottom-right corner of your screen.</p>
+        <div class="header">
+            <h1>N8n Chat Widget</h1>
+            <p>Embed AI-powered chat into any website with a single line of code</p>
         </div>
 
-        <div class="demo-section">
-            <h2>Auto-Initialize Demo <span class="status online">Live</span></h2>
-            <p>This page demonstrates the auto-initialize method. The chat widget loads automatically when the page loads.</p>
-            
-            <div class="code-block">
-&lt;!-- Add this to your HTML --&gt;
-&lt;div data-n8n-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5" 
-     data-api-url="http://localhost:4000/api"
-     data-theme="light"
-     data-position="bottom-right"&gt;&lt;/div&gt;
+        <div class="grid">
+            <div class="card">
+                <div class="badge">Auto-initialization</div>
+                <h2>Simple Setup</h2>
+                <p>Add the widget to your page with just HTML attributes. No JavaScript required.</p>
 
-&lt;!-- Add the widget script --&gt;
-&lt;script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"&gt;&lt;/script&gt;
-            </div>
-        </div>
+                <div class="code-block">
+                    <pre>&lt;div 
+    data-n8n-chat="your-chat-id"
+    data-theme="auto"
+    data-position="bottom-right"
+&gt;&lt;/div&gt;
 
-        <div class="features">
-            <div class="feature">
-                <h3>🚀 Easy Integration</h3>
-                <p>Just add a simple div with data attributes and include our script. No complex setup required.</p>
+&lt;script src="n8n-chat-widget.umd.js"&gt;&lt;/script&gt;</pre>
+                </div>
             </div>
-            
-            <div class="feature">
-                <h3>🎨 Customizable</h3>
-                <p>Choose from light/dark themes, different positions, and custom colors to match your brand.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>📱 Mobile Friendly</h3>
-                <p>Responsive design that works perfectly on desktop, tablet, and mobile devices.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>⚡ Real-time</h3>
-                <p>Instant responses powered by your custom AI workflows and integrations.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>🔒 Secure</h3>
-                <p>Built with security in mind, including rate limiting and input validation.</p>
-            </div>
-            
-            <div class="feature">
-                <h3>📊 Analytics Ready</h3>
-                <p>Track conversations and user interactions with built-in callback functions.</p>
+
+            <div class="card">
+                <div class="badge">Manual Control</div>
+                <h2>JavaScript API</h2>
+                <p>Full programmatic control over the widget lifecycle and configuration.</p>
+
+                <div class="code-block">
+                    <pre>const widget = new N8nChatWidget();
+widget.init({
+    chatId: 'your-chat-id',
+    theme: 'light',
+    position: 'bottom-right'
+});</pre>
+                </div>
             </div>
         </div>
     </div>
 
-    <button class="chat-trigger" onclick="openChat()">💬 Open Chat</button>
+    <!-- Auto-initialization element -->
+    <div data-n8n-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5" data-theme="auto" data-position="bottm-right"
+        data-api-url="http://localhost:4000/api"></div>
 
-    <!-- Chat Widget Auto-Initialize -->
-    <div data-n8n-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5" 
-         data-api-url="http://localhost:4000/api"
-         data-theme="light"
-         data-position="bottom-right"></div>
-
-    <!-- Add the widget script -->
+    <!-- Load the chat widget script -->
     <script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
-
-    <script>
-        function openChat() {
-            // This function would trigger the chat to open
-            // The actual implementation depends on the chat widget API
-            console.log('Opening chat...');
-            
-            // Try to find and click the chat bubble if it exists
-            const chatBubble = document.querySelector('[data-n8n-chat] .chat-bubble, .chat-widget-bubble');
-            if (chatBubble) {
-                chatBubble.click();
-            } else {
-                alert('Chat widget is loading... Please wait a moment and try again.');
-            }
-        }
-
-        // Log when the page loads
-        window.addEventListener('load', function() {
-            console.log('Chat widget demo page loaded');
-            console.log('Chat widget should initialize automatically');
-        });
-
-        // Monitor for chat widget events
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'n8n-chat') {
-                console.log('Chat widget event:', event.data);
-            }
-        });
-    </script>
 </body>
+
 </html>
