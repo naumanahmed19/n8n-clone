@@ -92,18 +92,53 @@ async function initializeNodeSystems() {
 
 // Basic middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: [
+
+// CORS configuration for production and development
+const corsOrigins = () => {
+  const origins = [];
+  
+  // Production origins
+  if (process.env.CORS_ORIGIN) {
+    origins.push(process.env.CORS_ORIGIN);
+  }
+  
+  // Add www variant if frontend domain is set
+  if (process.env.FRONTEND_DOMAIN) {
+    origins.push(`https://${process.env.FRONTEND_DOMAIN}`);
+    origins.push(`https://www.${process.env.FRONTEND_DOMAIN}`);
+  }
+  
+  // Development origins
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push(
       process.env.FRONTEND_URL || "http://localhost:3000",
       "http://localhost:8080", // For widget examples
       "http://localhost:8081", // Alternative widget port
       "http://localhost:9000", // Widget examples server
+      "http://127.0.0.1:3000", // Alternative localhost
       "http://127.0.0.1:8080", // Alternative localhost
       "http://127.0.0.1:8081", // Alternative localhost
       "http://127.0.0.1:9000", // Alternative localhost
-    ],
+    );
+  }
+  
+  return origins.filter(Boolean); // Remove any undefined values
+};
+
+app.use(
+  cors({
+    origin: corsOrigins(),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'X-CSRF-Token'
+    ],
+    maxAge: 86400, // 24 hours
   })
 );
 app.use(compression());

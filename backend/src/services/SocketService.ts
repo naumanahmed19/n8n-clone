@@ -39,9 +39,41 @@ export class SocketService {
   private bufferCleanupInterval: NodeJS.Timeout;
 
   constructor(httpServer: HTTPServer) {
+    // CORS configuration for Socket.IO matching main app CORS
+    const corsOrigins = () => {
+      const origins = [];
+      
+      // Production origins
+      if (process.env.CORS_ORIGIN) {
+        origins.push(process.env.CORS_ORIGIN);
+      }
+      
+      // Add www variant if frontend domain is set
+      if (process.env.FRONTEND_DOMAIN) {
+        origins.push(`https://${process.env.FRONTEND_DOMAIN}`);
+        origins.push(`https://www.${process.env.FRONTEND_DOMAIN}`);
+      }
+      
+      // Development origins
+      if (process.env.NODE_ENV !== 'production') {
+        origins.push(
+          process.env.FRONTEND_URL || "http://localhost:3000",
+          "http://localhost:8080",
+          "http://localhost:8081", 
+          "http://localhost:9000",
+          "http://127.0.0.1:3000",
+          "http://127.0.0.1:8080",
+          "http://127.0.0.1:8081",
+          "http://127.0.0.1:9000"
+        );
+      }
+      
+      return origins.filter(Boolean);
+    };
+
     this.io = new SocketIOServer(httpServer, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: corsOrigins(),
         credentials: true,
       },
       transports: ["websocket", "polling"],

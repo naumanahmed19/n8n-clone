@@ -92,7 +92,9 @@
       },
       "volumes": {
         "postgres_data": "/var/lib/postgresql/data",
-        "./backend/prisma/init.sql": "/docker-entrypoint-initdb.d/init.sql:ro"
+        "postgres_backups": "/backups",
+        "./backend/prisma/init.sql": "/docker-entrypoint-initdb.d/init.sql:ro",
+        "./scripts": "/app/scripts:ro"
       },
       "networks": ["internal"],
       "resources": {
@@ -115,7 +117,9 @@
         "start_period": "10s"
       },
       "volumes": {
-        "redis_data": "/data"
+        "redis_data": "/data",
+        "redis_backups": "/backups",
+        "./.coolify/redis-backup.sh": "/usr/local/bin/redis-backup.sh:ro"
       },
       "networks": ["internal"],
       "resources": {
@@ -143,6 +147,14 @@
     "redis_data": {
       "driver": "local",
       "name": "n8n-clone-redis-data"
+    },
+    "postgres_backups": {
+      "driver": "local", 
+      "name": "n8n-clone-postgres-backups"
+    },
+    "redis_backups": {
+      "driver": "local",
+      "name": "n8n-clone-redis-backups"
     }
   }
 }

@@ -173,13 +173,45 @@ Each service has defined resource limits:
 - Resource usage monitoring via Coolify
 - Application logs centralized through Coolify dashboard
 
+## Domain and SSL Configuration
+
+### Quick Setup
+Run the domain and SSL setup script:
+
+**Linux/Mac:**
+```bash
+chmod +x .coolify/setup-domain-ssl.sh
+./.coolify/setup-domain-ssl.sh
+```
+
+**Windows PowerShell:**
+```powershell
+.\.coolify\setup-domain-ssl.ps1
+```
+
+### Manual Configuration
+1. Set domain environment variables in Coolify
+2. Configure DNS records for your domains
+3. Enable SSL with Let's Encrypt in Coolify dashboard
+4. Deploy and verify SSL certificates
+
+### Validation
+Validate your configuration before deployment:
+```bash
+node .coolify/validate-domain-config.js
+```
+
+For detailed domain and SSL setup instructions, see: `DOMAIN_SSL_GUIDE.md`
+
 ## Support
 
 For deployment issues:
 1. Check the detailed deployment guide: `deployment.md`
-2. Review Coolify documentation
-3. Verify environment configuration
-4. Test health endpoints manually
+2. Review domain and SSL guide: `DOMAIN_SSL_GUIDE.md`
+3. Run configuration validation: `validate-domain-config.js`
+4. Review Coolify documentation
+5. Verify environment configuration
+6. Test health endpoints manually
 
 For application-specific issues:
 1. Check backend health endpoint for detailed status

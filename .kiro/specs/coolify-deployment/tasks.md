@@ -25,12 +25,19 @@
   - Configure internal Docker networking between services
 
 
+
+
 - [ ] 3. Configure environment variables and secrets management
 
   - Set up production environment variables in Coolify
   - Configure database connection strings and Redis URLs
+
+
+
+
   - Set up JWT secrets and other sensitive configuration
   - Create environment-specific configuration files
+
 
 - [ ] 4. Set up persistent storage and database configuration
 
@@ -38,6 +45,7 @@
   - Set up Redis data persistence (optional)
   - Configure database initialization and migration scripts
   - Set up automated backup strategy for PostgreSQL
+
 
 - [ ] 5. Configure domain, SSL, and networking
 

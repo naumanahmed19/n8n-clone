@@ -1,0 +1,183 @@
+{
+  "project": "n8n-clone",
+  "description": "Domain, SSL, and networking configuration for Coolify deployment",
+  "version": "1.0.0",
+  "domain_configuration": {
+    "frontend": {
+      "service_name": "frontend",
+      "port": 3000,
+      "domain_variable": "FRONTEND_DOMAIN",
+      "ssl": {
+        "enabled": true,
+        "auto_generate": true,
+        "provider": "letsencrypt",
+        "redirect_http": true,
+        "force_https": true
+      },
+      "proxy_settings": {
+        "client_max_body_size": "10M",
+        "proxy_timeout": "60s",
+        "proxy_read_timeout": "60s",
+        "proxy_connect_timeout": "60s"
+      },
+      "headers": {
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+      },
+      "caching": {
+        "static_assets": {
+          "enabled": true,
+          "expires": "1y",
+          "patterns": ["*.js", "*.css", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.ico", "*.svg", "*.woff", "*.woff2", "*.ttf", "*.eot"]
+        }
+      }
+    },
+    "backend": {
+      "service_name": "backend",
+      "port": 4000,
+      "domain_variable": "BACKEND_DOMAIN",
+      "ssl": {
+        "enabled": true,
+        "auto_generate": true,
+        "provider": "letsencrypt",
+        "redirect_http": true,
+        "force_https": true
+      },
+      "proxy_settings": {
+        "client_max_body_size": "50M",
+        "proxy_timeout": "300s",
+        "proxy_read_timeout": "300s",
+        "proxy_connect_timeout": "60s",
+        "proxy_buffering": "off"
+      },
+      "headers": {
+        "X-Real-IP": "$remote_addr",
+        "X-Forwarded-For": "$proxy_add_x_forwarded_for",
+        "X-Forwarded-Proto": "$scheme",
+        "Host": "$host"
+      },
+      "rate_limiting": {
+        "enabled": true,
+        "requests_per_minute": 100,
+        "burst": 20
+      }
+    }
+  },
+  "cors_configuration": {
+    "production": {
+      "allowed_origins": [
+        "${CORS_ORIGIN}",
+        "https://${FRONTEND_DOMAIN}",
+        "https://www.${FRONTEND_DOMAIN}"
+      ],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      "allowed_headers": [
+        "Origin",
+        "X-Requested-With", 
+        "Content-Type",
+        "Accept",
+        "Authorization",
+        "X-CSRF-Token"
+      ],
+      "credentials": true,
+      "max_age": 86400
+    },
+    "development": {
+      "allowed_origins": [
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:9000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8081",
+        "http://127.0.0.1:9000"
+      ],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      "allowed_headers": ["*"],
+      "credentials": true,
+      "max_age": 86400
+    }
+  },
+  "networking": {
+    "internal_network": {
+      "name": "n8n-clone-internal",
+      "driver": "bridge",
+      "internal": true,
+      "services": ["postgres", "redis", "backend"]
+    },
+    "external_network": {
+      "name": "n8n-clone-external", 
+      "driver": "bridge",
+      "services": ["frontend", "backend"]
+    },
+    "service_discovery": {
+      "postgres": {
+        "hostname": "postgres",
+        "port": 5432,
+        "internal_only": true
+      },
+      "redis": {
+        "hostname": "redis",
+        "port": 6379,
+        "internal_only": true
+      },
+      "backend": {
+        "hostname": "backend",
+        "port": 4000,
+        "external_access": true
+      },
+      "frontend": {
+        "hostname": "frontend",
+        "port": 3000,
+        "external_access": true
+      }
+    }
+  },
+  "coolify_labels": {
+    "frontend": {
+      "coolify.managed": "true",
+      "coolify.type": "application",
+      "coolify.name": "n8n-clone-frontend",
+      "coolify.port": "3000",
+      "coolify.domain": "${FRONTEND_DOMAIN}",
+      "coolify.ssl": "true",
+      "coolify.ssl.redirect": "true",
+      "coolify.ssl.provider": "letsencrypt",
+      "coolify.redirect_www": "true",
+      "coolify.health_check": "/health"
+    },
+    "backend": {
+      "coolify.managed": "true",
+      "coolify.type": "application", 
+      "coolify.name": "n8n-clone-backend",
+      "coolify.port": "4000",
+      "coolify.domain": "${BACKEND_DOMAIN}",
+      "coolify.ssl": "true",
+      "coolify.ssl.redirect": "true",
+      "coolify.ssl.provider": "letsencrypt",
+      "coolify.health_check": "/health"
+    }
+  },
+  "environment_validation": {
+    "required_variables": [
+      "FRONTEND_DOMAIN",
+      "BACKEND_DOMAIN", 
+      "CORS_ORIGIN",
+      "VITE_API_URL"
+    ],
+    "domain_consistency_checks": [
+      {
+        "description": "CORS_ORIGIN should match frontend domain with HTTPS",
+        "validation": "CORS_ORIGIN === `https://${FRONTEND_DOMAIN}`"
+      },
+      {
+        "description": "VITE_API_URL should match backend domain with HTTPS",
+        "validation": "VITE_API_URL === `https://${BACKEND_DOMAIN}`"
+      }
+    ]
+  }
+}

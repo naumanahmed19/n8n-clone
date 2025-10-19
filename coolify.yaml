@@ -14,7 +14,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - postgres_backups:/backups
       - ./backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./scripts:/app/scripts:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-n8n_clone}"]
       interval: 30s
@@ -43,6 +45,8 @@ services:
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+      - redis_backups:/backups
+      - ./.coolify/redis-backup.sh:/usr/local/bin/redis-backup.sh:ro
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -111,6 +115,9 @@ services:
       - "coolify.port=4000"
       - "coolify.domain=${BACKEND_DOMAIN}"
       - "coolify.ssl=true"
+      - "coolify.ssl.redirect=true"
+      - "coolify.ssl.provider=letsencrypt"
+      - "coolify.health_check=/health"
 
   frontend:
     build:
@@ -149,7 +156,68 @@ services:
       - "coolify.port=3000"
       - "coolify.domain=${FRONTEND_DOMAIN}"
       - "coolify.ssl=true"
+      - "coolify.ssl.redirect=true"
+      - "coolify.ssl.provider=letsencrypt"
       - "coolify.redirect_www=true"
+      - "coolify.health_check=/health"
+
+  # Database backup service
+  postgres-backup:
+    image: postgres:15-alpine
+    container_name: n8n-clone-postgres-backup
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-n8n_clone}
+      - BACKUP_DIR=/backups
+      - RETENTION_DAYS=7
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_backups:/backups
+      - ./scripts:/app/scripts:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - internal
+    profiles:
+      - backup
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=backup"
+      - "coolify.name=n8n-clone-postgres-backup"
+      - "coolify.schedule=0 2 * * *"
+    command: ["/app/scripts/postgres-full-backup.sh"]
+
+  # Redis backup service  
+  redis-backup:
+    image: redis:7-alpine
+    container_name: n8n-clone-redis-backup
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BACKUP_DIR=/backups
+      - RETENTION_DAYS=7
+    volumes:
+      - redis_backups:/backups
+      - ./.coolify/redis-backup.sh:/app/redis-backup.sh:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - internal
+    profiles:
+      - backup
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=backup"
+      - "coolify.name=n8n-clone-redis-backup"
+      - "coolify.schedule=0 3 * * *"
+    command: ["/app/redis-backup.sh"]
 
 # Network configuration for Coolify deployment
 networks:
@@ -166,9 +234,31 @@ volumes:
   postgres_data:
     driver: local
     name: n8n-clone-postgres-data
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/coolify/volumes/n8n-clone-postgres-data
   redis_data:
     driver: local
     name: n8n-clone-redis-data
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/coolify/volumes/n8n-clone-redis-data
+  postgres_backups:
+    driver: local
+    name: n8n-clone-postgres-backups
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/coolify/volumes/n8n-clone-postgres-backups
+  redis_backups:
+    driver: local
+    name: n8n-clone-redis-backups
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/coolify/volumes/n8n-clone-redis-backups
 
 # Coolify-specific metadata and configuration
 x-coolify:
