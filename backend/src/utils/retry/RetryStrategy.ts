@@ -51,12 +51,7 @@ export class RetryHandler {
         
         // Log successful retry if this wasn't the first attempt
         if (attempt > 0) {
-          logger.info('HTTP request succeeded after retry', {
-            url: context.url,
-            method: context.method,
-            attempt: attempt + 1,
-            totalAttempts: attempt + 1
-          });
+
         }
         
         return result;

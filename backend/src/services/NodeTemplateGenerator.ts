@@ -95,11 +95,7 @@ export class NodeTemplateGenerator {
       // Generate .gitignore
       await this.generateGitignore(packagePath);
 
-      logger.info("Node package generated successfully", {
-        packageName: options.name,
-        packagePath,
-        type: options.type,
-      });
+
 
       return {
         success: true,
@@ -195,12 +191,7 @@ export class NodeTemplateGenerator {
       const zipBuffer = zip.toBuffer();
       const filename = `${packageName}.zip`;
 
-      logger.info("Node package zip generated successfully", {
-        packageName: options.name,
-        filename,
-        type: options.type,
-        size: zipBuffer.length,
-      });
+
 
       return {
         success: true,

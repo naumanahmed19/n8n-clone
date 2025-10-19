@@ -189,7 +189,6 @@ export class NodeService {
       // Store in memory registry
       this.nodeRegistry.set(nodeDefinition.type, nodeDefinition);
 
-      logger.info(`Node type registered: ${nodeDefinition.type}`);
       return {
         success: true,
         nodeType: nodeDefinition.type,

@@ -135,12 +135,8 @@ export class TriggerService {
   }
 
   async initialize(): Promise<void> {
-    logger.info("Initializing TriggerService...");
-
     // Load all active triggers from database and activate them
     await this.loadActiveTriggers();
-
-    logger.info("TriggerService initialized successfully");
   }
 
   private async loadActiveTriggers(): Promise<void> {
@@ -225,7 +221,7 @@ export class TriggerService {
         await this.activateTrigger(workflowId, trigger);
       }
 
-      logger.info(`Created trigger ${triggerId} for workflow ${workflowId}`);
+
       return trigger;
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -294,7 +290,7 @@ export class TriggerService {
         }
       }
 
-      logger.info(`Updated trigger ${triggerId} for workflow ${workflowId}`);
+
       return updatedTrigger;
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -339,7 +335,7 @@ export class TriggerService {
         },
       });
 
-      logger.info(`Deleted trigger ${triggerId} from workflow ${workflowId}`);
+
     } catch (error) {
       if (error instanceof AppError) throw error;
       logger.error("Error deleting trigger:", error);
@@ -372,9 +368,7 @@ export class TriggerService {
         case "workflow-called":
           // Workflow-called triggers are passive - they don't need active listening
           // They are triggered when another workflow explicitly calls them
-          logger.info(
-            `Workflow-called trigger ${trigger.id} registered (passive)`
-          );
+
           break;
         default:
           throw new AppError(
@@ -384,9 +378,7 @@ export class TriggerService {
           );
       }
 
-      logger.info(
-        `Activated ${trigger.type} trigger ${trigger.id} for workflow ${workflowId}`
-      );
+
     } catch (error) {
       logger.error(`Error activating trigger ${trigger.id}:`, error);
       throw error;
@@ -409,7 +401,7 @@ export class TriggerService {
         this.scheduledTasks.delete(triggerId);
       }
 
-      logger.info(`Deactivated trigger ${triggerId}`);
+
     } catch (error) {
       logger.error(`Error deactivating trigger ${triggerId}:`, error);
       throw error;
@@ -437,7 +429,7 @@ export class TriggerService {
       this.webhookTriggers.set(trigger.settings.webhookId, trigger);
     }
 
-    logger.info(`Webhook trigger activated: ${trigger.settings.webhookId}`);
+
   }
 
   private async activateScheduleTrigger(
@@ -485,9 +477,7 @@ export class TriggerService {
     this.scheduledTasks.set(trigger.id, task);
     task.start();
 
-    logger.info(
-      `Schedule trigger activated: ${trigger.id} with cron ${cronExpression}`
-    );
+
   }
 
   async handleWebhookTrigger(
@@ -760,9 +750,7 @@ export class TriggerService {
         status: result.status,
       });
 
-      logger.info(
-        `Schedule trigger ${trigger.id} executed successfully (${result.status})`
-      );
+
     } catch (error) {
       logger.error(`Error handling schedule trigger ${trigger.id}:`, error);
     }
@@ -982,14 +970,12 @@ export class TriggerService {
   private async logTriggerEvent(event: TriggerEvent): Promise<void> {
     // For now, just log to console. In a real implementation,
     // you might want to store this in a separate table or logging system
-    logger.info(
-      `Trigger event: ${event.type} trigger ${event.triggerId} for workflow ${event.workflowId}`
-    );
+
   }
 
   private async updateTriggerEvent(event: TriggerEvent): Promise<void> {
     // Update trigger event status
-    logger.info(`Updated trigger event ${event.id} status to ${event.status}`);
+
   }
 
   async getTriggerEvents(

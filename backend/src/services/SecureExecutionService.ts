@@ -703,10 +703,7 @@ export class SecureExecutionService {
   private createSecureConsole() {
     return {
       log: (...args: any[]) => {
-        logger.debug(
-          "Sandbox console.log:",
-          args.map((arg) => this.sanitizeValue(arg))
-        );
+        // Sandbox console.log - disabled for cleaner output
       },
       error: (...args: any[]) => {
         logger.error(
@@ -721,10 +718,7 @@ export class SecureExecutionService {
         );
       },
       info: (...args: any[]) => {
-        logger.info(
-          "Sandbox console.info:",
-          args.map((arg) => this.sanitizeValue(arg))
-        );
+        // Sandbox console.info - disabled for cleaner output
       },
     };
   }

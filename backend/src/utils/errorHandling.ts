@@ -191,11 +191,7 @@ export class RetryManager {
         // Calculate delay for next attempt
         const delay = this.calculateDelay(attempt, opts);
 
-        console.log(
-          `Retry attempt ${attempt + 1}/${
-            opts.maxRetries
-          } after ${delay}ms delay`
-        );
+
         await this.sleep(delay);
       }
     }

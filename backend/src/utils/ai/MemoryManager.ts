@@ -121,7 +121,7 @@ export class MemoryManager {
     toDelete.forEach((sessionId) => this.conversations.delete(sessionId));
 
     if (toDelete.length > 0) {
-      console.log(`Cleaned up ${toDelete.length} old conversations`);
+
     }
   }
 

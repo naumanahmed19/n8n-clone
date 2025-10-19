@@ -195,10 +195,7 @@ export class NodeMarketplace {
         const uploadResult = await this.uploadPackage(archivePath, options);
         
         if (uploadResult.success) {
-          logger.info('Package published successfully', { 
-            packageId: uploadResult.packageId,
-            version: uploadResult.version 
-          });
+
         }
 
         return uploadResult;
@@ -267,11 +264,7 @@ export class NodeMarketplace {
         }
       }
 
-      logger.info('Package installed successfully', { 
-        packageId,
-        version: versionToInstall,
-        packagePath: downloadResult.packagePath 
-      });
+
 
       return {
         success: true,
@@ -325,11 +318,7 @@ export class NodeMarketplace {
         };
       }
 
-      logger.info('Package updated successfully', { 
-        packageId,
-        oldVersion: currentVersion,
-        newVersion: latestVersion 
-      });
+
 
       return {
         success: true,
@@ -403,7 +392,7 @@ export class NodeMarketplace {
       // Remove package directory
       await this.removeDirectory(packagePath);
       
-      logger.info('Package uninstalled successfully', { packageId });
+
     } catch (error) {
       logger.error('Failed to uninstall node', { error, packageId });
       throw new Error(`Uninstall failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

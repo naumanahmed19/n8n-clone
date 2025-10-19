@@ -87,9 +87,7 @@ export class ExecutionService {
     workflowData?: { nodes?: any[]; connections?: any[]; settings?: any } // Optional workflow data
   ): Promise<ExecutionResult> {
     try {
-      logger.info(
-        `Starting flow execution of workflow ${workflowId} for user ${userId}`
-      );
+
 
       let parsedWorkflow: Workflow;
 
@@ -110,9 +108,7 @@ export class ExecutionService {
           updatedAt: new Date(),
         };
 
-        logger.info(
-          `Using passed workflow data with ${workflowData.nodes.length} nodes`
-        );
+
       } else {
         // Load workflow from database (existing behavior)
         const workflow = await this.prisma.workflow.findFirst({
@@ -195,9 +191,7 @@ export class ExecutionService {
           targetTriggerNode = triggerNodes[0];
         }
 
-        logger.info(
-          `Executing workflow from trigger node ${targetTriggerNode.id} (${targetTriggerNode.type})`
-        );
+
 
         flowResult = await this.flowExecutionEngine.executeFromTrigger(
           targetTriggerNode.id,
@@ -325,9 +319,7 @@ export class ExecutionService {
     options: ExecutionOptions = {}
   ): Promise<ExecutionResult> {
     try {
-      logger.info(
-        `Starting flow execution from node ${nodeId} in workflow ${workflowId} for user ${userId}`
-      );
+
 
       // Verify workflow exists and belongs to user
       const workflow = await this.prisma.workflow.findFirst({
@@ -456,7 +448,7 @@ export class ExecutionService {
     userId: string
   ): Promise<Execution | null> {
     try {
-      logger.info(`Getting execution ${executionId} for user ${userId}`);
+
 
       const execution = await this.prisma.execution.findFirst({
         where: {
@@ -493,7 +485,7 @@ export class ExecutionService {
           logger.warn(`Execution ${executionId} not found in database`);
         }
       } else {
-        logger.info(`Found execution ${executionId} for user ${userId}`);
+
       }
 
       return execution as any;
@@ -971,7 +963,7 @@ export class ExecutionService {
   private setupEventHandlers(): void {
     // Legacy ExecutionEngine events
     this.executionEngine.on("execution-event", (eventData) => {
-      logger.debug("Execution event received:", eventData);
+
 
       // Broadcast to Socket.IO for real-time frontend updates
       if (global.socketService) {
@@ -983,7 +975,7 @@ export class ExecutionService {
     });
 
     this.executionEngine.on("execution-progress", (progressData) => {
-      logger.debug("Execution progress received:", progressData);
+
 
       // Broadcast progress updates
       if (global.socketService) {
@@ -995,7 +987,7 @@ export class ExecutionService {
     });
 
     this.executionEngine.on("node-execution-event", (nodeEventData) => {
-      logger.debug("Node execution event received:", nodeEventData);
+
 
       // Broadcast node-specific events
       if (global.socketService) {
@@ -1010,7 +1002,7 @@ export class ExecutionService {
 
     // FlowExecutionEngine events
     this.flowExecutionEngine.on("flowExecutionCompleted", (flowResult) => {
-      logger.debug("Flow execution completed:", flowResult);
+
 
       // Broadcast flow completion event to BOTH execution room and workflow room
       if (global.socketService) {
@@ -1033,14 +1025,7 @@ export class ExecutionService {
     });
 
     this.flowExecutionEngine.on("nodeExecuted", (nodeEventData: any) => {
-      logger.info("Flow node executed event received:", nodeEventData);
-      console.log("=== NODE EXECUTED EVENT ===", {
-        executionId: nodeEventData.executionId,
-        workflowId: nodeEventData.workflowId,
-        nodeId: nodeEventData.nodeId,
-        status: nodeEventData.status,
-        error: nodeEventData.result?.error,
-      });
+
 
       // Broadcast node execution updates for flow to BOTH execution room and workflow room
       if (global.socketService) {
@@ -1051,21 +1036,7 @@ export class ExecutionService {
             ? "node-failed"
             : "node-completed";
 
-        logger.info("Broadcasting node execution event via socket", {
-          executionId: nodeEventData.executionId,
-          workflowId: nodeEventData.workflowId,
-          nodeId: nodeEventData.nodeId,
-          eventType,
-          status: nodeEventData.status,
-        });
 
-        console.log("=== BROADCASTING WEBSOCKET EVENT ===", {
-          executionId: nodeEventData.executionId,
-          type: eventType,
-          nodeId: nodeEventData.nodeId,
-          status: nodeEventData.status,
-          error: nodeEventData.result?.error,
-        });
 
         global.socketService.broadcastExecutionEvent(
           nodeEventData.executionId,
@@ -1088,15 +1059,8 @@ export class ExecutionService {
     });
 
     this.flowExecutionEngine.on("nodeStarted", (nodeEventData) => {
-      logger.info("Flow node started event received:", nodeEventData);
-
       // Broadcast node start events for flow
       if (global.socketService) {
-        logger.info("Broadcasting node start event via socket", {
-          executionId: nodeEventData.executionId,
-          nodeId: nodeEventData.nodeId,
-          status: "started",
-        });
 
         global.socketService.broadcastExecutionEvent(
           nodeEventData.executionId,
@@ -1117,7 +1081,7 @@ export class ExecutionService {
     });
 
     this.flowExecutionEngine.on("executionCancelled", (eventData) => {
-      logger.debug("Flow execution cancelled:", eventData);
+
 
       // Broadcast cancellation event
       if (global.socketService) {
@@ -1130,7 +1094,7 @@ export class ExecutionService {
     });
 
     this.flowExecutionEngine.on("executionPaused", (eventData) => {
-      logger.debug("Flow execution paused:", eventData);
+
 
       // Broadcast pause event
       if (global.socketService) {
@@ -1144,7 +1108,7 @@ export class ExecutionService {
     });
 
     this.flowExecutionEngine.on("executionResumed", (eventData) => {
-      logger.debug("Flow execution resumed:", eventData);
+
 
       // Broadcast resume event
       if (global.socketService) {
@@ -1172,9 +1136,7 @@ export class ExecutionService {
     workflowData?: { nodes?: any[]; connections?: any[]; settings?: any } // Optional workflow data
   ): Promise<ExecutionResult> {
     try {
-      logger.info(
-        `Starting single node execution: ${nodeId} in workflow ${workflowId} for user ${userId}`
-      );
+
 
       let workflowNodes: any[];
       let workflowName: string;
@@ -1214,11 +1176,7 @@ export class ExecutionService {
           };
         }
 
-        logger.info(`Found workflow ${workflowId} for user ${userId}`, {
-          workflowName: workflow.name,
-          workflowId: workflow.id,
-          userId: workflow.userId,
-        });
+
 
         // Parse nodes from JSON
         workflowNodes = Array.isArray(workflow.nodes)
@@ -1227,12 +1185,7 @@ export class ExecutionService {
         workflowName = workflow.name;
       }
 
-      logger.info(`Searching for node ${nodeId} in workflow ${workflowId}`, {
-        nodeId,
-        workflowId,
-        totalNodes: workflowNodes.length,
-        nodeIds: workflowNodes.map((n: any) => n.id),
-      });
+
 
       // Find the specific node
       const node = workflowNodes.find((n: any) => n.id === nodeId);
@@ -1257,11 +1210,7 @@ export class ExecutionService {
       }
 
       // Check if node can be executed individually (trigger nodes)
-      logger.info(`Found node ${nodeId}, checking node type schema`, {
-        nodeId,
-        nodeType: node.type,
-        nodeName: node.name || "unnamed",
-      });
+
 
       let nodeTypeInfo;
       try {
@@ -1442,13 +1391,7 @@ export class ExecutionService {
             nodeInputData
           );
 
-          logger.info(`Flow execution completed from trigger node`, {
-            nodeId,
-            flowStatus: flowResult.status,
-            executedNodes: flowResult.executedNodes.length,
-            failedNodes: flowResult.failedNodes.length,
-            executionId: flowResult.executionId,
-          });
+
 
           // Collect error information from failed nodes
           let executionError: any = undefined;
@@ -1495,12 +1438,7 @@ export class ExecutionService {
 
           // For single node execution, always execute the actual node (skip mock data)
           // Mock data should only be used in test scenarios, not for real single node execution
-          logger.info(`Executing actual node logic for single node execution`, {
-            nodeId,
-            nodeType: node.type,
-            hasMockData: !!(node as any).mockData,
-            mode: "single",
-          });
+
 
           // Execute the actual node (credentials mapping already built earlier)
           nodeResult = await this.nodeService.executeNode(
@@ -1522,13 +1460,7 @@ export class ExecutionService {
           const executionId = uuidv4();
 
           // Create main execution record (same table as workflow executions)
-          logger.info(`Creating execution record for single node`, {
-            executionId,
-            workflowId,
-            nodeId,
-            userId,
-            status: nodeResult.success ? "SUCCESS" : "ERROR",
-          });
+
 
           const executionRecord = await this.prisma.execution.create({
             data: {
@@ -1562,10 +1494,7 @@ export class ExecutionService {
             },
           });
 
-          logger.info(`Successfully created execution record`, {
-            executionId: executionRecord.id,
-            workflowId: executionRecord.workflowId,
-          });
+
 
           // Also create detailed node execution record
           await this.prisma.nodeExecution.create({
@@ -1588,12 +1517,7 @@ export class ExecutionService {
             },
           });
 
-          logger.info(`Single node execution completed`, {
-            nodeId,
-            success: nodeResult.success,
-            duration,
-            executionId: executionRecord.id,
-          });
+
 
           // Prepare error information if node failed
           let executionError: any = undefined;
@@ -1937,8 +1861,6 @@ export class ExecutionService {
    * Shutdown the execution service
    */
   async shutdown(): Promise<void> {
-    logger.info("Shutting down execution service...");
     await this.executionEngine.shutdown();
-    logger.info("Execution service shutdown complete");
   }
 }
