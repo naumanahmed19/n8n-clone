@@ -245,6 +245,59 @@ const FormGeneratorNode = {
       placeholder: "Submit Form",
     },
     {
+      displayName: "Form Protection",
+      name: "formProtection",
+      type: "options",
+      default: "none",
+      required: true,
+      tooltip: "Enable credential protection for the public form",
+      options: [
+        {
+          name: "None (Public)",
+          value: "none",
+          description: "Form is publicly accessible without authentication",
+        },
+        {
+          name: "Password Protection",
+          value: "password",
+          description: "Require a password to access the form",
+        },
+        {
+          name: "Access Key",
+          value: "accessKey",
+          description: "Require an access key to submit the form",
+        },
+      ],
+    },
+    {
+      displayName: "Password",
+      name: "formPassword",
+      type: "string",
+      default: "",
+      required: true,
+      tooltip: "Password required to access the form",
+      placeholder: "Enter a secure password",
+      displayOptions: {
+        show: {
+          formProtection: ["password"],
+        },
+      },
+    },
+    {
+      displayName: "Access Key",
+      name: "accessKey",
+      type: "string",
+      default: "",
+      required: true,
+      tooltip: "Access key required to submit the form",
+      placeholder: "Enter an access key",
+      displayOptions: {
+        show: {
+          formProtection: ["accessKey"],
+        },
+      },
+    },
+    {
       displayName: "Widget Embed Code",
       name: "widgetEmbedCode",
       type: "custom",
@@ -265,6 +318,9 @@ const FormGeneratorNode = {
     const formDescription = await this.getNodeParameter("formDescription");
     const formFields = await this.getNodeParameter("formFields");
     const submitButtonText = await this.getNodeParameter("submitButtonText");
+    const formProtection = await this.getNodeParameter("formProtection");
+    const formPassword = formProtection === "password" ? await this.getNodeParameter("formPassword") : null;
+    const accessKey = formProtection === "accessKey" ? await this.getNodeParameter("accessKey") : null;
     const submittedFormData = await this.getNodeParameter("submittedFormData");
 
     // For trigger nodes, this executes when form is submitted

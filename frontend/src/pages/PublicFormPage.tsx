@@ -1,10 +1,12 @@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { FormGenerator } from '@/components/ui/form-generator/FormGenerator'
 import { FormFieldConfig, FormGeneratorRef } from '@/components/ui/form-generator/types'
 import axios from 'axios'
-import { CheckCircle, ExternalLink, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle, ExternalLink, Key, Lock, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -23,6 +25,8 @@ interface FormResponse {
   formId?: string
   workflowId?: string
   error?: string
+  requiresPassword?: boolean
+  requiresAccessKey?: boolean
 }
 
 export function PublicFormPage() {
@@ -35,12 +39,17 @@ export function PublicFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [submitMessage, setSubmitMessage] = useState('')
+  const [requiresPassword, setRequiresPassword] = useState(false)
+  const [requiresAccessKey, setRequiresAccessKey] = useState(false)
+  const [password, setPassword] = useState('')
+  const [accessKey, setAccessKey] = useState('')
+  const [passwordVerified, setPasswordVerified] = useState(false)
   
   const formGeneratorRef = useRef<FormGeneratorRef>(null)
 
   // Fetch form configuration on mount
   useEffect(() => {
-    const fetchFormConfig = async () => {
+    const fetchFormConfig = async (providedPassword?: string) => {
       if (!formId) {
         setLoading(false)
         return
@@ -49,17 +58,44 @@ export function PublicFormPage() {
       try {
         const baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
         const apiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`
-        const response = await axios.get<FormResponse>(`${apiUrl}/public/forms/${formId}`)
+        
+        // Add password to query if provided
+        const url = providedPassword 
+          ? `${apiUrl}/public/forms/${formId}?password=${encodeURIComponent(providedPassword)}`
+          : `${apiUrl}/public/forms/${formId}`
+        
+        const response = await axios.get<FormResponse>(url)
         
         if (response.data.success && response.data.form) {
           setFormConfig(response.data.form)
           setWorkflowId(response.data.workflowId || '')
+          setRequiresPassword(response.data.requiresPassword || false)
+          setRequiresAccessKey(response.data.requiresAccessKey || false)
+          setPasswordVerified(true)
         } else {
           setSubmitStatus('error')
           setSubmitMessage(response.data.error || 'Form not found')
         }
       } catch (error: any) {
         console.error('Error fetching form:', error)
+        
+        // Check if password is required
+        if (error.response?.status === 401 && error.response?.data?.requiresPassword) {
+          setRequiresPassword(true)
+          setPasswordVerified(false)
+          setLoading(false)
+          return
+        }
+        
+        // Check if password is invalid
+        if (error.response?.status === 403 && error.response?.data?.requiresPassword) {
+          setSubmitStatus('error')
+          setSubmitMessage('Invalid password. Please try again.')
+          setPasswordVerified(false)
+          setLoading(false)
+          return
+        }
+        
         setSubmitStatus('error')
         const errorMessage = typeof error.response?.data?.error === 'string' 
           ? error.response.data.error 
@@ -72,6 +108,42 @@ export function PublicFormPage() {
 
     fetchFormConfig()
   }, [formId])
+
+  // Handle password verification
+  const handlePasswordVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!password) {
+      setSubmitStatus('error')
+      setSubmitMessage('Please enter a password')
+      return
+    }
+    
+    setLoading(true)
+    setSubmitStatus('idle')
+    
+    try {
+      const baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+      const apiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`
+      const url = `${apiUrl}/public/forms/${formId}?password=${encodeURIComponent(password)}`
+      
+      const response = await axios.get<FormResponse>(url)
+      
+      if (response.data.success && response.data.form) {
+        setFormConfig(response.data.form)
+        setWorkflowId(response.data.workflowId || '')
+        setRequiresAccessKey(response.data.requiresAccessKey || false)
+        setPasswordVerified(true)
+        setSubmitStatus('idle')
+      }
+    } catch (error: any) {
+      console.error('Password verification error:', error)
+      setSubmitStatus('error')
+      setSubmitMessage(error.response?.data?.error || 'Invalid password')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Handle field value changes
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -110,10 +182,24 @@ export function PublicFormPage() {
     try {
       const baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
       const apiUrl = baseApiUrl.endsWith('/api') ? baseApiUrl : `${baseApiUrl}/api`
-      const response = await axios.post(`${apiUrl}/public/forms/${formId}/submit`, {
+      
+      // Prepare submission data
+      const submissionData: any = {
         formData: formValues,
         workflowId: workflowId
-      })
+      }
+      
+      // Add password if password protected
+      if (requiresPassword && password) {
+        submissionData.password = password
+      }
+      
+      // Add access key if access key protected
+      if (requiresAccessKey && accessKey) {
+        submissionData.accessKey = accessKey
+      }
+      
+      const response = await axios.post(`${apiUrl}/public/forms/${formId}/submit`, submissionData)
 
       if (response.data.success) {
         setSubmitStatus('success')
@@ -150,6 +236,68 @@ export function PublicFormPage() {
               <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
               <p className="text-muted-foreground">Loading form...</p>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Password verification required
+  if (requiresPassword && !passwordVerified) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-primary/10 p-3 rounded-full">
+                <Lock className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl text-center">Password Protected Form</CardTitle>
+            <CardDescription className="text-center">
+              This form is protected. Please enter the password to access it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {submitStatus === 'error' && (
+              <Alert className="mb-4" variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertDescription>{submitMessage}</AlertDescription>
+              </Alert>
+            )}
+            
+            <form onSubmit={handlePasswordVerification} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  autoFocus
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !password}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Access Form
+                  </>
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
@@ -230,11 +378,33 @@ export function PublicFormPage() {
                 showRequiredIndicator={true}
               />
 
+              {/* Access Key Input (if required) */}
+              {requiresAccessKey && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label htmlFor="accessKey" className="flex items-center gap-2">
+                    <Key className="w-4 h-4" />
+                    Access Key *
+                  </Label>
+                  <Input
+                    id="accessKey"
+                    type="password"
+                    placeholder="Enter access key to submit"
+                    value={accessKey}
+                    onChange={(e) => setAccessKey(e.target.value)}
+                    disabled={submitting}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This form requires an access key for submission
+                  </p>
+                </div>
+              )}
+
               {/* Submit Button */}
               <div className="pt-4">
                 <Button
                   type="submit"
-                  disabled={submitting || formConfig.formFields.length === 0}
+                  disabled={submitting || formConfig.formFields.length === 0 || (requiresAccessKey && !accessKey)}
                   className="w-full h-11 text-base"
                   size="lg"
                 >

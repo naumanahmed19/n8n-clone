@@ -198,6 +198,9 @@ router.get(
             formDescription: params.formDescription || "",
             formFields: processFormFields(params.formFields || []),
             submitButtonText: params.submitButtonText || "Submit",
+            formProtection: params.formProtection || "none",
+            formPassword: params.formPassword || null,
+            accessKey: params.accessKey || null,
             workflowName: workflow.name,
             isActive: workflow.active,
           };
@@ -215,11 +218,44 @@ router.get(
         });
       }
 
+      // Check if form has password protection
+      const formProtection = (formConfig as any).formProtection || "none";
+      const requiresPassword = formProtection === "password";
+      
+      // If password protected, check for password in query or header
+      if (requiresPassword) {
+        const providedPassword = req.query.password || req.headers["x-form-password"];
+        const correctPassword = (formConfig as any).formPassword;
+        
+        if (!providedPassword) {
+          return res.status(401).json({
+            success: false,
+            error: "Password required",
+            requiresPassword: true,
+          });
+        }
+        
+        if (providedPassword !== correctPassword) {
+          return res.status(403).json({
+            success: false,
+            error: "Invalid password",
+            requiresPassword: true,
+          });
+        }
+      }
+
+      // Remove sensitive data before sending to client
+      const safeFormConfig = { ...formConfig };
+      delete (safeFormConfig as any).formPassword;
+      delete (safeFormConfig as any).accessKey;
+
       res.json({
         success: true,
-        form: formConfig,
+        form: safeFormConfig,
         formId,
         workflowId,
+        requiresPassword,
+        requiresAccessKey: formProtection === "accessKey",
       });
     } catch (error: any) {
       res.status(500).json({
@@ -292,6 +328,36 @@ router.post(
           success: false,
           error: "Form not found or is not active",
         });
+      }
+
+      // Check form protection
+      const params = formNode.parameters || {};
+      const formProtection = params.formProtection || "none";
+      
+      // Check password protection
+      if (formProtection === "password") {
+        const providedPassword = req.body.password || req.headers["x-form-password"];
+        const correctPassword = params.formPassword;
+        
+        if (!providedPassword || providedPassword !== correctPassword) {
+          return res.status(403).json({
+            success: false,
+            error: "Invalid or missing password",
+          });
+        }
+      }
+      
+      // Check access key protection
+      if (formProtection === "accessKey") {
+        const providedKey = req.body.accessKey || req.headers["x-form-access-key"];
+        const correctKey = params.accessKey;
+        
+        if (!providedKey || providedKey !== correctKey) {
+          return res.status(403).json({
+            success: false,
+            error: "Invalid or missing access key",
+          });
+        }
       }
 
       // Prepare trigger data in the same format as manual execution
