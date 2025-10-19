@@ -54,7 +54,7 @@ export interface FailureAnalysis {
  */
 export class ExecutionRecoveryService extends EventEmitter {
   private prisma: PrismaClient;
-  private socketService: SocketService;
+  private socketService: SocketService | null;
   private historyService: ExecutionHistoryService;
   private recoveryPoints: Map<string, RecoveryPoint[]> = new Map();
   private retryAttempts: Map<string, number> = new Map();
@@ -79,7 +79,7 @@ export class ExecutionRecoveryService extends EventEmitter {
 
   constructor(
     prisma: PrismaClient,
-    socketService: SocketService,
+    socketService: SocketService | null,
     historyService: ExecutionHistoryService
   ) {
     super();
@@ -214,13 +214,17 @@ export class ExecutionRecoveryService extends EventEmitter {
         data: {
           executionId,
           nodeId,
-          state,
-          isRecoveryPoint: true,
-          metadata: {
-            timestamp,
-            checksum,
-            type: "recovery_point",
-          },
+          status: state.status || "idle",
+          progress: state.progress || 0,
+          inputData: state.inputData || null,
+          outputData: state.outputData || null,
+          error: state.error || null,
+          startTime: state.startTime ? new Date(state.startTime) : null,
+          endTime: state.endTime ? new Date(state.endTime) : null,
+          duration: state.duration || null,
+          dependencies: state.dependencies || [],
+          executionOrder: state.executionOrder || null,
+          animationState: state.animationState || "idle",
         },
       })
       .catch((err) => {
@@ -442,7 +446,7 @@ export class ExecutionRecoveryService extends EventEmitter {
       where: { id: executionId },
       data: {
         status: "RUNNING",
-        error: null,
+        error: undefined,
         finishedAt: null,
       },
     });
@@ -457,8 +461,8 @@ export class ExecutionRecoveryService extends EventEmitter {
         status: "WAITING" as any,
         startedAt: null,
         finishedAt: null,
-        error: null,
-        outputData: null,
+        error: undefined,
+        outputData: undefined,
       },
     });
 

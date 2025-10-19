@@ -3,7 +3,7 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
+} from "../../../types/node.types";
 
 export const SetNode: NodeDefinition = {
   type: BuiltInNodeTypes.SET,

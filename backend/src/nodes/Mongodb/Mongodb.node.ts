@@ -1,10 +1,11 @@
-const { MongoClient, ObjectId } = require("mongodb");
+import { MongoClient, ObjectId } from "mongodb";
+import { NodeDefinition, NodeInputData, NodeOutputData, NodeExecutionContext } from "../../types/node.types";
 
 /**
  * Helper function to build MongoDB connection string
  * Automatically detects MongoDB Atlas and uses appropriate protocol
  */
-function buildConnectionString(credentials) {
+function buildConnectionString(credentials: any): string {
   if (credentials.configurationType === "connectionString") {
     return credentials.connectionString;
   }
@@ -35,7 +36,7 @@ function buildConnectionString(credentials) {
   }
 }
 
-const MongoDBNode = {
+export const MongoDBNode: NodeDefinition = {
   type: "mongodb",
   displayName: "MongoDB",
   name: "mongodb",
@@ -100,10 +101,9 @@ const MongoDBNode = {
     {
       displayName: "Collection",
       name: "collection",
-      type: "autocomplete",
-      typeOptions: {
-        loadOptionsMethod: "getCollections",
-      },
+      type: "options",
+      options: [],
+      // Note: Dynamic loading handled by loadOptions.getCollections
       default: "",
       required: true,
       description: "Select a collection from the database",
@@ -389,7 +389,7 @@ const MongoDBNode = {
     },
   },
 
-  execute: async function (inputData) {
+  execute: async function (this: NodeExecutionContext, inputData: NodeInputData): Promise<NodeOutputData[]> {
     const items = inputData.main?.[0] || [];
     const results = [];
 
@@ -414,7 +414,7 @@ const MongoDBNode = {
       // Build connection string using helper function
       connectionString = buildConnectionString(credentials);
     } catch (error) {
-      throw new Error(`Failed to get credentials: ${error.message}`);
+      throw new Error(`Failed to get credentials: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     const operation = await this.getNodeParameter("operation");
@@ -460,14 +460,14 @@ const MongoDBNode = {
               try {
                 query = queryStr ? JSON.parse(queryStr) : {};
               } catch (e) {
-                throw new Error(`Invalid query JSON: ${e.message}`);
+                throw new Error(`Invalid query JSON: ${(e instanceof Error ? e.message : String(e))}`);
               }
 
               if (projectionStr) {
                 try {
                   projection = JSON.parse(projectionStr);
                 } catch (e) {
-                  throw new Error(`Invalid projection JSON: ${e.message}`);
+                  throw new Error(`Invalid projection JSON: ${(e instanceof Error ? e.message : String(e))}`);
                 }
               }
 
@@ -475,7 +475,7 @@ const MongoDBNode = {
                 try {
                   sort = JSON.parse(sortStr);
                 } catch (e) {
-                  throw new Error(`Invalid sort JSON: ${e.message}`);
+                  throw new Error(`Invalid sort JSON: ${(e instanceof Error ? e.message : String(e))}`);
                 }
               }
 
@@ -523,7 +523,7 @@ const MongoDBNode = {
                       ? JSON.parse(documentStr)
                       : documentStr;
                 } catch (e) {
-                  throw new Error(`Invalid document JSON: ${e.message}`);
+                  throw new Error(`Invalid document JSON: ${(e instanceof Error ? e.message : String(e))}`);
                 }
 
                 result = await coll.insertOne(document);
@@ -545,7 +545,7 @@ const MongoDBNode = {
                       ? JSON.parse(documentsStr)
                       : documentsStr;
                 } catch (e) {
-                  throw new Error(`Invalid documents JSON: ${e.message}`);
+                  throw new Error(`Invalid documents JSON: ${(e instanceof Error ? e.message : String(e))}`);
                 }
 
                 if (!Array.isArray(documents)) {
@@ -557,7 +557,7 @@ const MongoDBNode = {
                 results.push({
                   json: {
                     ...item.json,
-                    insertedIds: Object.values(result.insertedIds).map((id) =>
+                    insertedIds: Object.values(result.insertedIds).map((id: any) =>
                       id.toString()
                     ),
                     insertedCount: result.insertedCount,
@@ -582,7 +582,7 @@ const MongoDBNode = {
                     ? JSON.parse(filterStr)
                     : filterStr;
               } catch (e) {
-                throw new Error(`Invalid filter JSON: ${e.message}`);
+                throw new Error(`Invalid filter JSON: ${(e instanceof Error ? e.message : String(e))}`);
               }
 
               try {
@@ -591,7 +591,7 @@ const MongoDBNode = {
                     ? JSON.parse(updateStr)
                     : updateStr;
               } catch (e) {
-                throw new Error(`Invalid update JSON: ${e.message}`);
+                throw new Error(`Invalid update JSON: ${(e instanceof Error ? e.message : String(e))}`);
               }
 
               const options = { upsert };
@@ -627,7 +627,7 @@ const MongoDBNode = {
                     ? JSON.parse(filterStr)
                     : filterStr;
               } catch (e) {
-                throw new Error(`Invalid filter JSON: ${e.message}`);
+                throw new Error(`Invalid filter JSON: ${(e instanceof Error ? e.message : String(e))}`);
               }
 
               if (deleteMode === "deleteOne") {
@@ -657,7 +657,7 @@ const MongoDBNode = {
                     ? JSON.parse(pipelineStr)
                     : pipelineStr;
               } catch (e) {
-                throw new Error(`Invalid pipeline JSON: ${e.message}`);
+                throw new Error(`Invalid pipeline JSON: ${(e instanceof Error ? e.message : String(e))}`);
               }
 
               if (!Array.isArray(pipeline)) {
@@ -680,15 +680,15 @@ const MongoDBNode = {
               throw new Error(`Unknown operation: ${operation}`);
           }
         } catch (error) {
-          this.logger.error(`[MongoDB] Error in operation:`, error.message);
+          this.logger.error(`[MongoDB] Error in operation:`, (error instanceof Error ? error.message : String(error)));
 
           if (continueOnFail) {
             results.push({
               json: {
                 ...item.json,
                 error: true,
-                errorMessage: error.message,
-                errorDetails: error.toString(),
+                errorMessage: (error instanceof Error ? error.message : String(error)),
+                errorDetails: error instanceof Error ? error.toString() : String(error),
               },
             });
           } else {
@@ -711,7 +711,7 @@ const MongoDBNode = {
     /**
      * Get list of collections from the database
      */
-    async getCollections() {
+    async getCollections(this: NodeExecutionContext) {
       let connectionString = "";
 
       try {
@@ -734,7 +734,7 @@ const MongoDBNode = {
           {
             name: "Error: Credentials required",
             value: "",
-            description: error.message,
+            description: (error instanceof Error ? error.message : String(error)),
           },
         ];
       }
@@ -756,7 +756,7 @@ const MongoDBNode = {
         await client.close();
 
         // Format results for dropdown
-        return collections.map((coll) => ({
+        return collections.map((coll: any) => ({
           name: coll.name,
           value: coll.name,
           description: `Collection: ${coll.name}`,
@@ -769,7 +769,7 @@ const MongoDBNode = {
           {
             name: "Error loading collections - check credentials",
             value: "",
-            description: error.message,
+            description: (error instanceof Error ? error.message : String(error)),
           },
         ];
       }
@@ -777,4 +777,5 @@ const MongoDBNode = {
   },
 };
 
-module.exports = MongoDBNode;
+// Export as default for compatibility
+export default MongoDBNode;

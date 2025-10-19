@@ -146,7 +146,7 @@ export class WorkflowService {
           category: data.category,
           tags: data.tags || [],
           userId,
-          nodes: data.nodes,
+          nodes: data.nodes as any,
           connections: data.connections,
           triggers: normalizedTriggers,
           settings: data.settings,

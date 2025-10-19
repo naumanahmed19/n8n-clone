@@ -26,7 +26,7 @@ const verifyFlowExecutionEngine = () => {
   ];
 
   methods.forEach(method => {
-    if (typeof FlowExecutionEngine.prototype[method] === 'function') {
+    if (typeof (FlowExecutionEngine.prototype as any)[method] === 'function') {
       console.log(`✓ FlowExecutionEngine.${method}() method exists`);
     } else {
       console.log(`✗ FlowExecutionEngine.${method}() method missing`);
@@ -41,7 +41,7 @@ const verifyEventEmitter = () => {
     'emit',
     'removeListener',
     'addListener'
-  ].every(method => typeof FlowExecutionEngine.prototype[method] === 'function');
+  ].every(method => typeof (FlowExecutionEngine.prototype as any)[method] === 'function');
 
   if (hasEventEmitterMethods) {
     console.log('✓ FlowExecutionEngine extends EventEmitter');
@@ -68,7 +68,8 @@ console.log('\n=== Verification Complete ===');
 try {
   const mockPrisma = {} as any;
   const mockNodeService = {} as any;
-  const engine = new FlowExecutionEngine(mockPrisma, mockNodeService);
+  const mockExecutionHistoryService = {} as any;
+  const engine = new FlowExecutionEngine(mockPrisma, mockNodeService, mockExecutionHistoryService);
   console.log('✓ FlowExecutionEngine can be instantiated');
 } catch (error) {
   console.log('✗ FlowExecutionEngine instantiation failed:', error);

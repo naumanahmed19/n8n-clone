@@ -386,7 +386,7 @@ export class GracefulDegradation {
       if (shouldUseFallback(error)) {
         console.warn(
           "Primary operation failed, using fallback:",
-          error.message
+          error instanceof Error ? error.message : String(error)
         );
         return await fallbackOperation();
       }
@@ -403,7 +403,7 @@ export class GracefulDegradation {
       return await operation();
     } catch (error) {
       if (shouldUseDefault(error)) {
-        console.warn("Operation failed, using default value:", error.message);
+        console.warn("Operation failed, using default value:", error instanceof Error ? error.message : String(error));
         return defaultValue;
       }
       throw error;

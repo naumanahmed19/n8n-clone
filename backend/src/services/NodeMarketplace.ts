@@ -138,10 +138,11 @@ export class NodeMarketplace {
 
       const data = await response.json();
       
+      const result = data as any;
       return {
-        packages: data.packages || [],
-        total: data.total || 0,
-        hasMore: data.hasMore || false
+        packages: result.packages || [],
+        total: result.total || 0,
+        hasMore: result.hasMore || false
       };
     } catch (error) {
       logger.error('Failed to search nodes', { error, filters });
@@ -165,7 +166,7 @@ export class NodeMarketplace {
       }
 
       const packageInfo = await response.json();
-      return packageInfo;
+      return packageInfo as NodePackageMetadata;
     } catch (error) {
       logger.error('Failed to get node info', { error, packageId });
       throw new Error(`Failed to get package info: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -427,14 +428,22 @@ export class NodeMarketplace {
     for (let attempt = 1; attempt <= this.config.retries!; attempt++) {
       try {
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined,
-          timeout: this.config.timeout
-        });
-
-        return response as any; // Type assertion for compatibility
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+        
+        try {
+          const response = await fetch(url, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          return response as any; // Type assertion for compatibility
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
@@ -549,7 +558,7 @@ export class NodeMarketplace {
         throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = await response.json() as any;
       
       return {
         success: true,

@@ -139,7 +139,7 @@ export class NodeSettingsManager {
     }
 
     // Apply node instance settings (only for enabled settings)
-    nodeSettings.enabledSettings.forEach((settingName) => {
+    nodeSettings.enabledSettings.forEach((settingName: string) => {
       if (nodeSettings.values[settingName] !== undefined) {
         resolved[settingName] = nodeSettings.values[settingName];
       }
@@ -152,7 +152,7 @@ export class NodeSettingsManager {
           if (nodeSettings.values[key] !== undefined) {
             resolved[key] = nodeSettings.values[key];
           } else {
-            resolved[key] = settingDef.default;
+            resolved[key] = (settingDef as any).default;
           }
         }
       );
@@ -168,7 +168,7 @@ export class NodeSettingsManager {
     const enabled: NodeSettings = {};
 
     // Get enabled default settings
-    nodeSettings.enabledSettings.forEach((settingName) => {
+    nodeSettings.enabledSettings.forEach((settingName: string) => {
       const settingDef = DEFAULT_NODE_SETTINGS[settingName];
       if (settingDef) {
         enabled[settingName] = settingDef;
@@ -178,7 +178,7 @@ export class NodeSettingsManager {
     // Add custom settings
     if (nodeSettings.customSettings) {
       Object.entries(nodeSettings.customSettings).forEach(([key, value]) => {
-        enabled[key] = value;
+        enabled[key] = value as NodeSetting;
       });
     }
 

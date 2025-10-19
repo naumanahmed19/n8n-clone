@@ -7,7 +7,7 @@ import { GoogleSheetsHelper } from "../services/GoogleSheetsHelper";
 
 const router = Router();
 const prisma = new PrismaClient();
-const credentialService = new CredentialService(prisma);
+const credentialService = new CredentialService();
 
 /**
  * GET /api/google/spreadsheets

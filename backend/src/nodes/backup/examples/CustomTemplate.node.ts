@@ -2,7 +2,7 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
+} from "../../../types/node.types";
 
 /**
  * Example node demonstrating custom template usage in form configurations

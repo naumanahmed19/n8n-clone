@@ -484,7 +484,9 @@ export class ExecutionEngine extends EventEmitter {
         inputData,
         undefined, // credentials - TODO: implement credential retrieval
         executionId,
-        executionOptions
+        context.userId, // userId
+        executionOptions, // options
+        context.workflowId // workflowId
       );
 
       if (!result.success) {
@@ -496,7 +498,7 @@ export class ExecutionEngine extends EventEmitter {
         where: { id: nodeExecution.id },
         data: {
           status: NodeExecutionStatus.SUCCESS,
-          outputData: result.data,
+          outputData: result.data as any,
           finishedAt: new Date(),
           // Store additional execution metadata for manual triggers
           ...(node.type === "manual-trigger" && {
@@ -504,7 +506,7 @@ export class ExecutionEngine extends EventEmitter {
             network_metrics: {
               executionTime:
                 new Date().getTime() -
-                new Date(nodeExecution.startedAt).getTime(),
+                new Date(nodeExecution.startedAt || new Date()).getTime(),
               triggerType: "manual",
               triggerDataSize: JSON.stringify(context.triggerData || {}).length,
             },
@@ -513,7 +515,8 @@ export class ExecutionEngine extends EventEmitter {
       });
 
       // Store output data in context
-      context.nodeOutputs.set(nodeId, result.data || []);
+      const outputData = result.data ? [{ main: result.data.main }] : [];
+      context.nodeOutputs.set(nodeId, outputData);
 
       this.emitExecutionEvent({
         executionId,
@@ -534,29 +537,38 @@ export class ExecutionEngine extends EventEmitter {
       // Emit progress update
       await this.emitExecutionProgress(executionId);
 
-      return result.data || [];
+      return outputData;
     } catch (error) {
       // Enhanced error handling for manual triggers
-      if (node && node.type === "manual-trigger") {
-        logger.error(`Manual trigger node ${nodeId} execution failed`, {
-          executionId,
-          error: error instanceof Error ? error.message : "Unknown error",
-          triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
-          nodeParameters: Object.keys(node.parameters || {}),
+      const currentContext = this.activeExecutions.get(executionId);
+      if (currentContext) {
+        const workflow = await this.prisma.workflow.findUnique({
+          where: { id: currentContext.workflowId },
         });
-      }
-
-      // Enhanced error handling for workflow-called triggers
-      if (node && node.type === "workflow-called") {
-        logger.error(
-          `Workflow-called trigger node ${nodeId} execution failed`,
-          {
+        const workflowNodes = workflow?.nodes as unknown as Node[];
+        const currentNode = workflowNodes?.find((n) => n.id === nodeId);
+        
+        if (currentNode && currentNode.type === "manual-trigger") {
+          logger.error(`Manual trigger node ${nodeId} execution failed`, {
             executionId,
             error: error instanceof Error ? error.message : "Unknown error",
-            triggerDataSize: JSON.stringify(context?.triggerData || {}).length,
-            nodeParameters: Object.keys(node.parameters || {}),
-          }
-        );
+            triggerDataSize: JSON.stringify(currentContext.triggerData || {}).length,
+            nodeParameters: Object.keys(currentNode.parameters || {}),
+          });
+        }
+
+        // Enhanced error handling for workflow-called triggers
+        if (currentNode && currentNode.type === "workflow-called") {
+          logger.error(
+            `Workflow-called trigger node ${nodeId} execution failed`,
+            {
+              executionId,
+              error: error instanceof Error ? error.message : "Unknown error",
+              triggerDataSize: JSON.stringify(currentContext.triggerData || {}).length,
+              nodeParameters: Object.keys(currentNode.parameters || {}),
+            }
+          );
+        }
       }
 
       await this.handleNodeExecutionError(

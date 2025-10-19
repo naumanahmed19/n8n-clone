@@ -2,7 +2,7 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
+} from "../../../types/node.types";
 
 /**
  * Switch Node - Routes data to different outputs based on conditions

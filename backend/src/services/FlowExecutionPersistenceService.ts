@@ -223,6 +223,24 @@ export class FlowExecutionPersistenceServiceImpl
   }
 
   /**
+   * Helper to safely convert metrics
+   */
+  private safeMetrics(metrics: any): ExecutionMetricsData {
+    if (metrics && typeof metrics === 'object') {
+      return metrics as ExecutionMetricsData;
+    }
+    return {
+      totalNodes: 0,
+      completedNodes: 0,
+      failedNodes: 0,
+      averageNodeDuration: 0,
+      longestRunningNode: "",
+      bottleneckNodes: [],
+      parallelismUtilization: 0
+    };
+  }
+
+  /**
    * Get execution history for a workflow
    */
   async getExecutionHistory(
@@ -244,7 +262,7 @@ export class FlowExecutionPersistenceServiceImpl
       status: history.status,
       executedNodes: history.executedNodes,
       executionPath: history.executionPath,
-      metrics: history.metrics as ExecutionMetricsData,
+      metrics: this.safeMetrics(history.metrics),
     }));
   }
 
@@ -254,7 +272,7 @@ export class FlowExecutionPersistenceServiceImpl
   async getExecutionById(
     executionId: string
   ): Promise<ExecutionHistoryEntry | null> {
-    const history = await this.prisma.executionHistory.findUnique({
+    const history = await this.prisma.executionHistory.findFirst({
       where: { executionId },
     });
 
@@ -269,7 +287,7 @@ export class FlowExecutionPersistenceServiceImpl
       status: history.status,
       executedNodes: history.executedNodes,
       executionPath: history.executionPath,
-      metrics: history.metrics as ExecutionMetricsData,
+      metrics: this.safeMetrics(history.metrics),
     };
   }
 

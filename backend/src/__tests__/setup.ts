@@ -79,7 +79,7 @@ declare global {
 }
 
 // Test utilities
-global.testUtils = {
+(global as any).testUtils = {
   async createTestUser(email = "test@example.com"): Promise<string> {
     // This would be implemented with actual user creation logic
     return "mock-auth-token";

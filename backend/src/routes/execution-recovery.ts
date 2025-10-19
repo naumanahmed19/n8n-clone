@@ -1,20 +1,18 @@
 import { PrismaClient } from "@prisma/client";
-import { Router } from "express";
+import { Router, Response } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { authenticateToken } from "../middleware/auth";
+import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
 import ExecutionHistoryService from "../services/ExecutionHistoryService";
 import ExecutionRecoveryService from "../services/ExecutionRecoveryService";
-import { SocketService } from "../services/SocketService";
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Initialize services (in production, these would be injected)
-const socketService = new SocketService();
 const historyService = new ExecutionHistoryService(prisma);
 const recoveryService = new ExecutionRecoveryService(
   prisma,
-  socketService,
+  null, // SocketService not needed for recovery analysis
   historyService
 );
 
@@ -25,7 +23,7 @@ const recoveryService = new ExecutionRecoveryService(
 router.post(
   "/analyze",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { executionId, error } = req.body;
 
     if (!executionId) {
@@ -64,7 +62,7 @@ router.post(
 router.post(
   "/recover",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { executionId, strategy } = req.body;
 
     if (!executionId || !strategy) {
@@ -111,7 +109,7 @@ router.post(
 router.post(
   "/auto-recover",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { executionId, error } = req.body;
 
     if (!executionId) {
@@ -150,7 +148,7 @@ router.post(
 router.post(
   "/checkpoint",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { executionId, nodeId, state } = req.body;
 
     if (!executionId || !nodeId || !state) {
@@ -190,7 +188,7 @@ router.post(
 router.get(
   "/checkpoints/:executionId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { executionId } = req.params;
 
     if (!executionId) {
@@ -227,7 +225,7 @@ router.get(
 router.delete(
   "/cleanup/:executionId",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { executionId } = req.params;
 
     if (!executionId) {
@@ -263,7 +261,7 @@ router.delete(
 router.get(
   "/error-patterns",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { days = 7, limit = 10 } = req.query;
 
     try {
@@ -361,7 +359,7 @@ router.get(
 router.get(
   "/statistics",
   authenticateToken,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { days = 30 } = req.query;
 
     try {
