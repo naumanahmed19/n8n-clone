@@ -51,7 +51,8 @@ export function NodeTypesList({}: NodeTypesListProps) {
     isLoading, 
     error: storeError, 
     fetchNodeTypes, 
-    refetchNodeTypes
+    refetchNodeTypes,
+    hasFetched
   } = useNodeTypes()
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [activeTab, setActiveTab] = useState<string>('available')
@@ -61,10 +62,10 @@ export function NodeTypesList({}: NodeTypesListProps) {
 
   // Initialize store on mount
   useEffect(() => {
-    if (nodeTypes.length === 0 && !isLoading) {
+    if (nodeTypes.length === 0 && !isLoading && !hasFetched) {
       fetchNodeTypes()
     }
-  }, [nodeTypes.length, isLoading, fetchNodeTypes])
+  }, [nodeTypes.length, isLoading, hasFetched, fetchNodeTypes])
 
   // Update context when store data changes
   useEffect(() => {

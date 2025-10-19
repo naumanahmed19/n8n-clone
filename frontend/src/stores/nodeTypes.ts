@@ -18,6 +18,7 @@ interface NodeTypesState {
   // Loading states
   isLoading: boolean;
   isRefetching: boolean;
+  hasFetched: boolean;
 
   // Error state
   error: string | null;
@@ -42,6 +43,7 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
   nodeTypes: [],
   isLoading: false,
   isRefetching: false,
+  hasFetched: false,
   error: null,
 
   // Actions
@@ -64,6 +66,7 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
       set({
         nodeTypes: response,
         isLoading: false,
+        hasFetched: true,
         error: null,
       });
     } catch (error: any) {
@@ -94,6 +97,7 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
       set({
         nodeTypes: response,
         isRefetching: false,
+        hasFetched: true,
         error: null,
       });
     } catch (error: any) {
@@ -224,6 +228,7 @@ export const useNodeTypes = () => {
     // Loading states
     isLoading: store.isLoading,
     isRefetching: store.isRefetching,
+    hasFetched: store.hasFetched,
 
     // Error
     error: store.error,

@@ -206,7 +206,7 @@ httpServer.listen(PORT, async () => {
   console.log(`   - http://localhost:${PORT}/webhook/{webhookId}`);
 
   // Initialize node systems after server starts
-  // await initializeNodeSystems(); // Temporarily commented out to test server startup
+  await initializeNodeSystems();
 });
 
 // Graceful shutdown
