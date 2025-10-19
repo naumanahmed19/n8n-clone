@@ -319,8 +319,14 @@ const FormGeneratorNode = {
     const formFields = await this.getNodeParameter("formFields");
     const submitButtonText = await this.getNodeParameter("submitButtonText");
     const formProtection = await this.getNodeParameter("formProtection");
-    const formPassword = formProtection === "password" ? await this.getNodeParameter("formPassword") : null;
-    const accessKey = formProtection === "accessKey" ? await this.getNodeParameter("accessKey") : null;
+    const formPassword =
+      formProtection === "password"
+        ? await this.getNodeParameter("formPassword")
+        : null;
+    const accessKey =
+      formProtection === "accessKey"
+        ? await this.getNodeParameter("accessKey")
+        : null;
     const submittedFormData = await this.getNodeParameter("submittedFormData");
 
     // For trigger nodes, this executes when form is submitted
