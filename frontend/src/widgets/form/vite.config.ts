@@ -7,12 +7,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./src"),
+      "@": resolve(__dirname, "../../../src"),
     },
   },
   build: {
     lib: {
-      entry: resolve(__dirname, "src/widgets/form/index.tsx"),
+      entry: resolve(__dirname, "index.tsx"),
       name: "N8nFormWidget",
       fileName: (format) => `n8n-form-widget.${format}.js`,
       formats: ["umd", "es"],
@@ -25,7 +25,7 @@ export default defineConfig({
         globals: {},
       },
     },
-    outDir: "widgets/form/dist",
+    outDir: resolve(__dirname, "../../../dist/form"),
     emptyOutDir: true,
     sourcemap: true,
     minify: false, // Disable minification for now (terser not installed)
