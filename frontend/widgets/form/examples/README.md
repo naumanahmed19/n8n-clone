@@ -17,6 +17,7 @@ npm run build:widget
 ```
 
 This creates the widget files in `frontend/widgets/form/dist/`:
+
 - `n8n-form-widget.umd.js` - For `<script>` tags
 - `n8n-form-widget.es.js` - For ES modules
 
@@ -27,10 +28,12 @@ Copy the built files to your static server or CDN. For development, you can serv
 ### 3. Run Examples
 
 **Option A: Use http-server**
+
 ```bash
 cd frontend
 npx http-server -p 8080 -c-1
 ```
+
 Then open: http://localhost:8080/examples/widget-demo.html
 
 **Option B: Open directly in browser**
@@ -39,34 +42,39 @@ Open the HTML files in your browser (update script src to point to your widget l
 ## Widget Embedding Methods
 
 ### Method 1: Auto-Initialization (Easiest)
+
 ```html
-<div data-n8n-form="YOUR-FORM-ID" 
-     data-api-url="http://localhost:4000/api"></div>
+<div
+  data-n8n-form="YOUR-FORM-ID"
+  data-api-url="http://localhost:4000/api"
+></div>
 <script src="http://your-domain.com/n8n-form-widget.umd.js"></script>
 ```
 
 ### Method 2: Manual Initialization
+
 ```html
 <div id="form-container"></div>
 <script src="http://your-domain.com/n8n-form-widget.umd.js"></script>
 <script>
   N8nFormWidget.init({
-    formId: 'YOUR-FORM-ID',
-    container: '#form-container',
-    apiUrl: 'http://localhost:4000/api'
+    formId: "YOUR-FORM-ID",
+    container: "#form-container",
+    apiUrl: "http://localhost:4000/api",
   });
 </script>
 ```
 
 ### Method 3: ES Module
+
 ```html
 <div id="form-container"></div>
 <script type="module">
-  import { N8nFormWidget } from 'http://your-domain.com/n8n-form-widget.es.js';
+  import { N8nFormWidget } from "http://your-domain.com/n8n-form-widget.es.js";
   N8nFormWidget.init({
-    formId: 'YOUR-FORM-ID',
-    container: '#form-container',
-    apiUrl: 'http://localhost:4000/api'
+    formId: "YOUR-FORM-ID",
+    container: "#form-container",
+    apiUrl: "http://localhost:4000/api",
   });
 </script>
 ```
@@ -74,6 +82,7 @@ Open the HTML files in your browser (update script src to point to your widget l
 ## Configuration
 
 Update these values in the examples:
+
 - `YOUR-FORM-ID` - Your actual form ID from the workflow
 - `http://localhost:4000/api` - Your API URL
 - Widget script URL - Point to where you're hosting the widget

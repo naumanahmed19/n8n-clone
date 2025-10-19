@@ -250,7 +250,8 @@ const FormGeneratorNode = {
       type: "custom",
       required: false,
       default: "",
-      description: "Get embed code to add this form to any website without iframes",
+      description:
+        "Get embed code to add this form to any website without iframes",
       component: "WidgetEmbedGenerator",
       componentProps: {
         dependsOn: ["formUrl"],

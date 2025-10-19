@@ -19,6 +19,6 @@ Copy-Item -Path $sourceDir -Destination $publicDir -Recurse -Force
 Write-Host "✅ Widget copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Widget is now accessible at:" -ForegroundColor Cyan
-Write-Host "  → http://localhost:3000/widgets/form/n8n-form-widget.umd.js" -ForegroundColor Yellow
+Write-Host "  -> http://localhost:3000/widgets/form/n8n-form-widget.umd.js" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "💡 Test page: http://localhost:3000/widget-test.html" -ForegroundColor Gray
+Write-Host "Test page: http://localhost:3000/widget-test.html" -ForegroundColor Gray

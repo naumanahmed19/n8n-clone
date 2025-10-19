@@ -5,20 +5,24 @@ This folder contains embeddable widgets that allow users to integrate n8n functi
 ## Available Widgets
 
 ### 🎯 Form Widget
+
 Embed n8n forms on any website without iframes.
 
 **Location:** `widgets/form/`
 
 **Build Command:**
+
 ```bash
 npm run build:widget
 ```
 
 **Quick Start:**
+
 ```bash
 cd widgets/form
 npx http-server -p 8080 -c-1
 ```
+
 Open: http://localhost:8080/examples/simple.html
 
 **Documentation:** [widgets/form/examples/QUICK_START.md](form/examples/QUICK_START.md)
@@ -73,6 +77,7 @@ npm run build:widget:chat
 ## Distribution
 
 Widgets are standalone bundles that can be:
+
 - Uploaded to CDN
 - Served from static hosting
 - Embedded via `<script>` tags
