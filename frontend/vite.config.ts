@@ -10,6 +10,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  publicDir: "public", // Serve files from public directory
   server: {
     port: 3000,
     host: true,
@@ -23,6 +24,11 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
         ws: true,
+      },
+      // Proxy widget requests to the widget build
+      "/widgets": {
+        target: "http://localhost:3000",
+        rewrite: (path) => path.replace(/^\/widgets/, "/widgets"),
       },
     },
   },

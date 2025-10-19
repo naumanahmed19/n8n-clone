@@ -244,6 +244,18 @@ const FormGeneratorNode = {
       tooltip: "Text displayed on the submit button",
       placeholder: "Submit Form",
     },
+    {
+      displayName: "Widget Embed Code",
+      name: "widgetEmbedCode",
+      type: "custom",
+      required: false,
+      default: "",
+      description: "Get embed code to add this form to any website without iframes",
+      component: "WidgetEmbedGenerator",
+      componentProps: {
+        dependsOn: ["formUrl"],
+      },
+    },
   ],
 
   execute: async function (inputData) {

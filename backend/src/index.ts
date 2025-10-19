@@ -88,7 +88,15 @@ async function initializeNodeSystems() {
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: [
+      process.env.FRONTEND_URL || "http://localhost:3000",
+      "http://localhost:8080", // For widget examples
+      "http://localhost:8081", // Alternative widget port
+      "http://localhost:9000", // Widget examples server
+      "http://127.0.0.1:8080", // Alternative localhost
+      "http://127.0.0.1:8081", // Alternative localhost
+      "http://127.0.0.1:9000", // Alternative localhost
+    ],
     credentials: true,
   })
 );
