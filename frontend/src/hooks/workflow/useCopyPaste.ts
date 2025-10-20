@@ -228,7 +228,9 @@ export function useCopyPaste() {
         return {
           id: node.id,
           type: originalNode?.type || node.type || "default",
-          name: originalNode?.name || node.data?.label || node.id,
+          name: (typeof originalNode?.name === 'string' ? originalNode.name : '') || 
+                (typeof node.data?.label === 'string' ? node.data.label : '') || 
+                node.id,
           position: node.position,
           parameters: originalNode?.parameters || {},
           disabled: originalNode?.disabled || false,

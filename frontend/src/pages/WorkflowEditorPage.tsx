@@ -27,10 +27,6 @@ export function WorkflowEditorPage() {
     setWorkflow, 
     setLoading, 
     isLoading, 
-    canUndo,
-    canRedo,
-    undo,
-    redo,
     setExecutionMode,
     setNodeExecutionResult,
     clearExecutionState
@@ -389,10 +385,6 @@ export function WorkflowEditorPage() {
           />
         ) : (
           <WorkflowToolbar
-            canUndo={canUndo()}
-            canRedo={canRedo()}
-            onUndo={undo}
-            onRedo={redo}
             onSave={handleSave}
           />
         )}

@@ -12,7 +12,7 @@ export function ToolbarButtonsStyleTest() {
   const [isDisabled, setIsDisabled] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'high-contrast'>('light')
 
-  const handleExecute = (nodeId: string) => {
+  const handleExecute = (_nodeId: string) => {
     setIsExecuting(true)
     setHasError(false)
     setHasSuccess(false)
@@ -40,7 +40,7 @@ export function ToolbarButtonsStyleTest() {
     }, 3000)
   }
 
-  const handleToggleDisabled = (nodeId: string, disabled: boolean) => {
+  const handleToggleDisabled = (_nodeId: string, disabled: boolean) => {
     setIsDisabled(disabled)
   }
 

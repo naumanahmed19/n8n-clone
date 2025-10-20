@@ -76,7 +76,7 @@ export function WorkflowCanvas({
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     
     // Get panOnDrag and zoomOnScroll settings from store
-    const { panOnDrag, zoomOnScroll, reactFlowInstance, canvasBoundaryX, canvasBoundaryY } = useReactFlowUIStore()
+    const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
     
     // Use custom hooks for better code organization
     const { edgeStyle, connectionLineStyle, isDarkMode } = useReactFlowStyles()

@@ -104,7 +104,9 @@ class GlobalToastManager {
 
   subscribe(listener: (toasts: ToastProps[]) => void) {
     this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
   }
 
   private notify() {
@@ -177,7 +179,8 @@ export function useGlobalToast(): UseToastReturn {
   const [toasts, setToasts] = useState<ToastProps[]>([])
 
   React.useEffect(() => {
-    return globalToastManager.subscribe(setToasts)
+    const unsubscribe = globalToastManager.subscribe(setToasts)
+    return unsubscribe
   }, [])
 
   return {
