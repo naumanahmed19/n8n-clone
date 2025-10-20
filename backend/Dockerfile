@@ -1,5 +1,9 @@
 # Multi-stage build for production
-FROM node:22-alpine AS builder
+ARG BASE_IMAGE=node:22-alpine
+FROM ${BASE_IMAGE} AS builder
+
+ARG SOURCE_COMMIT
+ARG CORS_ORIGIN
 
 WORKDIR /app
 
@@ -25,7 +29,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production dependencies stage
-FROM node:22-alpine AS deps
+FROM ${BASE_IMAGE} AS deps
 
 WORKDIR /app
 
@@ -39,7 +43,7 @@ COPY package.json ./
 RUN npm install --omit=dev && npm cache clean --force
 
 # Production stage
-FROM node:22-alpine AS production
+FROM ${BASE_IMAGE} AS production
 
 WORKDIR /app
 
@@ -54,7 +58,7 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=builder /app/dist ./dist
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma ./
 
 # Change ownership
 RUN chown -R nodejs:nodejs /app

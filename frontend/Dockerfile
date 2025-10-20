@@ -1,8 +1,10 @@
 # Multi-stage build for production
-FROM node:22-alpine AS builder
+ARG BASE_IMAGE=node:22-alpine
+FROM ${BASE_IMAGE} AS builder
 
 # Define build arguments
 ARG VITE_API_URL
+ARG BASE_IMAGE
 
 # Set environment variables from build arguments
 ENV VITE_API_URL=${VITE_API_URL}

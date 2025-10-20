@@ -60,6 +60,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: production
+      args:
+        - BASE_IMAGE=node:22-alpine
+        - SOURCE_COMMIT=${SOURCE_COMMIT:-latest}
+        - CORS_ORIGIN=${CORS_ORIGIN:-*}
     container_name: n8n-clone-backend-prod
     environment:
       - NODE_ENV=production
@@ -103,6 +107,7 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
+        - BASE_IMAGE=node:22-alpine
         - VITE_API_URL=${VITE_API_URL:-http://localhost:4000}
     container_name: n8n-clone-frontend-prod
     environment:
