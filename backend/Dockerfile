@@ -15,8 +15,14 @@ RUN npm install && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Generate Prisma client and build
-RUN npx prisma generate && npm run build
+# Set a dummy DATABASE_URL for Prisma generation (not used during build)
+ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
+
+# Generate Prisma client first
+RUN npx prisma generate
+
+# Then build the TypeScript code
+RUN npm run build
 
 # Production dependencies stage
 FROM node:22-alpine AS deps
