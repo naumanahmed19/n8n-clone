@@ -87,9 +87,10 @@ async function initializeNodeSystems() {
 
 // Basic middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: [
+// Configure CORS origins
+const corsOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : [
       process.env.FRONTEND_URL || "http://localhost:3000",
       "http://localhost:8080", // For widget examples
       "http://localhost:8081", // Alternative widget port
@@ -97,8 +98,38 @@ app.use(
       "http://127.0.0.1:8080", // Alternative localhost
       "http://127.0.0.1:8081", // Alternative localhost
       "http://127.0.0.1:9000", // Alternative localhost
-    ],
+    ];
+
+// Dynamic CORS origin function
+const corsOriginFunction = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  // Allow requests with no origin (like mobile apps or curl requests)
+  if (!origin) return callback(null, true);
+  
+  // Check if origin is in allowed list
+  if (corsOrigins.includes(origin)) {
+    return callback(null, true);
+  }
+  
+  // For development, allow all localhost and 127.0.0.1 origins
+  if (process.env.NODE_ENV === 'development' && 
+      (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return callback(null, true);
+  }
+  
+  // Log rejected origins for debugging
+  console.warn(`CORS: Rejected origin: ${origin}`);
+  return callback(new Error('Not allowed by CORS'), false);
+};
+
+app.use(
+  cors({
+    origin: corsOriginFunction,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
 app.use(compression());

@@ -43,7 +43,7 @@ export const RegisterPage: React.FC = () => {
       setIsLoading(true)
 
       // Use the API client to make the request
-      await apiClient.post('/api/auth/register', {
+      await apiClient.post('/auth/register', {
         email: data.email,
         password: data.password,
         firstName: data.firstName,
