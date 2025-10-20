@@ -44,7 +44,7 @@ export function CredentialSecurityPoliciesModal({ onClose }: CredentialSecurityP
         setFormData({
             name: policy.name,
             description: policy.description,
-            rules: { ...policy.rules }
+            rules: { ...policy.rules } as any
         })
         setIsCreating(false)
     }

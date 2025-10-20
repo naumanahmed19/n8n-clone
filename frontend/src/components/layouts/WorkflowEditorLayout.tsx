@@ -188,10 +188,6 @@ export function WorkflowEditorLayout() {
         ) : (
           <>
             <WorkflowToolbar
-              canUndo={canUndo()}
-              canRedo={canRedo()}
-              onUndo={undo}
-              onRedo={redo}
               onSave={handleSave}
             />
             <div className="flex flex-1 flex-col h-full overflow-hidden">

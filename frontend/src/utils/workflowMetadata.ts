@@ -3,24 +3,24 @@
  * Handles creation, validation, migration, and persistence of workflow metadata
  */
 
-import { Workflow, WorkflowMetadata } from '@/types/workflow'
-import { ValidationError } from './errorHandling'
+import { Workflow, WorkflowMetadata } from "@/types/workflow";
+import { ErrorCodes, ValidationError } from "./errorHandling";
 
 /**
  * Current metadata schema version
  */
-export const CURRENT_METADATA_SCHEMA_VERSION = '1.0.0'
+export const CURRENT_METADATA_SCHEMA_VERSION = "1.0.0";
 
 /**
  * Default metadata values
  */
 export const DEFAULT_METADATA: Partial<WorkflowMetadata> = {
-  exportVersion: '1.0.0',
+  exportVersion: "1.0.0",
   schemaVersion: CURRENT_METADATA_SCHEMA_VERSION,
   version: 1,
   tags: [],
-  customProperties: {}
-}
+  customProperties: {},
+};
 
 /**
  * Create default metadata for a new workflow
@@ -29,10 +29,10 @@ export function createDefaultMetadata(
   title: string,
   createdBy?: string
 ): WorkflowMetadata {
-  const now = new Date().toISOString()
-  
+  const now = new Date().toISOString();
+
   return {
-    title: title || 'Untitled Workflow',
+    title: title || "Untitled Workflow",
     lastTitleUpdate: now,
     exportVersion: DEFAULT_METADATA.exportVersion!,
     schemaVersion: DEFAULT_METADATA.schemaVersion!,
@@ -40,8 +40,8 @@ export function createDefaultMetadata(
     createdBy,
     lastModifiedBy: createdBy,
     tags: [],
-    customProperties: {}
-  }
+    customProperties: {},
+  };
 }
 
 /**
@@ -52,30 +52,35 @@ export function updateMetadata(
   updates: Partial<WorkflowMetadata>,
   modifiedBy?: string
 ): WorkflowMetadata {
-  const now = new Date().toISOString()
-  
+  const now = new Date().toISOString();
+
   // If no current metadata exists, create default first
-  const base = currentMetadata || createDefaultMetadata(updates.title || 'Untitled Workflow')
-  
+  const base =
+    currentMetadata ||
+    createDefaultMetadata(updates.title || "Untitled Workflow");
+
   // Update version if content has changed (excluding title-only changes)
-  const shouldIncrementVersion = Object.keys(updates).some(key => 
-    key !== 'title' && key !== 'lastTitleUpdate' && key !== 'lastModifiedBy'
-  )
-  
+  const shouldIncrementVersion = Object.keys(updates).some(
+    (key) =>
+      key !== "title" && key !== "lastTitleUpdate" && key !== "lastModifiedBy"
+  );
+
   const updated: WorkflowMetadata = {
     ...base,
     ...updates,
     lastModifiedBy: modifiedBy || base.lastModifiedBy,
-    version: shouldIncrementVersion ? (base.version || 1) + 1 : base.version || 1,
-    schemaVersion: CURRENT_METADATA_SCHEMA_VERSION
-  }
-  
+    version: shouldIncrementVersion
+      ? (base.version || 1) + 1
+      : base.version || 1,
+    schemaVersion: CURRENT_METADATA_SCHEMA_VERSION,
+  };
+
   // Update lastTitleUpdate if title changed
   if (updates.title && updates.title !== base.title) {
-    updated.lastTitleUpdate = now
+    updated.lastTitleUpdate = now;
   }
-  
-  return updated
+
+  return updated;
 }
 
 /**
@@ -86,168 +91,178 @@ export function migrateMetadata(
   workflowName?: string
 ): WorkflowMetadata {
   if (!metadata) {
-    return createDefaultMetadata(workflowName || 'Untitled Workflow')
+    return createDefaultMetadata(workflowName || "Untitled Workflow");
   }
-  
-  const migrated = { ...metadata } as WorkflowMetadata
-  const now = new Date().toISOString()
-  
+
+  const migrated = { ...metadata } as WorkflowMetadata;
+  const now = new Date().toISOString();
+
   // Ensure required fields exist
   if (!migrated.title) {
-    migrated.title = workflowName || 'Untitled Workflow'
+    migrated.title = workflowName || "Untitled Workflow";
   }
-  
+
   if (!migrated.lastTitleUpdate) {
-    migrated.lastTitleUpdate = now
+    migrated.lastTitleUpdate = now;
   }
-  
+
   if (!migrated.exportVersion) {
-    migrated.exportVersion = DEFAULT_METADATA.exportVersion!
+    migrated.exportVersion = DEFAULT_METADATA.exportVersion!;
   }
-  
+
   if (!migrated.schemaVersion) {
-    migrated.schemaVersion = CURRENT_METADATA_SCHEMA_VERSION
+    migrated.schemaVersion = CURRENT_METADATA_SCHEMA_VERSION;
   }
-  
+
   if (!migrated.version) {
-    migrated.version = 1
+    migrated.version = 1;
   }
-  
+
   if (!migrated.tags) {
-    migrated.tags = []
+    migrated.tags = [];
   }
-  
+
   if (!migrated.customProperties) {
-    migrated.customProperties = {}
+    migrated.customProperties = {};
   }
-  
+
   // Handle schema version migrations
   switch (migrated.schemaVersion) {
-    case '0.9.0':
-    case '0.9.1':
+    case "0.9.0":
+    case "0.9.1":
       // Migrate from older versions - add new fields
-      migrated.version = migrated.version || 1
-      migrated.tags = migrated.tags || []
-      migrated.customProperties = migrated.customProperties || {}
-      migrated.schemaVersion = CURRENT_METADATA_SCHEMA_VERSION
-      break
-      
+      migrated.version = migrated.version || 1;
+      migrated.tags = migrated.tags || [];
+      migrated.customProperties = migrated.customProperties || {};
+      migrated.schemaVersion = CURRENT_METADATA_SCHEMA_VERSION;
+      break;
+
     case CURRENT_METADATA_SCHEMA_VERSION:
       // Already current version
-      break
-      
+      break;
+
     default:
       // Unknown version - treat as legacy and migrate
-      console.warn(`Unknown metadata schema version: ${migrated.schemaVersion}`)
-      migrated.schemaVersion = CURRENT_METADATA_SCHEMA_VERSION
-      break
+      console.warn(
+        `Unknown metadata schema version: ${migrated.schemaVersion}`
+      );
+      migrated.schemaVersion = CURRENT_METADATA_SCHEMA_VERSION;
+      break;
   }
-  
-  return migrated
+
+  return migrated;
 }
 
 /**
  * Validate workflow metadata
  */
-export function validateMetadata(metadata: WorkflowMetadata | undefined): ValidationError[] {
-  const errors: ValidationError[] = []
-  
+export function validateMetadata(
+  metadata: WorkflowMetadata | undefined
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+
   if (!metadata) {
     errors.push({
-      field: 'metadata',
-      message: 'Metadata is required',
-      code: 'METADATA_MISSING'
-    })
-    return errors
+      field: "metadata",
+      message: "Metadata is required",
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
+    return errors;
   }
-  
+
   // Validate required fields
   if (!metadata.title || metadata.title.trim().length === 0) {
     errors.push({
-      field: 'metadata.title',
-      message: 'Title is required',
-      code: 'METADATA_TITLE_EMPTY'
-    })
+      field: "metadata.title",
+      message: "Title is required",
+      code: ErrorCodes.TITLE_EMPTY,
+    });
   }
-  
+
   if (metadata.title && metadata.title.length > 200) {
     errors.push({
-      field: 'metadata.title',
-      message: 'Title must be 200 characters or less',
-      code: 'METADATA_TITLE_TOO_LONG'
-    })
+      field: "metadata.title",
+      message: "Title must be 200 characters or less",
+      code: ErrorCodes.TITLE_TOO_LONG,
+    });
   }
-  
+
   if (!metadata.lastTitleUpdate) {
     errors.push({
-      field: 'metadata.lastTitleUpdate',
-      message: 'Last title update timestamp is required',
-      code: 'METADATA_TIMESTAMP_MISSING'
-    })
+      field: "metadata.lastTitleUpdate",
+      message: "Last title update timestamp is required",
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
   }
-  
+
   if (!metadata.exportVersion) {
     errors.push({
-      field: 'metadata.exportVersion',
-      message: 'Export version is required',
-      code: 'METADATA_VERSION_MISSING'
-    })
+      field: "metadata.exportVersion",
+      message: "Export version is required",
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
   }
-  
+
   if (!metadata.schemaVersion) {
     errors.push({
-      field: 'metadata.schemaVersion',
-      message: 'Schema version is required',
-      code: 'METADATA_SCHEMA_VERSION_MISSING'
-    })
+      field: "metadata.schemaVersion",
+      message: "Schema version is required",
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
   }
-  
+
   // Validate version number
-  if (metadata.version !== undefined && (metadata.version < 1 || !Number.isInteger(metadata.version))) {
+  if (
+    metadata.version !== undefined &&
+    (metadata.version < 1 || !Number.isInteger(metadata.version))
+  ) {
     errors.push({
-      field: 'metadata.version',
-      message: 'Version must be a positive integer',
-      code: 'METADATA_VERSION_INVALID'
-    })
+      field: "metadata.version",
+      message: "Version must be a positive integer",
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
   }
-  
+
   // Validate tags
   if (metadata.tags) {
     if (!Array.isArray(metadata.tags)) {
       errors.push({
-        field: 'metadata.tags',
-        message: 'Tags must be an array',
-        code: 'METADATA_TAGS_INVALID'
-      })
+        field: "metadata.tags",
+        message: "Tags must be an array",
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
     } else {
       metadata.tags.forEach((tag, index) => {
-        if (typeof tag !== 'string') {
+        if (typeof tag !== "string") {
           errors.push({
             field: `metadata.tags[${index}]`,
-            message: 'Tag must be a string',
-            code: 'METADATA_TAG_INVALID'
-          })
+            message: "Tag must be a string",
+            code: ErrorCodes.VALIDATION_ERROR,
+          });
         } else if (tag.length > 50) {
           errors.push({
             field: `metadata.tags[${index}]`,
-            message: 'Tag must be 50 characters or less',
-            code: 'METADATA_TAG_TOO_LONG'
-          })
+            message: "Tag must be 50 characters or less",
+            code: ErrorCodes.VALIDATION_ERROR,
+          });
         }
-      })
+      });
     }
   }
-  
+
   // Validate custom properties
-  if (metadata.customProperties && typeof metadata.customProperties !== 'object') {
+  if (
+    metadata.customProperties &&
+    typeof metadata.customProperties !== "object"
+  ) {
     errors.push({
-      field: 'metadata.customProperties',
-      message: 'Custom properties must be an object',
-      code: 'METADATA_CUSTOM_PROPERTIES_INVALID'
-    })
+      field: "metadata.customProperties",
+      message: "Custom properties must be an object",
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
   }
-  
-  return errors
+
+  return errors;
 }
 
 /**
@@ -257,21 +272,21 @@ export function ensureWorkflowMetadata(
   workflow: Workflow,
   createdBy?: string
 ): Workflow {
-  let migratedMetadata = migrateMetadata(workflow.metadata, workflow.name)
-  
+  let migratedMetadata = migrateMetadata(workflow.metadata, workflow.name);
+
   // Set createdBy if provided and not already set
   if (createdBy && !migratedMetadata.createdBy) {
     migratedMetadata = {
       ...migratedMetadata,
       createdBy,
-      lastModifiedBy: createdBy
-    }
+      lastModifiedBy: createdBy,
+    };
   }
-  
+
   return {
     ...workflow,
-    metadata: migratedMetadata
-  }
+    metadata: migratedMetadata,
+  };
 }
 
 /**
@@ -286,13 +301,13 @@ export function updateWorkflowTitle(
     workflow.metadata,
     { title: newTitle },
     modifiedBy
-  )
-  
+  );
+
   return {
     ...workflow,
     name: newTitle, // Keep name in sync with metadata title
-    metadata: updatedMetadata
-  }
+    metadata: updatedMetadata,
+  };
 }
 
 /**
@@ -304,23 +319,23 @@ export function addCustomProperty(
   value: any,
   modifiedBy?: string
 ): Workflow {
-  const currentCustomProperties = workflow.metadata?.customProperties || {}
-  
+  const currentCustomProperties = workflow.metadata?.customProperties || {};
+
   const updatedMetadata = updateMetadata(
     workflow.metadata,
     {
       customProperties: {
         ...currentCustomProperties,
-        [key]: value
-      }
+        [key]: value,
+      },
     },
     modifiedBy
-  )
-  
+  );
+
   return {
     ...workflow,
-    metadata: updatedMetadata
-  }
+    metadata: updatedMetadata,
+  };
 }
 
 /**
@@ -331,21 +346,21 @@ export function removeCustomProperty(
   key: string,
   modifiedBy?: string
 ): Workflow {
-  const currentCustomProperties = workflow.metadata?.customProperties || {}
-  const { [key]: removed, ...remainingProperties } = currentCustomProperties
-  
+  const currentCustomProperties = workflow.metadata?.customProperties || {};
+  const { [key]: removed, ...remainingProperties } = currentCustomProperties;
+
   const updatedMetadata = updateMetadata(
     workflow.metadata,
     {
-      customProperties: remainingProperties
+      customProperties: remainingProperties,
     },
     modifiedBy
-  )
-  
+  );
+
   return {
     ...workflow,
-    metadata: updatedMetadata
-  }
+    metadata: updatedMetadata,
+  };
 }
 
 /**
@@ -356,25 +371,25 @@ export function addTag(
   tag: string,
   modifiedBy?: string
 ): Workflow {
-  const currentTags = workflow.metadata?.tags || []
-  
+  const currentTags = workflow.metadata?.tags || [];
+
   // Don't add duplicate tags
   if (currentTags.includes(tag)) {
-    return workflow
+    return workflow;
   }
-  
+
   const updatedMetadata = updateMetadata(
     workflow.metadata,
     {
-      tags: [...currentTags, tag]
+      tags: [...currentTags, tag],
     },
     modifiedBy
-  )
-  
+  );
+
   return {
     ...workflow,
-    metadata: updatedMetadata
-  }
+    metadata: updatedMetadata,
+  };
 }
 
 /**
@@ -385,48 +400,49 @@ export function removeTag(
   tag: string,
   modifiedBy?: string
 ): Workflow {
-  const currentTags = workflow.metadata?.tags || []
-  const updatedTags = currentTags.filter(t => t !== tag)
-  
+  const currentTags = workflow.metadata?.tags || [];
+  const updatedTags = currentTags.filter((t) => t !== tag);
+
   const updatedMetadata = updateMetadata(
     workflow.metadata,
     {
-      tags: updatedTags
+      tags: updatedTags,
     },
     modifiedBy
-  )
-  
+  );
+
   return {
     ...workflow,
-    metadata: updatedMetadata
-  }
+    metadata: updatedMetadata,
+  };
 }
 
 /**
  * Get metadata summary for display
  */
 export function getMetadataSummary(metadata: WorkflowMetadata | undefined): {
-  title: string
-  version: number
-  lastModified: string
-  tags: string[]
-  hasCustomProperties: boolean
+  title: string;
+  version: number;
+  lastModified: string;
+  tags: string[];
+  hasCustomProperties: boolean;
 } {
   if (!metadata) {
     return {
-      title: 'Untitled Workflow',
+      title: "Untitled Workflow",
       version: 1,
-      lastModified: 'Unknown',
+      lastModified: "Unknown",
       tags: [],
-      hasCustomProperties: false
-    }
+      hasCustomProperties: false,
+    };
   }
-  
+
   return {
     title: metadata.title,
     version: metadata.version || 1,
     lastModified: metadata.lastTitleUpdate,
     tags: metadata.tags || [],
-    hasCustomProperties: Object.keys(metadata.customProperties || {}).length > 0
-  }
+    hasCustomProperties:
+      Object.keys(metadata.customProperties || {}).length > 0,
+  };
 }

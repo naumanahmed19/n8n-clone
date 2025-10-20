@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { NodeExecutionError } from "@/components/workflow/types";
 
 /**

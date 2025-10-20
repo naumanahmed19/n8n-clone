@@ -15,7 +15,7 @@ export function TimelineTabContent({ flowExecutionStatus, realTimeResults }: Tim
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-medium text-foreground">Execution Timeline</h4>
             <div className="text-sm text-muted-foreground">
-              Status: {flowExecutionStatus.status}
+              Status: {flowExecutionStatus.overallStatus}
             </div>
           </div>
 
@@ -33,7 +33,6 @@ export function TimelineTabContent({ flowExecutionStatus, realTimeResults }: Tim
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
                         result.status === 'success' ? 'bg-green-500 dark:bg-green-600' :
                         result.status === 'error' ? 'bg-red-500 dark:bg-red-600' :
-                        result.status === 'running' ? 'bg-blue-500 dark:bg-blue-600' :
                         result.status === 'skipped' ? 'bg-yellow-500 dark:bg-yellow-600' :
                         'bg-muted'
                       }`}>
