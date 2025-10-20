@@ -3,7 +3,7 @@ import { promises as fsPromises } from "fs";
 import * as os from "os";
 import * as path from "path";
 import { promisify } from "util";
-import { VM } from "vm2";
+// import { VM } from "vm2"; // Temporarily disabled for deployment
 import {
   NodeDefinition,
   NodeInputData,

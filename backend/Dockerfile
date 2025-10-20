@@ -1,13 +1,16 @@
 # Multi-stage build for production
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package*.json ./
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
+
+# Copy package.json only (no lock file needed for workspace)
+COPY package.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -16,18 +19,21 @@ COPY . .
 RUN npx prisma generate && npm run build
 
 # Production dependencies stage
-FROM node:18-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
+
+# Copy package.json only
+COPY package.json ./
 
 # Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
@@ -41,7 +47,7 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy built application and production dependencies
 COPY --from=builder /app/dist ./dist
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
 
 # Change ownership

@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import ivm from "isolated-vm";
+// import ivm from "isolated-vm"; // Temporarily disabled for deployment
 import {
   NodeExecutionContext,
   NodeHelpers,
@@ -72,12 +72,18 @@ export class SecureExecutionService {
 
   /**
    * Execute JavaScript code in a secure isolated-vm sandbox
+   * Note: Temporarily disabled for deployment compatibility
    */
   async executeInSandbox(
     code: string,
     context: Record<string, any>,
     options: SecureExecutionOptions = {}
   ): Promise<any> {
+    // Temporarily return a simple evaluation for deployment
+    // TODO: Re-enable isolated-vm when deployment environment supports it
+    throw new Error("Secure code execution is temporarily disabled. Please use alternative execution methods.");
+    
+    /* Original isolated-vm implementation - disabled for deployment
     const limits = this.mergeLimits(options);
     let isolate: ivm.Isolate | null = null;
 
@@ -87,7 +93,10 @@ export class SecureExecutionService {
         memoryLimit: Math.floor(limits.memoryLimit / (1024 * 1024)), // Convert to MB
         inspector: false, // Disable debugging
       });
+    */
 
+      // Original implementation commented out for deployment
+      /*
       // Create context within the isolate
       const vmContext = await isolate.createContext();
       const jail = vmContext.global;
@@ -141,12 +150,9 @@ export class SecureExecutionService {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
-    } finally {
-      // Clean up isolate
-      if (isolate) {
-        isolate.dispose();
-      }
-    }
+      */
+    // No cleanup needed for disabled implementation
+  }
   }
 
   /**
