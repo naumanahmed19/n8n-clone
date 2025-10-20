@@ -25,8 +25,9 @@ FROM nginx:alpine AS production
 # Copy built application
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-# COPY nginx.conf /etc/nginx/nginx.conf
+# Remove default nginx config and copy our custom config
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 3000
