@@ -10,6 +10,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.coolify
+.env.coolify.generated
 
 # Build outputs
 dist/

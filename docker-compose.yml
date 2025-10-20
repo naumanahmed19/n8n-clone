@@ -65,7 +65,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://backend:4000
+      - VITE_API_URL=${VITE_API_URL:-http://backend:4000}
     depends_on:
       backend:
         condition: service_healthy
