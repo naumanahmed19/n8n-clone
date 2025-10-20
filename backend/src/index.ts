@@ -71,51 +71,75 @@ global.prisma = prisma;
 async function initializeNodeSystems() {
   try {
     // First, ensure built-in nodes are loaded
-    console.log("⏳ Initializing built-in nodes...");
     await nodeService.waitForInitialization();
-    console.log("✅ Built-in nodes initialized");
+
+    // Check if nodes were successfully registered
+    const nodeTypes = await nodeService.getNodeTypes();
+
+    if (nodeTypes.length === 0) {
+      try {
+        await nodeService.registerDiscoveredNodes();
+      } catch (registrationError) {
+        console.error("Failed to register nodes:", registrationError);
+      }
+    } else {
+      // Even if some nodes were found, try to register any missing ones
+      try {
+        // Import and use node discovery directly
+        const { nodeDiscovery } = await import("./utils/NodeDiscovery");
+        const allNodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
+
+        for (const nodeDefinition of allNodeDefinitions) {
+          try {
+            await nodeService.registerNode(nodeDefinition);
+          } catch (error) {
+            // Silently continue on registration errors
+          }
+        }
+      } catch (registrationError) {
+        // Silently continue on discovery errors
+      }
+    }
 
     // Then, load custom nodes
-    console.log("⏳ Initializing custom node system...");
     await nodeLoader.initialize();
-    console.log("✅ Custom node system initialized");
   } catch (error) {
-    console.error("❌ Failed to initialize node systems:", error);
-    throw error;
+    console.error("Failed to initialize node systems:", error);
+    // Don't throw the error - allow the application to start
   }
 }
 
 // Basic middleware
 app.use(helmet());
 // Configure CORS origins
-const corsOrigins = process.env.CORS_ORIGIN 
+const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : [
-      process.env.FRONTEND_URL || "http://localhost:3000",
-      "http://localhost:8080", // For widget examples
-      "http://localhost:8081", // Alternative widget port
-      "http://localhost:9000", // Widget examples server
-      "http://127.0.0.1:8080", // Alternative localhost
-      "http://127.0.0.1:8081", // Alternative localhost
-      "http://127.0.0.1:9000", // Alternative localhost
-    ];
+    process.env.FRONTEND_URL || "http://localhost:3000",
+    "http://localhost:8080", // For widget examples
+    "http://localhost:8081", // Alternative widget port
+    "http://localhost:9000", // Widget examples server
+    "http://127.0.0.1:8080", // Alternative localhost
+    "http://127.0.0.1:8081", // Alternative localhost
+    "http://127.0.0.1:9000", // Alternative localhost
+  ];
 
 // Dynamic CORS origin function
 const corsOriginFunction = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
   // Allow requests with no origin (like mobile apps or curl requests)
   if (!origin) return callback(null, true);
-  
+
   // Check if origin is in allowed list
   if (corsOrigins.includes(origin)) {
     return callback(null, true);
   }
-  
+
   // For development, allow all localhost and 127.0.0.1 origins
-  if (process.env.NODE_ENV === 'development' && 
-      (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+  if (process.env.NODE_ENV === 'development' &&
+    (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
     return callback(null, true);
   }
-  
+
   // Log rejected origins for debugging
   console.warn(`CORS: Rejected origin: ${origin}`);
   return callback(new Error('Not allowed by CORS'), false);

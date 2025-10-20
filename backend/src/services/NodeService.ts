@@ -742,6 +742,9 @@ export class NodeService {
       logger.info("Built-in nodes initialized");
     } catch (error) {
       logger.error("Failed to initialize built-in nodes", { error });
+      
+      // Don't throw the error - allow the application to start even if node registration fails
+      // This prevents the entire application from failing to start due to node registration issues
     }
   }
 
@@ -768,12 +771,20 @@ export class NodeService {
 
     try {
       const nodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
+      
+      if (nodeDefinitions.length === 0) {
+        return;
+      }
 
       for (const nodeDefinition of nodeDefinitions) {
-        await this.registerNode(nodeDefinition);
+        try {
+          await this.registerNode(nodeDefinition);
+        } catch (error) {
+          logger.error(`Error registering ${nodeDefinition.displayName}:`, error);
+        }
       }
     } catch (error) {
-      console.error("Error registering built-in nodes:", error);
+      logger.error("Error during node discovery and registration:", error);
       throw error;
     }
   }

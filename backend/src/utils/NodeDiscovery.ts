@@ -16,7 +16,22 @@ export class NodeDiscovery {
   private nodesDir: string;
 
   constructor(nodesDir?: string) {
-    this.nodesDir = nodesDir || path.join(__dirname, "..", "nodes");
+    if (nodesDir) {
+      this.nodesDir = nodesDir;
+    } else {
+      // In production (dist/), look for nodes in dist/nodes
+      // In development (src/), look for nodes in src/nodes
+      const defaultPath = path.join(__dirname, "..", "nodes");
+
+      // Check if we're running from dist/ (production)
+      if (__dirname.includes("dist")) {
+        this.nodesDir = defaultPath; // This will be dist/nodes
+      } else {
+        this.nodesDir = defaultPath; // This will be src/nodes
+      }
+    }
+
+
   }
 
   /**
@@ -27,6 +42,11 @@ export class NodeDiscovery {
     const directories: string[] = [];
 
     try {
+      // Check if nodes directory exists
+      if (!fs.existsSync(this.nodesDir)) {
+        return directories;
+      }
+
       const items = await fs.promises.readdir(this.nodesDir, {
         withFileTypes: true,
       });
@@ -35,7 +55,7 @@ export class NodeDiscovery {
         if (item.isDirectory()) {
           const dirPath = path.join(this.nodesDir, item.name);
 
-          // Check if directory contains an index.ts file or .node.ts files
+          // Check if directory contains node files
           if (await this.isValidNodeDirectory(dirPath)) {
             directories.push(item.name);
           }
@@ -55,10 +75,11 @@ export class NodeDiscovery {
     try {
       const files = await fs.promises.readdir(dirPath);
 
-      // Check for index.ts or any .node.ts files
+      // Check for index files or node files in both TS and JS formats
       return files.some(
         (file) =>
           file === "index.ts" ||
+          file === "index.js" ||
           file.endsWith(".node.ts") ||
           file.endsWith(".node.js")
       );
@@ -104,25 +125,37 @@ export class NodeDiscovery {
    */
   private async loadNodeFromDirectory(dirPath: string): Promise<any> {
     try {
-      // Try to load from index.ts first
-      const indexPath = path.join(dirPath, "index");
+      // Try to load from index file first (both .js and .ts)
+      const indexPaths = [
+        path.join(dirPath, "index.js"),
+        path.join(dirPath, "index.ts"),
+        path.join(dirPath, "index")
+      ];
 
-      try {
-        // Convert Windows path to file:// URL for dynamic import
-        const indexUrl = this.pathToFileUrl(indexPath);
-        return await import(indexUrl);
-      } catch {
-        // If no index.ts, try to find .node.ts files
-        const files = await fs.promises.readdir(dirPath);
-        const nodeFile = files.find((file) => file.endsWith(".node.ts"));
+      for (const indexPath of indexPaths) {
+        try {
+          const indexUrl = this.pathToFileUrl(indexPath);
+          const module = await import(indexUrl);
+          return module;
+        } catch (error) {
+          // Continue to next path
+        }
+      }
 
-        if (nodeFile) {
-          const nodeFilePath = path.join(
-            dirPath,
-            nodeFile.replace(/\.ts$/, "")
-          );
+      // If no index file, try to find .node.ts or .node.js files
+      const files = await fs.promises.readdir(dirPath);
+      const nodeFiles = files.filter((file) =>
+        file.endsWith(".node.ts") || file.endsWith(".node.js")
+      );
+
+      for (const nodeFile of nodeFiles) {
+        try {
+          const nodeFilePath = path.join(dirPath, nodeFile.replace(/\.(ts|js)$/, ""));
           const nodeFileUrl = this.pathToFileUrl(nodeFilePath);
-          return await import(nodeFileUrl);
+          const module = await import(nodeFileUrl);
+          return module;
+        } catch (error) {
+          // Continue to next file
         }
       }
     } catch (error) {

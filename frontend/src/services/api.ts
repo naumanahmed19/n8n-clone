@@ -36,8 +36,9 @@ class ApiClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Clear token but don't redirect here - let the auth store handle it
+          // Clear token and notify auth store
           this.clearToken();
+          this.handleUnauthorized();
         }
         return Promise.reject(this.formatError(error));
       }
@@ -86,6 +87,25 @@ class ApiClient {
     this.token = null;
     localStorage.removeItem("auth_token");
     localStorage.removeItem("refresh_token");
+  }
+
+  private handleUnauthorized() {
+    // Clear auth store state and redirect to login
+    // We use a timeout to avoid circular imports and ensure the store is available
+    setTimeout(() => {
+      try {
+        // Import the auth store dynamically to avoid circular dependencies
+        import('@/stores/auth').then(({ useAuthStore }) => {
+          const authStore = useAuthStore.getState();
+          // Clear the auth state which will trigger a redirect to login
+          authStore.logout();
+        });
+      } catch (error) {
+        console.error('Failed to clear auth state on 401:', error);
+        // Fallback: redirect to login manually
+        window.location.href = '/login';
+      }
+    }, 0);
   }
 
   async get<T = any>(
