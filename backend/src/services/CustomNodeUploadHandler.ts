@@ -472,26 +472,411 @@ export class CustomNodeUploadHandler {
   ): Partial<NodeDefinition> {
     const info: Partial<NodeDefinition> = {};
 
-    // Try to extract class name and basic info from TypeScript/JavaScript content
-    const classMatch = content.match(/class\s+(\w+)/);
-    if (classMatch) {
-      info.name = classMatch[1];
-      info.displayName = classMatch[1].replace(/([A-Z])/g, " $1").trim();
-    }
+    try {
+      // Try to extract node definition from JavaScript object pattern
+      // Look for patterns like: const NodeName = { ... } or module.exports = { ... }
+      const objectPatterns = [
+        /const\s+\w+\s*=\s*({[\s\S]*?});?\s*(?:module\.exports|$)/,
+        /module\.exports\s*=\s*({[\s\S]*?});?\s*$/,
+        /export\s+(?:const\s+\w+\s*=\s*)?({[\s\S]*?});?\s*$/
+      ];
 
-    // Look for description in comments
-    const descriptionMatch = content.match(/\/\*\*\s*\n\s*\*\s*(.+?)\s*\n/);
-    if (descriptionMatch) {
-      info.description = descriptionMatch[1];
-    }
+      let nodeObjectMatch = null;
+      for (const pattern of objectPatterns) {
+        const match = content.match(pattern);
+        if (match && match[1]) {
+          nodeObjectMatch = match[1];
+          break;
+        }
+      }
 
-    // Try to extract type from export or class name
-    const typeMatch = content.match(/type:\s*['"`]([^'"`]+)['"`]/);
-    if (typeMatch) {
-      info.type = typeMatch[1];
+      if (nodeObjectMatch) {
+        // Try to safely evaluate the object to extract properties
+        const nodeObject = this.safeEvaluateNodeObject(nodeObjectMatch);
+        if (nodeObject) {
+          // Extract all available properties from the node object
+          if (nodeObject.type) info.type = nodeObject.type;
+          if (nodeObject.displayName) info.displayName = nodeObject.displayName;
+          if (nodeObject.name) info.name = nodeObject.name;
+          if (nodeObject.group) info.group = nodeObject.group;
+          if (nodeObject.version) info.version = nodeObject.version;
+          if (nodeObject.description) info.description = nodeObject.description;
+          if (nodeObject.defaults) info.defaults = nodeObject.defaults;
+          if (nodeObject.inputs) info.inputs = nodeObject.inputs;
+          if (nodeObject.outputs) info.outputs = nodeObject.outputs;
+          if (nodeObject.properties) info.properties = nodeObject.properties;
+          if (nodeObject.icon) info.icon = nodeObject.icon;
+          if (nodeObject.color) info.color = nodeObject.color;
+          
+          logger.info("Successfully extracted node definition from content", {
+            filename,
+            extractedFields: Object.keys(info),
+            propertiesCount: info.properties?.length || 0
+          });
+          
+          return info;
+        }
+      }
+
+      // Fallback to regex-based extraction for simpler cases
+      // Try to extract class name and basic info from TypeScript/JavaScript content
+      const classMatch = content.match(/class\s+(\w+)/);
+      if (classMatch) {
+        info.name = classMatch[1];
+        info.displayName = classMatch[1].replace(/([A-Z])/g, " $1").trim();
+      }
+
+      // Look for description in comments
+      const descriptionMatch = content.match(/\/\*\*\s*\n\s*\*\s*(.+?)\s*\n/);
+      if (descriptionMatch) {
+        info.description = descriptionMatch[1];
+      }
+
+      // Try to extract individual fields using regex
+      const typeMatch = content.match(/type:\s*['"`]([^'"`]+)['"`]/);
+      if (typeMatch) {
+        info.type = typeMatch[1];
+      }
+
+      const displayNameMatch = content.match(/displayName:\s*['"`]([^'"`]+)['"`]/);
+      if (displayNameMatch) {
+        info.displayName = displayNameMatch[1];
+      }
+
+      const nameMatch = content.match(/name:\s*['"`]([^'"`]+)['"`]/);
+      if (nameMatch) {
+        info.name = nameMatch[1];
+      }
+
+      // Try to extract properties array (basic pattern matching)
+      const propertiesMatch = content.match(/properties:\s*(\[[\s\S]*?\])/);
+      if (propertiesMatch) {
+        try {
+          // Try to safely evaluate the properties array
+          const propertiesStr = propertiesMatch[1];
+          const properties = this.safeEvaluateArray(propertiesStr);
+          if (properties) {
+            info.properties = properties;
+            logger.info("Extracted properties array from regex", {
+              filename,
+              propertiesCount: properties.length
+            });
+          }
+        } catch (error) {
+          logger.warn("Failed to parse properties array from regex", {
+            filename,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+    } catch (error) {
+      logger.warn("Failed to extract node info from content", {
+        filename,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
 
     return info;
+  }
+
+  /**
+   * Safely evaluate a node object string to extract properties
+   */
+  private safeEvaluateNodeObject(objectStr: string): any {
+    try {
+      // Use regex-based parsing instead of evaluation for better safety and reliability
+      return this.parseNodeObjectWithRegex(objectStr);
+    } catch (error) {
+      logger.warn("Failed to safely evaluate node object", {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        objectPreview: objectStr.substring(0, 200) + '...'
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Parse node object using regex patterns to extract key properties
+   */
+  private parseNodeObjectWithRegex(objectStr: string): any {
+    const result: any = {};
+
+    // Extract simple string properties
+    const stringFields = ['type', 'displayName', 'name', 'description', 'icon', 'color'];
+    for (const field of stringFields) {
+      const pattern = new RegExp(`${field}:\\s*['"\`]([^'"\`]*?)['"\`]`, 'i');
+      const match = objectStr.match(pattern);
+      if (match && match[1]) {
+        result[field] = match[1];
+      }
+    }
+
+    // Extract number properties
+    const numberFields = ['version'];
+    for (const field of numberFields) {
+      const pattern = new RegExp(`${field}:\\s*(\\d+)`, 'i');
+      const match = objectStr.match(pattern);
+      if (match && match[1]) {
+        result[field] = parseInt(match[1], 10);
+      }
+    }
+
+    // Extract array properties (group, inputs, outputs)
+    const arrayFields = ['group', 'inputs', 'outputs'];
+    for (const field of arrayFields) {
+      const pattern = new RegExp(`${field}:\\s*(\\[[^\\]]*\\])`, 'i');
+      const match = objectStr.match(pattern);
+      if (match && match[1]) {
+        try {
+          // Simple array parsing for string arrays
+          const arrayStr = match[1];
+          const items = arrayStr.match(/['"]([^'"]*)['"]/g);
+          if (items) {
+            result[field] = items.map(item => item.replace(/['"]/g, ''));
+          }
+        } catch (error) {
+          logger.warn(`Failed to parse ${field} array`, { error });
+        }
+      }
+    }
+
+    // Extract properties array (most complex) - use manual extraction for reliability
+    const startIndex = objectStr.indexOf('properties:');
+    if (startIndex !== -1) {
+      const arrayStart = objectStr.indexOf('[', startIndex);
+      if (arrayStart !== -1) {
+        const propertiesArrayStr = this.extractBalancedBrackets(objectStr, arrayStart);
+        if (propertiesArrayStr) {
+          logger.debug("Extracted properties array string", {
+            arrayLength: propertiesArrayStr.length
+          });
+          
+          const propertiesArray = this.parsePropertiesArray(propertiesArrayStr);
+          if (propertiesArray && propertiesArray.length > 0) {
+            result.properties = propertiesArray;
+          }
+        }
+      }
+    }
+
+    // Extract defaults object (simple case)
+    const defaultsMatch = objectStr.match(/defaults:\s*(\{[^}]*\})/);
+    if (defaultsMatch && defaultsMatch[1]) {
+      try {
+        // Simple object parsing for defaults
+        const defaultsStr = defaultsMatch[1];
+        const nameMatch = defaultsStr.match(/name:\s*['"]([^'"]*)['"]/);
+        if (nameMatch) {
+          result.defaults = { name: nameMatch[1] };
+        }
+      } catch (error) {
+        logger.warn("Failed to parse defaults object", { error });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Extract content between balanced brackets starting from a given position
+   */
+  private extractBalancedBrackets(str: string, startPos: number): string | null {
+    if (str[startPos] !== '[') return null;
+    
+    let depth = 0;
+    let inString = false;
+    let stringChar = '';
+    let result = '';
+    
+    for (let i = startPos; i < str.length; i++) {
+      const char = str[i];
+      result += char;
+      
+      if (!inString) {
+        if (char === '"' || char === "'" || char === '`') {
+          inString = true;
+          stringChar = char;
+        } else if (char === '[') {
+          depth++;
+        } else if (char === ']') {
+          depth--;
+          if (depth === 0) {
+            return result;
+          }
+        }
+      } else {
+        if (char === stringChar && str[i - 1] !== '\\') {
+          inString = false;
+          stringChar = '';
+        }
+      }
+    }
+    
+    return null; // Unbalanced brackets
+  }
+
+  /**
+   * Parse properties array from string using regex and bracket matching
+   */
+  private parsePropertiesArray(arrayStr: string): any[] | null {
+    try {
+      const properties: any[] = [];
+      
+      logger.debug("Starting to parse properties array", {
+        arrayLength: arrayStr.length
+      });
+      
+      // Find individual property objects within the array
+      let depth = 0;
+      let currentObj = '';
+      let inString = false;
+      let stringChar = '';
+      let i = 0;
+
+      // Skip the opening bracket
+      if (arrayStr.trim().startsWith('[')) {
+        i = arrayStr.indexOf('[') + 1;
+      }
+
+      let objectCount = 0;
+      while (i < arrayStr.length) {
+        const char = arrayStr[i];
+        
+        if (!inString) {
+          if (char === '"' || char === "'" || char === '`') {
+            inString = true;
+            stringChar = char;
+          } else if (char === '{') {
+            depth++;
+            if (depth === 1) {
+              currentObj = '{';
+              objectCount++;
+              logger.debug(`Found property object #${objectCount} at position ${i}`);
+              i++;
+              continue;
+            }
+          } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+              currentObj += '}';
+              logger.debug(`Completed property object #${objectCount}`, {
+                objectLength: currentObj.length
+              });
+              
+              // Parse this property object
+              const prop = this.parsePropertyObject(currentObj);
+              if (prop) {
+                properties.push(prop);
+                logger.debug(`Successfully parsed property: ${prop.displayName || prop.name || 'unnamed'}`);
+              } else {
+                logger.warn(`Failed to parse property object #${objectCount}`);
+              }
+              currentObj = '';
+              i++;
+              continue;
+            }
+          } else if (char === ']' && depth === 0) {
+            logger.debug("Reached end of properties array");
+            break;
+          }
+        } else {
+          if (char === stringChar && arrayStr[i - 1] !== '\\') {
+            inString = false;
+            stringChar = '';
+          }
+        }
+
+        if (depth > 0) {
+          currentObj += char;
+        }
+        i++;
+      }
+
+      logger.info("Finished parsing properties array", { 
+        propertiesCount: properties.length,
+        sampleProperty: properties[0]?.displayName || 'none'
+      });
+
+      return properties.length > 0 ? properties : null;
+    } catch (error) {
+      logger.warn("Failed to parse properties array", {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Parse individual property object from string
+   */
+  private parsePropertyObject(objStr: string): any | null {
+    try {
+      const prop: any = {};
+
+      // Extract string properties
+      const stringFields = ['displayName', 'name', 'type', 'description', 'placeholder', 'default'];
+      for (const field of stringFields) {
+        const pattern = new RegExp(`${field}:\\s*['"\`]([^'"\`]*?)['"\`]`, 'i');
+        const match = objStr.match(pattern);
+        if (match && match[1]) {
+          prop[field] = match[1];
+        }
+      }
+
+      // Extract boolean properties
+      const booleanFields = ['required'];
+      for (const field of booleanFields) {
+        const pattern = new RegExp(`${field}:\\s*(true|false)`, 'i');
+        const match = objStr.match(pattern);
+        if (match && match[1]) {
+          prop[field] = match[1] === 'true';
+        }
+      }
+
+      // Extract number properties
+      const numberFields = ['default'];
+      for (const field of numberFields) {
+        const pattern = new RegExp(`${field}:\\s*(\\d+)`, 'i');
+        const match = objStr.match(pattern);
+        if (match && match[1] && !prop[field]) { // Don't override string defaults
+          prop[field] = parseInt(match[1], 10);
+        }
+      }
+
+      // Extract options array (simplified)
+      const optionsMatch = objStr.match(/options:\s*(\[[\s\S]*?\])/);
+      if (optionsMatch) {
+        prop.options = []; // Placeholder - full parsing would be complex
+      }
+
+      // Extract displayOptions (simplified)
+      const displayOptionsMatch = objStr.match(/displayOptions:\s*\{[\s\S]*?\}/);
+      if (displayOptionsMatch) {
+        prop.displayOptions = {}; // Placeholder
+      }
+
+      // Extract typeOptions (simplified)
+      const typeOptionsMatch = objStr.match(/typeOptions:\s*\{[\s\S]*?\}/);
+      if (typeOptionsMatch) {
+        prop.typeOptions = {}; // Placeholder
+      }
+
+      return Object.keys(prop).length > 0 ? prop : null;
+    } catch (error) {
+      logger.warn("Failed to parse property object", {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Safely evaluate an array string
+   */
+  private safeEvaluateArray(arrayStr: string): any[] | null {
+    // Use the same regex-based parsing approach
+    return this.parsePropertiesArray(arrayStr);
   }
 
   private generateTypeFromFilename(filePath: string): string {

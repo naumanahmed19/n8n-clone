@@ -203,6 +203,13 @@ export class NodeDiscovery {
   private extractNodeDefinitions(nodeModule: any): NodeDefinition[] {
     const definitions: NodeDefinition[] = [];
 
+    // First, check if the module itself is a node definition (for module.exports = NodeDefinition)
+    if (this.isNodeDefinition(nodeModule)) {
+      definitions.push(nodeModule);
+      return definitions;
+    }
+
+    // Then check for named exports
     for (const key in nodeModule) {
       const exported = nodeModule[key];
 
@@ -235,7 +242,117 @@ export class NodeDiscovery {
    */
   async getAllNodeDefinitions(): Promise<NodeDefinition[]> {
     const nodeInfos = await this.loadAllNodes();
-    return nodeInfos.map((info) => info.definition);
+    
+    // Also load nodes from custom-nodes directory
+    const customNodeInfos = await this.loadCustomNodes();
+    
+    const allNodeInfos = [...nodeInfos, ...customNodeInfos];
+    return allNodeInfos.map((info) => info.definition);
+  }
+
+  /**
+   * Load nodes from custom-nodes directory
+   */
+  async loadCustomNodes(): Promise<NodeInfo[]> {
+    const nodeInfos: NodeInfo[] = [];
+    const customNodesDir = path.join(process.cwd(), "custom-nodes");
+
+    try {
+      // Check if custom-nodes directory exists
+      if (!fs.existsSync(customNodesDir)) {
+        return nodeInfos;
+      }
+
+      const packageDirs = await fs.promises.readdir(customNodesDir, {
+        withFileTypes: true,
+      });
+
+      for (const packageDir of packageDirs) {
+        if (!packageDir.isDirectory()) continue;
+
+        const packagePath = path.join(customNodesDir, packageDir.name);
+        
+        try {
+          // Look for node files in the package directory
+          const nodeFiles = await this.findNodeFilesInPackage(packagePath);
+          
+          for (const nodeFile of nodeFiles) {
+            try {
+              const nodeModule = await this.loadNodeFromFile(nodeFile);
+              
+              if (nodeModule) {
+                const nodeDefinitions = this.extractNodeDefinitions(nodeModule);
+                
+                for (const definition of nodeDefinitions) {
+                  nodeInfos.push({
+                    name: `${packageDir.name}/${path.basename(nodeFile)}`,
+                    path: nodeFile,
+                    definition,
+                  });
+                }
+              }
+            } catch (error) {
+              console.warn(`Failed to load node from file ${nodeFile}:`, error);
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to load custom node package ${packageDir.name}:`, error);
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to load custom nodes:", error);
+    }
+
+    return nodeInfos;
+  }
+
+  /**
+   * Find all node files in a package directory (recursively)
+   */
+  async findNodeFilesInPackage(packagePath: string): Promise<string[]> {
+    const nodeFiles: string[] = [];
+
+    const searchDirectory = async (dirPath: string) => {
+      try {
+        const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name);
+
+          if (entry.isDirectory()) {
+            // Skip node_modules and other common directories
+            if (!['node_modules', '.git', 'dist', 'coverage'].includes(entry.name)) {
+              await searchDirectory(fullPath);
+            }
+          } else if (entry.isFile()) {
+            if (entry.name.endsWith('.node.js') || entry.name.endsWith('.node.ts')) {
+              nodeFiles.push(fullPath);
+            }
+          }
+        }
+      } catch (error) {
+        // Ignore errors for individual directories
+      }
+    };
+
+    await searchDirectory(packagePath);
+    return nodeFiles;
+  }
+
+  /**
+   * Load a node from a specific file path
+   */
+  async loadNodeFromFile(filePath: string): Promise<any> {
+    try {
+      // Clear require cache to ensure fresh load
+      delete require.cache[require.resolve(filePath)];
+      
+      const nodeModule = require(filePath);
+      return nodeModule;
+    } catch (error) {
+      console.warn(`Failed to require node file ${filePath}:`, error);
+      return null;
+    }
   }
 
   /**
