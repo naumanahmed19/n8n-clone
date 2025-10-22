@@ -212,7 +212,23 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
       }
     } catch (error: any) {
       // Handle API errors (e.g., network errors, server errors)
-      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to upload file. Please try again.';
+      console.error('Upload failed:', error);
+      
+      let errorMessage = 'Failed to upload file. Please try again.';
+      
+      // Extract detailed error message from various possible error structures
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          errorMessage = errorData.errors[0];
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
       
       // Show error toast
       globalToastManager.showError(
@@ -229,7 +245,6 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
         error: errorMessage,
         result: null,
       }));
-      console.error('Upload failed:', error);
     }
   };
 

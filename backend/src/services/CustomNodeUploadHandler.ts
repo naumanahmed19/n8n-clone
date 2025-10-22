@@ -137,19 +137,30 @@ export class CustomNodeUploadHandler {
           if (nodeDefinition) {
             // Extract the entire package only once
             if (!packageExtracted) {
-              const success = await this.extractNodeToFolder(
-                nodeFile,
-                nodeDefinition,
-                extractDir
-              );
-
-              if (!success) {
-                errors.push(
-                  `Failed to extract package to custom-nodes directory`
+              try {
+                const success = await this.extractNodeToFolder(
+                  nodeFile,
+                  nodeDefinition,
+                  extractDir
                 );
+
+                if (!success) {
+                  errors.push(
+                    `Failed to extract package to custom-nodes directory`
+                  );
+                  break;
+                }
+                packageExtracted = true;
+              } catch (error) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                errors.push(errorMsg);
+                logger.error("Package extraction failed", {
+                  error: errorMsg,
+                  nodeFile,
+                  nodeDefinition: nodeDefinition.displayName
+                });
                 break;
               }
-              packageExtracted = true;
             }
 
             // Save to database (but don't register yet - let NodeLoader handle it)
@@ -324,28 +335,76 @@ export class CustomNodeUploadHandler {
           packageName = packageInfo.name.replace(/[^a-zA-Z0-9\-_]/g, "");
         }
       } catch (error) {
-        // Use generated name if package.json is not readable
+        logger.warn("Could not read package.json, using generated name", {
+          packageJsonPath,
+          generatedName: packageName,
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
 
       const packageFolder = path.join(this.nodesPath, packageName);
 
-      // Ensure the folder doesn't already exist or remove it
+      logger.info("Starting package extraction", {
+        packageName,
+        packageFolder,
+        extractDir,
+        nodeName: nodeDefinition.displayName
+      });
+
+      // Ensure custom-nodes directory exists
+      try {
+        await this.ensureDirectory(this.nodesPath);
+        logger.info("Custom-nodes directory ensured", { path: this.nodesPath });
+      } catch (error) {
+        const errorMsg = `Failed to create custom-nodes directory: ${error instanceof Error ? error.message : String(error)}`;
+        logger.error(errorMsg, { path: this.nodesPath, error });
+        throw new Error(errorMsg);
+      }
+
+      // Remove existing package folder if it exists
       try {
         await fs.rm(packageFolder, { recursive: true, force: true });
+        logger.info("Removed existing package folder", { packageFolder });
       } catch (error) {
-        // Ignore if folder doesn't exist
+        logger.warn("Could not remove existing package folder (may not exist)", {
+          packageFolder,
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
 
       // Create package folder
-      await this.ensureDirectory(packageFolder);
+      try {
+        await this.ensureDirectory(packageFolder);
+        logger.info("Created package folder", { packageFolder });
+      } catch (error) {
+        const errorMsg = `Failed to create package folder: ${error instanceof Error ? error.message : String(error)}`;
+        logger.error(errorMsg, { packageFolder, error });
+        throw new Error(errorMsg);
+      }
 
       // Copy the entire extracted directory to preserve package structure
-      await this.copyDirectory(extractDir, packageFolder);
+      try {
+        await this.copyDirectory(extractDir, packageFolder);
+        logger.info("Copied package contents", { from: extractDir, to: packageFolder });
+      } catch (error) {
+        const errorMsg = `Failed to copy package contents: ${error instanceof Error ? error.message : String(error)}`;
+        logger.error(errorMsg, { extractDir, packageFolder, error });
+        throw new Error(errorMsg);
+      }
 
       // Install dependencies if package.json has dependencies
-      await this.installDependencies(packageFolder);
+      try {
+        await this.installDependencies(packageFolder);
+        logger.info("Dependencies installation completed", { packageFolder });
+      } catch (error) {
+        logger.warn("Dependencies installation failed (continuing anyway)", {
+          packageFolder,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        // Don't throw here - allow package to work without dependencies
+      }
 
-      logger.info("Package extracted to custom-nodes directory", {
+      logger.info("Package extracted to custom-nodes directory successfully", {
         packageName: packageName,
         folderPath: packageFolder,
         nodeName: nodeDefinition.displayName,
@@ -353,12 +412,14 @@ export class CustomNodeUploadHandler {
 
       return true;
     } catch (error) {
-      logger.error("Failed to extract package to custom-nodes", {
-        error,
+      const errorMsg = `Failed to extract package to custom-nodes directory: ${error instanceof Error ? error.message : String(error)}`;
+      logger.error(errorMsg, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         nodeFilePath,
         nodeName: nodeDefinition.displayName,
       });
-      return false;
+      throw new Error(errorMsg);
     }
   }
 
@@ -972,8 +1033,16 @@ export class CustomNodeUploadHandler {
   private async ensureDirectory(dirPath: string): Promise<void> {
     try {
       await fs.access(dirPath);
+      logger.debug("Directory already exists", { dirPath });
     } catch (error) {
-      await fs.mkdir(dirPath, { recursive: true });
+      try {
+        await fs.mkdir(dirPath, { recursive: true });
+        logger.debug("Directory created", { dirPath });
+      } catch (mkdirError) {
+        const errorMsg = `Failed to create directory ${dirPath}: ${mkdirError instanceof Error ? mkdirError.message : String(mkdirError)}`;
+        logger.error(errorMsg, { dirPath, error: mkdirError });
+        throw new Error(errorMsg);
+      }
     }
   }
 
@@ -981,19 +1050,48 @@ export class CustomNodeUploadHandler {
    * Copy directory recursively
    */
   private async copyDirectory(source: string, destination: string): Promise<void> {
-    await this.ensureDirectory(destination);
+    try {
+      await this.ensureDirectory(destination);
 
-    const entries = await fs.readdir(source, { withFileTypes: true });
+      const entries = await fs.readdir(source, { withFileTypes: true });
+      logger.debug("Copying directory contents", {
+        source,
+        destination,
+        entriesCount: entries.length
+      });
 
-    for (const entry of entries) {
-      const sourcePath = path.join(source, entry.name);
-      const destPath = path.join(destination, entry.name);
+      for (const entry of entries) {
+        const sourcePath = path.join(source, entry.name);
+        const destPath = path.join(destination, entry.name);
 
-      if (entry.isDirectory()) {
-        await this.copyDirectory(sourcePath, destPath);
-      } else {
-        await fs.copyFile(sourcePath, destPath);
+        try {
+          if (entry.isDirectory()) {
+            await this.copyDirectory(sourcePath, destPath);
+          } else {
+            await fs.copyFile(sourcePath, destPath);
+          }
+        } catch (error) {
+          const errorMsg = `Failed to copy ${entry.isDirectory() ? 'directory' : 'file'} ${entry.name}: ${error instanceof Error ? error.message : String(error)}`;
+          logger.error(errorMsg, {
+            sourcePath,
+            destPath,
+            isDirectory: entry.isDirectory(),
+            error: error instanceof Error ? error.message : String(error)
+          });
+          throw new Error(errorMsg);
+        }
       }
+
+      logger.debug("Directory copy completed", { source, destination });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Failed to copy')) {
+        // Re-throw specific copy errors
+        throw error;
+      }
+
+      const errorMsg = `Failed to copy directory from ${source} to ${destination}: ${error instanceof Error ? error.message : String(error)}`;
+      logger.error(errorMsg, { source, destination, error });
+      throw new Error(errorMsg);
     }
   }
 

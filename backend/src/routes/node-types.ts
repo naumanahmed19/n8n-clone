@@ -108,6 +108,12 @@ router.post(
         });
       }
 
+      logger.info("Processing node upload", {
+        filename: req.file.originalname,
+        size: req.file.size,
+        path: req.file.path
+      });
+
       const uploadHandler = new CustomNodeUploadHandler();
       const result = await uploadHandler.processUpload(
         req.file.path,
@@ -115,6 +121,11 @@ router.post(
       );
 
       if (result.success) {
+        logger.info("Upload successful", {
+          filename: req.file.originalname,
+          nodesCount: result.nodes?.length || 0
+        });
+        
         res.json({
           success: true,
           message: result.message,
@@ -124,17 +135,30 @@ router.post(
           },
         });
       } else {
+        logger.error("Upload processing failed", {
+          filename: req.file.originalname,
+          errors: result.errors,
+          message: result.message
+        });
+        
         res.status(400).json({
           success: false,
-          error: "Upload processing failed",
+          error: result.message || "Upload processing failed",
           errors: result.errors,
         });
       }
     } catch (error) {
-      logger.error("Failed to process upload", { error });
+      logger.error("Failed to process upload", { 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        filename: req.file?.originalname
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : "Failed to process upload";
       res.status(500).json({
         success: false,
-        error: "Failed to process upload",
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : undefined
       });
     }
   }

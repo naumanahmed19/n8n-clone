@@ -85,8 +85,37 @@ export class NodeTypeService {
       };
 
       return transformedResult;
-    } catch (error) {
-      throw error; // Re-throw to let the calling code handle it
+    } catch (error: any) {
+      console.error('Upload service error:', error);
+      
+      // Extract detailed error information
+      let errorMessage = 'Failed to upload custom nodes';
+      let errors: string[] = [];
+      
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          errors = errorData.errors;
+          errorMessage = errors[0] || errorMessage;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+          errors = [errorData.error];
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+          errors = [errorData.message];
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+        errors = [error.message];
+      }
+      
+      // Return a failed result instead of throwing
+      return {
+        success: false,
+        message: errorMessage,
+        nodes: [],
+        errors: errors.length > 0 ? errors : [errorMessage],
+      };
     }
   }
 
