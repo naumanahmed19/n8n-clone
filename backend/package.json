@@ -18,6 +18,7 @@
     "studio": "prisma studio",
     "node-cli": "tsx src/cli/node-cli.ts",
     "nodes:register": "tsx src/scripts/register-nodes.ts",
+    "nodes:register:prod": "node dist/scripts/register-nodes.js",
     "nodes:list": "tsx src/scripts/node-cli.ts list",
     "nodes:create": "tsx src/scripts/node-cli.ts create",
     "nodes:discover": "tsx src/scripts/node-cli.ts discover",

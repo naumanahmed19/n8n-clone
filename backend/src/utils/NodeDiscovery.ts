@@ -134,9 +134,18 @@ export class NodeDiscovery {
 
       for (const indexPath of indexPaths) {
         try {
-          const indexUrl = this.pathToFileUrl(indexPath);
-          const module = await import(indexUrl);
-          return module;
+          // In production, use require for .js files, dynamic import for .ts files
+          if (indexPath.endsWith('.js') && fs.existsSync(indexPath)) {
+            // Use require for compiled JS files in production
+            delete require.cache[require.resolve(indexPath)];
+            const module = require(indexPath);
+            return module;
+          } else if (fs.existsSync(indexPath + '.ts') || fs.existsSync(indexPath + '.js')) {
+            // Use dynamic import for development or when file exists
+            const indexUrl = this.pathToFileUrl(indexPath);
+            const module = await import(indexUrl);
+            return module;
+          }
         } catch (error) {
           // Continue to next path
         }
@@ -150,10 +159,19 @@ export class NodeDiscovery {
 
       for (const nodeFile of nodeFiles) {
         try {
-          const nodeFilePath = path.join(dirPath, nodeFile.replace(/\.(ts|js)$/, ""));
-          const nodeFileUrl = this.pathToFileUrl(nodeFilePath);
-          const module = await import(nodeFileUrl);
-          return module;
+          const nodeFilePath = path.join(dirPath, nodeFile);
+          
+          // In production, use require for .js files
+          if (nodeFile.endsWith('.js')) {
+            delete require.cache[require.resolve(nodeFilePath)];
+            const module = require(nodeFilePath);
+            return module;
+          } else {
+            // Use dynamic import for .ts files
+            const nodeFileUrl = this.pathToFileUrl(nodeFilePath.replace(/\.(ts|js)$/, ""));
+            const module = await import(nodeFileUrl);
+            return module;
+          }
         } catch (error) {
           // Continue to next file
         }

@@ -75,36 +75,52 @@ async function initializeNodeSystems() {
 
     // Check if nodes were successfully registered
     const nodeTypes = await nodeService.getNodeTypes();
+    console.log(`📦 Found ${nodeTypes.length} registered node types`);
 
     if (nodeTypes.length === 0) {
+      console.log("🔄 No nodes found, attempting to register discovered nodes...");
       try {
         await nodeService.registerDiscoveredNodes();
+        const newNodeTypes = await nodeService.getNodeTypes();
+        console.log(`✅ Successfully registered ${newNodeTypes.length} node types`);
       } catch (registrationError) {
-        console.error("Failed to register nodes:", registrationError);
+        console.error("❌ Failed to register nodes:", registrationError);
       }
     } else {
+      console.log(`✅ Node types already registered: ${nodeTypes.length}`);
+      
       // Even if some nodes were found, try to register any missing ones
       try {
         // Import and use node discovery directly
         const { nodeDiscovery } = await import("./utils/NodeDiscovery");
         const allNodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
+        console.log(`🔍 Discovered ${allNodeDefinitions.length} node definitions`);
 
+        let newRegistrations = 0;
         for (const nodeDefinition of allNodeDefinitions) {
           try {
-            await nodeService.registerNode(nodeDefinition);
+            const result = await nodeService.registerNode(nodeDefinition);
+            if (result.success) {
+              newRegistrations++;
+            }
           } catch (error) {
             // Silently continue on registration errors
           }
         }
+        
+        if (newRegistrations > 0) {
+          console.log(`✅ Registered ${newRegistrations} additional nodes`);
+        }
       } catch (registrationError) {
-        // Silently continue on discovery errors
+        console.warn("⚠️ Failed to check for additional nodes:", registrationError);
       }
     }
 
     // Then, load custom nodes
     await nodeLoader.initialize();
+    console.log("🔌 Custom node loader initialized");
   } catch (error) {
-    console.error("Failed to initialize node systems:", error);
+    console.error("❌ Failed to initialize node systems:", error);
     // Don't throw the error - allow the application to start
   }
 }
@@ -168,16 +184,35 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    service: "n8n-clone-backend",
-    version: "1.0.0",
-    websocket: {
-      connected_users: socketService.getConnectedUsersCount(),
-    },
-  });
+app.get("/health", async (req, res) => {
+  try {
+    const nodeTypes = await nodeService.getNodeTypes();
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      service: "n8n-clone-backend",
+      version: "1.0.0",
+      websocket: {
+        connected_users: socketService.getConnectedUsersCount(),
+      },
+      nodes: {
+        registered_count: nodeTypes.length,
+        status: nodeTypes.length > 0 ? "ok" : "no_nodes_registered"
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      service: "n8n-clone-backend",
+      version: "1.0.0",
+      error: "Failed to check node status",
+      nodes: {
+        registered_count: 0,
+        status: "error"
+      },
+    });
+  }
 });
 
 // Basic route
