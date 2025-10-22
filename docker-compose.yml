@@ -46,6 +46,8 @@ services:
       - PORT=4000
     volumes:
       - custom_nodes_data:/app/custom-nodes
+      - temp_data:/app/temp
+      - logs_data:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,6 +59,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    user: "1001:1001"
 
   frontend:
     build:
@@ -76,3 +79,5 @@ volumes:
   postgres_data:
   redis_data:
   custom_nodes_data:
+  temp_data:
+  logs_data:

@@ -52,6 +52,9 @@ COPY --from=builder /app/prisma ./prisma
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# Create directories that need write access
+RUN mkdir -p /app/custom-nodes /app/temp/uploads /app/temp/extract /app/logs
+
 # Change ownership
 RUN chown -R nodejs:nodejs /app
 USER nodejs
