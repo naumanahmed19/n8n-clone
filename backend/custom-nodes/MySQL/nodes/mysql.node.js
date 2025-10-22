@@ -15,6 +15,12 @@ const MySQLNode = {
   },
   inputs: ["main"],
   outputs: ["main"],
+  credentials: [
+    {
+      name: "mysqlDb",
+      required: true,
+    },
+  ],
   properties: [
     {
       displayName: "Authentication",

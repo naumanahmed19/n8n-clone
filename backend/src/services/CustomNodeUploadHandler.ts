@@ -46,7 +46,7 @@ export class CustomNodeUploadHandler {
   constructor() {
     this.prisma = new PrismaClient();
     this.extractPath = path.join(process.cwd(), "temp/extract");
-    this.nodesPath = path.join(process.cwd(), "src/nodes"); // Point to main nodes directory
+    this.nodesPath = path.join(process.cwd(), "custom-nodes"); // Point to custom nodes directory
   }
 
   async processUpload(
@@ -121,10 +121,13 @@ export class CustomNodeUploadHandler {
         };
       }
 
-      // Process and extract each node to individual folders
+      // Extract the entire package to custom-nodes directory
       const processedNodes: any[] = [];
       const errors: string[] = [];
 
+      // Extract package once (use first node for naming)
+      let packageExtracted = false;
+      
       for (const nodeFile of nodeFiles) {
         try {
           const nodeDefinition = await this.processNodeFile(
@@ -132,22 +135,26 @@ export class CustomNodeUploadHandler {
             packageInfo!
           );
           if (nodeDefinition) {
-            // Extract node to its own folder in the nodes directory
-            const success = await this.extractNodeToFolder(
-              nodeFile,
-              nodeDefinition,
-              extractDir
-            );
-
-            if (success) {
-              // Save to database
-              const savedNode = await this.saveNodeType(nodeDefinition);
-              processedNodes.push(savedNode);
-            } else {
-              errors.push(
-                `Failed to extract ${nodeDefinition.displayName} to nodes folder`
+            // Extract the entire package only once
+            if (!packageExtracted) {
+              const success = await this.extractNodeToFolder(
+                nodeFile,
+                nodeDefinition,
+                extractDir
               );
+
+              if (!success) {
+                errors.push(
+                  `Failed to extract package to custom-nodes directory`
+                );
+                break;
+              }
+              packageExtracted = true;
             }
+
+            // Save to database (but don't register yet - let NodeLoader handle it)
+            const savedNode = await this.saveNodeType(nodeDefinition);
+            processedNodes.push(savedNode);
           }
         } catch (error) {
           const errorMessage =
@@ -288,7 +295,7 @@ export class CustomNodeUploadHandler {
   }
 
   /**
-   * Extract a single node file to its own folder in the nodes directory
+   * Extract the entire package to custom-nodes directory preserving structure
    */
   private async extractNodeToFolder(
     nodeFilePath: string,
@@ -296,51 +303,48 @@ export class CustomNodeUploadHandler {
     extractDir: string
   ): Promise<boolean> {
     try {
-      // Generate folder name from node display name
-      const folderName = this.generateFolderNameFromDisplayName(
-        nodeDefinition.displayName
-      );
-      const nodeFolder = path.join(this.nodesPath, folderName);
+      // Generate package folder name from node display name or use package name
+      const packageJsonPath = path.join(extractDir, "package.json");
+      let packageName = this.generateFolderNameFromDisplayName(nodeDefinition.displayName);
+      
+      // Try to get package name from package.json
+      try {
+        const packageContent = await fs.readFile(packageJsonPath, "utf-8");
+        const packageInfo = JSON.parse(packageContent);
+        if (packageInfo.name) {
+          packageName = packageInfo.name.replace(/[^a-zA-Z0-9\-_]/g, "");
+        }
+      } catch (error) {
+        // Use generated name if package.json is not readable
+      }
+
+      const packageFolder = path.join(this.nodesPath, packageName);
 
       // Ensure the folder doesn't already exist or remove it
       try {
-        await fs.rm(nodeFolder, { recursive: true, force: true });
+        await fs.rm(packageFolder, { recursive: true, force: true });
       } catch (error) {
         // Ignore if folder doesn't exist
       }
 
-      // Create node folder
-      await this.ensureDirectory(nodeFolder);
+      // Create package folder
+      await this.ensureDirectory(packageFolder);
 
-      // Determine file extension and name (prefer .ts for TypeScript compatibility)
-      const originalExt = path.extname(nodeFilePath);
-      const useTypeScript = originalExt === ".js" || originalExt === ".ts";
-      const targetExt = useTypeScript ? ".ts" : originalExt;
-      const nodeFileName = `${folderName}.node${targetExt}`;
-      const targetNodeFile = path.join(nodeFolder, nodeFileName);
+      // Copy the entire extracted directory to preserve package structure
+      await this.copyDirectory(extractDir, packageFolder);
 
-      // Copy the node file
-      await fs.copyFile(nodeFilePath, targetNodeFile);
+      // Install dependencies if package.json has dependencies
+      await this.installDependencies(packageFolder);
 
-      // Create index.ts file
-      const nodeExportName = await this.extractExportNameFromFile(
-        targetNodeFile
-      );
-      const indexContent = `export { ${nodeExportName} } from "./${folderName}.node";`;
-      const indexFile = path.join(nodeFolder, "index.ts");
-      await fs.writeFile(indexFile, indexContent, "utf-8");
-
-      // If there are any related files (like .json, .md, etc.), copy them too
-      await this.copyRelatedFiles(nodeFilePath, nodeFolder, extractDir);
-
-      logger.info("Node extracted to individual folder", {
+      logger.info("Package extracted to custom-nodes directory", {
+        packageName: packageName,
+        folderPath: packageFolder,
         nodeName: nodeDefinition.displayName,
-        folderPath: nodeFolder,
       });
 
       return true;
     } catch (error) {
-      logger.error("Failed to extract node to folder", {
+      logger.error("Failed to extract package to custom-nodes", {
         error,
         nodeFilePath,
         nodeName: nodeDefinition.displayName,
@@ -576,6 +580,119 @@ export class CustomNodeUploadHandler {
       await fs.access(dirPath);
     } catch (error) {
       await fs.mkdir(dirPath, { recursive: true });
+    }
+  }
+
+  /**
+   * Copy directory recursively
+   */
+  private async copyDirectory(source: string, destination: string): Promise<void> {
+    await this.ensureDirectory(destination);
+    
+    const entries = await fs.readdir(source, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const sourcePath = path.join(source, entry.name);
+      const destPath = path.join(destination, entry.name);
+      
+      if (entry.isDirectory()) {
+        await this.copyDirectory(sourcePath, destPath);
+      } else {
+        await fs.copyFile(sourcePath, destPath);
+      }
+    }
+  }
+
+  /**
+   * Install dependencies for the package
+   */
+  private async installDependencies(packagePath: string): Promise<void> {
+    try {
+      const packageJsonPath = path.join(packagePath, "package.json");
+      
+      if (!await this.fileExists(packageJsonPath)) {
+        return;
+      }
+
+      const packageContent = await fs.readFile(packageJsonPath, "utf-8");
+      const packageInfo = JSON.parse(packageContent);
+
+      // Check if there are dependencies to install
+      const hasDependencies = packageInfo.dependencies && 
+        Object.keys(packageInfo.dependencies).length > 0;
+
+      if (!hasDependencies) {
+        logger.info("No dependencies to install", { packagePath });
+        return;
+      }
+
+      logger.info("Installing package dependencies", { 
+        packagePath,
+        dependencies: Object.keys(packageInfo.dependencies)
+      });
+
+      // Use child_process to run npm install
+      const { spawn } = await import("child_process");
+      
+      return new Promise((resolve, reject) => {
+        const npmProcess = spawn("npm", ["install", "--production"], {
+          cwd: packagePath,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+
+        let stdout = "";
+        let stderr = "";
+
+        npmProcess.stdout?.on("data", (data) => {
+          stdout += data.toString();
+        });
+
+        npmProcess.stderr?.on("data", (data) => {
+          stderr += data.toString();
+        });
+
+        npmProcess.on("close", (code) => {
+          if (code === 0) {
+            logger.info("Dependencies installed successfully", { 
+              packagePath,
+              stdout: stdout.trim()
+            });
+            resolve();
+          } else {
+            logger.error("Failed to install dependencies", {
+              packagePath,
+              code,
+              stderr: stderr.trim(),
+              stdout: stdout.trim()
+            });
+            // Don't reject - allow package to be used without dependencies
+            // Some nodes might work without all dependencies
+            resolve();
+          }
+        });
+
+        npmProcess.on("error", (error) => {
+          logger.error("Error spawning npm install", { error, packagePath });
+          // Don't reject - allow package to be used without dependencies
+          resolve();
+        });
+      });
+
+    } catch (error) {
+      logger.error("Failed to install dependencies", { error, packagePath });
+      // Don't throw - allow package to be used without dependencies
+    }
+  }
+
+  /**
+   * Check if a file exists
+   */
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
     }
   }
 }

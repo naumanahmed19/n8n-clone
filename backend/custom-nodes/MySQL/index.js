@@ -1,7 +1,9 @@
-const MySQLNode = require("./nodes/mysql.node");
-const MySQLDbCredentials = require("./credentials/mysqlDb.credentials");
-
+// Export the node definitions
 module.exports = {
-  node: MySQLNode,
-  credentials: MySQLDbCredentials,
+  nodes: {
+    "mysql": require("./nodes/mysql.node.js"),
+  },
+  credentials: {
+    "mysqlDb": require("./credentials/mysqlDb.credentials.js"),
+  },
 };
