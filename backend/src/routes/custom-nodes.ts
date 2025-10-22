@@ -104,33 +104,6 @@ router.post("/packages/load", async (req: Request, res: Response) => {
 });
 
 /**
- * DELETE /api/custom-nodes/packages/:packageName
- * Unload a custom node package
- */
-router.delete("/packages/:packageName", async (req: Request, res: Response) => {
-  try {
-    const { packageName } = req.params;
-
-    const nodeLoader = global.nodeLoader as NodeLoader;
-    await nodeLoader.unloadNodePackage(packageName);
-
-    res.json({
-      success: true,
-      message: `Package ${packageName} unloaded successfully`,
-    });
-  } catch (error) {
-    logger.error("Failed to unload package", {
-      error,
-      packageName: req.params.packageName,
-    });
-    res.status(500).json({
-      success: false,
-      error: "Failed to unload package",
-    });
-  }
-});
-
-/**
  * POST /api/custom-nodes/packages/:packageName/reload
  * Reload a custom node package (for development)
  */

@@ -192,8 +192,13 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
           }
         );
         
+        // Call the success callback and wait for it to complete
         if (onUploadSuccess) {
-          onUploadSuccess();
+          try {
+            await onUploadSuccess();
+          } catch (error) {
+            console.error('Error in upload success callback:', error);
+          }
         }
       } else {
         // Show error toast for upload failures

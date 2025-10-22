@@ -33,7 +33,7 @@ export function AddNodeCommandDialog({
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   
   // Get only active node types from the store
-  const { activeNodeTypes, fetchNodeTypes, isLoading, hasFetched } = useNodeTypes()
+  const { activeNodeTypes, fetchNodeTypes, refetchNodeTypes, isLoading, hasFetched } = useNodeTypes()
   
   // Initialize store if needed
   useEffect(() => {
@@ -41,6 +41,14 @@ export function AddNodeCommandDialog({
       fetchNodeTypes()
     }
   }, [activeNodeTypes.length, isLoading, hasFetched, fetchNodeTypes])
+
+  // Refresh node types when dialog opens to ensure we have the latest nodes
+  useEffect(() => {
+    if (open && hasFetched) {
+      // Silently refresh to get any newly uploaded nodes
+      refetchNodeTypes()
+    }
+  }, [open, hasFetched, refetchNodeTypes])
 
   // Reset search when dialog opens/closes
   useEffect(() => {

@@ -84,9 +84,17 @@ export function NodeTypesList({}: NodeTypesListProps) {
   const activeNodeTypes = nodeTypesFromContext.length > 0 ? nodeTypesFromContext : nodeTypes
 
   // Callback to refresh nodes after upload
-  const handleUploadSuccess = () => {
-    refetchNodeTypes()
-    setActiveTab('available')
+  const handleUploadSuccess = async () => {
+    try {
+      // Ensure we wait for the refetch to complete
+      await refetchNodeTypes()
+      setActiveTab('available')
+      
+      // Show a success message to confirm the refresh
+      console.log('Node types refreshed after upload')
+    } catch (error) {
+      console.error('Failed to refresh node types after upload:', error)
+    }
   }
 
   // Filter node types based on search term (use search for available nodes)

@@ -20,6 +20,7 @@ import {
     useWorkflowOperations,
 } from '@/hooks/workflow'
 import { useAddNodeDialogStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
+import { useNodeTypes } from '@/stores/nodeTypes'
 import { NodeType } from '@/types'
 import { AddNodeCommandDialog } from './AddNodeCommandDialog'
 
@@ -35,22 +36,13 @@ import {
     transformWorkflowNodesToReactFlow,
 } from './workflowTransformers'
 
-const nodeTypes = {
-    custom: CustomNode,
-    chat: ChatInterfaceNode,
-    'image-preview': ImagePreviewNode,
-    'form-generator': FormGeneratorNode,
-    group: GroupNode,
-    annotation: AnnotationNode,
-} as NodeTypes
-
 interface WorkflowEditorProps {
     nodeTypes: NodeType[]
     readOnly?: boolean
     executionMode?: boolean
 }
 
-export function WorkflowEditor({ 
+export function WorkflowEditor({
     nodeTypes: availableNodeTypes,
     readOnly = false,
     executionMode = false
@@ -66,6 +58,38 @@ export function WorkflowEditor({
     const redo = useWorkflowStore(state => state.redo)
     const closeNodeProperties = useWorkflowStore(state => state.closeNodeProperties)
     const closeChatDialog = useWorkflowStore(state => state.closeChatDialog)
+
+    // Get dynamic node types from store to include newly uploaded nodes
+    const { activeNodeTypes: storeNodeTypes, fetchNodeTypes, hasFetched } = useNodeTypes()
+
+    // Ensure node types are loaded when component mounts
+    useEffect(() => {
+        if (!hasFetched && storeNodeTypes.length === 0) {
+            fetchNodeTypes()
+        }
+    }, [hasFetched, storeNodeTypes.length, fetchNodeTypes])
+
+    // Create dynamic nodeTypes object that includes both built-in and uploaded nodes
+    const nodeTypes = useMemo(() => {
+        const baseNodeTypes = {
+            custom: CustomNode,
+            chat: ChatInterfaceNode,
+            'image-preview': ImagePreviewNode,
+            'form-generator': FormGeneratorNode,
+            group: GroupNode,
+            annotation: AnnotationNode,
+        } as NodeTypes
+
+        // For dynamically uploaded nodes, they all use the CustomNode component
+        // The CustomNode component handles different node types based on the data.nodeType
+        storeNodeTypes.forEach(nodeType => {
+            if (!baseNodeTypes[nodeType.type]) {
+                baseNodeTypes[nodeType.type] = CustomNode
+            }
+        })
+
+        return baseNodeTypes
+    }, [storeNodeTypes])
 
     // Command dialog state
     const { isOpen: showAddNodeDialog, openDialog, closeDialog, position } = useAddNodeDialogStore()
@@ -148,7 +172,7 @@ export function WorkflowEditor({
     }, [setReactFlowInstance])
 
     // Memoize empty delete handler to prevent recreation on every render
-    const emptyDeleteHandler = useCallback(() => {}, [])
+    const emptyDeleteHandler = useCallback(() => { }, [])
 
     // Memoize add node handler - calculate viewport center position
     const handleAddNode = useCallback(() => {
@@ -203,11 +227,11 @@ export function WorkflowEditor({
     // Only sync when workflow ID changes (new workflow loaded) OR when blockSync is false
     const workflowId = workflow?.id;
     const prevWorkflowIdRef = useRef<string | undefined>();
-    
+
     useEffect(() => {
         const workflowChanged = workflowId !== prevWorkflowIdRef.current;
         const shouldSync = workflowChanged || !blockSync.current;
-        
+
         if (shouldSync) {
             if (workflowChanged) {
                 console.log('ðŸ”„ Syncing Zustand â†’ React Flow (workflow changed)', workflowId);
@@ -241,7 +265,7 @@ export function WorkflowEditor({
     const selectedNodeType = useMemo(() => {
         return selectedNode ? nodeTypeMap.get(selectedNode.type) : null
     }, [selectedNode, nodeTypeMap])
-    
+
     // Get chat node data for chat dialog (O(1) lookup)
     const chatNode = useMemo(() => {
         return chatDialogNodeId ? workflowNodesMap.get(chatDialogNodeId) : null
@@ -262,9 +286,9 @@ export function WorkflowEditor({
                             {/* Resizable Layout for Canvas and Execution Panel */}
                             <ResizablePanelGroup direction="vertical" className="h-full">
                                 {/* React Flow Canvas */}
-                                <ResizablePanel 
+                                <ResizablePanel
                                     key={`canvas-${executionPanelSize}`}
-                                    defaultSize={100 - executionPanelSize} 
+                                    defaultSize={100 - executionPanelSize}
                                     minSize={30}
                                 >
                                     <WorkflowCanvas
@@ -323,7 +347,7 @@ export function WorkflowEditor({
                             </ResizablePanelGroup>
                         </ResizablePanel>
 
-                     
+
                     </ResizablePanelGroup>
                 </div>
             </WorkflowErrorBoundary>
@@ -338,7 +362,7 @@ export function WorkflowEditor({
                     readOnly={readOnly}
                 />
             )}
-            
+
             {/* Chat Dialog */}
             {chatDialogNodeId && (
                 <ChatDialog
@@ -349,7 +373,7 @@ export function WorkflowEditor({
                 />
             )}
 
-      
+
 
             {/* Add Node Command Dialog - Hidden in read-only mode */}
             {!readOnly && (

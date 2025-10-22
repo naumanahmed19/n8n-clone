@@ -290,7 +290,6 @@ npm run node-cli test /path/to/your/node \
 GET /api/custom-nodes/packages
 POST /api/custom-nodes/packages/validate
 POST /api/custom-nodes/packages/load
-DELETE /api/custom-nodes/packages/:packageName
 POST /api/custom-nodes/packages/:packageName/reload
 ```
 

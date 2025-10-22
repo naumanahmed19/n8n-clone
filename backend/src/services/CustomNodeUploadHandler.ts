@@ -72,7 +72,7 @@ export class CustomNodeUploadHandler {
       );
 
       // Clean up the uploaded file
-      await fs.unlink(filePath).catch(() => {});
+      await fs.unlink(filePath).catch(() => { });
 
       return {
         ...result,
@@ -127,7 +127,7 @@ export class CustomNodeUploadHandler {
 
       // Extract package once (use first node for naming)
       let packageExtracted = false;
-      
+
       for (const nodeFile of nodeFiles) {
         try {
           const nodeDefinition = await this.processNodeFile(
@@ -174,7 +174,7 @@ export class CustomNodeUploadHandler {
         };
       }
 
-      // Try to trigger auto-discovery to register new nodes
+      // Try to trigger auto-discovery and register new nodes with NodeService
       try {
         // Import NodeDiscovery to refresh the discovered nodes
         const { nodeDiscovery } = await import("../utils/NodeDiscovery");
@@ -182,8 +182,17 @@ export class CustomNodeUploadHandler {
         logger.info("Nodes re-discovered after upload", {
           totalNodes: discoveredNodes.length,
         });
+
+        // Get the global NodeService instance and refresh custom nodes
+        const nodeService = global.nodeService;
+        if (nodeService) {
+          const refreshResult = await nodeService.refreshCustomNodes();
+          logger.info("Custom nodes refresh result after upload", refreshResult);
+        } else {
+          logger.warn("Global NodeService not available for node registration");
+        }
       } catch (error) {
-        logger.warn("Failed to re-discover nodes after upload", {
+        logger.warn("Failed to re-discover and register nodes after upload", {
           error,
         });
         // Don't fail the upload if discovery fails, just log the warning
@@ -306,7 +315,7 @@ export class CustomNodeUploadHandler {
       // Generate package folder name from node display name or use package name
       const packageJsonPath = path.join(extractDir, "package.json");
       let packageName = this.generateFolderNameFromDisplayName(nodeDefinition.displayName);
-      
+
       // Try to get package name from package.json
       try {
         const packageContent = await fs.readFile(packageJsonPath, "utf-8");
@@ -507,13 +516,13 @@ export class CustomNodeUploadHandler {
           if (nodeObject.properties) info.properties = nodeObject.properties;
           if (nodeObject.icon) info.icon = nodeObject.icon;
           if (nodeObject.color) info.color = nodeObject.color;
-          
+
           logger.info("Successfully extracted node definition from content", {
             filename,
             extractedFields: Object.keys(info),
             propertiesCount: info.properties?.length || 0
           });
-          
+
           return info;
         }
       }
@@ -651,7 +660,7 @@ export class CustomNodeUploadHandler {
           logger.debug("Extracted properties array string", {
             arrayLength: propertiesArrayStr.length
           });
-          
+
           const propertiesArray = this.parsePropertiesArray(propertiesArrayStr);
           if (propertiesArray && propertiesArray.length > 0) {
             result.properties = propertiesArray;
@@ -683,16 +692,16 @@ export class CustomNodeUploadHandler {
    */
   private extractBalancedBrackets(str: string, startPos: number): string | null {
     if (str[startPos] !== '[') return null;
-    
+
     let depth = 0;
     let inString = false;
     let stringChar = '';
     let result = '';
-    
+
     for (let i = startPos; i < str.length; i++) {
       const char = str[i];
       result += char;
-      
+
       if (!inString) {
         if (char === '"' || char === "'" || char === '`') {
           inString = true;
@@ -712,7 +721,7 @@ export class CustomNodeUploadHandler {
         }
       }
     }
-    
+
     return null; // Unbalanced brackets
   }
 
@@ -722,11 +731,11 @@ export class CustomNodeUploadHandler {
   private parsePropertiesArray(arrayStr: string): any[] | null {
     try {
       const properties: any[] = [];
-      
+
       logger.debug("Starting to parse properties array", {
         arrayLength: arrayStr.length
       });
-      
+
       // Find individual property objects within the array
       let depth = 0;
       let currentObj = '';
@@ -742,7 +751,7 @@ export class CustomNodeUploadHandler {
       let objectCount = 0;
       while (i < arrayStr.length) {
         const char = arrayStr[i];
-        
+
         if (!inString) {
           if (char === '"' || char === "'" || char === '`') {
             inString = true;
@@ -763,7 +772,7 @@ export class CustomNodeUploadHandler {
               logger.debug(`Completed property object #${objectCount}`, {
                 objectLength: currentObj.length
               });
-              
+
               // Parse this property object
               const prop = this.parsePropertyObject(currentObj);
               if (prop) {
@@ -793,7 +802,7 @@ export class CustomNodeUploadHandler {
         i++;
       }
 
-      logger.info("Finished parsing properties array", { 
+      logger.info("Finished parsing properties array", {
         propertiesCount: properties.length,
         sampleProperty: properties[0]?.displayName || 'none'
       });
@@ -973,13 +982,13 @@ export class CustomNodeUploadHandler {
    */
   private async copyDirectory(source: string, destination: string): Promise<void> {
     await this.ensureDirectory(destination);
-    
+
     const entries = await fs.readdir(source, { withFileTypes: true });
-    
+
     for (const entry of entries) {
       const sourcePath = path.join(source, entry.name);
       const destPath = path.join(destination, entry.name);
-      
+
       if (entry.isDirectory()) {
         await this.copyDirectory(sourcePath, destPath);
       } else {
@@ -994,7 +1003,7 @@ export class CustomNodeUploadHandler {
   private async installDependencies(packagePath: string): Promise<void> {
     try {
       const packageJsonPath = path.join(packagePath, "package.json");
-      
+
       if (!await this.fileExists(packageJsonPath)) {
         return;
       }
@@ -1003,7 +1012,7 @@ export class CustomNodeUploadHandler {
       const packageInfo = JSON.parse(packageContent);
 
       // Check if there are dependencies to install
-      const hasDependencies = packageInfo.dependencies && 
+      const hasDependencies = packageInfo.dependencies &&
         Object.keys(packageInfo.dependencies).length > 0;
 
       if (!hasDependencies) {
@@ -1011,14 +1020,14 @@ export class CustomNodeUploadHandler {
         return;
       }
 
-      logger.info("Installing package dependencies", { 
+      logger.info("Installing package dependencies", {
         packagePath,
         dependencies: Object.keys(packageInfo.dependencies)
       });
 
       // Use child_process to run npm install
       const { spawn } = await import("child_process");
-      
+
       return new Promise((resolve, reject) => {
         const npmProcess = spawn("npm", ["install", "--production"], {
           cwd: packagePath,
@@ -1038,7 +1047,7 @@ export class CustomNodeUploadHandler {
 
         npmProcess.on("close", (code) => {
           if (code === 0) {
-            logger.info("Dependencies installed successfully", { 
+            logger.info("Dependencies installed successfully", {
               packagePath,
               stdout: stdout.trim()
             });

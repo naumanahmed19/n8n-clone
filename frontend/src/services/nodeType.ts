@@ -61,36 +61,41 @@ export class NodeTypeService {
    * Upload a zip file containing custom nodes
    */
   async uploadCustomNodes(file: File): Promise<UploadResult> {
-    const formData = new FormData();
-    formData.append("nodes", file);
+    try {
+      const formData = new FormData();
+      formData.append("nodes", file);
 
-    const response = await api.post(`/node-types/upload`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+      const response = await api.post(`/node-types/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 60000, // 60 seconds for file uploads
+      });
 
-    // Transform the backend response to match frontend expectations
-    const backendResponse = response.data;
+      // Transform the backend response to match frontend expectations
+      const backendResponse = response.data;
 
-    // Handle the actual backend response structure
-    const transformedResult = {
-      success: true, // If we get here, the upload was successful
-      message: `Successfully uploaded ${
-        backendResponse.nodes?.length || 0
-      } custom node(s)`,
-      nodes: backendResponse.nodes || [],
-      errors: undefined,
-    };
+      // Handle the actual backend response structure
+      const transformedResult = {
+        success: true, // If we get here, the upload was successful
+        message: `Successfully uploaded ${backendResponse.data?.nodes?.length || 0
+          } custom node(s)`,
+        nodes: backendResponse.data?.nodes || [],
+        errors: undefined,
+      };
 
-    return transformedResult;
+      return transformedResult;
+    } catch (error) {
+      throw error; // Re-throw to let the calling code handle it
+    }
   }
 
   /**
-   * Delete a custom node type
+   * Delete a custom node type (removes from database and deletes files)
    */
   async deleteNodeType(type: string): Promise<void> {
-    await api.delete(`/node-types/${encodeURIComponent(type)}`);
+    // Use the package deletion endpoint that removes both database entries and files
+    await api.delete(`/node-types/packages/${encodeURIComponent(type)}`);
   }
 
   /**

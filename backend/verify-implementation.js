@@ -2,7 +2,7 @@
  * Simple verification script to check if FlowExecutionEngine implementation is complete
  */
 
-console.log('=== FlowExecutionEngine Implementation Verification ===\n');
+
 
 // Check if the file exists and can be read
 const fs = require('fs');
@@ -33,39 +33,22 @@ try {
     { name: 'Active executions tracking', pattern: /activeExecutions/ }
   ];
 
-  console.log('Checking implementation completeness...\n');
-
   let allPassed = true;
   checks.forEach(check => {
-    if (check.pattern.test(content)) {
-      console.log(`✓ ${check.name}`);
-    } else {
-      console.log(`✗ ${check.name}`);
+    if (!check.pattern.test(content)) {
       allPassed = false;
     }
   });
-
-  console.log(`\nFile size: ${content.length} characters`);
-  console.log(`Lines of code: ${content.split('\n').length}`);
-
-  if (allPassed) {
-    console.log('\n🎉 All required components are implemented!');
-  } else {
-    console.log('\n❌ Some components are missing.');
-  }
 
   // Check for proper class structure
   const classStart = content.indexOf('export class FlowExecutionEngine');
   const classEnd = content.lastIndexOf('}');
   
-  if (classStart !== -1 && classEnd !== -1 && classEnd > classStart) {
-    console.log('✓ Class structure is complete');
-  } else {
-    console.log('✗ Class structure may be incomplete');
+  if (!(classStart !== -1 && classEnd !== -1 && classEnd > classStart)) {
+    allPassed = false;
   }
 
 } catch (error) {
   console.error('Error reading file:', error.message);
 }
 
-console.log('\n=== Verification Complete ===');

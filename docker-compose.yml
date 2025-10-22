@@ -44,6 +44,8 @@ services:
       - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - PORT=4000
+    volumes:
+      - custom_nodes_data:/app/custom-nodes
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,3 +75,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  custom_nodes_data:

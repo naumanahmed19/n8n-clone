@@ -13,7 +13,7 @@ import { workflowService } from '@/services'
 import type { ExecutionDetails } from '@/services/execution'
 import { executionService } from '@/services/execution'
 import { socketService } from '@/services/socket'
-import { useAuthStore, useWorkflowStore } from '@/stores'
+import { useAuthStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, Workflow } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
@@ -33,8 +33,8 @@ export function WorkflowEditorPage() {
   } = useWorkflowStore()
   const { user } = useAuthStore()
   const [error, setError] = useState<string | null>(null)
-  const [nodeTypes, setNodeTypes] = useState<NodeType[]>([])
-  const [isLoadingNodeTypes, setIsLoadingNodeTypes] = useState(true)
+  // Use global node types store instead of local state
+  const { activeNodeTypes: nodeTypes, isLoading: isLoadingNodeTypes, fetchNodeTypes } = useNodeTypes()
   const [execution, setExecution] = useState<ExecutionDetails | null>(null)
   const [isLoadingExecution, setIsLoadingExecution] = useState(false)
   
@@ -110,23 +110,12 @@ export function WorkflowEditorPage() {
     }
   }, [id])
 
-  // Load node types from backend
+  // Initialize node types store
   useEffect(() => {
-    const loadNodeTypes = async () => {
-      try {
-        setIsLoadingNodeTypes(true)
-        const types = await workflowService.getNodeTypes()
-        setNodeTypes(types)
-      } catch (error) {
-        console.error('Failed to load node types:', error)
-        setError('Failed to load node types. Please refresh the page.')
-      } finally {
-        setIsLoadingNodeTypes(false)
-      }
+    if (nodeTypes.length === 0 && !isLoadingNodeTypes) {
+      fetchNodeTypes()
     }
-
-    loadNodeTypes()
-  }, [])
+  }, [nodeTypes.length, isLoadingNodeTypes, fetchNodeTypes])
 
   // Load execution data if executionId is present
   useEffect(() => {
