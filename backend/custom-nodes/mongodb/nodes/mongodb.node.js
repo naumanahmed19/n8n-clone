@@ -1,11 +1,10 @@
-import { MongoClient, ObjectId } from "mongodb";
-import { NodeDefinition, NodeInputData, NodeOutputData, NodeExecutionContext } from "../../types/node.types";
+const { MongoClient, ObjectId } = require("mongodb");
 
 /**
  * Helper function to build MongoDB connection string
  * Automatically detects MongoDB Atlas and uses appropriate protocol
  */
-function buildConnectionString(credentials: any): string {
+function buildConnectionString(credentials) {
   if (credentials.configurationType === "connectionString") {
     return credentials.connectionString;
   }
@@ -36,7 +35,7 @@ function buildConnectionString(credentials: any): string {
   }
 }
 
-export const MongoDBNode: NodeDefinition = {
+const MongoDBNode = {
   type: "mongodb",
   displayName: "MongoDB",
   name: "mongodb",
@@ -51,6 +50,12 @@ export const MongoDBNode: NodeDefinition = {
   },
   inputs: ["main"],
   outputs: ["main"],
+  credentials: [
+    {
+      name: "mongoDb",
+      required: true,
+    },
+  ],
   properties: [
     {
       displayName: "Authentication",
@@ -101,9 +106,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Collection",
       name: "collection",
-      type: "options",
-      options: [],
-      // Note: Dynamic loading handled by loadOptions.getCollections
+      type: "autocomplete",
+      typeOptions: {
+        loadOptionsMethod: "getCollections",
+      },
       default: "",
       required: true,
       description: "Select a collection from the database",
@@ -113,7 +119,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Query",
       name: "query",
-      type: "json",
+      type: "string",
+      typeOptions: {
+        rows: 3,
+      },
       displayOptions: {
         show: {
           operation: ["find"],
@@ -126,7 +135,7 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Projection",
       name: "projection",
-      type: "json",
+      type: "string",
       displayOptions: {
         show: {
           operation: ["find"],
@@ -176,7 +185,7 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Sort",
       name: "sort",
-      type: "json",
+      type: "string",
       displayOptions: {
         show: {
           operation: ["find"],
@@ -215,6 +224,9 @@ export const MongoDBNode: NodeDefinition = {
       displayName: "Document",
       name: "document",
       type: "string",
+      typeOptions: {
+        rows: 3,
+      },
       displayOptions: {
         show: {
           operation: ["insert"],
@@ -229,7 +241,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Documents",
       name: "documents",
-      type: "json",
+      type: "string",
+      typeOptions: {
+        rows: 5,
+      },
       displayOptions: {
         show: {
           operation: ["insert"],
@@ -269,7 +284,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Filter",
       name: "filter",
-      type: "json",
+      type: "string",
+      typeOptions: {
+        rows: 3,
+      },
       displayOptions: {
         show: {
           operation: ["update"],
@@ -283,7 +301,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Update",
       name: "update",
-      type: "json",
+      type: "string",
+      typeOptions: {
+        rows: 3,
+      },
       displayOptions: {
         show: {
           operation: ["update"],
@@ -334,7 +355,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Filter",
       name: "deleteFilter",
-      type: "json",
+      type: "string",
+      typeOptions: {
+        rows: 3,
+      },
       displayOptions: {
         show: {
           operation: ["delete"],
@@ -350,7 +374,10 @@ export const MongoDBNode: NodeDefinition = {
     {
       displayName: "Pipeline",
       name: "pipeline",
-      type: "json",
+      type: "string",
+      typeOptions: {
+        rows: 5,
+      },
       displayOptions: {
         show: {
           operation: ["aggregate"],
@@ -389,7 +416,7 @@ export const MongoDBNode: NodeDefinition = {
     },
   },
 
-  execute: async function (this: NodeExecutionContext, inputData: NodeInputData): Promise<NodeOutputData[]> {
+  execute: async function (inputData) {
     const items = inputData.main?.[0] || [];
     const results = [];
 
@@ -398,6 +425,9 @@ export const MongoDBNode: NodeDefinition = {
 
     // Get settings
     const continueOnFail = this.settings?.continueOnFail ?? false;
+
+    this.logger.info(`[MongoDB] continueOnFail setting: ${continueOnFail}`);
+    this.logger.info(`[MongoDB] Settings object:`, this.settings);
 
     // Get connection parameters from credentials
     let connectionString = "";
@@ -413,8 +443,13 @@ export const MongoDBNode: NodeDefinition = {
 
       // Build connection string using helper function
       connectionString = buildConnectionString(credentials);
+
+      this.logger.info("Using MongoDB credentials", {
+        host: credentials.host,
+        database: credentials.database,
+      });
     } catch (error) {
-      throw new Error(`Failed to get credentials: ${(error instanceof Error ? error.message : String(error))}`);
+      throw new Error(`Failed to get credentials: ${error.message}`);
     }
 
     const operation = await this.getNodeParameter("operation");
@@ -423,6 +458,11 @@ export const MongoDBNode: NodeDefinition = {
     // Use settings for connection timeout
     const connectionTimeout = this.settings?.connectionTimeout ?? 5000;
     const readPreference = this.settings?.readPreference ?? "primary";
+
+    this.logger.info("Using connection settings", {
+      timeout: connectionTimeout,
+      readPreference: readPreference,
+    });
 
     // Create MongoDB client
     const client = new MongoClient(connectionString, {
@@ -460,14 +500,14 @@ export const MongoDBNode: NodeDefinition = {
               try {
                 query = queryStr ? JSON.parse(queryStr) : {};
               } catch (e) {
-                throw new Error(`Invalid query JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                throw new Error(`Invalid query JSON: ${e.message}`);
               }
 
               if (projectionStr) {
                 try {
                   projection = JSON.parse(projectionStr);
                 } catch (e) {
-                  throw new Error(`Invalid projection JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                  throw new Error(`Invalid projection JSON: ${e.message}`);
                 }
               }
 
@@ -475,7 +515,7 @@ export const MongoDBNode: NodeDefinition = {
                 try {
                   sort = JSON.parse(sortStr);
                 } catch (e) {
-                  throw new Error(`Invalid sort JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                  throw new Error(`Invalid sort JSON: ${e.message}`);
                 }
               }
 
@@ -523,7 +563,7 @@ export const MongoDBNode: NodeDefinition = {
                       ? JSON.parse(documentStr)
                       : documentStr;
                 } catch (e) {
-                  throw new Error(`Invalid document JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                  throw new Error(`Invalid document JSON: ${e.message}`);
                 }
 
                 result = await coll.insertOne(document);
@@ -545,7 +585,7 @@ export const MongoDBNode: NodeDefinition = {
                       ? JSON.parse(documentsStr)
                       : documentsStr;
                 } catch (e) {
-                  throw new Error(`Invalid documents JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                  throw new Error(`Invalid documents JSON: ${e.message}`);
                 }
 
                 if (!Array.isArray(documents)) {
@@ -557,7 +597,7 @@ export const MongoDBNode: NodeDefinition = {
                 results.push({
                   json: {
                     ...item.json,
-                    insertedIds: Object.values(result.insertedIds).map((id: any) =>
+                    insertedIds: Object.values(result.insertedIds).map((id) =>
                       id.toString()
                     ),
                     insertedCount: result.insertedCount,
@@ -582,7 +622,7 @@ export const MongoDBNode: NodeDefinition = {
                     ? JSON.parse(filterStr)
                     : filterStr;
               } catch (e) {
-                throw new Error(`Invalid filter JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                throw new Error(`Invalid filter JSON: ${e.message}`);
               }
 
               try {
@@ -591,7 +631,7 @@ export const MongoDBNode: NodeDefinition = {
                     ? JSON.parse(updateStr)
                     : updateStr;
               } catch (e) {
-                throw new Error(`Invalid update JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                throw new Error(`Invalid update JSON: ${e.message}`);
               }
 
               const options = { upsert };
@@ -627,7 +667,7 @@ export const MongoDBNode: NodeDefinition = {
                     ? JSON.parse(filterStr)
                     : filterStr;
               } catch (e) {
-                throw new Error(`Invalid filter JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                throw new Error(`Invalid filter JSON: ${e.message}`);
               }
 
               if (deleteMode === "deleteOne") {
@@ -657,7 +697,7 @@ export const MongoDBNode: NodeDefinition = {
                     ? JSON.parse(pipelineStr)
                     : pipelineStr;
               } catch (e) {
-                throw new Error(`Invalid pipeline JSON: ${(e instanceof Error ? e.message : String(e))}`);
+                throw new Error(`Invalid pipeline JSON: ${e.message}`);
               }
 
               if (!Array.isArray(pipeline)) {
@@ -680,15 +720,15 @@ export const MongoDBNode: NodeDefinition = {
               throw new Error(`Unknown operation: ${operation}`);
           }
         } catch (error) {
-          this.logger.error(`[MongoDB] Error in operation:`, (error instanceof Error ? error.message : String(error)));
+          this.logger.error(`[MongoDB] Error in operation:`, error.message);
 
           if (continueOnFail) {
             results.push({
               json: {
                 ...item.json,
                 error: true,
-                errorMessage: (error instanceof Error ? error.message : String(error)),
-                errorDetails: error instanceof Error ? error.toString() : String(error),
+                errorMessage: error.message,
+                errorDetails: error.toString(),
               },
             });
           } else {
@@ -701,6 +741,9 @@ export const MongoDBNode: NodeDefinition = {
       await client.close();
     }
 
+    this.logger.info(`[MongoDB] Returning results, count: ${results.length}`);
+    this.logger.info(`[MongoDB] Results:`, JSON.stringify(results, null, 2));
+
     return [{ main: results }];
   },
 
@@ -711,7 +754,7 @@ export const MongoDBNode: NodeDefinition = {
     /**
      * Get list of collections from the database
      */
-    async getCollections(this: NodeExecutionContext) {
+    async getCollections() {
       let connectionString = "";
 
       try {
@@ -734,7 +777,7 @@ export const MongoDBNode: NodeDefinition = {
           {
             name: "Error: Credentials required",
             value: "",
-            description: (error instanceof Error ? error.message : String(error)),
+            description: error.message,
           },
         ];
       }
@@ -756,7 +799,7 @@ export const MongoDBNode: NodeDefinition = {
         await client.close();
 
         // Format results for dropdown
-        return collections.map((coll: any) => ({
+        return collections.map((coll) => ({
           name: coll.name,
           value: coll.name,
           description: `Collection: ${coll.name}`,
@@ -769,7 +812,7 @@ export const MongoDBNode: NodeDefinition = {
           {
             name: "Error loading collections - check credentials",
             value: "",
-            description: (error instanceof Error ? error.message : String(error)),
+            description: error.message,
           },
         ];
       }
@@ -777,5 +820,4 @@ export const MongoDBNode: NodeDefinition = {
   },
 };
 
-// Export as default for compatibility
-export default MongoDBNode;
+module.exports = MongoDBNode;
