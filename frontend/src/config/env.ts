@@ -18,11 +18,7 @@ export const env = {
   },
   
   get API_BASE_URL() {
-    // In development, use relative URLs to go through Vite proxy
-    // In production, use the full API URL
-    if (this.IS_DEVELOPMENT && typeof window !== 'undefined') {
-      return '/api'
-    }
+    // Always use full API URL (no proxy)
     return `${this.API_URL}/api`
   }
 } as const

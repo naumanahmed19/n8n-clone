@@ -36,11 +36,19 @@ class ApiClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Clear token and notify auth store
-          this.clearToken();
-          this.handleUnauthorized();
+          // Only handle unauthorized for authenticated requests, not login attempts
+          const isLoginRequest = error.config?.url?.includes('/auth/login');
+          if (!isLoginRequest) {
+            // Clear token and notify auth store
+            this.clearToken();
+            this.handleUnauthorized();
+          }
         }
-        return Promise.reject(this.formatError(error));
+        const formattedError = this.formatError(error);
+        const errorObj = new Error(formattedError.message);
+        (errorObj as any).code = formattedError.code;
+        (errorObj as any).status = formattedError.status;
+        return Promise.reject(errorObj);
       }
     );
   }

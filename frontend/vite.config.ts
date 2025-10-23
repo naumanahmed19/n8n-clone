@@ -14,19 +14,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    proxy: {
-      "/api": {
-        target: process.env.VITE_API_URL || "http://backend:4000",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/socket.io": {
-        target: process.env.VITE_API_URL || "http://backend:4000",
-        changeOrigin: true,
-        ws: true,
-      },
-
-    },
   },
   build: {
     outDir: "dist",
