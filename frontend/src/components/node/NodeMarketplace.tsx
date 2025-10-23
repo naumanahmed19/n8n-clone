@@ -1,20 +1,34 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useCustomNodeStore } from '@/stores/customNode'
 import { NodePackageMetadata } from '@/types/customNode'
 import { getIconComponent } from '@/utils/iconMapper'
 import {
   Command,
   Download,
-  ExternalLink
+  ExternalLink,
+  SlidersHorizontal,
+  ArrowUpDown
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+
 interface NodeMarketplaceProps {
   searchTerm?: string
+  sortBy?: 'downloads' | 'rating' | 'updated' | 'relevance'
+  sortOrder?: 'asc' | 'desc'
+  selectedCategory?: string
+  onCategoriesChange?: (categories: string[]) => void
 }
 
-export function NodeMarketplace({ searchTerm = "" }: NodeMarketplaceProps) {
+export function NodeMarketplace({ 
+  searchTerm = "", 
+  sortBy = 'downloads', 
+  sortOrder = 'desc', 
+  selectedCategory = 'all',
+  onCategoriesChange 
+}: NodeMarketplaceProps) {
   const {
     searchMarketplace,
     installPackage,
@@ -23,19 +37,21 @@ export function NodeMarketplace({ searchTerm = "" }: NodeMarketplaceProps) {
     error
   } = useCustomNodeStore()
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+
   const [installingNodes, setInstallingNodes] = useState<Set<string>>(new Set())
   const [hasSearched, setHasSearched] = useState(false)
 
-  // Load marketplace data on mount and when search term changes
+
+
+  // Load marketplace data on mount and when search parameters change
   useEffect(() => {
     const loadMarketplace = async () => {
       try {
         await searchMarketplace({
           query: searchTerm || undefined,
           category: selectedCategory !== 'all' ? selectedCategory : undefined,
-          sortBy: 'downloads',
-          sortOrder: 'desc',
+          sortBy,
+          sortOrder,
           limit: 50
         })
         setHasSearched(true)
@@ -46,17 +62,26 @@ export function NodeMarketplace({ searchTerm = "" }: NodeMarketplaceProps) {
     }
 
     loadMarketplace()
-  }, [searchTerm, selectedCategory, searchMarketplace])
+  }, [searchTerm, selectedCategory, sortBy, sortOrder, searchMarketplace])
+
+
 
   // Get unique categories from search results
   const categories = useMemo(() => {
-    if (!searchResults?.packages) return ['all']
+    if (!searchResults?.packages) return []
     const cats = [...new Set(searchResults.packages.map(pkg => {
       // Extract category from keywords or use first keyword
       return pkg.keywords?.[0] || 'Other'
     }))]
-    return ['all', ...cats.sort()]
+    return cats.sort()
   }, [searchResults])
+
+  // Update parent with categories when they change
+  useEffect(() => {
+    if (onCategoriesChange) {
+      onCategoriesChange(categories)
+    }
+  }, [categories, onCategoriesChange])
 
 
 
@@ -128,7 +153,7 @@ export function NodeMarketplace({ searchTerm = "" }: NodeMarketplaceProps) {
       <div className="p-4">
         <div className="text-center text-muted-foreground">
           <Download className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-          <p className="text-sm">
+          <p className="text-sm mb-2">
             {searchTerm ? 'No nodes match your search' : 'No nodes available in marketplace'}
           </p>
         </div>
@@ -139,22 +164,21 @@ export function NodeMarketplace({ searchTerm = "" }: NodeMarketplaceProps) {
   // Render marketplace nodes in sidebar-style layout
   return (
     <div className="p-0">
-      {/* Category Filters */}
-      <div className="p-4 border-b">
-        <div className="flex flex-wrap gap-1">
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? 'default' : 'outline'}
-              size="sm"
-              className="h-6 px-2 text-xs capitalize"
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </Button>
-          ))}
+
+
+      {/* Search Results Summary */}
+      {hasSearched && searchResults?.packages && searchResults.packages.length > 0 && (
+        <div className="px-4 py-2 border-b bg-muted/20">
+          <div className="text-xs text-muted-foreground">
+            {searchTerm && (
+              <>Showing {searchResults.packages.length} of {searchResults.total} results for "{searchTerm}"</>
+            )}
+            {selectedCategory !== 'all' && (
+              <> in {selectedCategory}</>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Results in flat list */}
       <div className="space-y-0">

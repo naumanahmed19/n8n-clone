@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CustomNodeList } from '../components/customNode/CustomNodeList';
 import { CustomNodeUpload } from '../components/customNode/CustomNodeUpload';
-import { NodeMarketplace } from '../components/customNode/NodeMarketplace';
+import { NodeMarketplace } from '../components/node/NodeMarketplace';
 import { NodeTemplateGenerator } from '../components/customNode/NodeTemplateGenerator';
 import { PackageValidator } from '../components/customNode/PackageValidator';
 import { useCustomNodeStore } from '../stores/customNode';
