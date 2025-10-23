@@ -349,7 +349,7 @@ export function NodeTypesList({ }: NodeTypesListProps) {
 
                 const nodeElement = (
                   <div
-                    className={`bg-card hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group h-16 overflow-hidden transition-colors ${(nodeType as ExtendedNodeType).active === false ? 'opacity-50 bg-muted/30' : ''
+                    className={`bg-card hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group min-h-16 transition-colors ${(nodeType as ExtendedNodeType).active === false ? 'opacity-50 bg-muted/30' : ''
                       }`}
                     style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                     draggable
@@ -391,23 +391,26 @@ export function NodeTypesList({ }: NodeTypesListProps) {
                         </span>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <div className="font-medium truncate flex items-center gap-2">
-                        {nodeType.displayName}
-                        {(nodeType as ExtendedNodeType).active === false && (
-                          <Badge variant="outline" className="text-xs h-4 px-1">
-                            <PowerOff className="h-2 w-2 mr-1" />
-                            Inactive
-                          </Badge>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium break-words">
+                        <div className="flex items-start gap-2 flex-wrap">
+                          <span className="break-words">{nodeType.displayName}</span>
+                          {(nodeType as ExtendedNodeType).active === false && (
+                            <Badge variant="outline" className="text-xs h-4 px-1 shrink-0">
+                              <PowerOff className="h-2 w-2 mr-1" />
+                              Inactive
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       {nodeType.description && (
                         <div
-                          className="text-xs text-muted-foreground overflow-hidden leading-relaxed mt-1"
+                          className="text-xs text-muted-foreground leading-relaxed mt-1"
                           style={{
                             display: '-webkit-box',
                             WebkitLineClamp: 1,
                             WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
                             wordBreak: 'break-word',
                             hyphens: 'auto'
                           }}
@@ -416,11 +419,11 @@ export function NodeTypesList({ }: NodeTypesListProps) {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 self-start mt-0.5">
+                    <div className="flex flex-col items-end gap-1 shrink-0 self-start mt-0.5">
+                      <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-60 transition-opacity" />
                       <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                         v{nodeType.version}
                       </div>
-                      <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-60 transition-opacity" />
                     </div>
                   </div>
                 )
