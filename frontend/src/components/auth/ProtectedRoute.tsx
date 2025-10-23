@@ -29,7 +29,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, [token, isAuthenticated, isLoading, getCurrentUser, hasTriedAuth])
 
   // Show loading spinner while checking authentication
-  if (isLoading || (token && !isAuthenticated && hasTriedAuth)) {
+  // Don't show loading for auth pages (login/register) as they have their own loading states
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
+  if ((isLoading || (token && !isAuthenticated && hasTriedAuth)) && !isAuthPage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
