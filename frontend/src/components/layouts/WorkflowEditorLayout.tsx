@@ -1,13 +1,7 @@
 import { WorkflowEditorWrapper } from '@/components'
-import { AppSidebar } from '@/components/app-sidebar'
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
-import { ToastContainer } from '@/components/ui/Toast'
+import { BaseLayout } from '@/components/layout/BaseLayout'
 import { WorkflowLandingPage } from '@/components/workflow/WorkflowLandingPage'
 import { WorkflowToolbar } from '@/components/workflow/WorkflowToolbar'
-import { useGlobalToast } from '@/hooks/useToast'
 import {
   useWorkflowOperations
 } from '@/hooks/workflow'
@@ -22,24 +16,19 @@ export function WorkflowEditorLayout() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const { 
-    workflow, 
-    setWorkflow, 
-    setLoading, 
-    isLoading, 
-    canUndo,
-    canRedo,
-    undo,
-    redo
+  const {
+    workflow,
+    setWorkflow,
+    setLoading,
+    isLoading
   } = useWorkflowStore()
   const { user } = useAuthStore()
-  const { toasts } = useGlobalToast()
   const [error, setError] = useState<string | null>(null)
   const [nodeTypes, setNodeTypes] = useState<NodeType[]>([])
   const [isLoadingNodeTypes, setIsLoadingNodeTypes] = useState(true)
-  
+
   // Workflow operations for toolbar
-  const { 
+  const {
     saveWorkflow
   } = useWorkflowOperations()
 
@@ -51,7 +40,7 @@ export function WorkflowEditorLayout() {
   // Load node types from backend - only once
   useEffect(() => {
     if (nodeTypes.length > 0) return // Already loaded
-    
+
     const loadNodeTypes = async () => {
       try {
         setIsLoadingNodeTypes(true)
@@ -152,51 +141,39 @@ export function WorkflowEditorLayout() {
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "356px",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar />
-      <SidebarInset>
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-              <span className="text-gray-600">Loading workflow...</span>
-            </div>
+    <BaseLayout>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <span className="text-gray-600">Loading workflow...</span>
           </div>
-        ) : !id ? (
-          // Show landing page when no workflow is selected
-          <WorkflowLandingPage />
-        ) : !workflow ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Workflow Not Found</h2>
-              <p className="text-gray-600 mb-4">The requested workflow could not be found.</p>
-              <button
-                onClick={() => navigate('/workflows')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Back to Workflows
-              </button>
-            </div>
+        </div>
+      ) : !id ? (
+        // Show landing page when no workflow is selected
+        <WorkflowLandingPage />
+      ) : !workflow ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Workflow Not Found</h2>
+            <p className="text-gray-600 mb-4">The requested workflow could not be found.</p>
+            <button
+              onClick={() => navigate('/workflows')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Workflows
+            </button>
           </div>
-        ) : (
-          <>
-            <WorkflowToolbar
-              onSave={handleSave}
-            />
-            <div className="flex flex-1 flex-col h-full overflow-hidden">
-              <WorkflowEditorWrapper nodeTypes={nodeTypes} />
-            </div>
-          </>
-        )}
-      </SidebarInset>
-      <ToastContainer toasts={toasts} position="top-right" />
-    </SidebarProvider>
+        </div>
+      ) : (
+        <>
+          <WorkflowToolbar onSave={handleSave} />
+          <div className="flex flex-1 flex-col h-full overflow-hidden">
+            <WorkflowEditorWrapper nodeTypes={nodeTypes} />
+          </div>
+        </>
+      )}
+    </BaseLayout>
   )
 }

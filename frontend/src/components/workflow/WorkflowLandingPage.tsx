@@ -68,7 +68,7 @@ export function WorkflowLandingPage() {
   ]
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 bg-background">
+    <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50">
       <div className="max-w-4xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-12">
