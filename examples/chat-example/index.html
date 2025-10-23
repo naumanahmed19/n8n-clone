@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N8n Chat Widget</title>
+    <title>nodeDrop Chat Widget</title>
     <style>
         * {
             box-sizing: border-box;
@@ -114,7 +114,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>N8n Chat Widget</h1>
+            <h1>nodeDrop Chat Widget</h1>
             <p>Embed AI-powered chat into any website with a single line of code</p>
         </div>
 
@@ -126,12 +126,12 @@
 
                 <div class="code-block">
                     <pre>&lt;div 
-    data-n8n-chat="your-chat-id"
+    data-nd-chat="your-chat-id"
     data-theme="auto"
     data-position="bottom-right"
 &gt;&lt;/div&gt;
 
-&lt;script src="n8n-chat-widget.umd.js"&gt;&lt;/script&gt;</pre>
+&lt;script src="nd-chat-widget.umd.js"&gt;&lt;/script&gt;</pre>
                 </div>
             </div>
 
@@ -141,7 +141,7 @@
                 <p>Full programmatic control over the widget lifecycle and configuration.</p>
 
                 <div class="code-block">
-                    <pre>const widget = new N8nChatWidget();
+                    <pre>const widget = new nodeDropChatWidget();
 widget.init({
     chatId: 'your-chat-id',
     theme: 'light',
@@ -153,11 +153,11 @@ widget.init({
     </div>
 
     <!-- Auto-initialization element -->
-    <div data-n8n-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5" data-theme="auto" data-position="bottm-right"
+    <div data-nd-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5" data-theme="auto" data-position="bottm-right"
         data-api-url="http://localhost:4000/api"></div>
 
     <!-- Load the chat widget script -->
-    <script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
+    <script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"></script>
 </body>
 
 </html>

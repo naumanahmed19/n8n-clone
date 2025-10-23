@@ -61,7 +61,7 @@ describe('Custom Node System Unit Tests', () => {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
       
       expect(packageJson.bin).toBeDefined();
-      expect(packageJson.bin['n8n-node-cli']).toBe('dist/cli/node-cli.js');
+      expect(packageJson.bin['nd-node-cli']).toBe('dist/cli/node-cli.js');
     });
 
     it('should have required dependencies', () => {

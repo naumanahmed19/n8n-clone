@@ -1,6 +1,6 @@
 # Counter Node
 
-A custom n8n node that maintains state and increments a counter each time it's executed.
+A custom nodeDrop node that maintains state and increments a counter each time it's executed.
 
 ## Features
 

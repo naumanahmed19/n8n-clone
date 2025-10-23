@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-The n8n-clone execution system is designed with a dual-mode architecture that supports both individual node execution and complete workflow execution. The system is built with the following core principles:
+The node-drop execution system is designed with a dual-mode architecture that supports both individual node execution and complete workflow execution. The system is built with the following core principles:
 
 - **Separation of Concerns**: Clear distinction between single node and workflow execution
 - **Real-time Feedback**: Live progress updates via WebSocket connections

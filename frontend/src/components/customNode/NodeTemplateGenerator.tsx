@@ -46,7 +46,7 @@ export const NodeTemplateGenerator: React.FC = () => {
         <div className="p-6 border-b">
           <h2 className="text-2xl font-bold">Generate Custom Node Package</h2>
           <p className="text-gray-600 mt-2">
-            Create a complete n8n custom node package with all necessary files. The package will be generated as a zip file for download.
+            Create a complete nodeDrop custom node package with all necessary files. The package will be generated as a zip file for download.
           </p>
         </div>
         

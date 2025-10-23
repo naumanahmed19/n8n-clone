@@ -3,9 +3,9 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: n8n-clone-postgres-dev
+    container_name: node-drop-postgres-dev
     environment:
-      POSTGRES_DB: n8n_clone_dev
+      POSTGRES_DB: node_drop_dev
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -20,7 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: n8n-clone-redis-dev
+    container_name: node-drop-redis-dev
     ports:
       - "6379:6379"
     volumes:
@@ -35,12 +35,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: n8n-clone-backend-dev
+    container_name: node-drop-backend-dev
     ports:
       - "4000:4000"
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/n8n_clone_dev
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/node_drop_dev
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=dev-secret-key-change-in-production
       - PORT=4000
@@ -58,7 +58,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    container_name: n8n-clone-frontend-dev
+    container_name: node-drop-frontend-dev
     ports:
       - "3000:3000"
     environment:

@@ -338,7 +338,7 @@ router.get("/marketplace/search", async (req: Request, res: Response) => {
 
     const marketplace = new NodeMarketplace({
       registryUrl:
-        process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+        process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
     });
 
     const filters = {
@@ -381,7 +381,7 @@ router.get(
 
       const marketplace = new NodeMarketplace({
         registryUrl:
-          process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+          process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
       });
 
       const packageInfo = await marketplace.getNodeInfo(packageId);
@@ -420,7 +420,7 @@ router.post("/marketplace/install", async (req: Request, res: Response) => {
 
     const marketplace = new NodeMarketplace({
       registryUrl:
-        process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+        process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
     });
 
     const result = await marketplace.installNode(packageId, {
@@ -479,7 +479,7 @@ router.post("/marketplace/publish", async (req: Request, res: Response) => {
 
     const marketplace = new NodeMarketplace({
       registryUrl:
-        process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+        process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
       apiKey: process.env.NODE_MARKETPLACE_API_KEY,
     });
 

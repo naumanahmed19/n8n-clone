@@ -9,7 +9,7 @@ This feature enables users to create embeddable public chat widgets from Chat In
 - **Chat_Widget_System**: The complete system that enables embedding chat interfaces on external websites
 - **Chat_Interface_Node**: The existing workflow node that provides interactive chat functionality within the workflow editor
 - **Public_Chat_Widget**: The embeddable JavaScript widget that renders a floating chat bubble and popup interface on external websites
-- **Widget_Bundle**: The compiled JavaScript file containing the chat widget code and dependencies, similar to n8n-form-widget.umd.js
+- **Widget_Bundle**: The compiled JavaScript file containing the chat widget code and dependencies, similar to nd-form-widget.umd.js
 - **Host_Website**: Any external website where the chat widget is embedded
 - **Chat_Session**: A conversation instance between a visitor and the AI system through the widget
 - **Chat_Bubble**: The floating circular button that opens the chat interface when clicked
@@ -109,7 +109,7 @@ This feature enables users to create embeddable public chat widgets from Chat In
 #### Acceptance Criteria
 
 1. THE Chat_Widget_System SHALL create a chat widget bundle using Vite configuration similar to the form widget build process
-2. THE Chat_Widget_System SHALL output a compiled JavaScript file (n8n-chat-widget.umd.js) that can be hosted on CDNs
+2. THE Chat_Widget_System SHALL output a compiled JavaScript file (nd-chat-widget.umd.js) that can be hosted on CDNs
 3. THE Public_Chat_Widget SHALL initialize automatically when loaded and scan for data attributes or initialization parameters
 4. THE Chat_Widget_System SHALL support both auto-initialization via data attributes and manual initialization via JavaScript API
 5. THE Public_Chat_Widget SHALL follow the same CORS and security patterns as the existing form widget implementation

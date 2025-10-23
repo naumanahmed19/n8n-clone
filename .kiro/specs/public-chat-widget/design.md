@@ -43,7 +43,7 @@ graph TB
 ```mermaid
 graph LR
     subgraph "Frontend Widget"
-        A[N8nChatWidget Class] --> B[Auto-Initialization]
+        A[nodeDropChatWidget Class] --> B[Auto-Initialization]
         A --> C[Manual API]
         B --> D[PublicChatWidget Component]
         C --> D
@@ -198,7 +198,7 @@ interface MessageResponse {
 #### Widget Class Structure
 
 ```typescript
-class N8nChatWidget {
+class nodeDropChatWidget {
   private container: HTMLElement
   private root: ReactRoot | null = null
   private config: ChatWidgetConfig
@@ -274,7 +274,7 @@ interface WidgetEmbedGeneratorProps {
 
 // Generate chat-specific embed codes
 const autoInitCode = `<!-- Add this to your HTML -->
-<div data-n8n-chat="${chatId}" 
+<div data-nd-chat="${chatId}" 
      data-api-url="${apiUrl}"
      data-theme="light"
      data-position="bottom-right"></div>
@@ -287,7 +287,7 @@ const manualInitCode = `<!-- Load widget script -->
 
 <!-- Initialize with JavaScript -->
 <script>
-  const widget = new window.N8nChatWidget();
+  const widget = new window.nodeDropChatWidget();
   
   widget.init({
     chatId: '${chatId}',
@@ -556,8 +556,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, "src/widgets/chat/index.tsx"),
-      name: "N8nChatWidget",
-      fileName: (format) => `n8n-chat-widget.${format}.js`,
+      name: "nodeDropChatWidget",
+      fileName: (format) => `nd-chat-widget.${format}.js`,
       formats: ["umd", "es"],
     },
     rollupOptions: {

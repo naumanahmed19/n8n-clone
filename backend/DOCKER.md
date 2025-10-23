@@ -1,6 +1,6 @@
 # Docker Setup Guide
 
-This guide explains how to run the n8n-clone backend with Docker for development.
+This guide explains how to run the node-drop backend with Docker for development.
 
 ## Prerequisites
 
@@ -74,21 +74,21 @@ This guide explains how to run the n8n-clone backend with Docker for development
 
 ### PostgreSQL
 - **Image:** postgres:15
-- **Container Name:** n8n-postgres
+- **Container Name:** nodeDrop-postgres
 - **Port:** 5432
-- **Database:** n8n_clone_dev
+- **Database:** node_drop_dev
 - **Username:** postgres
 - **Password:** postgres
 
 ### Redis
 - **Image:** redis:7-alpine
-- **Container Name:** n8n-redis
+- **Container Name:** nodeDrop-redis
 - **Port:** 6379
 
 ### Test Database
-- **Container Name:** n8n-postgres-test
+- **Container Name:** nodeDrop-postgres-test
 - **Port:** 5433
-- **Database:** n8n_clone_test
+- **Database:** node_drop_test
 - **Started with:** `docker-compose --profile test up`
 
 ## Data Persistence
@@ -116,11 +116,11 @@ netstat -an | findstr 6379
 docker ps -a
 
 # View container logs
-docker logs n8n-postgres
-docker logs n8n-redis
+docker logs nodeDrop-postgres
+docker logs nodeDrop-redis
 
 # Restart containers
-docker restart n8n-postgres n8n-redis
+docker restart nodeDrop-postgres nodeDrop-redis
 ```
 
 ### Database Issues
@@ -143,7 +143,7 @@ npm run compose:setup
 ## Environment Variables
 
 The containers use the same environment variables as defined in `.env`:
-- `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/n8n_clone_dev"`
+- `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/node_drop_dev"`
 - `REDIS_URL="redis://localhost:6379"`
 
 ## Production Considerations

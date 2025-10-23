@@ -3307,7 +3307,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               sourceData = sourceNodeResult.data[0].main;
             } else if (sourceNodeResult.status === "skipped") {
               // For pinned mock data, the data is stored directly as the JSON payload
-              // We need to wrap it in the proper n8n data structure
+              // We need to wrap it in the proper nodeDrop data structure
               sourceData = [{ json: sourceNodeResult.data }];
             }
 

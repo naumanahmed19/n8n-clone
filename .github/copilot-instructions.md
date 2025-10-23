@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions for n8n-clone
+# GitHub Copilot Instructions for node-drop
 
 ## 🚨 CRITICAL RULE - READ FIRST
 
@@ -14,7 +14,7 @@ When the user asks for help:
 
 ## Project Overview
 
-This is a workflow automation platform similar to n8n, built with a modern tech stack:
+This is a workflow automation platform similar to nodeDrop, built with a modern tech stack:
 
 - **Backend**: Node.js, Express, TypeScript, Prisma ORM, PostgreSQL
 - **Frontend**: React, TypeScript, Vite, TailwindCSS, shadcn/ui, XYFlow/React Flow

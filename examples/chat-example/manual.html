@@ -217,11 +217,11 @@
 
             <div class="code-block">
 &lt;!-- Load widget script --&gt;
-&lt;script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"&gt;&lt;/script&gt;
+&lt;script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"&gt;&lt;/script&gt;
 
 &lt;!-- Initialize with JavaScript --&gt;
 &lt;script&gt;
-  const widget = new window.N8nChatWidget();
+  const widget = new window.nodeDropChatWidget();
   
   widget.init({
     chatId: 'ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5',
@@ -249,7 +249,7 @@
     </div>
 
     <!-- Load widget script -->
-    <script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
+    <script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"></script>
 
     <script>
         let widget = null;
@@ -283,12 +283,12 @@
                 log('Initializing chat widget...', 'info');
                 updateStatus('loading', 'Initializing');
 
-                // Check if N8nChatWidget is available
-                if (typeof window.N8nChatWidget === 'undefined') {
-                    throw new Error('N8nChatWidget not found. Make sure the script is loaded.');
+                // Check if nodeDropChatWidget is available
+                if (typeof window.nodeDropChatWidget === 'undefined') {
+                    throw new Error('nodeDropChatWidget not found. Make sure the script is loaded.');
                 }
 
-                widget = new window.N8nChatWidget();
+                widget = new window.nodeDropChatWidget();
                 
                 widget.init({
                     chatId: 'ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5',
@@ -373,7 +373,7 @@
 
         // Handle script loading errors
         window.addEventListener('error', function(event) {
-            if (event.filename && event.filename.includes('n8n-chat-widget')) {
+            if (event.filename && event.filename.includes('nd-chat-widget')) {
                 log('Failed to load chat widget script', 'error');
                 updateStatus('error', 'Script Load Error');
             }

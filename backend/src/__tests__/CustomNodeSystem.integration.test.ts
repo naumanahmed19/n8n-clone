@@ -19,7 +19,7 @@ describe('Custom Node System Integration', () => {
 
   beforeAll(async () => {
     // Create temporary directory for testing
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'n8n-node-test-'));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'nd-node-test-'));
     customNodesDir = path.join(tempDir, 'custom-nodes');
     
     // Initialize services

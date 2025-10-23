@@ -277,8 +277,8 @@ router.delete("/packages/:packageName", async (req: Request, res: Response) => {
         });
 
         // Look for nodes mentioned in package.json
-        if (packageInfo.n8n && packageInfo.n8n.nodes) {
-          for (const nodePath of packageInfo.n8n.nodes) {
+        if (packageInfo.nodeDrop && packageInfo.nodeDrop.nodes) {
+          for (const nodePath of packageInfo.nodeDrop.nodes) {
             // Extract potential node type from path
             const nodeFileName = path.basename(nodePath, path.extname(nodePath));
             const potentialType = nodeFileName.replace('.node', '');

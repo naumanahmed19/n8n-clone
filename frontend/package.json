@@ -1,7 +1,7 @@
 {
-  "name": "n8n-clone-frontend",
+  "name": "node-drop-frontend",
   "version": "1.0.0",
-  "description": "Frontend React application for n8n clone workflow automation platform",
+  "description": "Frontend React application for node drop workflow automation platform",
   "type": "module",
   "scripts": {
     "dev": "vite",

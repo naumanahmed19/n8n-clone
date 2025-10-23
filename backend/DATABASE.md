@@ -1,6 +1,6 @@
 # Database Setup Guide
 
-This document explains how to set up and work with the database for the n8n-clone backend.
+This document explains how to set up and work with the database for the node-drop backend.
 
 ## Prerequisites
 
@@ -41,8 +41,8 @@ cp .env.example .env
 Update the `DATABASE_URL` in your `.env` file:
 
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/n8n_clone"
-TEST_DATABASE_URL="postgresql://username:password@localhost:5432/n8n_clone_test"
+DATABASE_URL="postgresql://username:password@localhost:5432/node_drop"
+TEST_DATABASE_URL="postgresql://username:password@localhost:5432/node_drop_test"
 ```
 
 ### 2. Install Dependencies
@@ -72,8 +72,8 @@ npm run db:seed
 ```
 
 This will create:
-- Admin user (admin@n8n-clone.com / admin123)
-- Test user (test@n8n-clone.com / test123)
+- Admin user (admin@node-drop.com / admin123)
+- Test user (test@node-drop.com / test123)
 - Built-in node types (HTTP Request, JSON, Set, Webhook, Schedule)
 - Sample workflow with execution data
 

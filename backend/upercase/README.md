@@ -10,7 +10,7 @@ npm install upercase
 
 ## Usage
 
-This is a action node that can be used in n8n workflows.
+This is a action node that can be used in nodeDrop workflows.
 
 ### Node Properties
 

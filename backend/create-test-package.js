@@ -23,7 +23,7 @@ function createTestPackage() {
     version: "1.0.0",
     description: "Test node for uninstall functionality testing",
     main: "index.js",
-    n8n: {
+    nodeDrop: {
       nodes: ["nodes/TestUninstall.node.js"]
     }
   };

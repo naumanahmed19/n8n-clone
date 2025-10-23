@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Custom Nodes API provides endpoints for managing, creating, and deploying custom nodes in the n8n clone platform. All endpoints require authentication unless otherwise specified.
+The Custom Nodes API provides endpoints for managing, creating, and deploying custom nodes in the node drop platform. All endpoints require authentication unless otherwise specified.
 
 ## Base URL
 

@@ -1,6 +1,6 @@
 # Form Widget Demo Examples
 
-This directory contains comprehensive examples demonstrating the n8n Form Widget functionality.
+This directory contains comprehensive examples demonstrating the nodeDrop Form Widget functionality.
 
 ## 📁 Files Overview
 
@@ -35,7 +35,7 @@ This directory contains comprehensive examples demonstrating the n8n Form Widget
 ## 🚀 Getting Started
 
 ### Prerequisites
-1. **Backend Server**: Ensure the n8n backend is running on `http://localhost:4000`
+1. **Backend Server**: Ensure the nodeDrop backend is running on `http://localhost:4000`
 2. **Frontend Server**: Start the frontend dev server with `npm run dev`
 3. **Widget Build**: Build the form widget with `npm run build:widget:form`
 4. **Widget Copy**: Copy widget to public directory with `npm run copy:widgets`
@@ -58,17 +58,17 @@ npm run dev                # Starts the dev server
 Add this to your HTML:
 ```html
 <!-- Basic setup -->
-<div data-n8n-form="your-form-id" 
+<div data-nd-form="your-form-id" 
      data-theme="auto"
      data-api-url="http://localhost:4000/api"></div>
 
 <!-- Include the script -->
-<script src="http://localhost:3001/widgets/form/n8n-form-widget.umd.js"></script>
+<script src="http://localhost:3001/widgets/form/nd-form-widget.umd.js"></script>
 ```
 
 ### Manual Initialization
 ```javascript
-const widget = new N8nFormWidget();
+const widget = new nodeDropFormWidget();
 widget.init({
     formId: 'your-form-id',
     apiUrl: 'http://localhost:4000/api',
@@ -83,7 +83,7 @@ widget.init({
 ## 📋 Configuration Options
 
 ### Data Attributes (Auto-initialization)
-- `data-n8n-form`: **Required** - Your form workflow ID
+- `data-nd-form`: **Required** - Your form workflow ID
 - `data-theme`: Theme preference (`light`, `dark`, `auto`)
 - `data-api-url`: Backend API URL (defaults to current origin + `/api`)
 - `data-on-ready`: Global callback function name for ready event
@@ -127,7 +127,7 @@ interface FormWidgetConfig {
 1. **Form not appearing**
    ```html
    <!-- Make sure the form ID exists in your backend -->
-   <div data-n8n-form="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5"></div>
+   <div data-nd-form="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5"></div>
    ```
 
 2. **Script not loading**

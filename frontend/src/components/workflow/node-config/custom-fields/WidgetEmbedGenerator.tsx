@@ -34,9 +34,9 @@ export function WidgetEmbedGenerator({
                    "https://yourdomain.com";
     
     if (widgetType === 'chat') {
-      return `${baseUrl}/widgets/chat/n8n-chat-widget.umd.js`;
+      return `${baseUrl}/widgets/chat/nd-chat-widget.umd.js`;
     } else {
-      return `${baseUrl}/widgets/form/n8n-form-widget.umd.js`;
+      return `${baseUrl}/widgets/form/nd-form-widget.umd.js`;
     }
   };
 
@@ -71,7 +71,7 @@ export function WidgetEmbedGenerator({
     if (widgetType === 'chat') {
       return {
         autoInitCode: `<!-- Add this to your HTML -->
-<div data-n8n-chat="${widgetId}" 
+<div data-nd-chat="${widgetId}" 
      data-api-url="${apiUrl}"
      data-theme="light"
      data-position="bottom-right"></div>
@@ -84,7 +84,7 @@ export function WidgetEmbedGenerator({
 
 <!-- Initialize with JavaScript -->
 <script>
-  const widget = new window.N8nChatWidget();
+  const widget = new window.nodeDropChatWidget();
   
   widget.init({
     chatId: '${widgetId}',
@@ -106,9 +106,9 @@ export function WidgetEmbedGenerator({
   });
 </script>`,
 
-        esModuleCode: `import { N8nChatWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
+        esModuleCode: `import { nodeDropChatWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
 
-const widget = new N8nChatWidget();
+const widget = new nodeDropChatWidget();
 
 widget.init({
   chatId: '${widgetId}',
@@ -120,7 +120,7 @@ widget.init({
     } else {
       return {
         autoInitCode: `<!-- Add this to your HTML -->
-<div data-n8n-form="${widgetId}" 
+<div data-nd-form="${widgetId}" 
      data-api-url="${apiUrl}"
      data-theme="light"></div>
 
@@ -135,7 +135,7 @@ widget.init({
 
 <!-- Initialize with JavaScript -->
 <script>
-  const widget = new window.N8nFormWidget();
+  const widget = new window.nodeDropFormWidget();
   
   widget.init({
     formId: '${widgetId}',
@@ -154,9 +154,9 @@ widget.init({
   });
 </script>`,
 
-        esModuleCode: `import { N8nFormWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
+        esModuleCode: `import { nodeDropFormWidget } from '${widgetUrl.replace('.umd.js', '.es.js')}';
 
-const widget = new N8nFormWidget();
+const widget = new nodeDropFormWidget();
 
 widget.init({
   formId: '${widgetId}',

@@ -1,6 +1,6 @@
 # Coolify Deployment Guide
 
-This guide explains how to deploy the n8n Clone application using Coolify.
+This guide explains how to deploy the node drop application using Coolify.
 
 ## Prerequisites
 
@@ -67,7 +67,7 @@ Ensure these volumes are configured:
 
 ### 6. Network Configuration
 
-The application uses a custom network `n8n-network` for service communication.
+The application uses a custom network `nd-network` for service communication.
 
 ## Post-Deployment
 
@@ -124,9 +124,9 @@ Monitor service health through:
 Access container logs:
 ```bash
 # In Coolify terminal
-docker logs n8n-clone-backend
-docker logs n8n-clone-frontend
-docker logs n8n-clone-postgres
+docker logs node-drop-backend
+docker logs node-drop-frontend
+docker logs node-drop-postgres
 ```
 
 Check service health:

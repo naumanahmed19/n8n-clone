@@ -16,7 +16,7 @@ interface ChatWidgetConfig {
   onReady?: () => void
 }
 
-class N8nChatWidget {
+class nodeDropChatWidget {
   private root: ReactDOM.Root | null = null
   private container: HTMLElement | null = null
   private config: ChatWidgetConfig | null = null
@@ -30,7 +30,7 @@ class N8nChatWidget {
   public init(config: ChatWidgetConfig): void {
     // Prevent double initialization
     if (this.isInitialized) {
-      console.warn('N8nChatWidget: Widget is already initialized. Call destroy() first.')
+      console.warn('nodeDropChatWidget: Widget is already initialized. Call destroy() first.')
       return
     }
 
@@ -49,7 +49,7 @@ class N8nChatWidget {
     } = config
 
     if (!chatId) {
-      console.error('N8nChatWidget: chatId is required')
+      console.error('nodeDropChatWidget: chatId is required')
       return
     }
 
@@ -80,7 +80,7 @@ class N8nChatWidget {
     if (typeof container === 'string') {
       this.container = document.querySelector(container)
       if (!this.container) {
-        console.error(`N8nChatWidget: Container element "${container}" not found`)
+        console.error(`nodeDropChatWidget: Container element "${container}" not found`)
         return
       }
     } else if (container instanceof HTMLElement) {
@@ -88,14 +88,14 @@ class N8nChatWidget {
     } else {
       // Create a default container for the chat widget
       this.container = document.createElement('div')
-      this.container.id = 'n8n-chat-widget'
+      this.container.id = 'nd-chat-widget'
       this.container.style.position = 'fixed'
       this.container.style.zIndex = '999999'
       document.body.appendChild(this.container)
     }
 
     // Add widget class for scoped styling
-    this.container.classList.add('n8n-chat-widget')
+    this.container.classList.add('nd-chat-widget')
     
     // Apply theme (resolve 'auto' to actual theme)
     const resolvedTheme = this.resolveTheme(theme)
@@ -122,18 +122,18 @@ class N8nChatWidget {
       )
 
       this.isInitialized = true
-      console.log('N8nChatWidget: Successfully initialized with chatId:', chatId)
+      console.log('nodeDropChatWidget: Successfully initialized with chatId:', chatId)
       
       // Call onReady callback
       if (onReady) {
         try {
           onReady()
         } catch (error) {
-          console.error('N8nChatWidget: Error in onReady callback:', error)
+          console.error('nodeDropChatWidget: Error in onReady callback:', error)
         }
       }
     } catch (error) {
-      console.error('N8nChatWidget: Failed to initialize widget:', error)
+      console.error('nodeDropChatWidget: Failed to initialize widget:', error)
       this.cleanup()
     }
   }
@@ -143,7 +143,7 @@ class N8nChatWidget {
    */
   public destroy(): void {
     if (!this.isInitialized) {
-      console.warn('N8nChatWidget: Widget is not initialized')
+      console.warn('nodeDropChatWidget: Widget is not initialized')
       return
     }
 
@@ -155,9 +155,9 @@ class N8nChatWidget {
       }
 
       this.cleanup()
-      console.log('N8nChatWidget: Successfully destroyed')
+      console.log('nodeDropChatWidget: Successfully destroyed')
     } catch (error) {
-      console.error('N8nChatWidget: Error during destroy:', error)
+      console.error('nodeDropChatWidget: Error during destroy:', error)
     }
   }
 
@@ -166,7 +166,7 @@ class N8nChatWidget {
    */
   public update(newConfig: Partial<ChatWidgetConfig>): void {
     if (!this.config) {
-      console.error('N8nChatWidget: Cannot update - widget not initialized')
+      console.error('nodeDropChatWidget: Cannot update - widget not initialized')
       return
     }
 
@@ -238,21 +238,21 @@ class N8nChatWidget {
 
     // Validate chatId
     if (!chatId || typeof chatId !== 'string' || chatId.trim() === '') {
-      console.error('N8nChatWidget: chatId must be a non-empty string')
+      console.error('nodeDropChatWidget: chatId must be a non-empty string')
       return false
     }
 
     // Validate theme
     const validThemes = ['light', 'dark', 'auto']
     if (theme && !validThemes.includes(theme)) {
-      console.error(`N8nChatWidget: Invalid theme "${theme}". Must be one of: ${validThemes.join(', ')}`)
+      console.error(`nodeDropChatWidget: Invalid theme "${theme}". Must be one of: ${validThemes.join(', ')}`)
       return false
     }
 
     // Validate position
     const validPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left']
     if (position && !validPositions.includes(position)) {
-      console.error(`N8nChatWidget: Invalid position "${position}". Must be one of: ${validPositions.join(', ')}`)
+      console.error(`nodeDropChatWidget: Invalid position "${position}". Must be one of: ${validPositions.join(', ')}`)
       return false
     }
 
@@ -272,7 +272,7 @@ class N8nChatWidget {
       try {
         return callback(...args)
       } catch (error) {
-        console.error(`N8nChatWidget: Error in ${callbackName} callback:`, error)
+        console.error(`nodeDropChatWidget: Error in ${callbackName} callback:`, error)
       }
     }) as T
   }
@@ -290,7 +290,7 @@ class N8nChatWidget {
    */
   public setTheme(theme: 'light' | 'dark' | 'auto'): void {
     if (!this.isInitialized || !this.config || !this.container) {
-      console.error('N8nChatWidget: Cannot set theme - widget not initialized')
+      console.error('nodeDropChatWidget: Cannot set theme - widget not initialized')
       return
     }
 
@@ -306,13 +306,13 @@ class N8nChatWidget {
    */
   public setPosition(position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'): void {
     if (!this.isInitialized || !this.config || !this.container) {
-      console.error('N8nChatWidget: Cannot set position - widget not initialized')
+      console.error('nodeDropChatWidget: Cannot set position - widget not initialized')
       return
     }
 
     const validPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left']
     if (!validPositions.includes(position)) {
-      console.error(`N8nChatWidget: Invalid position "${position}"`)
+      console.error(`nodeDropChatWidget: Invalid position "${position}"`)
       return
     }
 
@@ -337,12 +337,12 @@ class N8nChatWidget {
 
     if (this.container) {
       // Remove widget classes and attributes
-      this.container.classList.remove('n8n-chat-widget')
+      this.container.classList.remove('nd-chat-widget')
       this.container.removeAttribute('data-theme')
       this.container.removeAttribute('data-position')
       
       // If we created the container, remove it from DOM
-      if (this.container.id === 'n8n-chat-widget' && this.container.parentNode) {
+      if (this.container.id === 'nd-chat-widget' && this.container.parentNode) {
         this.container.parentNode.removeChild(this.container)
       } else {
         // Otherwise just clear its content
@@ -361,36 +361,36 @@ class N8nChatWidget {
 // Global widget instance
 declare global {
   interface Window {
-    N8nChatWidget: typeof N8nChatWidget
-    n8nChatWidget?: N8nChatWidget
+    nodeDropChatWidget: typeof nodeDropChatWidget
+    nodeDropChatWidget?: nodeDropChatWidget
   }
 }
 
 // Store initialized widgets to prevent duplicate initialization
-const initializedWidgets = new WeakMap<HTMLElement, N8nChatWidget>()
+const initializedWidgets = new WeakMap<HTMLElement, nodeDropChatWidget>()
 
 /**
  * Auto-initialization functionality
- * Scans DOM for elements with data-n8n-chat attributes and initializes widgets
+ * Scans DOM for elements with data-nd-chat attributes and initializes widgets
  */
 const initializeAutoWidgets = (): void => {
   try {
-    // Scan DOM for elements with data-n8n-chat attributes
-    const autoInitElements = document.querySelectorAll('[data-n8n-chat]')
+    // Scan DOM for elements with data-nd-chat attributes
+    const autoInitElements = document.querySelectorAll('[data-nd-chat]')
     
-    console.log(`N8nChatWidget: Found ${autoInitElements.length} elements for auto-initialization`)
+    console.log(`nodeDropChatWidget: Found ${autoInitElements.length} elements for auto-initialization`)
     
     autoInitElements.forEach((element) => {
       const htmlElement = element as HTMLElement
       
       // Skip if already initialized
       if (initializedWidgets.has(htmlElement)) {
-        console.log('N8nChatWidget: Element already initialized, skipping')
+        console.log('nodeDropChatWidget: Element already initialized, skipping')
         return
       }
       
       // Extract configuration from data attributes
-      const chatId = element.getAttribute('data-n8n-chat')
+      const chatId = element.getAttribute('data-nd-chat')
       const apiUrl = element.getAttribute('data-api-url') || undefined
       const theme = (element.getAttribute('data-theme') as 'light' | 'dark' | 'auto') || 'auto'
       const position = (element.getAttribute('data-position') as 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left') || 'bottom-right'
@@ -416,25 +416,25 @@ const initializeAutoWidgets = (): void => {
       
       // Validate required chatId
       if (!chatId || chatId.trim() === '') {
-        console.error('N8nChatWidget: data-n8n-chat attribute is required and cannot be empty')
+        console.error('nodeDropChatWidget: data-nd-chat attribute is required and cannot be empty')
         return
       }
       
       // Validate theme value
       const validThemes = ['light', 'dark', 'auto']
       if (!validThemes.includes(theme)) {
-        console.warn(`N8nChatWidget: Invalid theme "${theme}", using "auto"`)
+        console.warn(`nodeDropChatWidget: Invalid theme "${theme}", using "auto"`)
       }
       
       // Validate position value
       const validPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left']
       if (!validPositions.includes(position)) {
-        console.warn(`N8nChatWidget: Invalid position "${position}", using "bottom-right"`)
+        console.warn(`nodeDropChatWidget: Invalid position "${position}", using "bottom-right"`)
       }
       
       try {
         // Initialize chat widget automatically
-        const widget = new N8nChatWidget()
+        const widget = new nodeDropChatWidget()
         
         widget.init({
           chatId: chatId.trim(),
@@ -453,13 +453,13 @@ const initializeAutoWidgets = (): void => {
         // Store widget instance to prevent duplicate initialization
         initializedWidgets.set(htmlElement, widget)
         
-        console.log(`N8nChatWidget: Auto-initialized widget with chatId: ${chatId}`)
+        console.log(`nodeDropChatWidget: Auto-initialized widget with chatId: ${chatId}`)
       } catch (error) {
-        console.error('N8nChatWidget: Failed to auto-initialize widget:', error)
+        console.error('nodeDropChatWidget: Failed to auto-initialize widget:', error)
       }
     })
   } catch (error) {
-    console.error('N8nChatWidget: Error during auto-initialization:', error)
+    console.error('nodeDropChatWidget: Error during auto-initialization:', error)
   }
 }
 
@@ -467,20 +467,20 @@ const initializeAutoWidgets = (): void => {
  * Re-scan DOM for new elements (useful for dynamically added content)
  */
 const reinitializeAutoWidgets = (): void => {
-  console.log('N8nChatWidget: Re-scanning DOM for new chat widgets')
+  console.log('nodeDropChatWidget: Re-scanning DOM for new chat widgets')
   initializeAutoWidgets()
 }
 
 // Export to global scope
 if (typeof window !== 'undefined') {
-  window.N8nChatWidget = N8nChatWidget
+  window.nodeDropChatWidget = nodeDropChatWidget
   
   // Add reinitialize function to global scope for dynamic content
-  ;(window as any).reinitializeN8nChatWidgets = reinitializeAutoWidgets
+  ;(window as any).reinitializenodeDropChatWidgets = reinitializeAutoWidgets
   
   // Auto-initialize widgets when DOM is ready
   const handleDOMReady = () => {
-    console.log('N8nChatWidget: DOM ready, initializing auto widgets')
+    console.log('nodeDropChatWidget: DOM ready, initializing auto widgets')
     initializeAutoWidgets()
   }
   
@@ -503,9 +503,9 @@ if (typeof window !== 'undefined') {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               const element = node as Element
-              // Check if the added element or its children have data-n8n-chat
-              if (element.hasAttribute?.('data-n8n-chat') || 
-                  element.querySelector?.('[data-n8n-chat]')) {
+              // Check if the added element or its children have data-nd-chat
+              if (element.hasAttribute?.('data-nd-chat') || 
+                  element.querySelector?.('[data-nd-chat]')) {
                 shouldReinitialize = true
               }
             }
@@ -527,5 +527,5 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export { N8nChatWidget }
+export { nodeDropChatWidget }
 export type { ChatWidgetConfig }

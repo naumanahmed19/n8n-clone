@@ -3,11 +3,11 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: n8n-postgres
+    container_name: nodeDrop-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: n8n_clone_dev
+      POSTGRES_DB: node_drop_dev
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: n8n-redis
+    container_name: nodeDrop-redis
     ports:
       - "6379:6379"
     volumes:
@@ -33,11 +33,11 @@ services:
 
   postgres-test:
     image: postgres:15
-    container_name: n8n-postgres-test
+    container_name: nodeDrop-postgres-test
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: n8n_clone_test
+      POSTGRES_DB: node_drop_test
     ports:
       - "5433:5432"
     volumes:

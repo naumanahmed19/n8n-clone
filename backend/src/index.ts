@@ -1,4 +1,4 @@
-// Main entry point for the n8n clone backend
+// Main entry point for the node drop backend
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -190,7 +190,7 @@ app.get("/health", async (req, res) => {
     res.status(200).json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      service: "n8n-clone-backend",
+      service: "node-drop-backend",
       version: "1.0.0",
       websocket: {
         connected_users: socketService.getConnectedUsersCount(),
@@ -204,7 +204,7 @@ app.get("/health", async (req, res) => {
     res.status(500).json({
       status: "error",
       timestamp: new Date().toISOString(),
-      service: "n8n-clone-backend",
+      service: "node-drop-backend",
       version: "1.0.0",
       error: "Failed to check node status",
       nodes: {
@@ -218,7 +218,7 @@ app.get("/health", async (req, res) => {
 // Basic route
 app.get("/", (req, res) => {
   res.json({
-    message: "n8n Clone Backend API",
+    message: "node drop Backend API",
     version: "1.0.0",
     endpoints: {
       auth: "/api/auth",

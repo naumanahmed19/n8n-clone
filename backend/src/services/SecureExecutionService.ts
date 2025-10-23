@@ -229,7 +229,7 @@ export class SecureExecutionService {
 
               // Check if the content is just a simple value (no operators or functions)
               const innerContent = wrappedMatch[1].trim();
-              // Check for n8n expression syntax patterns (but not URL slashes)
+              // Check for nodeDrop expression syntax patterns (but not URL slashes)
               // Allow simple values and URLs to be unwrapped
               const hasExpressionSyntax =
                 /[+\-*%()[\]<>=!&|]/.test(innerContent) ||
@@ -284,7 +284,7 @@ export class SecureExecutionService {
           const wrappedMatch = value.match(/^\{\{(.+)\}\}$/);
           if (wrappedMatch) {
             const innerContent = wrappedMatch[1].trim();
-            // Check for n8n expression syntax patterns (but not URL slashes)
+            // Check for nodeDrop expression syntax patterns (but not URL slashes)
             const hasExpressionSyntax =
               /[+\-*%()[\]<>=!&|]/.test(innerContent) ||
               innerContent.includes("{{") ||

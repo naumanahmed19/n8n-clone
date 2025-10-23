@@ -67,10 +67,10 @@ if ($copiedWidgets.Count -gt 0) {
     Write-Host ""
     Write-Host "Widgets are now accessible at:" -ForegroundColor Cyan
     if ($copiedWidgets -contains "chat") {
-        Write-Host "  -> http://localhost:3001/widgets/chat/n8n-chat-widget.umd.js" -ForegroundColor Gray
+        Write-Host "  -> http://localhost:3001/widgets/chat/nd-chat-widget.umd.js" -ForegroundColor Gray
     }
     if ($copiedWidgets -contains "form") {
-        Write-Host "  -> http://localhost:3001/widgets/form/n8n-form-widget.umd.js" -ForegroundColor Gray
+        Write-Host "  -> http://localhost:3001/widgets/form/nd-form-widget.umd.js" -ForegroundColor Gray
     }
 }
 

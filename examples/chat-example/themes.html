@@ -356,7 +356,7 @@
     </div>
 
     <!-- Chat Widget will be dynamically initialized -->
-    <script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
+    <script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"></script>
 
     <script>
         let currentWidget = null;
@@ -416,8 +416,8 @@
 
             try {
                 // Create new widget with current config
-                if (typeof window.N8nChatWidget !== 'undefined') {
-                    currentWidget = new window.N8nChatWidget();
+                if (typeof window.nodeDropChatWidget !== 'undefined') {
+                    currentWidget = new window.nodeDropChatWidget();
                     
                     currentWidget.init({
                         chatId: 'ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5',
@@ -439,7 +439,7 @@
 
                     console.log('Chat widget applied with config:', currentConfig);
                 } else {
-                    console.error('N8nChatWidget not available');
+                    console.error('nodeDropChatWidget not available');
                     alert('Chat widget script not loaded. Please refresh the page.');
                 }
             } catch (error) {
@@ -478,7 +478,7 @@
 
         // Handle script loading errors
         window.addEventListener('error', function(event) {
-            if (event.filename && event.filename.includes('n8n-chat-widget')) {
+            if (event.filename && event.filename.includes('nd-chat-widget')) {
                 console.error('Failed to load chat widget script');
                 document.querySelector('.preview-area p').textContent = 'Failed to load chat widget script. Please check the script URL.';
             }

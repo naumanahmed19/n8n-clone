@@ -2,7 +2,7 @@
  * Test Database Operations
  *
  * This test validates database connectivity, schema integrity,
- * and basic CRUD operations for the n8n-clone system.
+ * and basic CRUD operations for the node-drop system.
  *
  * Test Coverage:
  * - Database connection and authentication

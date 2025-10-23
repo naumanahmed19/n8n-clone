@@ -48,8 +48,8 @@ async function manualUninstallTest() {
           console.log(`   📋 Version: ${packageJson.version || 'N/A'}`);
           console.log(`   📋 Description: ${packageJson.description || 'N/A'}`);
           
-          if (packageJson.n8n && packageJson.n8n.nodes) {
-            console.log(`   🔧 Declared nodes: ${packageJson.n8n.nodes.join(', ')}`);
+          if (packageJson.nodeDrop && packageJson.nodeDrop.nodes) {
+            console.log(`   🔧 Declared nodes: ${packageJson.nodeDrop.nodes.join(', ')}`);
           }
         } catch (error) {
           console.log(`   ⚠️  Could not read package.json: ${error.message}`);

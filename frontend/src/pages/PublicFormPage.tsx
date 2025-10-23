@@ -425,7 +425,7 @@ export function PublicFormPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-            <span>Powered by n8n-clone</span>
+            <span>Powered by node-drop</span>
             <ExternalLink className="w-3 h-3" />
           </p>
         </div>

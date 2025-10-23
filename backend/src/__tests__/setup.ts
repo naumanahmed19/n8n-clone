@@ -12,7 +12,7 @@ beforeAll(async () => {
   // Set up test database connection
   if (!process.env.TEST_DATABASE_URL) {
     console.warn("TEST_DATABASE_URL not set, using default test database");
-    process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/n8n_test";
+    process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/nd_test";
   } else {
     process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
   }

@@ -1,10 +1,10 @@
 {
-  "name": "n8n-clone-backend",
+  "name": "node-drop-backend",
   "version": "1.0.0",
-  "description": "Backend API for n8n clone workflow automation platform",
+  "description": "Backend API for node drop workflow automation platform",
   "main": "dist/index.js",
   "bin": {
-    "n8n-node-cli": "dist/cli/node-cli.js"
+    "nd-node-cli": "dist/cli/node-cli.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",

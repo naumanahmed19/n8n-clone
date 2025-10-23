@@ -115,7 +115,7 @@
     - _Requirements: 2.3, 5.1, 5.4_
 -
 
-- [x] 5. Create N8nChatWidget wrapper class
+- [x] 5. Create nodeDropChatWidget wrapper class
 
 
 
@@ -123,7 +123,7 @@
   - [x] 5.1 Implement widget initialization and lifecycle methods
 
 
-    - Create N8nChatWidget class with init(), destroy(), and update() methods
+    - Create nodeDropChatWidget class with init(), destroy(), and update() methods
     - Handle both manual initialization and auto-detection of data attributes
     - Mount React component using ReactDOM.createRoot
     - _Requirements: 4.1, 8.3_
@@ -131,7 +131,7 @@
   - [x] 5.2 Implement auto-initialization functionality
 
 
-    - Scan DOM for elements with data-n8n-chat attributes on page load
+    - Scan DOM for elements with data-nd-chat attributes on page load
     - Extract configuration from data attributes (chatId, apiUrl, theme, position)
     - Initialize chat widgets automatically for each found element
     - _Requirements: 8.3, 8.4_
@@ -154,7 +154,7 @@
 
 
     - Add widgetType prop to distinguish between form and chat widgets
-    - Generate chat-specific embed code with data-n8n-chat attributes
+    - Generate chat-specific embed code with data-nd-chat attributes
     - Update embed code templates for chat widget script URL
     - _Requirements: 1.3, 1.5_
   
@@ -194,7 +194,7 @@
 
 - [ ] 9. Create comprehensive test suite
   - [ ] 9.1 Write unit tests for widget components
-    - Test N8nChatWidget class initialization and lifecycle methods
+    - Test nodeDropChatWidget class initialization and lifecycle methods
     - Test PublicChatWidget React component rendering and interactions
     - Test message handling, API communication, and error scenarios
     - _Requirements: All_

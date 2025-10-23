@@ -32,7 +32,7 @@ interface PackageInfo {
   version: string;
   description?: string;
   author?: string;
-  n8n?: {
+  nodeDrop?: {
     nodes?: string[];
     credentials?: string[];
   };

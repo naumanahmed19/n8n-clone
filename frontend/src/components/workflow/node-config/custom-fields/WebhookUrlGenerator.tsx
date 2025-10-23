@@ -66,11 +66,11 @@ export function WebhookUrlGenerator({
       : (import.meta.env.VITE_APP_PROD_URL || "https://your-domain.com");
     
     if (urlType === "chat") {
-      return `${baseUrl}/widgets/chat/n8n-chat-widget.umd.js`;
+      return `${baseUrl}/widgets/chat/nd-chat-widget.umd.js`;
     } else if (urlType === "form") {
-      return `${baseUrl}/widgets/form/n8n-form-widget.umd.js`;
+      return `${baseUrl}/widgets/form/nd-form-widget.umd.js`;
     } else {
-      return `${baseUrl}/widgets/webhook/n8n-webhook-widget.umd.js`;
+      return `${baseUrl}/widgets/webhook/nd-webhook-widget.umd.js`;
     }
   };
 

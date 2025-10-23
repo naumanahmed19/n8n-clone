@@ -1,6 +1,6 @@
 # Nodes Directory
 
-This directory contains all the individual node implementations for the n8n-clone project. Each node is organized in its own folder with a consistent structure.
+This directory contains all the individual node implementations for the node-drop project. Each node is organized in its own folder with a consistent structure.
 
 ## Structure
 

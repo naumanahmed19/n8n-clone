@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N8n Form Widget - Themes Demo</title>
+    <title>nodeDrop Form Widget - Themes Demo</title>
     <style>
         * {
             box-sizing: border-box;
@@ -283,7 +283,7 @@
     </div>
 
     <!-- Load the form widget script -->
-    <script src="http://localhost:3001/widgets/form/n8n-form-widget.umd.js"></script>
+    <script src="http://localhost:3001/widgets/form/nd-form-widget.umd.js"></script>
 
     <script>
         let widgets = {
@@ -333,7 +333,7 @@
             try {
                 updateStatus(theme, 'Initializing form widget...', 'info');
                 
-                const widget = new window.N8nFormWidget();
+                const widget = new window.nodeDropFormWidget();
                 widget.init({
                     formId: `demo-form-${theme}-123`,
                     apiUrl: 'http://localhost:4000/api',
@@ -373,7 +373,7 @@
 
         // Check if widget script loaded
         window.addEventListener('load', () => {
-            if (typeof window.N8nFormWidget === 'undefined') {
+            if (typeof window.nodeDropFormWidget === 'undefined') {
                 document.querySelectorAll('.status').forEach(status => {
                     status.textContent = 'Form widget script failed to load!';
                     status.className = 'status error';

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The n8n-clone execution system implements comprehensive error handling mechanisms to ensure robust workflow execution, graceful degradation, and meaningful error reporting. This document covers error types, handling strategies, and specific solutions for common execution issues.
+The node-drop execution system implements comprehensive error handling mechanisms to ensure robust workflow execution, graceful degradation, and meaningful error reporting. This document covers error types, handling strategies, and specific solutions for common execution issues.
 
 ## Error Categories
 

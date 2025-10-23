@@ -1,6 +1,6 @@
 # Chat Widget Demo Examples
 
-This directory contains comprehensive examples demonstrating the n8n Chat Widget functionality.
+This directory contains comprehensive examples demonstrating the nodeDrop Chat Widget functionality.
 
 ## 📁 Files Overview
 
@@ -36,17 +36,17 @@ This directory contains comprehensive examples demonstrating the n8n Chat Widget
 ## 🚀 Getting Started
 
 ### Prerequisites
-1. **Backend Server**: Ensure your n8n backend is running on `http://localhost:4000`
+1. **Backend Server**: Ensure your nodeDrop backend is running on `http://localhost:4000`
 2. **Frontend Server**: Ensure your frontend is running on `http://localhost:3000`
 3. **Active Workflow**: Have a workflow with a Chat node activated
-4. **Chat Widget Script**: The widget script should be available at `http://localhost:3000/n8n-chat-widget.umd.js`
+4. **Chat Widget Script**: The widget script should be available at `http://localhost:3000/nd-chat-widget.umd.js`
 
 ### Setup Instructions
 
 1. **Update Chat ID**: Replace the chat ID in all HTML files with your actual chat ID:
    ```html
    <!-- Replace this ID with your actual chat ID -->
-   <div data-n8n-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5"
+   <div data-nd-chat="ca37729d-50bd-4d4d-bb3b-fa8d61e3bdd5"
    ```
 
 2. **Verify URLs**: Ensure the API and script URLs match your setup:
@@ -55,7 +55,7 @@ This directory contains comprehensive examples demonstrating the n8n Chat Widget
    data-api-url="http://localhost:4000/api"
    
    <!-- Widget Script -->
-   <script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
+   <script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"></script>
    ```
 
 3. **Open Examples**: Open any HTML file in your browser to test the chat widget
@@ -65,23 +65,23 @@ This directory contains comprehensive examples demonstrating the n8n Chat Widget
 ### Auto-Initialize (Simplest)
 ```html
 <!-- Add this div to your page -->
-<div data-n8n-chat="YOUR_CHAT_ID" 
+<div data-nd-chat="YOUR_CHAT_ID" 
      data-api-url="http://localhost:4000/api"
      data-theme="light"
      data-position="bottom-right"></div>
 
 <!-- Include the script -->
-<script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
+<script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"></script>
 ```
 
 ### Manual Initialize (Full Control)
 ```html
 <!-- Load the script first -->
-<script src="http://localhost:3000/widgets/chat/n8n-chat-widget.umd.js"></script>
+<script src="http://localhost:3000/widgets/chat/nd-chat-widget.umd.js"></script>
 
 <!-- Then initialize -->
 <script>
-const widget = new window.N8nChatWidget();
+const widget = new window.nodeDropChatWidget();
 
 widget.init({
   chatId: 'YOUR_CHAT_ID',
@@ -142,7 +142,7 @@ widget.init({
 
 Add this to your page to enable debug logging:
 ```javascript
-window.N8N_CHAT_DEBUG = true;
+window.nodeDrop_CHAT_DEBUG = true;
 ```
 
 ## 📱 Mobile Support

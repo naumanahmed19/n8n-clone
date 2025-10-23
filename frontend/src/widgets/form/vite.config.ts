@@ -13,8 +13,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, "index.tsx"),
-      name: "N8nFormWidget",
-      fileName: (format) => `n8n-form-widget.${format}.js`,
+      name: "nodeDropFormWidget",
+      fileName: (format) => `nd-form-widget.${format}.js`,
       formats: ["umd", "es"],
     },
     rollupOptions: {

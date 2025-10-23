@@ -11,7 +11,7 @@ interface WidgetConfig {
   onError?: (error: any) => void
 }
 
-class N8nFormWidget {
+class nodeDropFormWidget {
   private root: ReactDOM.Root | null = null
   private container: HTMLElement | null = null
 
@@ -29,7 +29,7 @@ class N8nFormWidget {
     } = config
 
     if (!formId) {
-      console.error('N8nFormWidget: formId is required')
+      console.error('nodeDropFormWidget: formId is required')
       return
     }
 
@@ -39,16 +39,16 @@ class N8nFormWidget {
     } else if (container instanceof HTMLElement) {
       this.container = container
     } else {
-      this.container = document.getElementById('n8n-form-widget')
+      this.container = document.getElementById('nd-form-widget')
     }
 
     if (!this.container) {
-      console.error('N8nFormWidget: Container element not found')
+      console.error('nodeDropFormWidget: Container element not found')
       return
     }
 
     // Add widget class for scoped styling
-    this.container.classList.add('n8n-form-widget')
+    this.container.classList.add('nd-form-widget')
     this.container.setAttribute('data-theme', theme)
 
     // Render React app
@@ -76,7 +76,7 @@ class N8nFormWidget {
     }
     if (this.container) {
       this.container.innerHTML = ''
-      this.container.classList.remove('n8n-form-widget')
+      this.container.classList.remove('nd-form-widget')
     }
   }
 
@@ -92,26 +92,26 @@ class N8nFormWidget {
 // Global widget instance
 declare global {
   interface Window {
-    N8nFormWidget: typeof N8nFormWidget
-    n8nFormWidget?: N8nFormWidget
+    nodeDropFormWidget: typeof nodeDropFormWidget
+    nodeDropFormWidget?: nodeDropFormWidget
   }
 }
 
 // Export to global scope
 if (typeof window !== 'undefined') {
-  window.N8nFormWidget = N8nFormWidget
+  window.nodeDropFormWidget = nodeDropFormWidget
   
   // Auto-initialize if data attributes are present
   const initWidgets = () => {
-    const autoInitElements = document.querySelectorAll('[data-n8n-form]')
+    const autoInitElements = document.querySelectorAll('[data-nd-form]')
     
     autoInitElements.forEach((element) => {
-      const formId = element.getAttribute('data-n8n-form')
+      const formId = element.getAttribute('data-nd-form')
       const apiUrl = element.getAttribute('data-api-url') || undefined
       const theme = element.getAttribute('data-theme') as 'light' | 'dark' | 'auto' || 'auto'
       
       if (formId) {
-        const widget = new N8nFormWidget()
+        const widget = new nodeDropFormWidget()
         widget.init({
           formId,
           apiUrl,
@@ -130,5 +130,5 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export { N8nFormWidget }
+export { nodeDropFormWidget }
 export type { WidgetConfig }

@@ -1,6 +1,6 @@
 # Visual Flow Diagrams
 
-This directory contains detailed visual flow diagrams for the n8n-clone execution system. These diagrams illustrate the step-by-step processes, decision points, and data flows throughout the execution pipeline.
+This directory contains detailed visual flow diagrams for the node-drop execution system. These diagrams illustrate the step-by-step processes, decision points, and data flows throughout the execution pipeline.
 
 ## Diagram Index
 
@@ -194,4 +194,4 @@ To add or modify diagrams:
 
 ---
 
-_These diagrams serve as living documentation of the n8n-clone execution system. They should be updated whenever significant changes are made to the underlying implementation._
+_These diagrams serve as living documentation of the node-drop execution system. They should be updated whenever significant changes are made to the underlying implementation._

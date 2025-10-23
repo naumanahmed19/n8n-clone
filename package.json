@@ -1,7 +1,7 @@
 {
-  "name": "n8n-clone",
+  "name": "node-drop",
   "version": "1.0.0",
-  "description": "A workflow automation platform similar to n8n",
+  "description": "A workflow automation platform similar to nodeDrop",
   "private": true,
   "workspaces": [
     "frontend",

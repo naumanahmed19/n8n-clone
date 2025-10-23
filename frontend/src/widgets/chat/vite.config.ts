@@ -13,8 +13,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, "index.tsx"),
-      name: "N8nChatWidget",
-      fileName: (format) => `n8n-chat-widget.${format}.js`,
+      name: "nodeDropChatWidget",
+      fileName: (format) => `nd-chat-widget.${format}.js`,
       formats: ["umd", "es"],
     },
     rollupOptions: {

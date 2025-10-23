@@ -47,7 +47,7 @@ export function RepeatingFieldExample() {
         <CardHeader>
           <CardTitle>Example 1: Switch Node Outputs</CardTitle>
           <CardDescription>
-            Users can add multiple outputs with conditions (like n8n's Switch node)
+            Users can add multiple outputs with conditions (like nodeDrop's Switch node)
           </CardDescription>
         </CardHeader>
         <CardContent>

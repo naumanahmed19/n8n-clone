@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Coolify Setup Script for n8n Clone
+# Coolify Setup Script for node drop
 # This script helps configure the application for Coolify deployment
 
 set -e
 
-echo "🚀 Setting up n8n Clone for Coolify deployment..."
+echo "🚀 Setting up node drop for Coolify deployment..."
 
 # Colors for output
 RED='\033[0;31m'

@@ -1,6 +1,6 @@
 # Testing Documentation
 
-This document describes the comprehensive testing system for the n8n-clone flow execution platform.
+This document describes the comprehensive testing system for the node-drop flow execution platform.
 
 ## Test Structure
 
@@ -158,7 +158,7 @@ await global.performanceUtils.sleep(1000);
 
 ### Test Database Setup
 
-1. Create test database: `n8n_test`
+1. Create test database: `nd_test`
 2. Set environment variable: `TEST_DATABASE_URL`
 3. Run migrations: Database is automatically set up during tests
 
