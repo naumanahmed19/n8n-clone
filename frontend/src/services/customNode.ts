@@ -171,7 +171,7 @@ export class CustomNodeService {
     const response = await api.get(
       `${this.baseUrl}/marketplace/search?${params.toString()}`
     );
-    return response.data.data;
+    return response.data;
   }
 
   /**
