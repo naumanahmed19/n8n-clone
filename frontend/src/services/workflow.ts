@@ -46,15 +46,7 @@ class WorkflowService {
   async getWorkflows(
     filters?: WorkflowFilters
   ): Promise<PaginatedResponse<Workflow>> {
-    const response = await api.get<{
-      data: Workflow[];
-      pagination: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-      };
-    }>("/workflows", {
+    const response = await api.get<Workflow[]>("/workflows", {
       params: filters,
     });
 
@@ -62,13 +54,20 @@ class WorkflowService {
       throw new Error(response.error?.message || "Failed to fetch workflows");
     }
 
-    // Transform backend response to match frontend PaginatedResponse format
+
+
+    // The API returns the response in this format:
+    // { success: true, data: [...], pagination: {...} }
+    // But TypeScript sees it as ApiResponse<T> which only has data property
+    // We need to cast it to access pagination
+    const apiResponse = response as any;
+
     return {
-      data: response.data?.data || [],
-      total: response.data?.pagination?.total || 0,
-      page: response.data?.pagination?.page || 1,
-      limit: response.data?.pagination?.limit || 10,
-      totalPages: response.data?.pagination?.totalPages || 1,
+      data: apiResponse.data || [],
+      total: apiResponse.pagination?.total || 0,
+      page: apiResponse.pagination?.page || 1,
+      limit: apiResponse.pagination?.limit || 10,
+      totalPages: apiResponse.pagination?.totalPages || 1,
     };
   }
 

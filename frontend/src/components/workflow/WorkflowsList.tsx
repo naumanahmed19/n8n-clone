@@ -72,6 +72,7 @@ export function WorkflowsList({}: WorkflowsListProps) {
       
       // Fetch fresh data
       const response = await workflowService.getWorkflows()
+      console.log(response)
       setWorkflows(response.data)
       setIsWorkflowsLoaded(true)
     } catch (err) {
@@ -88,6 +89,7 @@ export function WorkflowsList({}: WorkflowsListProps) {
   }
 
   useEffect(() => {
+    console.log('fetch workflows')
     fetchWorkflows()
   }, [isWorkflowsLoaded, setWorkflows, setIsWorkflowsLoaded, setError])
 
@@ -95,6 +97,8 @@ export function WorkflowsList({}: WorkflowsListProps) {
   const filteredWorkflows = useMemo(() => {
     if (!searchTerm) return workflows
     
+
+    console.log('workflows workflows',workflows)
     return workflows.filter(workflow =>
       workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       workflow.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
