@@ -1691,11 +1691,30 @@ export class ExecutionService {
           executionStatus = ExecutionStatus.ERROR;
       }
 
+      // Handle unsaved workflows (workflowId = "new")
+      let actualWorkflowId = workflowId;
+      if (workflowId === "new" && workflowSnapshot) {
+        // Create a temporary workflow record for unsaved workflows
+        const tempWorkflow = await this.prisma.workflow.create({
+          data: {
+            name: "Unsaved Workflow",
+            description: "Temporary workflow created for execution",
+            userId,
+            nodes: workflowSnapshot.nodes || [],
+            connections: workflowSnapshot.connections || [],
+            settings: workflowSnapshot.settings || {},
+            active: false, // Mark as inactive since it's temporary
+            tags: ["temporary", "unsaved"]
+          }
+        });
+        actualWorkflowId = tempWorkflow.id;
+      }
+
       // Create main execution record with workflow snapshot
       const execution = await this.prisma.execution.create({
         data: {
           id: flowResult.executionId,
-          workflowId,
+          workflowId: actualWorkflowId,
           status: executionStatus,
           startedAt: new Date(Date.now() - flowResult.totalDuration),
           finishedAt: new Date(),
