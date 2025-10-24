@@ -9,6 +9,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { useGlobalToast } from '@/hooks/useToast'
 import { workflowService } from '@/services/workflow'
+import { useCategoriesStore } from '@/stores/categories'
 import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CreateCategoryModal } from './CreateCategoryModal'
@@ -32,33 +33,19 @@ export function CategorySelect({
   showDeleteOption = false,
   variant = 'select'
 }: CategorySelectProps) {
-  const [availableCategories, setAvailableCategories] = useState<string[]>([])
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false)
+  const { categories: availableCategories, isLoading: isLoadingCategories, loadCategories, addCategory, removeCategory } = useCategoriesStore()
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
   const [isDeletingCategory, setIsDeletingCategory] = useState(false)
   const { showSuccess, showError } = useGlobalToast()
 
-  // Load available categories
+  // Load available categories on mount
   useEffect(() => {
-    const loadCategories = async () => {
-      setIsLoadingCategories(true)
-      try {
-        const categories = await workflowService.getAvailableCategories()
-        setAvailableCategories(categories)
-      } catch (error) {
-        console.error('Failed to load categories:', error)
-      } finally {
-        setIsLoadingCategories(false)
-      }
-    }
-
     loadCategories()
-  }, [])
+  }, [loadCategories])
 
   const handleCategoryCreated = async (categoryName: string) => {
     try {
-      const categories = await workflowService.getAvailableCategories()
-      setAvailableCategories(categories)
+      addCategory(categoryName)
       onValueChange(categoryName)
     } catch (error) {
       console.error('Failed to refresh categories:', error)
@@ -70,8 +57,7 @@ export function CategorySelect({
       setIsDeletingCategory(true)
       await workflowService.deleteCategory(categoryName)
       
-      const categories = await workflowService.getAvailableCategories()
-      setAvailableCategories(categories)
+      removeCategory(categoryName)
       
       if (value === categoryName) {
         onValueChange('')

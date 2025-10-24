@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useGlobalToast } from '@/hooks/useToast'
 import { workflowService } from '@/services/workflow'
+import { useCategoriesStore } from '@/stores/categories'
 import type { EnvironmentType } from '@/types/environment'
 import { ChevronDown, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
@@ -47,30 +48,15 @@ export function WorkflowBreadcrumb({
 }: WorkflowBreadcrumbProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [tempTitle, setTempTitle] = useState(title)
-  const [availableCategories, setAvailableCategories] = useState<string[]>([])
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false)
+  const { categories: availableCategories, isLoading: isLoadingCategories, loadCategories, addCategory, removeCategory } = useCategoriesStore()
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false)
   const [isDeletingCategory, setIsDeletingCategory] = useState(false)
   const { showSuccess, showError } = useGlobalToast()
 
-  // Load available categories
+  // Load available categories on mount
   useEffect(() => {
-    const loadCategories = async () => {
-      setIsLoadingCategories(true)
-      try {
-        const categories = await workflowService.getAvailableCategories()
-        setAvailableCategories(categories)
-      } catch (error) {
-        console.error('Failed to load categories:', error)
-        // Fallback to some default categories
-        setAvailableCategories(['General', 'Data Processing', 'Automation', 'Integration', 'Utility'])
-      } finally {
-        setIsLoadingCategories(false)
-      }
-    }
-
     loadCategories()
-  }, [])
+  }, [loadCategories])
 
   // Update tempTitle when title prop changes
   useEffect(() => {
@@ -103,15 +89,9 @@ export function WorkflowBreadcrumb({
   }
 
   const handleCategoryCreated = async (categoryName: string) => {
-    // Refresh the categories list
-    try {
-      const categories = await workflowService.getAvailableCategories()
-      setAvailableCategories(categories)
-      // Select the newly created category
-      onCategoryChange(categoryName)
-    } catch (error) {
-      console.error('Failed to refresh categories:', error)
-    }
+    // Add to store and select the newly created category
+    addCategory(categoryName)
+    onCategoryChange(categoryName)
   }
 
   const handleDeleteCategory = async (categoryName: string) => {
@@ -119,9 +99,8 @@ export function WorkflowBreadcrumb({
       setIsDeletingCategory(true)
       await workflowService.deleteCategory(categoryName)
       
-      // Refresh the categories list
-      const categories = await workflowService.getAvailableCategories()
-      setAvailableCategories(categories)
+      // Remove from store
+      removeCategory(categoryName)
       
       // If the deleted category was selected, clear selection
       if (category === categoryName) {
