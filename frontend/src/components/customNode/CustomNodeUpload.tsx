@@ -21,10 +21,10 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
     error: null,
   });
   const [showGuidelines, setShowGuidelines] = useState(false);
-  const [showInstalledNodes, setShowInstalledNodes] = useState(false);
+  const [showInstalledNodes] = useState(false);
   const [installedNodes, setInstalledNodes] = useState<NodeType[]>([]);
   const [loadingNodes, setLoadingNodes] = useState(false);
-  const [processingNode, setProcessingNode] = useState<string | null>(null);
+  // const [processingNode] = useState<string | null>(null);
 
   const resetState = () => {
     setState(prev => ({
@@ -58,7 +58,7 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
   };
 
   // Delete/uninstall a custom node
-  const handleDeleteNode = async (nodeType: NodeType) => {
+  /* const handleDeleteNode = async (nodeType: NodeType) => {
     if (!confirm(`Are you sure you want to uninstall "${nodeType.displayName}"?`)) {
       return;
     }
@@ -90,10 +90,10 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
     } finally {
       setProcessingNode(null);
     }
-  };
+  }; */
 
   // Toggle node active status
-  const handleToggleNodeStatus = async (nodeType: NodeType) => {
+  /* const handleToggleNodeStatus = async (nodeType: NodeType) => {
     const newStatus = !nodeType.active;
     setProcessingNode(nodeType.type);
     
@@ -119,7 +119,7 @@ export const CustomNodeUpload: React.FC<{ onUploadSuccess?: () => void }> = ({ o
     } finally {
       setProcessingNode(null);
     }
-  };
+  }; */
 
   // Load nodes when section is first expanded
   useEffect(() => {

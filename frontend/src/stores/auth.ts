@@ -117,7 +117,7 @@ export const useAuthStore = create<AuthStore>()(
             id: "guest",
             email: "guest@example.com",
             name: "Guest User",
-            role: "user" as const,
+            role: "USER" as const,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };

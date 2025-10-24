@@ -60,7 +60,7 @@ export function WebhookUrlGenerator({
   };
 
   // Get widget script URLs
-  const getWidgetScriptUrl = (environment: "test" | "production") => {
+  /* const getWidgetScriptUrl = (environment: "test" | "production") => {
     const baseUrl = environment === "test" 
       ? (import.meta.env.VITE_APP_URL || "http://localhost:3000")
       : (import.meta.env.VITE_APP_PROD_URL || "https://your-domain.com");
@@ -72,7 +72,7 @@ export function WebhookUrlGenerator({
     } else {
       return `${baseUrl}/widgets/webhook/nd-webhook-widget.umd.js`;
     }
-  };
+  }; */
 
   // Generate webhook ID if not exists
   useEffect(() => {

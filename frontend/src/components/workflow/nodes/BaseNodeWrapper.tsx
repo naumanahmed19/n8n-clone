@@ -167,14 +167,10 @@ export function BaseNodeWrapper({
   className = '',
   showInputHandle = true,
   showOutputHandle = true,
-  inputHandleColor = '!bg-blue-500',
-  outputHandleColor = '!bg-green-500',
   onDoubleClick: customOnDoubleClick,
   customContent,
   customMetadata,
-  showLabelBelow = false,
   canExpand = true,
-  toolbar,
   nodeConfig,
 }: BaseNodeWrapperProps) {
   // Use node actions hook for context menu functionality

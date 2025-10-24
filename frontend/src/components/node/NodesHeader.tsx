@@ -24,7 +24,6 @@ interface NodesHeaderProps {
 export function NodesHeader({ 
   activeTab, 
   setActiveTab, 
-  nodeCount,
   searchTerm,
   setSearchTerm,
   onRefresh,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, RotateCcw, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react'
-import { Credential, CredentialData, CredentialType } from '@/types'
+import { Credential, CredentialData } from '@/types'
 import { useCredentialStore } from '@/stores'
 
 interface CredentialRotationModalProps {

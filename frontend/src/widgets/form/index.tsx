@@ -92,8 +92,7 @@ class nodeDropFormWidget {
 // Global widget instance
 declare global {
   interface Window {
-    nodeDropFormWidget: typeof nodeDropFormWidget
-    nodeDropFormWidget?: nodeDropFormWidget
+    nodeDropFormWidget?: typeof nodeDropFormWidget
   }
 }
 

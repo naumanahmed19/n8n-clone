@@ -9,7 +9,7 @@ import { workflowService } from '@/services'
 import { useAuthStore, useWorkflowStore } from '@/stores'
 import { NodeType, Workflow } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 export function WorkflowEditorLayout() {

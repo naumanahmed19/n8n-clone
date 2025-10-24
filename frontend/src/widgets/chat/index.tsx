@@ -361,8 +361,7 @@ class nodeDropChatWidget {
 // Global widget instance
 declare global {
   interface Window {
-    nodeDropChatWidget: typeof nodeDropChatWidget
-    nodeDropChatWidget?: nodeDropChatWidget
+    nodeDropChatWidget?: typeof nodeDropChatWidget
   }
 }
 

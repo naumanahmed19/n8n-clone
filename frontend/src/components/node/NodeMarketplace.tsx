@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+
 import { useCustomNodeStore } from '@/stores/customNode'
 import { NodePackageMetadata } from '@/types/customNode'
 import { getIconComponent } from '@/utils/iconMapper'

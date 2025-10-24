@@ -15,7 +15,6 @@ export function PropertyField({
   property,
   value,
   parameters,
-  nodeTypeProperties,
   validationErrors,
   onChange
 }: PropertyFieldProps) {

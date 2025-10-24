@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Activity, Calendar, CheckCircle, XCircle, Clock, Filter, Search } from 'lucide-react'
-import { Credential, CredentialUsageLog } from '@/types'
+import { Credential } from '@/types'
 import { useCredentialStore } from '@/stores'
 
 interface CredentialUsageModalProps {

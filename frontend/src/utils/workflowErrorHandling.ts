@@ -317,7 +317,7 @@ export function hasCircularDependencies(
  * Create workflow operation error with context
  */
 export function createWorkflowError(
-  code: WorkflowErrorCode,
+  _code: WorkflowErrorCode,
   message: string,
   workflowId?: string,
   nodeId?: string,

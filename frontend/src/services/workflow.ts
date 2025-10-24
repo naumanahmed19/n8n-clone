@@ -108,7 +108,7 @@ class WorkflowService {
       data
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to update workflow");
     }
 
@@ -186,7 +186,7 @@ class WorkflowService {
       workflow
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to validate workflow");
     }
 
@@ -231,7 +231,7 @@ class WorkflowService {
       { name }
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to create from template");
     }
 
@@ -247,7 +247,7 @@ class WorkflowService {
       templateData
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to publish as template");
     }
 
@@ -264,7 +264,7 @@ class WorkflowService {
       { shares }
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to share workflow");
     }
 
@@ -281,7 +281,7 @@ class WorkflowService {
       { permission }
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to update workflow share");
     }
 
@@ -293,7 +293,7 @@ class WorkflowService {
       `/workflows/${id}/share/${userId}`
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to remove workflow share");
     }
 
@@ -330,7 +330,7 @@ class WorkflowService {
       `/workflows/${id}/export`
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to export workflow");
     }
 
@@ -349,7 +349,7 @@ class WorkflowService {
       }
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to import workflow");
     }
 
@@ -362,7 +362,7 @@ class WorkflowService {
       `/workflows/${id}/analytics`
     );
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to fetch workflow analytics");
     }
 
@@ -413,7 +413,7 @@ class WorkflowService {
   async updateWorkflowTags(id: string, tags: string[]): Promise<Workflow> {
     const response = await api.put<Workflow>(`/workflows/${id}/tags`, { tags });
 
-    if (!response.success) {
+    if (!response.success || !response.data) {
       throw new Error(response.error?.message || "Failed to update workflow tags");
     }
 
