@@ -128,24 +128,24 @@ export function AddNodeCommandDialog({
       const isConnectionDrop = insertionContext.sourceNodeId && !insertionContext.targetNodeId
       
       if (isConnectionDrop) {
-        // Connection was dropped on canvas - position near the source node
+        // Connection was dropped on canvas - use the exact drop position
         const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
         sourceNodeIdForConnection = insertionContext.sourceNodeId
         
-        if (sourceNode) {
+        if (sourceNode && sourceNode.parentId) {
           // Check if source node is in a group
-          if (sourceNode.parentId) {
-            parentGroupId = sourceNode.parentId
-          }
-          
-          // Position to the right of the source node
+          parentGroupId = sourceNode.parentId
+        }
+        
+        if (position) {
+          // Use the exact drop position (already in flow coordinates)
+          nodePosition = position
+        } else if (sourceNode) {
+          // Fallback: position to the right of the source node
           nodePosition = {
             x: sourceNode.position.x + 200,
             y: sourceNode.position.y
           }
-        } else if (position) {
-          // Use the drop position
-          nodePosition = reactFlowInstance.screenToFlowPosition(position)
         }
       } else if (insertionContext.targetNodeId) {
         // Inserting between nodes - use existing logic
