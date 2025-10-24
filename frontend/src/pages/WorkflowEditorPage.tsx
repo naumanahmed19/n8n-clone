@@ -54,8 +54,16 @@ export function WorkflowEditorPage() {
 
     console.log('[WorkflowEditor] Subscribing to workflow:', id)
     
-    // Subscribe to workflow updates
-    socketService.subscribeToWorkflow(id)
+    // Subscribe to workflow updates (async)
+    const subscribeToWorkflow = async () => {
+      try {
+        await socketService.subscribeToWorkflow(id)
+      } catch (error) {
+        console.error('[WorkflowEditor] Failed to subscribe to workflow:', error)
+      }
+    }
+    
+    subscribeToWorkflow()
 
     // Listen for execution events
     const handleExecutionEvent = (event: any) => {
@@ -100,7 +108,11 @@ export function WorkflowEditorPage() {
     // Cleanup: unsubscribe and remove listeners when component unmounts or workflow changes
     return () => {
       console.log('[WorkflowEditor] Unsubscribing from workflow:', id)
-      socketService.unsubscribeFromWorkflow(id)
+      
+      // Unsubscribe from workflow (async but don't wait)
+      socketService.unsubscribeFromWorkflow(id).catch(error => {
+        console.error('[WorkflowEditor] Failed to unsubscribe from workflow:', error)
+      })
       
       // Remove event listeners
       socketService.off('execution-event', handleExecutionEvent)
