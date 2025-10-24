@@ -192,6 +192,7 @@ app.get("/health", async (req, res) => {
       timestamp: new Date().toISOString(),
       service: "node-drop-backend",
       version: "1.0.0",
+      hot_reload: "BACKEND HOT RELOAD WORKING!",
       websocket: {
         connected_users: socketService.getConnectedUsersCount(),
       },
@@ -279,7 +280,7 @@ app.use(errorHandler);
 
 // Start server
 httpServer.listen(PORT, async () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT} - BACKEND HOT RELOAD WORKS!`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔌 Socket.io enabled for real-time updates`);
   console.log(`🔗 API endpoints:`);
