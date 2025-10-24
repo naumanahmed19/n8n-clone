@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 
 interface CopyPasteStore {
   // Copy/paste functions (set by useCopyPaste hook)
@@ -18,7 +18,7 @@ interface CopyPasteStore {
   }) => void;
 }
 
-export const useCopyPasteStore = create<CopyPasteStore>((set) => ({
+export const useCopyPasteStore = createWithEqualityFn<CopyPasteStore>((set) => ({
   copy: null,
   cut: null,
   paste: null,

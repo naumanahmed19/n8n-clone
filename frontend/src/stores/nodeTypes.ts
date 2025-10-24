@@ -1,7 +1,7 @@
 import { nodeService } from "@/services/node";
 import { NodeType } from "@/types";
 import { updateNodeTypesCache } from "@/utils/nodeTypeClassification";
-import { create } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 
 // Extended node type that might have additional properties for custom nodes
 interface ExtendedNodeType extends NodeType {
@@ -38,7 +38,7 @@ interface NodeTypesState {
   getActiveNodeTypesByCategory: () => Record<string, ExtendedNodeType[]>;
 }
 
-export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
+export const useNodeTypesStore = createWithEqualityFn<NodeTypesState>((set, get) => ({
   // Initial state
   nodeTypes: [],
   isLoading: false,

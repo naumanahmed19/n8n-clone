@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createWithEqualityFn } from 'zustand/traditional'
 import { 
   Credential, 
   CredentialType, 
@@ -72,7 +72,7 @@ interface CredentialActions {
   clearError: () => void
 }
 
-export const useCredentialStore = create<CredentialState & CredentialActions>((set, get) => ({
+export const useCredentialStore = createWithEqualityFn<CredentialState & CredentialActions>((set, get) => ({
   // State
   credentials: [],
   credentialTypes: [],

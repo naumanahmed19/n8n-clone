@@ -34,8 +34,8 @@ import {
   updateWorkflowTitle,
   validateMetadata,
 } from "@/utils/workflowMetadata";
-import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
 // Import socket service types
 interface ExecutionLogEntry {
@@ -261,7 +261,7 @@ function serializeError(error: any): string | undefined {
   return String(error);
 }
 
-export const useWorkflowStore = create<WorkflowStore>()(
+export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
   devtools(
     (set, get) => ({
       // Initial state

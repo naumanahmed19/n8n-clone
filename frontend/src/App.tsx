@@ -19,7 +19,12 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-d
 function App() {
   return (
     <>
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <ThemeProvider>
           <SidebarContextProvider>
           <Routes>

@@ -1,7 +1,7 @@
 import { authService } from "@/services";
 import { AuthState, LoginCredentials, RegisterCredentials } from "@/types";
-import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
 // Helper function to load all user preferences
 const loadAllPreferences = async () => {
@@ -37,7 +37,7 @@ interface AuthActions {
 
 type AuthStore = AuthState & AuthActions;
 
-export const useAuthStore = create<AuthStore>()(
+export const useAuthStore = createWithEqualityFn<AuthStore>()(
   persist(
     (set) => ({
       // State

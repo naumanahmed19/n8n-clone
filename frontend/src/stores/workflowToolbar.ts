@@ -15,8 +15,8 @@ import {
   validateImportFile,
   ValidationError,
 } from "@/utils/errorHandling";
-import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
 // Custom validation result for import/export operations
 interface ImportValidationResult {
@@ -84,7 +84,7 @@ interface WorkflowToolbarStore {
   ) => void;
 }
 
-export const useWorkflowToolbarStore = create<WorkflowToolbarStore>()(
+export const useWorkflowToolbarStore = createWithEqualityFn<WorkflowToolbarStore>()(
   devtools(
     (set) => ({
       // Initial state

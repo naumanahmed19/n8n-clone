@@ -10,8 +10,8 @@ import type {
   WorkflowEnvironment,
   WorkflowEnvironmentDeployment,
 } from "@/types/environment";
-import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
 interface EnvironmentStore {
   // State
@@ -77,7 +77,7 @@ interface EnvironmentStore {
   clearError: () => void;
 }
 
-export const useEnvironmentStore = create<EnvironmentStore>()(
+export const useEnvironmentStore = createWithEqualityFn<EnvironmentStore>()(
   devtools(
     (set, get) => ({
       // Initial state

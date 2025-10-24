@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 import { customNodeService } from "../services/customNode";
 import {
   CustomNodeActions,
@@ -21,7 +21,7 @@ import {
 
 interface CustomNodeStore extends CustomNodeState, CustomNodeActions {}
 
-export const useCustomNodeStore = create<CustomNodeStore>()(
+export const useCustomNodeStore = createWithEqualityFn<CustomNodeStore>()(
   devtools(
     (set, get) => ({
       // State

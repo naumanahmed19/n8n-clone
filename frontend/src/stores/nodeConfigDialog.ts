@@ -1,6 +1,6 @@
 import { NodeSettingsConfig, NodeType, WorkflowNode } from "@/types";
 import { ValidationError } from "@/utils/nodeValidation";
-import { create } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 
 interface MockDataEditor {
   isOpen: boolean;
@@ -76,7 +76,7 @@ const initialState = {
   activeTab: "config",
 };
 
-export const useNodeConfigDialogStore = create<NodeConfigDialogState>(
+export const useNodeConfigDialogStore = createWithEqualityFn<NodeConfigDialogState>(
   (set, get) => ({
     ...initialState,
 

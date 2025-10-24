@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ReactFlowProvider } from '@xyflow/react'
-import { create } from 'zustand'
+import { createWithEqualityFn } from 'zustand/traditional'
 import { ExecuteToolbarButton } from '@/components/workflow/ExecuteToolbarButton'
 import { DisableToggleToolbarButton } from '@/components/workflow/DisableToggleToolbarButton'
 import { 
@@ -12,7 +12,7 @@ import {
 import type { WorkflowNode } from '@/types'
 
 // Mock workflow store
-const mockWorkflowStore = create<{
+const mockWorkflowStore = createWithEqualityFn<{
   workflow: { nodes: WorkflowNode[] } | null
   executionState: { status: string; nodeResults: Map<string, any> }
   updateNode: (nodeId: string, updates: Partial<WorkflowNode>) => void
