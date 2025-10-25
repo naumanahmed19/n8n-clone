@@ -7,6 +7,7 @@ export * from "./CustomTemplate";
 export * from "./DynamicProperties";
 export * from "./GoogleSheetsTrigger/GoogleSheetsTrigger.node";
 export * from "./HttpRequest";
+export * from "./PostgreSQL/PostgreSQL.node";
 export * from "./If";
 export * from "./Json";
 export * from "./ManualTrigger";

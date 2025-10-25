@@ -379,6 +379,7 @@ export function FieldRenderer({
           <DynamicAutocomplete
             nodeType={nodeType}
             loadOptionsMethod={loadOptionsMethod}
+            loadOptionsDependsOn={field.typeOptions?.loadOptionsDependsOn}
             value={String(value || '')}
             onChange={handleChange}
             placeholder={field.placeholder}

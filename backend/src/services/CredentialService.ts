@@ -424,6 +424,8 @@ export class CredentialService {
         return this.testOAuth2(data);
       case "googleSheetsOAuth2":
         return this.testGoogleSheetsOAuth2(data);
+      case "googleDriveOAuth2":
+        return this.testGoogleDriveOAuth2(data);
       case "bearerToken":
         return this.testBearerToken(data);
       default:
@@ -662,6 +664,213 @@ export class CredentialService {
         icon: "📊",
         color: "#0F9D58",
         testable: true,
+      },
+      {
+        name: "googleDriveOAuth2",
+        displayName: "Google Drive OAuth2",
+        description: "OAuth2 credentials for Google Drive API",
+        properties: [
+          {
+            displayName: "OAuth Redirect URL",
+            name: "oauthCallbackUrl",
+            type: "string",
+            required: false,
+            description:
+              "Copy this URL and add it to 'Authorized redirect URIs' in your Google Cloud Console OAuth2 credentials",
+            placeholder: `${
+              process.env.FRONTEND_URL || "http://localhost:3000"
+            }/oauth/callback`,
+            default: `${
+              process.env.FRONTEND_URL || "http://localhost:3000"
+            }/oauth/callback`,
+          },
+          {
+            displayName: "Client ID",
+            name: "clientId",
+            type: "string",
+            required: true,
+            description: "OAuth2 Client ID from Google Cloud Console",
+            placeholder: "123456789-abc123.apps.googleusercontent.com",
+          },
+          {
+            displayName: "Client Secret",
+            name: "clientSecret",
+            type: "password",
+            required: true,
+            description: "OAuth2 Client Secret from Google Cloud Console",
+            placeholder: "GOCSPX-***",
+          },
+          // Note: accessToken and refreshToken are stored in the credential
+          // but not shown in the form - they're automatically filled via OAuth
+        ],
+        icon: "🗂️",
+        color: "#4285F4",
+        testable: true,
+      },
+      {
+        name: "postgresDb",
+        displayName: "PostgreSQL Database",
+        description: "PostgreSQL database connection credentials",
+        properties: [
+          {
+            displayName: "Host",
+            name: "host",
+            type: "string",
+            required: true,
+            default: "localhost",
+            description: "PostgreSQL server host",
+            placeholder: "localhost or IP address",
+          },
+          {
+            displayName: "Port",
+            name: "port",
+            type: "number",
+            required: true,
+            default: 5432,
+            description: "PostgreSQL server port",
+          },
+          {
+            displayName: "Database",
+            name: "database",
+            type: "string",
+            required: true,
+            default: "",
+            description: "Database name",
+            placeholder: "my_database",
+          },
+          {
+            displayName: "User",
+            name: "user",
+            type: "string",
+            required: true,
+            default: "",
+            description: "Database user",
+            placeholder: "postgres",
+          },
+          {
+            displayName: "Password",
+            name: "password",
+            type: "password",
+            required: true,
+            default: "",
+            description: "Database password",
+          },
+          {
+            displayName: "SSL",
+            name: "ssl",
+            type: "boolean",
+            default: false,
+            description: "Use SSL connection",
+          },
+        ],
+        icon: "🐘",
+        color: "#336791",
+        testable: true,
+        test: async (data: CredentialData) => {
+          // Validate required fields
+          if (!data.host || !data.database || !data.user || !data.password) {
+            return {
+              success: false,
+              message: "Host, database, user, and password are required",
+            };
+          }
+
+          // Try to connect to PostgreSQL
+          try {
+            const { Pool } = require("pg");
+
+            const pool = new Pool({
+              host: data.host,
+              port: data.port || 5432,
+              database: data.database,
+              user: data.user,
+              password: data.password,
+              ssl: data.ssl ? { rejectUnauthorized: false } : false,
+              connectionTimeoutMillis: 5000, // 5 second timeout
+              max: 1, // Only create 1 connection for testing
+            });
+
+            try {
+              // Test the connection with a simple query
+              const result = await pool.query(
+                "SELECT NOW() as current_time, version() as version"
+              );
+              await pool.end();
+
+              if (result.rows && result.rows.length > 0) {
+                const version = result.rows[0].version;
+                // Extract just the PostgreSQL version number
+                const versionMatch = version.match(/PostgreSQL ([\d.]+)/);
+                const versionStr = versionMatch ? versionMatch[1] : "Unknown";
+
+                return {
+                  success: true,
+                  message: `Connected successfully to PostgreSQL ${versionStr} at ${
+                    data.host
+                  }:${data.port || 5432}/${data.database}`,
+                };
+              }
+
+              await pool.end();
+              return {
+                success: true,
+                message: "Connection successful",
+              };
+            } catch (queryError) {
+              await pool.end();
+              throw queryError;
+            }
+          } catch (error: any) {
+            // Handle specific PostgreSQL error codes
+            if (error.code === "ECONNREFUSED") {
+              return {
+                success: false,
+                message: `Cannot connect to database server at ${data.host}:${
+                  data.port || 5432
+                }. Connection refused.`,
+              };
+            } else if (error.code === "ENOTFOUND") {
+              return {
+                success: false,
+                message: `Cannot resolve host: ${data.host}. Please check the hostname.`,
+              };
+            } else if (error.code === "ETIMEDOUT") {
+              return {
+                success: false,
+                message: `Connection timeout to ${data.host}:${
+                  data.port || 5432
+                }. Please check firewall and network settings.`,
+              };
+            } else if (error.code === "28P01") {
+              return {
+                success: false,
+                message: "Authentication failed. Invalid username or password.",
+              };
+            } else if (error.code === "3D000") {
+              return {
+                success: false,
+                message: `Database "${data.database}" does not exist.`,
+              };
+            } else if (error.code === "28000") {
+              return {
+                success: false,
+                message:
+                  "Authorization failed. User does not have access to this database.",
+              };
+            } else if (error.code === "08001") {
+              return {
+                success: false,
+                message:
+                  "Unable to establish connection. Please check server settings.",
+              };
+            } else {
+              return {
+                success: false,
+                message: `Connection failed: ${error.message || "Unknown error"}`,
+              };
+            }
+          }
+        },
       },
     ];
 
@@ -988,6 +1197,128 @@ export class CredentialService {
           return {
             success: false,
             message: `Google API error (${status}): ${
+              error.response.data?.error?.message || error.message
+            }`,
+          };
+        }
+      } else if (error.code === "ECONNABORTED") {
+        return {
+          success: false,
+          message: "Connection timeout. Please check your internet connection.",
+        };
+      } else if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+        return {
+          success: false,
+          message:
+            "Cannot reach Google servers. Please check your internet connection.",
+        };
+      } else {
+        return {
+          success: false,
+          message: `Connection test failed: ${error.message}`,
+        };
+      }
+    }
+  }
+
+  /**
+   * Test Google Drive OAuth2 credentials by making a real API call
+   */
+  private async testGoogleDriveOAuth2(
+    data: CredentialData
+  ): Promise<{ success: boolean; message: string }> {
+    // First do basic validation
+    if (!data.clientId || !data.clientSecret) {
+      return {
+        success: false,
+        message: "Client ID and Client Secret are required",
+      };
+    }
+
+    // Check if access token is present
+    if (!data.accessToken) {
+      return {
+        success: false,
+        message:
+          "No access token found. Please complete the OAuth2 authorization flow first.",
+      };
+    }
+
+    // Check if token is expired
+    if (data.tokenObtainedAt && data.expiresIn) {
+      const obtainedDate = new Date(data.tokenObtainedAt);
+      const expiresAt = new Date(
+        obtainedDate.getTime() + data.expiresIn * 1000
+      );
+
+      if (new Date() > expiresAt) {
+        return {
+          success: false,
+          message:
+            "Access token has expired. Please refresh the token or re-authorize.",
+        };
+      }
+    }
+
+    // Test the token by making a real API call to Google Drive
+    try {
+      const response = await axios.get(
+        "https://www.googleapis.com/drive/v3/about?fields=user,storageQuota",
+        {
+          headers: {
+            Authorization: `Bearer ${data.accessToken}`,
+          },
+          timeout: 10000, // 10 second timeout
+        }
+      );
+
+      if (response.status === 200 && response.data.user) {
+        const user = response.data.user;
+        const quota = response.data.storageQuota;
+        
+        let message = `Connected successfully as ${user.displayName || user.emailAddress}`;
+        
+        if (quota && quota.limit) {
+          const usedGB = Math.round((parseInt(quota.usage) / (1024 * 1024 * 1024)) * 100) / 100;
+          const limitGB = Math.round((parseInt(quota.limit) / (1024 * 1024 * 1024)) * 100) / 100;
+          message += ` (${usedGB}GB / ${limitGB}GB used)`;
+        }
+
+        return {
+          success: true,
+          message
+        };
+      }
+
+      return {
+        success: true,
+        message: "Connection successful",
+      };
+    } catch (error: any) {
+      // Handle specific error cases
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 401) {
+          return {
+            success: false,
+            message: "Access token is invalid or expired. Please re-authorize.",
+          };
+        } else if (status === 403) {
+          return {
+            success: false,
+            message:
+              "Access forbidden. Please check OAuth2 scopes and permissions.",
+          };
+        } else if (status === 429) {
+          return {
+            success: false,
+            message: "Rate limit exceeded. Please try again later.",
+          };
+        } else {
+          return {
+            success: false,
+            message: `Google Drive API error (${status}): ${
               error.response.data?.error?.message || error.message
             }`,
           };

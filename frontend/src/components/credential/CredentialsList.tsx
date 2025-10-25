@@ -380,7 +380,7 @@ export function CredentialsList({}: CredentialsListProps) {
     <>
       <div className="divide-y">
         {filteredCredentials.map((credential) => {
-          const isOAuthCredential = credential.type === 'googleSheetsOAuth2'
+          const isOAuthCredential = credential.type === 'googleSheetsOAuth2' || credential.type === 'googleDriveOAuth2'
           
           return (
             <div
@@ -416,7 +416,7 @@ export function CredentialsList({}: CredentialsListProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
                     {/* Hide Edit option for OAuth credentials */}
-                    {credential.type !== 'googleSheetsOAuth2' && (
+                    {(credential.type !== 'googleSheetsOAuth2' && credential.type !== 'googleDriveOAuth2') && (
                       <DropdownMenuItem
                         onClick={(e) => handleCredentialAction('edit', credential.id, e)}
                       >

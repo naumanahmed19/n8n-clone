@@ -171,7 +171,7 @@ export function CredentialFormSidebar({
       delete credentialData.name
 
       // For OAuth credentials, we need the saved credential with tokens
-      if (credentialType.name === 'googleSheetsOAuth2') {
+      if (credentialType.name === 'googleSheetsOAuth2' || credentialType.name === 'googleDriveOAuth2') {
         if (!editingCredential) {
           // New OAuth credential - can't test until OAuth is complete
           toast.error('Please complete "Sign in with Google" first before testing')
@@ -242,6 +242,7 @@ export function CredentialFormSidebar({
         params.append('clientId', credentialData.clientId)
         params.append('clientSecret', credentialData.clientSecret)
         params.append('credentialName', name || `${credentialType.displayName} - ${new Date().toLocaleDateString()}`)
+        params.append('credentialType', credentialType.name)
       }
 
       // Get the authorization URL from the backend
@@ -516,8 +517,8 @@ export function CredentialFormSidebar({
 
           {/* Footer buttons */}
           <div className="space-y-2 pt-4 border-t">
-            {/* OAuth Authorization Button for Google Sheets */}
-            {credentialType.name === 'googleSheetsOAuth2' && (
+            {/* OAuth Authorization Button for Google Sheets and Google Drive */}
+            {(credentialType.name === 'googleSheetsOAuth2' || credentialType.name === 'googleDriveOAuth2') && (
               <Button
                 type="button"
                 onClick={handleOAuthAuthorization}
@@ -542,7 +543,7 @@ export function CredentialFormSidebar({
 
             {/* Test Connection Button */}
             {/* For OAuth credentials, only show test button if editing (credential already exists with tokens) */}
-            {(credentialType.name !== 'googleSheetsOAuth2' || editingCredential) && (
+            {((credentialType.name !== 'googleSheetsOAuth2' && credentialType.name !== 'googleDriveOAuth2') || editingCredential) && (
               <Button
                 type="button"
                 variant="outline"
@@ -560,7 +561,7 @@ export function CredentialFormSidebar({
             )}
             
             {/* Create/Cancel buttons - hide for OAuth credentials */}
-            {credentialType.name !== 'googleSheetsOAuth2' && (
+            {(credentialType.name !== 'googleSheetsOAuth2' && credentialType.name !== 'googleDriveOAuth2') && (
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -578,7 +579,7 @@ export function CredentialFormSidebar({
             )}
 
             {/* For OAuth credentials, only show Cancel button */}
-            {credentialType.name === 'googleSheetsOAuth2' && (
+            {(credentialType.name === 'googleSheetsOAuth2' || credentialType.name === 'googleDriveOAuth2') && (
               <Button
                 type="button"
                 variant="outline"

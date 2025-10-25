@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 interface DynamicAutocompleteProps {
   nodeType: string;
   loadOptionsMethod: string;
+  loadOptionsDependsOn?: string[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -21,6 +22,7 @@ interface DynamicAutocompleteProps {
 export function DynamicAutocomplete({
   nodeType,
   loadOptionsMethod,
+  loadOptionsDependsOn,
   value,
   onChange,
   placeholder,
@@ -39,11 +41,28 @@ export function DynamicAutocomplete({
   // Use ref to track if we've loaded options
   const hasLoadedRef = useRef(false);
   const loadingRef = useRef(false);
+  const previousDependencyKeyRef = useRef<string>('');
   
   // Memoize the credentials key to prevent unnecessary re-renders
   const credentialsKey = useMemo(() => {
     return JSON.stringify(credentials);
   }, [JSON.stringify(credentials)]);
+
+  // Memoize the dependency values to detect changes
+  const dependencyValues = useMemo(() => {
+    if (!loadOptionsDependsOn || !Array.isArray(loadOptionsDependsOn)) {
+      return {};
+    }
+    const values: Record<string, any> = {};
+    loadOptionsDependsOn.forEach(dep => {
+      values[dep] = parameters[dep];
+    });
+    return values;
+  }, [loadOptionsDependsOn, parameters]);
+
+  const dependencyKey = useMemo(() => {
+    return JSON.stringify(dependencyValues);
+  }, [dependencyValues]);
 
   const loadOptions = async () => {
     // Prevent multiple simultaneous loads
@@ -143,13 +162,36 @@ export function DynamicAutocomplete({
     setLoadError(null);
   }, [credentialsKey, nodeType, loadOptionsMethod]);
 
+  // Reset when dependencies change
+  useEffect(() => {
+    const previousDependencyKey = previousDependencyKeyRef.current;
+    
+    // Only reset if dependency key actually changed (not on initial mount)
+    if (previousDependencyKey && previousDependencyKey !== dependencyKey) {
+      console.log('DynamicAutocomplete: Dependencies changed, resetting and clearing value');
+      hasLoadedRef.current = false;
+      loadingRef.current = false;
+      setOptions([]);
+      setLoadError(null);
+      
+      // Clear the selected value when dependencies change
+      if (loadOptionsDependsOn) {
+        console.log('DynamicAutocomplete: Clearing value due to dependency change');
+        onChange('');
+      }
+    }
+    
+    // Update the ref with current dependency key
+    previousDependencyKeyRef.current = dependencyKey;
+  }, [dependencyKey, loadOptionsDependsOn, onChange]);
+
   // Load options once when component mounts or dependencies change
   useEffect(() => {
     if (!hasLoadedRef.current && !loadingRef.current) {
-      console.log('DynamicAutocomplete: Triggering initial load');
+      console.log('DynamicAutocomplete: Triggering load due to dependency change');
       loadOptions();
     }
-  }, [credentialsKey]); // Only depend on credentialsKey
+  }, [credentialsKey, dependencyKey]); // Depend on both credentials and dependencies
 
   return (
     <div>
