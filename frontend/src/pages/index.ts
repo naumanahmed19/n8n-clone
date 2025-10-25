@@ -2,6 +2,7 @@ export * from "./CredentialsPage";
 export * from "./CustomNodesPage";
 export * from "./ExecutionDetailPage";
 export * from "./ExecutionsPage";
+export * from "./ForgotPasswordPage";
 export * from "./LoginPage";
 export * from "./ProfilePage";
 export * from "./PublicFormPage";

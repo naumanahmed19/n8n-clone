@@ -5,7 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import { validateBody } from '../middleware/validation';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { LoginSchema, RegisterSchema, ApiResponse } from '../types/api';
+import { LoginSchema, RegisterSchema, ForgotPasswordSchema, ApiResponse } from '../types/api';
+import crypto from 'crypto';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -26,7 +27,8 @@ router.get('/', (req: Request, res: Response) => {
         login: 'POST /api/auth/login',
         register: 'POST /api/auth/register',
         me: 'GET /api/auth/me',
-        refresh: 'POST /api/auth/refresh'
+        refresh: 'POST /api/auth/refresh',
+        forgotPassword: 'POST /api/auth/forgot-password'
       }
     }
   });
@@ -214,6 +216,65 @@ router.post(
       success: true,
       data: { token }
     };
+
+    res.json(response);
+  })
+);
+
+// POST /api/auth/forgot-password - Send password reset email
+router.post(
+  '/forgot-password',
+  validateBody(ForgotPasswordSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new AppError('Email is required', 400, 'MISSING_EMAIL');
+    }
+
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    // Always return success to prevent email enumeration attacks
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        message: 'If an account with that email exists, we have sent a password reset link.'
+      }
+    };
+
+    // If user doesn't exist, still return success but don't send email
+    if (!user) {
+      res.json(response);
+      return;
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Save reset token to database (you'll need to add these fields to your User model)
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetToken,
+          resetTokenExpiry
+        }
+      });
+
+      // TODO: Send email with reset link
+      // For now, we'll just log it (in production, integrate with email service)
+      console.log(`Password reset requested for ${email}`);
+      console.log(`Reset token: ${resetToken}`);
+      console.log(`Reset link: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`);
+
+    } catch (error) {
+      // If database update fails, still return success to prevent information leakage
+      console.error('Failed to save reset token:', error);
+    }
 
     res.json(response);
   })

@@ -7,6 +7,7 @@ import {
     CredentialsPage,
     CustomNodesPage,
     ExecutionsPage,
+    ForgotPasswordPage,
     LoginPage,
     ProfilePage,
     PublicFormPage,
@@ -42,6 +43,14 @@ function App() {
             element={
               <ProtectedRoute requireAuth={false}>
                 <RegisterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <ForgotPasswordPage />
               </ProtectedRoute>
             }
           />

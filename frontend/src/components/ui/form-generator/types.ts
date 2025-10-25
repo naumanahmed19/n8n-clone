@@ -41,6 +41,7 @@ export interface FormFieldConfig {
     multipleValues?: boolean;
     multipleValueButtonText?: string;
     loadOptionsMethod?: string; // Method name for dynamic options loading
+    loadOptionsDependsOn?: string[]; // Fields that this field depends on for loading options
   };
   component?: string; // Component name for custom rendering
   componentProps?: {
