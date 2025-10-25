@@ -62,7 +62,7 @@ export function ExpressionPreview({ value, nodeId }: ExpressionPreviewProps) {
   // Function to resolve expression values
   const resolveExpression = (expression: string): string => {
     try {
-      // Handle built-in n8n expressions
+      // Handle built-in nodeDrop expressions
       if (expression === '$now') {
         return new Date().toISOString()
       }

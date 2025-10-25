@@ -2,7 +2,7 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
+} from "../../../types/node.types";
 
 // Data validation rules for trigger data
 interface DataValidationRules {
@@ -209,7 +209,7 @@ export const ManualTriggerNode: NodeDefinition = {
 };
 
 // Add validation method to the node execution context
-declare module "../../types/node.types" {
+declare module "../../../types/node.types" {
   interface NodeExecutionContext {
     validateTriggerData?: (
       data: any,

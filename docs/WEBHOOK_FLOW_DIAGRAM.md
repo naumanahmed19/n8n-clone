@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive visual representation of how webhooks work in the n8n-clone system, from URL generation in the frontend to execution and persistence in the backend.
+This document provides a comprehensive visual representation of how webhooks work in the node-drop system, from URL generation in the frontend to execution and persistence in the backend.
 
 ---
 

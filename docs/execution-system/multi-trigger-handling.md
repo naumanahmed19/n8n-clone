@@ -2,7 +2,7 @@
 
 ## Overview
 
-The n8n-clone execution system supports workflows with multiple trigger nodes, allowing different entry points into the same workflow. This document describes how the system handles multiple triggers, prevents execution conflicts, and ensures proper isolation between trigger executions.
+The node-drop execution system supports workflows with multiple trigger nodes, allowing different entry points into the same workflow. This document describes how the system handles multiple triggers, prevents execution conflicts, and ensures proper isolation between trigger executions.
 
 ## Problem Statement
 

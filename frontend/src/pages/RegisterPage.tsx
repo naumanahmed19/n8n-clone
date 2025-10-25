@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Eye, EyeOff, Loader2, Workflow } from 'lucide-react'
-import { useAuthStore } from '@/stores'
+
 import { apiClient } from '@/services'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -43,7 +43,7 @@ export const RegisterPage: React.FC = () => {
       setIsLoading(true)
 
       // Use the API client to make the request
-      await apiClient.post('/api/auth/register', {
+      await apiClient.post('/auth/register', {
         email: data.email,
         password: data.password,
         firstName: data.firstName,

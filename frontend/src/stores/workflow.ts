@@ -34,8 +34,8 @@ import {
   updateWorkflowTitle,
   validateMetadata,
 } from "@/utils/workflowMetadata";
-import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
 // Import socket service types
 interface ExecutionLogEntry {
@@ -261,7 +261,7 @@ function serializeError(error: any): string | undefined {
   return String(error);
 }
 
-export const useWorkflowStore = create<WorkflowStore>()(
+export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
   devtools(
     (set, get) => ({
       // Initial state
@@ -3307,7 +3307,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
               sourceData = sourceNodeResult.data[0].main;
             } else if (sourceNodeResult.status === "skipped") {
               // For pinned mock data, the data is stored directly as the JSON payload
-              // We need to wrap it in the proper n8n data structure
+              // We need to wrap it in the proper nodeDrop data structure
               sourceData = [{ json: sourceNodeResult.data }];
             }
 

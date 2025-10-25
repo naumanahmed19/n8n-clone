@@ -13,8 +13,8 @@ import { workflowService } from '@/services'
 import type { ExecutionDetails } from '@/services/execution'
 import { executionService } from '@/services/execution'
 import { socketService } from '@/services/socket'
-import { useAuthStore, useWorkflowStore } from '@/stores'
-import { NodeType, Workflow } from '@/types'
+import { useAuthStore, useNodeTypes, useWorkflowStore } from '@/stores'
+import { Workflow } from '@/types'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -27,18 +27,14 @@ export function WorkflowEditorPage() {
     setWorkflow, 
     setLoading, 
     isLoading, 
-    canUndo,
-    canRedo,
-    undo,
-    redo,
     setExecutionMode,
     setNodeExecutionResult,
     clearExecutionState
   } = useWorkflowStore()
   const { user } = useAuthStore()
   const [error, setError] = useState<string | null>(null)
-  const [nodeTypes, setNodeTypes] = useState<NodeType[]>([])
-  const [isLoadingNodeTypes, setIsLoadingNodeTypes] = useState(true)
+  // Use global node types store instead of local state
+  const { activeNodeTypes: nodeTypes, isLoading: isLoadingNodeTypes, fetchNodeTypes } = useNodeTypes()
   const [execution, setExecution] = useState<ExecutionDetails | null>(null)
   const [isLoadingExecution, setIsLoadingExecution] = useState(false)
   
@@ -58,8 +54,16 @@ export function WorkflowEditorPage() {
 
     console.log('[WorkflowEditor] Subscribing to workflow:', id)
     
-    // Subscribe to workflow updates
-    socketService.subscribeToWorkflow(id)
+    // Subscribe to workflow updates (async)
+    const subscribeToWorkflow = async () => {
+      try {
+        await socketService.subscribeToWorkflow(id)
+      } catch (error) {
+        console.error('[WorkflowEditor] Failed to subscribe to workflow:', error)
+      }
+    }
+    
+    subscribeToWorkflow()
 
     // Listen for execution events
     const handleExecutionEvent = (event: any) => {
@@ -104,7 +108,11 @@ export function WorkflowEditorPage() {
     // Cleanup: unsubscribe and remove listeners when component unmounts or workflow changes
     return () => {
       console.log('[WorkflowEditor] Unsubscribing from workflow:', id)
-      socketService.unsubscribeFromWorkflow(id)
+      
+      // Unsubscribe from workflow (async but don't wait)
+      socketService.unsubscribeFromWorkflow(id).catch(error => {
+        console.error('[WorkflowEditor] Failed to unsubscribe from workflow:', error)
+      })
       
       // Remove event listeners
       socketService.off('execution-event', handleExecutionEvent)
@@ -114,23 +122,12 @@ export function WorkflowEditorPage() {
     }
   }, [id])
 
-  // Load node types from backend
+  // Initialize node types store
   useEffect(() => {
-    const loadNodeTypes = async () => {
-      try {
-        setIsLoadingNodeTypes(true)
-        const types = await workflowService.getNodeTypes()
-        setNodeTypes(types)
-      } catch (error) {
-        console.error('Failed to load node types:', error)
-        setError('Failed to load node types. Please refresh the page.')
-      } finally {
-        setIsLoadingNodeTypes(false)
-      }
+    if (nodeTypes.length === 0 && !isLoadingNodeTypes) {
+      fetchNodeTypes()
     }
-
-    loadNodeTypes()
-  }, [])
+  }, [nodeTypes.length, isLoadingNodeTypes, fetchNodeTypes])
 
   // Load execution data if executionId is present
   useEffect(() => {
@@ -389,10 +386,6 @@ export function WorkflowEditorPage() {
           />
         ) : (
           <WorkflowToolbar
-            canUndo={canUndo()}
-            canRedo={canRedo()}
-            onUndo={undo}
-            onRedo={redo}
             onSave={handleSave}
           />
         )}

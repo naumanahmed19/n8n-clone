@@ -10,8 +10,8 @@ import type {
   WorkflowEnvironment,
   WorkflowEnvironmentDeployment,
 } from "@/types/environment";
-import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
 interface EnvironmentStore {
   // State
@@ -23,6 +23,9 @@ interface EnvironmentStore {
   deploymentHistory: WorkflowEnvironmentDeployment[];
   isLoading: boolean;
   error: string | null;
+
+  // Private state for request deduplication
+  _loadSummariesPromise: Promise<void> | null;
 
   // Actions
   setWorkflow: (workflowId: string) => void;
@@ -77,7 +80,7 @@ interface EnvironmentStore {
   clearError: () => void;
 }
 
-export const useEnvironmentStore = create<EnvironmentStore>()(
+export const useEnvironmentStore = createWithEqualityFn<EnvironmentStore>()(
   devtools(
     (set, get) => ({
       // Initial state
@@ -89,6 +92,7 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
       deploymentHistory: [],
       isLoading: false,
       error: null,
+      _loadSummariesPromise: null,
 
       // Actions
       setWorkflow: (workflowId: string) => {
@@ -99,6 +103,7 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
           selectedEnvironment: null,
           comparison: null,
           deploymentHistory: [],
+          _loadSummariesPromise: null,
         });
       },
 
@@ -117,21 +122,36 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
       },
 
       loadSummaries: async (workflowId: string) => {
-        set({ isLoading: true, error: null });
-        try {
-          const summaries = await environmentService.getEnvironmentSummaries(
-            workflowId
-          );
-          set({ summaries: summaries || [], currentWorkflowId: workflowId });
-        } catch (error: any) {
-          console.error("[Environment Store] Failed to load summaries:", error);
-          set({
-            error: error.message || "Failed to load environment summaries",
-            summaries: [],
-          });
-        } finally {
-          set({ isLoading: false });
+        const { _loadSummariesPromise, currentWorkflowId } = get();
+
+        // If there's already a request in progress for the same workflow, return that promise
+        if (_loadSummariesPromise && currentWorkflowId === workflowId) {
+          return _loadSummariesPromise;
         }
+
+        // Create a new promise for this request
+        const loadPromise = (async () => {
+          set({ isLoading: true, error: null });
+          try {
+            const summaries = await environmentService.getEnvironmentSummaries(
+              workflowId
+            );
+            set({ summaries: summaries || [], currentWorkflowId: workflowId });
+          } catch (error: any) {
+            console.error("[Environment Store] Failed to load summaries:", error);
+            set({
+              error: error.message || "Failed to load environment summaries",
+              summaries: [],
+            });
+          } finally {
+            set({ isLoading: false, _loadSummariesPromise: null });
+          }
+        })();
+
+        // Store the promise to prevent duplicate requests
+        set({ _loadSummariesPromise: loadPromise, currentWorkflowId: workflowId });
+
+        return loadPromise;
       },
 
       selectEnvironment: (environment: EnvironmentType) => {

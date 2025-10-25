@@ -311,7 +311,7 @@ export class ExecutionHistoryService extends EventEmitter {
         };
       }
       workflowFailures[key].total++;
-      if (e.status === "ERROR" || e.status === "FAILED") {
+      if (e.status === "ERROR") {
         workflowFailures[key].failures++;
       }
     });
@@ -378,7 +378,16 @@ export class ExecutionHistoryService extends EventEmitter {
     const flowExecutionState =
       execution.flowExecutionStates.length > 0
         ? execution.flowExecutionStates.reduce((state, fes) => {
-            state[fes.nodeId] = fes.state;
+            state[fes.nodeId] = {
+              status: fes.status,
+              progress: fes.progress,
+              inputData: fes.inputData,
+              outputData: fes.outputData,
+              error: fes.error,
+              startTime: fes.startTime,
+              endTime: fes.endTime,
+              duration: fes.duration
+            };
             return state;
           }, {} as Record<string, any>)
         : undefined;

@@ -15,7 +15,7 @@ async function testOriginalWorkflow() {
     );
   }
 
-  console.log("Testing original workflow from user's request...");
+
 
   const workflow = {
     title: "New Workflow",
@@ -89,8 +89,6 @@ async function testOriginalWorkflow() {
   };
 
   try {
-    // Create the workflow
-    console.log("Creating workflow...");
     const createResponse = await fetch("http://localhost:4000/api/workflows", {
       method: "POST",
       headers: {
@@ -101,17 +99,13 @@ async function testOriginalWorkflow() {
     });
 
     const createResult = await createResponse.json();
-    console.log("Create result:", JSON.stringify(createResult, null, 2));
 
     if (!createResult.success) {
       throw new Error("Failed to create workflow");
     }
 
     const workflowId = createResult.data.id;
-    console.log("Workflow ID:", workflowId);
 
-    // Execute the workflow
-    console.log("Executing workflow...");
     const executeResponse = await fetch(
       "http://localhost:4000/api/executions",
       {
@@ -128,9 +122,8 @@ async function testOriginalWorkflow() {
     );
 
     const executeResult = await executeResponse.json();
-    console.log("Execute result:", JSON.stringify(executeResult, null, 2));
   } catch (error) {
-    console.error("Error:", error.message);
+    // Test failed
   }
 }
 

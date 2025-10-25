@@ -710,7 +710,7 @@ const SlackNotificationNode: NodeDefinition = {
       displayName: 'Username',
       name: 'username',
       type: 'string',
-      default: 'n8n Bot',
+      default: 'nodeDrop Bot',
       description: 'Bot username to display'
     },
     {

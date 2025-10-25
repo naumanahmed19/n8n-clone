@@ -1,4 +1,6 @@
-export const TestUploadNode = {
+import { NodeDefinition, NodeInputData, NodeOutputData, NodeExecutionContext } from "../../types/node.types";
+
+export const TestUploadNode: NodeDefinition = {
   type: "test-upload",
   displayName: "Test Upload Node",
   name: "testUpload",
@@ -20,13 +22,17 @@ export const TestUploadNode = {
       description: "Message to display",
     },
   ],
-  execute: async (inputData, properties) => {
-    return {
-      success: true,
-      data: {
-        ...inputData,
-        message: properties.message || "Hello from uploaded node!"
-      },
-    };
+  execute: async function (this: NodeExecutionContext, inputData: NodeInputData): Promise<NodeOutputData[]> {
+    const message = this.getNodeParameter("message") as string;
+    const items = inputData.main?.[0] || [];
+    
+    const results = items.map((item: any) => ({
+      json: {
+        ...item.json,
+        message: message || "Hello from uploaded node!"
+      }
+    }));
+
+    return [{ main: results }];
   },
 };

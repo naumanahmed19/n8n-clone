@@ -39,6 +39,7 @@ export function EdgeButton({
   const handleAddClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+      e.preventDefault();
       
       // Open the dialog with insertion context
       if (source && target) {

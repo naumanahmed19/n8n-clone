@@ -5,10 +5,14 @@ export class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
     
-    if (response.success && response.data.token) {
+    if (response.success && response.data?.token) {
       apiClient.setToken(response.data.token)
       // Note: Backend doesn't return refreshToken yet, so we'll skip storing it for now
       // localStorage.setItem('refresh_token', response.data.refreshToken)
+    }
+    
+    if (!response.data) {
+      throw new Error('No data received from login response')
     }
     
     return response.data
@@ -17,10 +21,14 @@ export class AuthService {
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/register', credentials)
     
-    if (response.success && response.data.token) {
+    if (response.success && response.data?.token) {
       apiClient.setToken(response.data.token)
       // Note: Backend doesn't return refreshToken yet, so we'll skip storing it for now
       // localStorage.setItem('refresh_token', response.data.refreshToken)
+    }
+    
+    if (!response.data) {
+      throw new Error('No data received from register response')
     }
     
     return response.data
@@ -39,6 +47,11 @@ export class AuthService {
 
   async getCurrentUser(): Promise<User> {
     const response = await apiClient.get<User>('/auth/me')
+    
+    if (!response.data) {
+      throw new Error('No user data received')
+    }
+    
     return response.data
   }
 
@@ -52,9 +65,15 @@ export class AuthService {
       refreshToken,
     })
 
-    if (response.success && response.data.token) {
+    if (response.success && response.data?.token) {
       apiClient.setToken(response.data.token)
-      localStorage.setItem('refresh_token', response.data.refreshToken)
+      if (response.data.refreshToken) {
+        localStorage.setItem('refresh_token', response.data.refreshToken)
+      }
+    }
+
+    if (!response.data) {
+      throw new Error('No data received from refresh token response')
     }
 
     return response.data

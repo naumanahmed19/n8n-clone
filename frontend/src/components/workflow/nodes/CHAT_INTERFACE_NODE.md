@@ -255,4 +255,4 @@ ChatInterfaceNode/
 
 ## License
 
-This component is part of the n8n-clone project.
+This component is part of the node-drop project.

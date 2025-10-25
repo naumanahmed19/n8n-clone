@@ -12,15 +12,15 @@ export function MetricsTabContent({ executionMetrics }: MetricsTabContentProps) 
           <h4 className="font-medium text-foreground">Execution Metrics</h4>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-muted/50 p-3 rounded border border-border">
-              <div className="text-sm text-muted-foreground">Total Duration</div>
+              <div className="text-sm text-muted-foreground">Average Duration</div>
               <div className="text-lg font-semibold text-foreground">
-                {executionMetrics.totalDuration ? `${executionMetrics.totalDuration}ms` : 'N/A'}
+                {executionMetrics.averageNodeDuration ? `${executionMetrics.averageNodeDuration}ms` : 'N/A'}
               </div>
             </div>
             <div className="bg-muted/50 p-3 rounded border border-border">
-              <div className="text-sm text-muted-foreground">Nodes Executed</div>
+              <div className="text-sm text-muted-foreground">Completed Nodes</div>
               <div className="text-lg font-semibold text-foreground">
-                {executionMetrics.nodesExecuted || 0}
+                {executionMetrics.completedNodes || 0}
               </div>
             </div>
           </div>

@@ -21,10 +21,13 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuthStore } from "@/stores"
 import {
+  Activity,
   BadgeCheck,
   Bell,
   ChevronsUpDown,
   CreditCard,
+  Database,
+  Key,
   LogOut,
   Sparkles,
 } from "lucide-react"
@@ -109,6 +112,21 @@ export function NavUser({
               <DropdownMenuItem>
                 <Sparkles />
                 Upgrade to Pro
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => navigate('/executions')}>
+                <Activity />
+                Executions
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/credentials')}>
+                <Key />
+                Credentials
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/custom-nodes')}>
+                <Database />
+                Custom Nodes
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

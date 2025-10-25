@@ -4,17 +4,17 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
-import { getCustomComponent } from './CustomComponentRegistry'
+import { getCustomComponent } from './customComponentRegistry'
 import { DynamicAutocomplete } from './DynamicAutocomplete'
 import { ExpressionInput } from './ExpressionInput'
 import { RepeatingField } from './RepeatingField'
@@ -147,6 +147,7 @@ export function FieldRenderer({
     // Get nested fields from componentProps
     const nestedFields = field.componentProps?.fields || []
     const buttonText = field.typeOptions?.multipleValueButtonText || 'Add Item'
+    const titleField = field.componentProps?.titleField // Get titleField from componentProps
     
     return (
       <RepeatingField
@@ -155,14 +156,10 @@ export function FieldRenderer({
         value={Array.isArray(value) ? value : []}
         onChange={handleChange}
         addButtonText={buttonText}
+        titleField={titleField}
         disabled={disabled}
         minItems={field.validation?.min}
         maxItems={field.validation?.max}
-        itemHeaderRenderer={(item, index) => {
-          // Try to show meaningful header from outputName or first field
-          const displayValue = item.values?.outputName || item.values?.name || `Item ${index + 1}`
-          return <span>{displayValue}</span>
-        }}
       />
     )
   }
@@ -382,6 +379,7 @@ export function FieldRenderer({
           <DynamicAutocomplete
             nodeType={nodeType}
             loadOptionsMethod={loadOptionsMethod}
+            loadOptionsDependsOn={field.typeOptions?.loadOptionsDependsOn}
             value={String(value || '')}
             onChange={handleChange}
             placeholder={field.placeholder}

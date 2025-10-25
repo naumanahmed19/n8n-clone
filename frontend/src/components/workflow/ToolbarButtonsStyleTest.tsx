@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ExecuteToolbarButton } from './ExecuteToolbarButton'
 import { DisableToggleToolbarButton } from './DisableToggleToolbarButton'
 
@@ -12,16 +12,16 @@ export function ToolbarButtonsStyleTest() {
   const [isDisabled, setIsDisabled] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark' | 'high-contrast'>('light')
 
-  const handleExecute = (nodeId: string) => {
+  const handleExecute = (_nodeId: string) => {
     setIsExecuting(true)
     setHasError(false)
     setHasSuccess(false)
-    
+
     // Simulate execution
     setTimeout(() => {
       setIsExecuting(false)
       setHasSuccess(true)
-      
+
       // Clear success after 3 seconds
       setTimeout(() => {
         setHasSuccess(false)
@@ -33,14 +33,14 @@ export function ToolbarButtonsStyleTest() {
     setIsExecuting(false)
     setHasSuccess(false)
     setHasError(true)
-    
+
     // Clear error after 3 seconds
     setTimeout(() => {
       setHasError(false)
     }, 3000)
   }
 
-  const handleToggleDisabled = (nodeId: string, disabled: boolean) => {
+  const handleToggleDisabled = (_nodeId: string, disabled: boolean) => {
     setIsDisabled(disabled)
   }
 
@@ -66,7 +66,7 @@ export function ToolbarButtonsStyleTest() {
     <div className="p-8 space-y-8">
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Toolbar Button Style Test</h1>
-        
+
         {/* Theme Controls */}
         <div className="flex gap-2">
           <button
@@ -123,7 +123,7 @@ export function ToolbarButtonsStyleTest() {
         <p className="text-sm text-gray-600">
           Testing toolbar buttons against various node background colors to ensure proper contrast and visibility.
         </p>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {nodeBackgrounds.map((bg) => (
             <div key={bg.name} className="space-y-2">
@@ -133,7 +133,7 @@ export function ToolbarButtonsStyleTest() {
                 style={{ backgroundColor: bg.color, color: bg.textColor }}
               >
                 <div className="text-sm font-medium mb-2">Sample Node</div>
-                
+
                 {/* Toolbar buttons positioned like they would be in ReactFlow */}
                 <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 flex gap-1">
                   <ExecuteToolbarButton
@@ -170,7 +170,7 @@ export function ToolbarButtonsStyleTest() {
                 nodeType="Manual Trigger"
                 isExecuting={false}
                 canExecute={true}
-                onExecute={() => {}}
+                onExecute={() => { }}
               />
               <span className="text-sm">Idle</span>
             </div>
@@ -180,7 +180,7 @@ export function ToolbarButtonsStyleTest() {
                 nodeType="Manual Trigger"
                 isExecuting={true}
                 canExecute={true}
-                onExecute={() => {}}
+                onExecute={() => { }}
               />
               <span className="text-sm">Executing</span>
             </div>
@@ -191,7 +191,7 @@ export function ToolbarButtonsStyleTest() {
                 isExecuting={false}
                 canExecute={true}
                 hasSuccess={true}
-                onExecute={() => {}}
+                onExecute={() => { }}
               />
               <span className="text-sm">Success</span>
             </div>
@@ -202,7 +202,7 @@ export function ToolbarButtonsStyleTest() {
                 isExecuting={false}
                 canExecute={true}
                 hasError={true}
-                onExecute={() => {}}
+                onExecute={() => { }}
               />
               <span className="text-sm">Error</span>
             </div>
@@ -212,7 +212,7 @@ export function ToolbarButtonsStyleTest() {
                 nodeType="Manual Trigger"
                 isExecuting={false}
                 canExecute={false}
-                onExecute={() => {}}
+                onExecute={() => { }}
               />
               <span className="text-sm">Disabled</span>
             </div>
@@ -225,7 +225,7 @@ export function ToolbarButtonsStyleTest() {
                 nodeId="enabled"
                 nodeLabel="Test Node"
                 disabled={false}
-                onToggle={() => {}}
+                onToggle={() => { }}
               />
               <span className="text-sm">Enabled</span>
             </div>
@@ -234,7 +234,7 @@ export function ToolbarButtonsStyleTest() {
                 nodeId="disabled"
                 nodeLabel="Test Node"
                 disabled={true}
-                onToggle={() => {}}
+                onToggle={() => { }}
               />
               <span className="text-sm">Disabled</span>
             </div>

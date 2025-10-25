@@ -116,32 +116,319 @@ export class NodeMarketplace {
    */
   async searchNodes(filters: NodeSearchFilters = {}): Promise<NodeSearchResult> {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (filters.query) queryParams.set('q', filters.query);
-      if (filters.category) queryParams.set('category', filters.category);
-      if (filters.author) queryParams.set('author', filters.author);
-      if (filters.verified !== undefined) queryParams.set('verified', filters.verified.toString());
-      if (filters.minRating) queryParams.set('minRating', filters.minRating.toString());
-      if (filters.tags) queryParams.set('tags', filters.tags.join(','));
-      if (filters.sortBy) queryParams.set('sortBy', filters.sortBy);
-      if (filters.sortOrder) queryParams.set('sortOrder', filters.sortOrder);
-      if (filters.limit) queryParams.set('limit', filters.limit.toString());
-      if (filters.offset) queryParams.set('offset', filters.offset.toString());
+      // Mock marketplace data
+      const mockPackages: NodePackageMetadata[] = [
+        {
+          id: 'slack-advanced',
+          name: 'nd-nodes-slack-advanced',
+          version: '1.2.3',
+          description: 'Advanced Slack integration with threads, reactions, and file uploads',
+          author: 'SlackDevs',
+          keywords: ['communication', 'slack', 'messaging', 'notifications'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-slack-advanced/-/nd-nodes-slack-advanced-1.2.3.tgz',
+          homepage: 'https://github.com/slackdevs/nd-nodes-slack-advanced',
+          repository: 'https://github.com/slackdevs/nd-nodes-slack-advanced',
+          license: 'MIT',
+          createdAt: '2024-08-15T10:30:00Z',
+          updatedAt: '2024-09-20T14:45:00Z',
+          downloads: 15420,
+          rating: 4.8,
+          ratingCount: 127,
+          verified: true,
+          screenshots: [],
+          readme: '# Slack Advanced Node\n\nAdvanced Slack integration for nodeDrop with support for threads, reactions, and file uploads.',
+          changelog: '## v1.2.3\n- Fixed thread reply issues\n- Added reaction support',
+          dependencies: { 'axios': '^1.0.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['SlackAdvanced'],
+          credentialTypes: ['SlackAdvancedApi']
+        },
+        {
+          id: 'mongodb-extended',
+          name: 'nd-nodes-mongodb-extended',
+          version: '2.1.0',
+          description: 'Enhanced MongoDB operations with aggregation pipelines and advanced queries',
+          author: 'DatabaseExperts',
+          keywords: ['database', 'mongodb', 'aggregation', 'nosql'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-mongodb-extended/-/nd-nodes-mongodb-extended-2.1.0.tgz',
+          homepage: 'https://github.com/dbexperts/nd-nodes-mongodb-extended',
+          repository: 'https://github.com/dbexperts/nd-nodes-mongodb-extended',
+          license: 'Apache-2.0',
+          createdAt: '2024-07-10T08:15:00Z',
+          updatedAt: '2024-09-18T11:20:00Z',
+          downloads: 8930,
+          rating: 4.6,
+          ratingCount: 89,
+          verified: true,
+          screenshots: [],
+          readme: '# MongoDB Extended Node\n\nEnhanced MongoDB operations for nodeDrop with aggregation pipeline support.',
+          changelog: '## v2.1.0\n- Added aggregation pipeline support\n- Improved error handling',
+          dependencies: { 'mongodb': '^5.0.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['MongoDBExtended'],
+          credentialTypes: ['MongoDBExtended']
+        },
+        {
+          id: 'email-templates-pro',
+          name: 'nd-nodes-email-templates-pro',
+          version: '1.5.2',
+          description: 'Professional email templates with dynamic content and styling',
+          author: 'EmailMasters',
+          keywords: ['communication', 'email', 'templates', 'html'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-email-templates-pro/-/nd-nodes-email-templates-pro-1.5.2.tgz',
+          homepage: 'https://github.com/emailmasters/nd-nodes-email-templates-pro',
+          repository: 'https://github.com/emailmasters/nd-nodes-email-templates-pro',
+          license: 'MIT',
+          createdAt: '2024-06-20T16:45:00Z',
+          updatedAt: '2024-09-15T09:30:00Z',
+          downloads: 12350,
+          rating: 4.9,
+          ratingCount: 156,
+          verified: false,
+          screenshots: [],
+          readme: '# Email Templates Pro\n\nProfessional email templates with dynamic content for nodeDrop.',
+          changelog: '## v1.5.2\n- Added new template designs\n- Fixed CSS rendering issues',
+          dependencies: { 'handlebars': '^4.7.0', 'mjml': '^4.14.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['EmailTemplatesPro'],
+          credentialTypes: []
+        },
+        {
+          id: 'data-transformer',
+          name: 'nd-nodes-data-transformer',
+          version: '3.0.1',
+          description: 'Advanced data transformation with custom functions and filters',
+          author: 'DataWizards',
+          keywords: ['transform', 'data', 'filter', 'manipulation'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-data-transformer/-/nd-nodes-data-transformer-3.0.1.tgz',
+          homepage: 'https://github.com/datawizards/nd-nodes-data-transformer',
+          repository: 'https://github.com/datawizards/nd-nodes-data-transformer',
+          license: 'MIT',
+          createdAt: '2024-05-05T12:00:00Z',
+          updatedAt: '2024-09-22T15:15:00Z',
+          downloads: 25670,
+          rating: 4.7,
+          ratingCount: 203,
+          verified: true,
+          screenshots: [],
+          readme: '# Data Transformer Node\n\nAdvanced data transformation capabilities for nodeDrop workflows.',
+          changelog: '## v3.0.1\n- Performance improvements\n- Added new transformation functions',
+          dependencies: { 'lodash': '^4.17.0', 'jsonpath': '^1.1.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['DataTransformer'],
+          credentialTypes: []
+        },
+        {
+          id: 'api-gateway',
+          name: 'nd-nodes-api-gateway',
+          version: '1.8.4',
+          description: 'Comprehensive API gateway with rate limiting and authentication',
+          author: 'APIDevs',
+          keywords: ['api', 'gateway', 'auth', 'rate-limiting'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-api-gateway/-/nd-nodes-api-gateway-1.8.4.tgz',
+          homepage: 'https://github.com/apidevs/nd-nodes-api-gateway',
+          repository: 'https://github.com/apidevs/nd-nodes-api-gateway',
+          license: 'MIT',
+          createdAt: '2024-04-12T14:20:00Z',
+          updatedAt: '2024-09-10T10:45:00Z',
+          downloads: 7890,
+          rating: 4.4,
+          ratingCount: 67,
+          verified: true,
+          screenshots: [],
+          readme: '# API Gateway Node\n\nComprehensive API gateway functionality for nodeDrop.',
+          changelog: '## v1.8.4\n- Fixed rate limiting bugs\n- Improved authentication handling',
+          dependencies: { 'express-rate-limit': '^6.0.0', 'jsonwebtoken': '^9.0.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['APIGateway'],
+          credentialTypes: ['APIGatewayAuth']
+        },
+        {
+          id: 'webhook-enhanced',
+          name: 'nd-nodes-webhook-enhanced',
+          version: '2.3.1',
+          description: 'Enhanced webhook node with advanced filtering and validation',
+          author: 'WebhookPro',
+          keywords: ['trigger', 'webhook', 'http', 'validation'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-webhook-enhanced/-/nd-nodes-webhook-enhanced-2.3.1.tgz',
+          homepage: 'https://github.com/webhookpro/nd-nodes-webhook-enhanced',
+          repository: 'https://github.com/webhookpro/nd-nodes-webhook-enhanced',
+          license: 'MIT',
+          createdAt: '2024-03-18T09:30:00Z',
+          updatedAt: '2024-09-25T13:20:00Z',
+          downloads: 18750,
+          rating: 4.5,
+          ratingCount: 142,
+          verified: true,
+          screenshots: [],
+          readme: '# Webhook Enhanced Node\n\nAdvanced webhook functionality with filtering and validation.',
+          changelog: '## v2.3.1\n- Added payload validation\n- Improved error handling',
+          dependencies: { 'joi': '^17.0.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['WebhookEnhanced'],
+          credentialTypes: []
+        },
+        {
+          id: 'csv-processor',
+          name: 'nd-nodes-csv-processor',
+          version: '1.4.0',
+          description: 'Advanced CSV processing with custom delimiters and encoding support',
+          author: 'CSVExperts',
+          keywords: ['transform', 'csv', 'data', 'processing'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-csv-processor/-/nd-nodes-csv-processor-1.4.0.tgz',
+          homepage: 'https://github.com/csvexperts/nd-nodes-csv-processor',
+          repository: 'https://github.com/csvexperts/nd-nodes-csv-processor',
+          license: 'MIT',
+          createdAt: '2024-02-14T11:15:00Z',
+          updatedAt: '2024-09-12T16:40:00Z',
+          downloads: 9340,
+          rating: 4.3,
+          ratingCount: 78,
+          verified: false,
+          screenshots: [],
+          readme: '# CSV Processor Node\n\nAdvanced CSV processing capabilities for nodeDrop.',
+          changelog: '## v1.4.0\n- Added custom delimiter support\n- Improved encoding detection',
+          dependencies: { 'csv-parser': '^3.0.0', 'iconv-lite': '^0.6.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['CSVProcessor'],
+          credentialTypes: []
+        },
+        {
+          id: 'scheduler-pro',
+          name: 'nd-nodes-scheduler-pro',
+          version: '2.0.5',
+          description: 'Professional scheduling with cron expressions and timezone support',
+          author: 'ScheduleMasters',
+          keywords: ['trigger', 'schedule', 'cron', 'timezone'],
+          downloadUrl: 'https://registry.npmjs.org/nd-nodes-scheduler-pro/-/nd-nodes-scheduler-pro-2.0.5.tgz',
+          homepage: 'https://github.com/schedulemasters/nd-nodes-scheduler-pro',
+          repository: 'https://github.com/schedulemasters/nd-nodes-scheduler-pro',
+          license: 'MIT',
+          createdAt: '2024-01-20T07:45:00Z',
+          updatedAt: '2024-09-08T12:30:00Z',
+          downloads: 14200,
+          rating: 4.6,
+          ratingCount: 118,
+          verified: true,
+          screenshots: [],
+          readme: '# Scheduler Pro Node\n\nProfessional scheduling capabilities for nodeDrop workflows.',
+          changelog: '## v2.0.5\n- Fixed timezone handling\n- Added new cron presets',
+          dependencies: { 'node-cron': '^3.0.0', 'moment-timezone': '^0.5.0' },
+          peerDependencies: {},
+          engines: { 'node': '>=16.0.0' },
+          nodeTypes: ['SchedulerPro'],
+          credentialTypes: []
+        }
+      ];
 
-      const url = `${this.config.registryUrl}/search?${queryParams.toString()}`;
-      const response = await this.makeRequest(url, 'GET');
+      // Apply filters
+      let filteredPackages = [...mockPackages];
 
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      // Filter by search query
+      if (filters.query) {
+        const query = filters.query.toLowerCase();
+        filteredPackages = filteredPackages.filter(pkg =>
+          pkg.name.toLowerCase().includes(query) ||
+          pkg.description.toLowerCase().includes(query) ||
+          pkg.author.toLowerCase().includes(query) ||
+          pkg.keywords.some(keyword => keyword.toLowerCase().includes(query))
+        );
       }
 
-      const data = await response.json();
-      
+      // Filter by category (using first keyword as category)
+      if (filters.category) {
+        const category = filters.category.toLowerCase();
+        filteredPackages = filteredPackages.filter(pkg =>
+          pkg.keywords.length > 0 && pkg.keywords[0].toLowerCase() === category
+        );
+      }
+
+      // Filter by author
+      if (filters.author) {
+        filteredPackages = filteredPackages.filter(pkg =>
+          pkg.author.toLowerCase().includes(filters.author!.toLowerCase())
+        );
+      }
+
+      // Filter by verified status
+      if (filters.verified !== undefined) {
+        filteredPackages = filteredPackages.filter(pkg => pkg.verified === filters.verified);
+      }
+
+      // Filter by minimum rating
+      if (filters.minRating) {
+        filteredPackages = filteredPackages.filter(pkg => pkg.rating >= filters.minRating!);
+      }
+
+      // Filter by tags
+      if (filters.tags && filters.tags.length > 0) {
+        filteredPackages = filteredPackages.filter(pkg =>
+          filters.tags!.some(tag => 
+            pkg.keywords.some(keyword => keyword.toLowerCase().includes(tag.toLowerCase()))
+          )
+        );
+      }
+
+      // Sort packages
+      if (filters.sortBy) {
+        filteredPackages.sort((a, b) => {
+          let aValue: any, bValue: any;
+          
+          switch (filters.sortBy) {
+            case 'downloads':
+              aValue = a.downloads;
+              bValue = b.downloads;
+              break;
+            case 'rating':
+              aValue = a.rating;
+              bValue = b.rating;
+              break;
+            case 'updated':
+              aValue = new Date(a.updatedAt).getTime();
+              bValue = new Date(b.updatedAt).getTime();
+              break;
+            case 'created':
+              aValue = new Date(a.createdAt).getTime();
+              bValue = new Date(b.createdAt).getTime();
+              break;
+            default: // relevance
+              aValue = a.downloads * a.rating;
+              bValue = b.downloads * b.rating;
+          }
+
+          if (filters.sortOrder === 'asc') {
+            return aValue - bValue;
+          } else {
+            return bValue - aValue;
+          }
+        });
+      }
+
+      // Apply pagination
+      const offset = filters.offset || 0;
+      const limit = filters.limit || 20;
+      const total = filteredPackages.length;
+      const paginatedPackages = filteredPackages.slice(offset, offset + limit);
+      const hasMore = offset + limit < total;
+
+      logger.info('Marketplace search completed', { 
+        query: filters.query, 
+        total, 
+        returned: paginatedPackages.length,
+        hasMore 
+      });
+
       return {
-        packages: data.packages || [],
-        total: data.total || 0,
-        hasMore: data.hasMore || false
+        packages: paginatedPackages,
+        total,
+        hasMore
       };
     } catch (error) {
       logger.error('Failed to search nodes', { error, filters });
@@ -154,17 +441,15 @@ export class NodeMarketplace {
    */
   async getNodeInfo(packageId: string): Promise<NodePackageMetadata> {
     try {
-      const url = `${this.config.registryUrl}/packages/${encodeURIComponent(packageId)}`;
-      const response = await this.makeRequest(url, 'GET');
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error(`Package not found: ${packageId}`);
-        }
-        throw new Error(`Failed to get package info: ${response.status} ${response.statusText}`);
+      // Get all packages from search and find the specific one
+      const searchResult = await this.searchNodes({});
+      const packageInfo = searchResult.packages.find(pkg => pkg.id === packageId);
+      
+      if (!packageInfo) {
+        throw new Error(`Package not found: ${packageId}`);
       }
 
-      const packageInfo = await response.json();
+      logger.info('Retrieved package info', { packageId, name: packageInfo.name });
       return packageInfo;
     } catch (error) {
       logger.error('Failed to get node info', { error, packageId });
@@ -194,10 +479,7 @@ export class NodeMarketplace {
         const uploadResult = await this.uploadPackage(archivePath, options);
         
         if (uploadResult.success) {
-          logger.info('Package published successfully', { 
-            packageId: uploadResult.packageId,
-            version: uploadResult.version 
-          });
+
         }
 
         return uploadResult;
@@ -248,7 +530,13 @@ export class NodeMarketplace {
         }
       }
 
-      // Download package
+      // Simulate installation process
+      logger.info('Starting package installation', { packageId, version: versionToInstall });
+      
+      // Simulate download delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Download package (mock implementation)
       const downloadResult = await this.downloadPackage(packageInfo, versionToInstall, installPath);
       
       if (!downloadResult.success) {
@@ -266,9 +554,9 @@ export class NodeMarketplace {
         }
       }
 
-      logger.info('Package installed successfully', { 
-        packageId,
-        version: versionToInstall,
+      logger.info('Package installation completed', { 
+        packageId, 
+        version: versionToInstall, 
         packagePath: downloadResult.packagePath 
       });
 
@@ -324,11 +612,7 @@ export class NodeMarketplace {
         };
       }
 
-      logger.info('Package updated successfully', { 
-        packageId,
-        oldVersion: currentVersion,
-        newVersion: latestVersion 
-      });
+
 
       return {
         success: true,
@@ -402,7 +686,7 @@ export class NodeMarketplace {
       // Remove package directory
       await this.removeDirectory(packagePath);
       
-      logger.info('Package uninstalled successfully', { packageId });
+
     } catch (error) {
       logger.error('Failed to uninstall node', { error, packageId });
       throw new Error(`Uninstall failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -415,7 +699,7 @@ export class NodeMarketplace {
   private async makeRequest(url: string, method: string, body?: any): Promise<Response> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'User-Agent': 'n8n-node-cli/1.0.0'
+      'User-Agent': 'nd-node-cli/1.0.0'
     };
 
     if (this.config.apiKey) {
@@ -427,14 +711,22 @@ export class NodeMarketplace {
     for (let attempt = 1; attempt <= this.config.retries!; attempt++) {
       try {
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: body ? JSON.stringify(body) : undefined,
-          timeout: this.config.timeout
-        });
-
-        return response as any; // Type assertion for compatibility
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+        
+        try {
+          const response = await fetch(url, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          return response as any; // Type assertion for compatibility
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
         
@@ -549,7 +841,7 @@ export class NodeMarketplace {
         throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = await response.json() as any;
       
       return {
         success: true,

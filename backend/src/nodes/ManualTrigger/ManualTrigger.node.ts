@@ -112,11 +112,11 @@ export const ManualTriggerNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    const description = this.getNodeParameter("description") as string;
-    const allowCustomData = this.getNodeParameter("allowCustomData") as boolean;
-    const defaultData = this.getNodeParameter("defaultData") as string;
-    const validateData = this.getNodeParameter("validateData") as boolean;
-    const maxDataSize = this.getNodeParameter("maxDataSize") as number;
+    const description = await this.getNodeParameter("description") as string;
+    const allowCustomData = await this.getNodeParameter("allowCustomData") as boolean;
+    const defaultData = await this.getNodeParameter("defaultData") as string;
+    const validateData = await this.getNodeParameter("validateData") as boolean;
+    const maxDataSize = await this.getNodeParameter("maxDataSize") as number;
 
     // Create trigger metadata
     const metadata: TriggerMetadata = {

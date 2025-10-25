@@ -34,62 +34,20 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
     {
       name: "googleSheetsOAuth2",
       displayName: "Google Sheets OAuth2",
-      documentationUrl:
-        "https://developers.google.com/sheets/api/guides/authorizing",
-      properties: [
-        {
-          displayName: "Client ID",
-          name: "clientId",
-          type: "string",
-          required: true,
-          default: "",
-          description: "OAuth2 Client ID from Google Cloud Console",
-          placeholder: "123456789-abc123.apps.googleusercontent.com",
-        },
-        {
-          displayName: "Client Secret",
-          name: "clientSecret",
-          type: "string",
-          required: true,
-          default: "",
-          description: "OAuth2 Client Secret from Google Cloud Console",
-          placeholder: "GOCSPX-***",
-        },
-        {
-          displayName: "Access Token",
-          name: "accessToken",
-          type: "string",
-          required: true,
-          default: "",
-          description: "OAuth2 Access Token (obtained after authorization)",
-        },
-        {
-          displayName: "Refresh Token",
-          name: "refreshToken",
-          type: "string",
-          required: false,
-          default: "",
-          description: "OAuth2 Refresh Token (used to get new access tokens)",
-        },
-      ],
-      authenticate: {
-        type: "generic",
-        properties: {
-          headers: {
-            Authorization: "=Bearer {{$credentials.accessToken}}",
-          },
-        },
-      },
+      properties: [],
     },
   ],
-  credentialSelector: {
-    displayName: "Google Sheets Credentials",
-    description: "Authentication for accessing Google Sheets",
-    placeholder: "Select credentials...",
-    allowedTypes: ["googleSheetsOAuth2"],
-    required: true,
-  },
   properties: [
+    {
+      displayName: "Authentication",
+      name: "authentication",
+      type: "credential",
+      required: true,
+      default: "",
+      description: "Select Google Sheets credentials to connect to the API",
+      placeholder: "Select credentials...",
+      allowedTypes: ["googleSheetsOAuth2"],
+    },
     {
       displayName: "Spreadsheet",
       name: "spreadsheetId",
@@ -459,15 +417,14 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
     const spreadsheetId = this.getNodeParameter("spreadsheetId") as string;
     const sheetName = this.getNodeParameter("sheetName") as string;
     const triggerOn = this.getNodeParameter("triggerOn") as string;
-    const range = this.getNodeParameter("range") as string;
     const hasHeader = this.getNodeParameter("hasHeader") as boolean;
     const includeMetadata = this.getNodeParameter("includeMetadata") as boolean;
-    const dataFormat = this.getNodeParameter("dataFormat") as string;
-    const typeConversion = this.getNodeParameter("typeConversion") as boolean;
-    const dateFormat = this.getNodeParameter("dateFormat") as string;
-    const emptyCellHandling = this.getNodeParameter(
-      "emptyCellHandling"
-    ) as string;
+
+    // Log credentials for debugging (remove in production)
+    this.logger?.info("Google Sheets credentials loaded", {
+      hasAccessToken: !!credentials.accessToken,
+      clientId: credentials.clientId ? "***" : "missing",
+    });
 
     // The trigger data is passed through the execution context
     const triggerData = inputData.main?.[0]?.[0] || {};

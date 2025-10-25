@@ -1,6 +1,6 @@
 # Dual Execution Modes
 
-The n8n-clone system implements two distinct execution modes to accommodate different use cases and user needs.
+The node-drop system implements two distinct execution modes to accommodate different use cases and user needs.
 
 ## Overview
 

@@ -1,4 +1,4 @@
-import { Workflow, WorkflowImportExport } from '@/types'
+import { Workflow } from '@/types'
 import { migrateMetadata, validateMetadata } from '@/utils/workflowMetadata'
 
 /**

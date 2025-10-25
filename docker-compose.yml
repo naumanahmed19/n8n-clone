@@ -1,11 +1,11 @@
-version: '3.8'
+
 
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: n8n-clone-postgres
+    container_name: node-drop-postgres
     environment:
-      POSTGRES_DB: n8n_clone
+      POSTGRES_DB: node_drop
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
@@ -16,10 +16,12 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
+    networks:
+      - node-drop-network
 
   redis:
     image: redis:7-alpine
-    container_name: n8n-clone-redis
+    container_name: node-drop-redis
     volumes:
       - redis_data:/data
     healthcheck:
@@ -28,20 +30,28 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
+    networks:
+      - node-drop-network
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: n8n-clone-backend
-    ports:
-      - "4000:4000"
+    container_name: node-drop-backend
+    expose:
+      - "4000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/n8n_clone
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/node_drop
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - PORT=4000
+    volumes:
+      - custom_nodes_data:/app/custom-nodes
+      - temp_data:/app/temp
+      - logs_data:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,21 +63,33 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    user: "1001:1001"
+    networks:
+      - node-drop-network
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: n8n-clone-frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://backend:4000
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:4000}
+    container_name: node-drop-frontend
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - node-drop-network
 
 volumes:
   postgres_data:
   redis_data:
+  custom_nodes_data:
+  temp_data:
+  logs_data:
+
+networks:
+  node-drop-network:
+    driver: bridge

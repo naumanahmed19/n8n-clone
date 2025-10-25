@@ -15,8 +15,8 @@ import {
 const program = new Command();
 
 program
-  .name("n8n-node-cli")
-  .description("CLI tool for n8n custom node development")
+  .name("nd-node-cli")
+  .description("CLI tool for nodeDrop custom node development")
   .version("1.0.0");
 
 // Create command

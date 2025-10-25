@@ -9,6 +9,7 @@ import {
     ExecutionsPage,
     LoginPage,
     ProfilePage,
+    PublicFormPage,
     RegisterPage,
     WorkflowEditorPage
 } from '@/pages'
@@ -18,7 +19,12 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-d
 function App() {
   return (
     <>
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <ThemeProvider>
           <SidebarContextProvider>
           <Routes>
@@ -39,6 +45,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* Public form route - no authentication required */}
+          <Route path="/form/:formId" element={<PublicFormPage />} />
 
           {/* OAuth callback route - requires auth */}
           <Route

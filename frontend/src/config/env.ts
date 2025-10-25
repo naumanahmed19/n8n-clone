@@ -4,7 +4,7 @@ export const env = {
   API_URL: import.meta.env.VITE_API_URL || 'http://localhost:4000',
   
   // App Configuration
-  APP_NAME: import.meta.env.VITE_APP_NAME || 'n8n Clone',
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'node drop',
   APP_VERSION: import.meta.env.VITE_APP_VERSION || '1.0.0',
   ENVIRONMENT: import.meta.env.VITE_ENVIRONMENT || 'development',
   
@@ -18,6 +18,7 @@ export const env = {
   },
   
   get API_BASE_URL() {
+    // Always use full API URL (no proxy)
     return `${this.API_URL}/api`
   }
 } as const

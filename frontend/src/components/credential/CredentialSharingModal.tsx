@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Users, Plus, Trash2, Search, UserCheck, UserX, Loader2 } from 'lucide-react'
+import { X, Users, Search, UserCheck, UserX, Loader2 } from 'lucide-react'
 import { Credential } from '@/types'
 import { useCredentialStore } from '@/stores'
 
@@ -17,7 +17,7 @@ interface CredentialSharingModalProps {
 }
 
 export function CredentialSharingModal({ credential, onClose, onShare }: CredentialSharingModalProps) {
-  const { shareCredential, unshareCredential, isLoading } = useCredentialStore()
+  const { shareCredential, unshareCredential } = useCredentialStore()
 
   const [searchTerm, setSearchTerm] = useState('')
   const [availableUsers, setAvailableUsers] = useState<User[]>([])

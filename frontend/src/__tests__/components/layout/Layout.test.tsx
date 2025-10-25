@@ -11,7 +11,12 @@ vi.mock('@/components/layout/Header', () => ({
 describe('Layout', () => {
   const renderLayout = () => {
     return render(
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Layout />
       </BrowserRouter>
     )

@@ -3,7 +3,7 @@
  * Provides success, error, warning, and info notifications
  */
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { 
   CheckCircle, 

@@ -20,8 +20,6 @@ export class FieldValidator {
       case "string":
       case "textarea":
       case "password":
-      case "email":
-      case "url":
         return this.validateString(field, value);
 
       case "number":

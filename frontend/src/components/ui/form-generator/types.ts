@@ -30,6 +30,7 @@ export interface FormFieldConfig {
   required?: boolean;
   default?: any;
   description?: string;
+  tooltip?: string;
   placeholder?: string;
   options?: FormFieldOption[];
   displayOptions?: {

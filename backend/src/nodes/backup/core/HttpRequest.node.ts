@@ -3,11 +3,11 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
-import { HttpExecutionErrorFactory } from "../../utils/errors/HttpExecutionError";
-import { RetryHandler } from "../../utils/retry/RetryStrategy";
-import { ResourceLimitsEnforcer } from "../../utils/security/ResourceLimitsEnforcer";
-import { UrlSecurityValidator } from "../../utils/security/UrlSecurityValidator";
+} from "../../../types/node.types";
+import { HttpExecutionErrorFactory } from "../../../utils/errors/HttpExecutionError";
+import { RetryHandler } from "../../../utils/retry/RetryStrategy";
+import { ResourceLimitsEnforcer } from "../../../utils/security/ResourceLimitsEnforcer";
+import { UrlSecurityValidator } from "../../../utils/security/UrlSecurityValidator";
 
 export const HttpRequestNode: NodeDefinition = {
   type: BuiltInNodeTypes.HTTP_REQUEST,
@@ -135,7 +135,7 @@ export const HttpRequestNode: NodeDefinition = {
     const urlValidation = UrlSecurityValidator.validateUrl(url);
     if (!urlValidation.isValid) {
       const errorMessages = urlValidation.errors
-        .map((e) => e.message)
+        .map((e: any) => e.message)
         .join("; ");
       this.logger.warn("HTTP Request blocked by security validation", {
         url,
@@ -152,7 +152,7 @@ export const HttpRequestNode: NodeDefinition = {
     });
     if (!paramValidation.isValid) {
       const errorMessages = paramValidation.errors
-        .map((e) => e.message)
+        .map((e: any) => e.message)
         .join("; ");
       this.logger.warn(
         "HTTP Request parameters blocked by security validation",

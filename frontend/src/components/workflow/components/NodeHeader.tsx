@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import { useReactFlowUIStore } from '@/stores'
 import { ChevronDown, ChevronUp, LucideIcon } from 'lucide-react'
 import { memo } from 'react'
@@ -97,21 +96,19 @@ export const NodeHeader = memo(function NodeHeader({
         )}
       </div>
       
-      {/* Expand/Collapse Button - Always show if node can expand */}
-      {canExpand && onToggleExpand && (
-        <Button
-          size="sm"
-          variant="ghost"
+      {/* Expand/Collapse Button - Hide in compact mode when collapsed, show in normal mode or when expanded */}
+      {canExpand && onToggleExpand && (!compactMode || isExpanded) && (
+        <button
           onClick={handleToggleClick}
-          className={`${compactMode ? 'h-6 w-6' : 'h-8 w-8'} p-0 flex-shrink-0`}
+          className={`flex items-center justify-center ${compactMode ? 'h-6 w-6' : 'h-8 w-8'} rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring flex-shrink-0`}
           aria-label={isExpanded ? 'Collapse node' : 'Expand node'}
         >
           {isExpanded ? (
-            <ChevronUp className={compactMode ? 'w-3 h-3' : 'w-4 h-4'} />
+            <ChevronUp className="h-4 w-4" />
           ) : (
-            <ChevronDown className={compactMode ? 'w-3 h-3' : 'w-4 h-4'} />
+            <ChevronDown className="h-4 w-4" />
           )}
-        </Button>
+        </button>
       )}
     </div>
   )

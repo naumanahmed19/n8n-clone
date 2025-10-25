@@ -9,7 +9,12 @@ describe('Custom Node System Integration', () => {
     // This test verifies that all imports and dependencies are correctly set up
     expect(() => {
       render(
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <CustomNodesPage />
         </BrowserRouter>
       );
@@ -18,7 +23,12 @@ describe('Custom Node System Integration', () => {
 
   it('should have the main page elements', () => {
     render(
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <CustomNodesPage />
       </BrowserRouter>
     );

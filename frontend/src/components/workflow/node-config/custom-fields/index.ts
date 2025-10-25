@@ -5,4 +5,5 @@ export { SpreadsheetSelector } from "./SpreadsheetSelector";
 export { TriggerAutocomplete } from "./TriggerAutocomplete";
 export { TriggerOnAutocomplete } from "./TriggerOnAutocomplete";
 export { WebhookUrlGenerator } from "./WebhookUrlGenerator";
+export { WidgetEmbedGenerator } from "./WidgetEmbedGenerator";
 export { WorkflowAutocomplete } from "./WorkflowAutocomplete";

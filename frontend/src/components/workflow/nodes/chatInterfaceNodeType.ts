@@ -153,7 +153,7 @@ export const chatInterfaceNodeType = {
  * ```typescript
  * // backend/src/nodes/ChatInterface/ChatInterface.node.ts
  *
- * import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow'
+ * import { IExecuteFunctions, INodeExecutionData } from 'nd-workflow'
  *
  * export class ChatInterface {
  *   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {

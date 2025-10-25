@@ -1,6 +1,6 @@
 # Test Files
 
-This directory contains various test files for the n8n-clone backend functionality.
+This directory contains various test files for the node-drop backend functionality.
 
 ## Environment Setup
 

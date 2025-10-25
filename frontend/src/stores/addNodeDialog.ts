@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 
 interface NodeInsertionContext {
   sourceNodeId: string;
@@ -19,7 +19,7 @@ interface AddNodeDialogStore {
   closeDialog: () => void;
 }
 
-export const useAddNodeDialogStore = create<AddNodeDialogStore>((set) => ({
+export const useAddNodeDialogStore = createWithEqualityFn<AddNodeDialogStore>((set) => ({
   isOpen: false,
   position: undefined,
   insertionContext: undefined,

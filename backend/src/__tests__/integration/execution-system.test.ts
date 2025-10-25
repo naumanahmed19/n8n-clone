@@ -13,7 +13,7 @@ import { NodeDefinition, BuiltInNodeTypes } from '../../types/node.types';
 const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/n8n_clone_test'
+      url: process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/node_drop_test'
     }
   }
 });

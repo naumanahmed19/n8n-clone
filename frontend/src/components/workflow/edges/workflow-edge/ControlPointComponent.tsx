@@ -8,7 +8,7 @@ interface ControlPointProps {
   onDrag: (controlPointId: string, position: { x: number; y: number }) => void;
 }
 
-export function ControlPoint({ controlPoint, edgeId, onDrag }: ControlPointProps) {
+export function ControlPoint({ controlPoint, onDrag }: ControlPointProps) {
   const { screenToFlowPosition } = useReactFlow();
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);

@@ -339,5 +339,5 @@ curl -X POST http://localhost:4000/webhook/{id} \
 http POST http://localhost:4000/webhook/{id} test=true
 
 # Monitor webhook logs (Docker)
-docker logs -f n8n-backend | grep webhook
+docker logs -f nd-backend | grep webhook
 ```

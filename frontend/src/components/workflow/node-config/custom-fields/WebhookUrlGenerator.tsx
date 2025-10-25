@@ -6,11 +6,12 @@ import { Check, Copy, Globe, RefreshCw, TestTube } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface WebhookUrlGeneratorProps {
-  value?: string; // webhookId
+  value?: string; // webhookId, formId, or chatId
   onChange?: (value: string) => void;
   disabled?: boolean;
   path?: string;
   mode?: "test" | "production";
+  urlType?: "webhook" | "form" | "chat"; // NEW: Type of URL to generate
 }
 
 export function WebhookUrlGenerator({
@@ -19,6 +20,7 @@ export function WebhookUrlGenerator({
   disabled = false,
   path = "",
   mode = "test",
+  urlType = "webhook",
 }: WebhookUrlGeneratorProps) {
   const [webhookId, setWebhookId] = useState<string>(value || "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -27,16 +29,50 @@ export function WebhookUrlGenerator({
 
   // Get base URLs from environment or use defaults
   const getBaseUrl = (environment: "test" | "production") => {
-    if (environment === "test") {
-      return import.meta.env.VITE_WEBHOOK_TEST_URL || 
-             import.meta.env.VITE_API_URL?.replace('/api', '/webhook') || 
-             "http://localhost:4000/webhook";
+    if (urlType === "form") {
+      // For forms, use frontend URL
+      if (environment === "test") {
+        return import.meta.env.VITE_APP_URL || "http://localhost:3000";
+      } else {
+        return import.meta.env.VITE_APP_PROD_URL || "https://your-domain.com";
+      }
+    } else if (urlType === "chat") {
+      // For chats, use API URL (add /api if not present)
+      if (environment === "test") {
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+        return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+      } else {
+        const apiUrl = import.meta.env.VITE_API_PROD_URL || "https://your-domain.com";
+        return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+      }
     } else {
-      return import.meta.env.VITE_WEBHOOK_PROD_URL || 
-             import.meta.env.VITE_WEBHOOK_BASE_URL || 
-             "https://your-domain.com/webhook";
+      // For webhooks, use webhook URL
+      if (environment === "test") {
+        return import.meta.env.VITE_WEBHOOK_TEST_URL || 
+               import.meta.env.VITE_API_URL?.replace('/api', '/webhook') || 
+               "http://localhost:4000/webhook";
+      } else {
+        return import.meta.env.VITE_WEBHOOK_PROD_URL || 
+               import.meta.env.VITE_WEBHOOK_BASE_URL || 
+               "https://your-domain.com/webhook";
+      }
     }
   };
+
+  // Get widget script URLs
+  /* const getWidgetScriptUrl = (environment: "test" | "production") => {
+    const baseUrl = environment === "test" 
+      ? (import.meta.env.VITE_APP_URL || "http://localhost:3000")
+      : (import.meta.env.VITE_APP_PROD_URL || "https://your-domain.com");
+    
+    if (urlType === "chat") {
+      return `${baseUrl}/widgets/chat/nd-chat-widget.umd.js`;
+    } else if (urlType === "form") {
+      return `${baseUrl}/widgets/form/nd-form-widget.umd.js`;
+    } else {
+      return `${baseUrl}/widgets/webhook/nd-webhook-widget.umd.js`;
+    }
+  }; */
 
   // Generate webhook ID if not exists
   useEffect(() => {
@@ -69,12 +105,21 @@ export function WebhookUrlGenerator({
     }
   };
 
-  // Construct full webhook URLs
+  // Construct full webhook/form/chat URLs
   const constructWebhookUrl = (environment: "test" | "production") => {
     const baseUrl = getBaseUrl(environment);
-    const cleanPath = path?.trim().replace(/^\/+/, "") || "";
-    const url = `${baseUrl}/${webhookId}${cleanPath ? "/" + cleanPath : ""}`;
-    return url;
+    
+    if (urlType === "form") {
+      // Form URLs: http://localhost:3000/form/{formId}
+      return `${baseUrl}/form/${webhookId}`;
+    } else if (urlType === "chat") {
+      // Chat URLs: http://localhost:4000/api/public/chats/{chatId}
+      return `${baseUrl}/public/chats/${webhookId}`;
+    } else {
+      // Webhook URLs: http://localhost:4000/webhook/{webhookId}[/path]
+      const cleanPath = path?.trim().replace(/^\/+/, "") || "";
+      return `${baseUrl}/${webhookId}${cleanPath ? "/" + cleanPath : ""}`;
+    }
   };
 
   const testWebhookUrl = constructWebhookUrl("test");
@@ -119,7 +164,9 @@ export function WebhookUrlGenerator({
       <div className="space-y-3">
         {/* Label and Tabs in one row */}
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium">Webhook URL</Label>
+          <Label className="text-sm font-medium">
+            {urlType === "form" ? "Public Form URL" : urlType === "chat" ? "Public Chat URL" : "Webhook URL"}
+          </Label>
           <TabsList className="inline-flex h-9">
             <TabsTrigger value="test" className="text-xs" disabled={disabled}>
               <TestTube className="w-3 h-3 mr-1" />
@@ -184,10 +231,12 @@ export function WebhookUrlGenerator({
           </div>
         </TabsContent>
 
-        {/* Webhook ID Display */}
+        {/* Webhook/Form ID Display */}
         <div className="flex gap-1.5 items-end">
           <div className="flex-1">
-            <Label className="text-xs text-muted-foreground mb-1">Webhook ID</Label>
+            <Label className="text-xs text-muted-foreground mb-1">
+              {urlType === "form" ? "Form ID" : urlType === "chat" ? "Chat ID" : "Webhook ID"}
+            </Label>
             <Input
               value={webhookId}
               readOnly

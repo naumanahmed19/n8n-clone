@@ -95,11 +95,7 @@ export class NodeTemplateGenerator {
       // Generate .gitignore
       await this.generateGitignore(packagePath);
 
-      logger.info("Node package generated successfully", {
-        packageName: options.name,
-        packagePath,
-        type: options.type,
-      });
+
 
       return {
         success: true,
@@ -195,12 +191,7 @@ export class NodeTemplateGenerator {
       const zipBuffer = zip.toBuffer();
       const filename = `${packageName}.zip`;
 
-      logger.info("Node package zip generated successfully", {
-        packageName: options.name,
-        filename,
-        type: options.type,
-        size: zipBuffer.length,
-      });
+
 
       return {
         success: true,
@@ -244,8 +235,8 @@ export class NodeTemplateGenerator {
       main: options.typescript ? "dist/index.js" : "index.js",
       author: options.author || "",
       keywords: [
-        "n8n",
-        "n8n-node",
+        "nodeDrop",
+        "nd-node",
         "workflow",
         "automation",
         ...(options.group || []),
@@ -989,7 +980,7 @@ npm install ${this.sanitizePackageName(name)}
 
 ## Usage
 
-This is a ${type} node that can be used in n8n workflows.
+This is a ${type} node that can be used in nodeDrop workflows.
 
 ### Node Properties
 

@@ -5,8 +5,8 @@
   "main": "index.js",
   "author": "Ahmad",
   "keywords": [
-    "n8n",
-    "n8n-node",
+    "nodeDrop",
+    "nd-node",
     "workflow",
     "automation",
     "counter",

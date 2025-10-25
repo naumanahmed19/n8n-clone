@@ -33,14 +33,22 @@ export function AddNodeCommandDialog({
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   
   // Get only active node types from the store
-  const { activeNodeTypes, fetchNodeTypes } = useNodeTypes()
+  const { activeNodeTypes, fetchNodeTypes, refetchNodeTypes, isLoading, hasFetched } = useNodeTypes()
   
   // Initialize store if needed
   useEffect(() => {
-    if (activeNodeTypes.length === 0) {
+    if (activeNodeTypes.length === 0 && !isLoading && !hasFetched) {
       fetchNodeTypes()
     }
-  }, [activeNodeTypes.length, fetchNodeTypes])
+  }, [activeNodeTypes.length, isLoading, hasFetched, fetchNodeTypes])
+
+  // Refresh node types when dialog opens to ensure we have the latest nodes
+  useEffect(() => {
+    if (open && hasFetched) {
+      // Silently refresh to get any newly uploaded nodes
+      refetchNodeTypes()
+    }
+  }, [open, hasFetched, refetchNodeTypes])
 
   // Reset search when dialog opens/closes
   useEffect(() => {
@@ -120,24 +128,24 @@ export function AddNodeCommandDialog({
       const isConnectionDrop = insertionContext.sourceNodeId && !insertionContext.targetNodeId
       
       if (isConnectionDrop) {
-        // Connection was dropped on canvas - position near the source node
+        // Connection was dropped on canvas - use the exact drop position
         const sourceNode = reactFlowInstance.getNode(insertionContext.sourceNodeId)
         sourceNodeIdForConnection = insertionContext.sourceNodeId
         
-        if (sourceNode) {
+        if (sourceNode && sourceNode.parentId) {
           // Check if source node is in a group
-          if (sourceNode.parentId) {
-            parentGroupId = sourceNode.parentId
-          }
-          
-          // Position to the right of the source node
+          parentGroupId = sourceNode.parentId
+        }
+        
+        if (position) {
+          // Use the exact drop position (already in flow coordinates)
+          nodePosition = position
+        } else if (sourceNode) {
+          // Fallback: position to the right of the source node
           nodePosition = {
             x: sourceNode.position.x + 200,
             y: sourceNode.position.y
           }
-        } else if (position) {
-          // Use the drop position
-          nodePosition = reactFlowInstance.screenToFlowPosition(position)
         }
       } else if (insertionContext.targetNodeId) {
         // Inserting between nodes - use existing logic

@@ -8,7 +8,7 @@ This guide will help you create your first custom node in just a few minutes.
 
 - Node.js 18+ installed
 - Basic knowledge of JavaScript/TypeScript
-- n8n clone project running
+- node drop project running
 
 ## Step 1: Create Your First Node
 

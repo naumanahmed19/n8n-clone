@@ -1,6 +1,6 @@
 # Dynamic Properties Example Node
 
-This is an example node that demonstrates the use of **dynamic properties** in n8n custom nodes.
+This is an example node that demonstrates the use of **dynamic properties** in nodeDrop custom nodes.
 
 ## Overview
 

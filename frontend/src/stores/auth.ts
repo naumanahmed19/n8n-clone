@@ -1,18 +1,21 @@
 import { authService } from "@/services";
 import { AuthState, LoginCredentials, RegisterCredentials } from "@/types";
-import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createWithEqualityFn } from "zustand/traditional";
 
-// Helper function to load all user preferences
+// Helper function to load all user preferences with a single API call
 const loadAllPreferences = async () => {
   try {
-    // Load canvas preferences
-    const { useReactFlowUIStore } = await import("./reactFlowUI");
-    await useReactFlowUIStore.getState().loadPreferences();
-
-    // Load theme preferences
+    // Make a single API call to get all preferences
     const { userService } = await import("@/services");
     const preferences = await userService.getPreferences();
+
+    // Load canvas preferences using silent setter to avoid triggering savePreferences
+    const { useReactFlowUIStore } = await import("./reactFlowUI");
+    const reactFlowStore = useReactFlowUIStore.getState();
+    reactFlowStore.setPreferencesFromAPI(preferences);
+
+    // Load theme preferences
     if (preferences.theme) {
       localStorage.setItem("theme", preferences.theme);
       // Dispatch custom event to notify ThemeProvider
@@ -37,7 +40,7 @@ interface AuthActions {
 
 type AuthStore = AuthState & AuthActions;
 
-export const useAuthStore = create<AuthStore>()(
+export const useAuthStore = createWithEqualityFn<AuthStore>()(
   persist(
     (set) => ({
       // State

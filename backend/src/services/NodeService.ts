@@ -189,7 +189,6 @@ export class NodeService {
       // Store in memory registry
       this.nodeRegistry.set(nodeDefinition.type, nodeDefinition);
 
-      logger.info(`Node type registered: ${nodeDefinition.type}`);
       return {
         success: true,
         nodeType: nodeDefinition.type,
@@ -202,8 +201,7 @@ export class NodeService {
       return {
         success: false,
         errors: [
-          `Failed to register node: ${
-            error instanceof Error ? error.message : "Unknown error"
+          `Failed to register node: ${error instanceof Error ? error.message : "Unknown error"
           }`,
         ],
       };
@@ -211,7 +209,7 @@ export class NodeService {
   }
 
   /**
-   * Unregister a node type
+   * Unregister a node type (sets inactive in database)
    */
   async unregisterNode(nodeType: string): Promise<void> {
     try {
@@ -225,8 +223,23 @@ export class NodeService {
     } catch (error) {
       logger.error("Failed to unregister node", { error, nodeType });
       throw new Error(
-        `Failed to unregister node: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to unregister node: ${error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+
+  /**
+   * Unload a node type from memory only (for package deletion)
+   */
+  async unloadNodeFromMemory(nodeType: string): Promise<void> {
+    try {
+      this.nodeRegistry.delete(nodeType);
+      logger.info(`Node type unloaded from memory: ${nodeType}`);
+    } catch (error) {
+      logger.error("Failed to unload node from memory", { error, nodeType });
+      throw new Error(
+        `Failed to unload node from memory: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -317,8 +330,7 @@ export class NodeService {
     } catch (error) {
       logger.error("Failed to get node types", { error });
       throw new Error(
-        `Failed to get node types: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to get node types: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -383,8 +395,7 @@ export class NodeService {
     } catch (error) {
       logger.error("Failed to get node schema", { error, nodeType });
       throw new Error(
-        `Failed to get node schema: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to get node schema: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -743,6 +754,9 @@ export class NodeService {
       logger.info("Built-in nodes initialized");
     } catch (error) {
       logger.error("Failed to initialize built-in nodes", { error });
+
+      // Don't throw the error - allow the application to start even if node registration fails
+      // This prevents the entire application from failing to start due to node registration issues
     }
   }
 
@@ -754,8 +768,7 @@ export class NodeService {
       await this.registerBuiltInNodes();
     } catch (error) {
       throw new Error(
-        `Failed to register discovered nodes: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to register discovered nodes: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -770,11 +783,19 @@ export class NodeService {
     try {
       const nodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
 
+      if (nodeDefinitions.length === 0) {
+        return;
+      }
+
       for (const nodeDefinition of nodeDefinitions) {
-        await this.registerNode(nodeDefinition);
+        try {
+          await this.registerNode(nodeDefinition);
+        } catch (error) {
+          logger.error(`Error registering ${nodeDefinition.displayName}:`, error);
+        }
       }
     } catch (error) {
-      console.error("Error registering built-in nodes:", error);
+      logger.error("Error during node discovery and registration:", error);
       throw error;
     }
   }
@@ -818,9 +839,8 @@ export class NodeService {
       logger.error("Failed to activate node type", { error, nodeType });
       return {
         success: false,
-        message: `Failed to activate node type: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        message: `Failed to activate node type: ${error instanceof Error ? error.message : "Unknown error"
+          }`,
       };
     }
   }
@@ -864,9 +884,8 @@ export class NodeService {
       logger.error("Failed to deactivate node type", { error, nodeType });
       return {
         success: false,
-        message: `Failed to deactivate node type: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        message: `Failed to deactivate node type: ${error instanceof Error ? error.message : "Unknown error"
+          }`,
       };
     }
   }
@@ -972,9 +991,8 @@ export class NodeService {
       });
       return {
         success: false,
-        message: `Failed to update node status: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        message: `Failed to update node status: ${error instanceof Error ? error.message : "Unknown error"
+          }`,
         updated: 0,
       };
     }
@@ -1004,6 +1022,63 @@ export class NodeService {
    */
   private canExecuteIndividually(nodeDefinition: NodeDefinition): boolean {
     return nodeDefinition.group.includes("trigger");
+  }
+
+  /**
+   * Refresh and register custom nodes from the custom-nodes directory
+   */
+  async refreshCustomNodes(): Promise<{ success: boolean; message: string; registered: number }> {
+    try {
+      const { nodeDiscovery } = await import("../utils/NodeDiscovery");
+      const customNodeInfos = await nodeDiscovery.loadCustomNodes();
+      
+      let registered = 0;
+      const errors: string[] = [];
+      
+      for (const nodeInfo of customNodeInfos) {
+        try {
+          const result = await this.registerNode(nodeInfo.definition);
+          if (result.success) {
+            registered++;
+            logger.info("Registered custom node", {
+              nodeType: nodeInfo.definition.type,
+              displayName: nodeInfo.definition.displayName,
+              path: nodeInfo.path,
+            });
+          } else {
+            errors.push(`Failed to register ${nodeInfo.definition.type}: ${result.errors?.join(", ")}`);
+          }
+        } catch (error) {
+          const errorMsg = `Failed to register ${nodeInfo.definition.type}: ${error instanceof Error ? error.message : "Unknown error"}`;
+          errors.push(errorMsg);
+          logger.warn(errorMsg, { error });
+        }
+      }
+      
+      const message = registered > 0 
+        ? `Successfully registered ${registered} custom node(s)${errors.length > 0 ? ` (${errors.length} errors)` : ""}`
+        : `No custom nodes registered${errors.length > 0 ? ` (${errors.length} errors)` : ""}`;
+      
+      logger.info("Custom nodes refresh completed", {
+        registered,
+        errors: errors.length,
+        totalFound: customNodeInfos.length,
+      });
+      
+      return {
+        success: registered > 0 || errors.length === 0,
+        message,
+        registered,
+      };
+    } catch (error) {
+      const errorMsg = `Failed to refresh custom nodes: ${error instanceof Error ? error.message : "Unknown error"}`;
+      logger.error(errorMsg, { error });
+      return {
+        success: false,
+        message: errorMsg,
+        registered: 0,
+      };
+    }
   }
 
   /**

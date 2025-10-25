@@ -1,10 +1,10 @@
 {
-  "name": "n8n-clone-backend",
+  "name": "node-drop-backend",
   "version": "1.0.0",
-  "description": "Backend API for n8n clone workflow automation platform",
+  "description": "Backend API for node drop workflow automation platform",
   "main": "dist/index.js",
   "bin": {
-    "n8n-node-cli": "dist/cli/node-cli.js"
+    "nd-node-cli": "dist/cli/node-cli.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,9 +15,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx src/scripts/seed.ts",
-    "db:studio": "prisma studio",
+    "studio": "prisma studio",
     "node-cli": "tsx src/cli/node-cli.ts",
     "nodes:register": "tsx src/scripts/register-nodes.ts",
+    "nodes:register:prod": "node dist/scripts/register-nodes.js",
     "nodes:list": "tsx src/scripts/node-cli.ts list",
     "nodes:create": "tsx src/scripts/node-cli.ts create",
     "nodes:discover": "tsx src/scripts/node-cli.ts discover",
@@ -37,6 +38,7 @@
     "@types/multer": "^2.0.0",
     "abort-controller": "^3.0.0",
     "adm-zip": "^0.5.16",
+    "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "bull": "^4.12.2",
     "chokidar": "^3.5.3",
@@ -47,10 +49,12 @@
     "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.1.0",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "isolated-vm": "^6.0.1",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.20.0",
     "multer": "^2.0.2",
     "node-cron": "^3.0.3",
     "node-fetch": "^2.7.0",

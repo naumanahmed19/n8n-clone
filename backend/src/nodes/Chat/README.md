@@ -1,6 +1,6 @@
 # AI Chat Node
 
-A custom backend node for AI-powered chat interactions in your n8n-clone workflow automation system.
+A custom backend node for AI-powered chat interactions in your node-drop workflow automation system.
 
 ## ✅ Status
 

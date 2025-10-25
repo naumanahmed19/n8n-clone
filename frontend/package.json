@@ -1,11 +1,16 @@
 {
-  "name": "n8n-clone-frontend",
+  "name": "node-drop-frontend",
   "version": "1.0.0",
-  "description": "Frontend React application for n8n clone workflow automation platform",
+  "description": "Frontend React application for node drop workflow automation platform",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:widget:form": "vite build --config src/widgets/form/vite.config.ts",
+    "build:widget:chat": "vite build --config src/widgets/chat/vite.config.ts",
+    "build:widgets": "powershell -ExecutionPolicy Bypass -File ./widgets/build-all-widgets.ps1",
+    "copy:widgets": "powershell -ExecutionPolicy Bypass -File ./widgets/copy-all-widgets-to-public.ps1",
+    "build:widgets:dev": "npm run build:widgets && npm run copy:widgets",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",

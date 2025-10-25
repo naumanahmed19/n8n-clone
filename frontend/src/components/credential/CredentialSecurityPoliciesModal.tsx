@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Shield, Plus, Edit, Trash2, Save, AlertTriangle, CheckCircle } from 'lucide-react'
+import { X, Shield, Plus, Edit, Trash2, Save, AlertTriangle } from 'lucide-react'
 import { CredentialSecurityPolicy } from '@/types'
 import { useCredentialStore } from '@/stores'
 
@@ -44,7 +44,7 @@ export function CredentialSecurityPoliciesModal({ onClose }: CredentialSecurityP
         setFormData({
             name: policy.name,
             description: policy.description,
-            rules: { ...policy.rules }
+            rules: { ...policy.rules } as any
         })
         setIsCreating(false)
     }
@@ -167,7 +167,7 @@ export function CredentialSecurityPoliciesModal({ onClose }: CredentialSecurityP
                             value={formData.rules.maxAge || ''}
                             onChange={(e) => setFormData(prev => ({
                                 ...prev,
-                                rules: { ...prev.rules, maxAge: parseInt(e.target.value) || undefined }
+                                rules: { ...prev.rules, maxAge: parseInt(e.target.value) || 0 }
                             }))}
                             placeholder="90"
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -183,7 +183,7 @@ export function CredentialSecurityPoliciesModal({ onClose }: CredentialSecurityP
                             value={formData.rules.rotationInterval || ''}
                             onChange={(e) => setFormData(prev => ({
                                 ...prev,
-                                rules: { ...prev.rules, rotationInterval: parseInt(e.target.value) || undefined }
+                                rules: { ...prev.rules, rotationInterval: parseInt(e.target.value) || 0 }
                             }))}
                             placeholder="90"
                             disabled={!formData.rules.requireRotation}
@@ -425,7 +425,7 @@ export function CredentialSecurityPoliciesModal({ onClose }: CredentialSecurityP
                                                 </div>
                                             </div>
 
-                                            {policy.rules.allowedIpRanges.length > 0 && (
+                                            {policy.rules.allowedIpRanges && policy.rules.allowedIpRanges.length > 0 && (
                                                 <div className="mt-3">
                                                     <span className="text-sm text-gray-500">Allowed IP Ranges:</span>
                                                     <div className="flex flex-wrap gap-1 mt-1">

@@ -172,7 +172,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <Workflow className="size-4" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">n8n Clone</span>
+                    <span className="truncate font-medium">node drop</span>
                     <span className="truncate text-xs">Workflow</span>
                   </div>
                 </a>

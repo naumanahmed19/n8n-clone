@@ -18,7 +18,7 @@ export function WorkflowLandingPage() {
     const loadWorkflows = async () => {
       try {
         setIsLoadingWorkflows(true)
-        const response = await workflowService.getWorkflows({ 
+        const response = await workflowService.getWorkflows({
           limit: 6,
           sortBy: 'updatedAt',
           sortOrder: 'desc'
@@ -68,7 +68,7 @@ export function WorkflowLandingPage() {
   ]
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 bg-background">
+    <div className="flex flex-col items-center justify-center h-full p-8 bg-gray-50">
       <div className="max-w-4xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-12">
@@ -135,11 +135,10 @@ export function WorkflowLandingPage() {
                     <h3 className="text-base font-semibold text-card-foreground line-clamp-1">
                       {workflow.name}
                     </h3>
-                    <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-                      workflow.active 
-                        ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300' 
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${workflow.active
+                      ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300'
+                      : 'bg-muted text-muted-foreground'
+                      }`}>
                       {workflow.active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
@@ -162,7 +161,7 @@ export function WorkflowLandingPage() {
         <div className="mt-12 text-center">
           <p className="text-sm text-muted-foreground">
             Select a workflow from the sidebar to get started, or{' '}
-            <button 
+            <button
               onClick={() => {
                 setActiveWorkflowItem({
                   title: "All Workflows",

@@ -8,7 +8,7 @@ describe('Server API', () => {
         .get('/')
         .expect(200);
 
-      expect(response.body.message).toBe('n8n Clone Backend API');
+      expect(response.body.message).toBe('node drop Backend API');
       expect(response.body.version).toBe('1.0.0');
       expect(response.body.endpoints).toBeDefined();
       expect(response.body.endpoints.auth).toBe('/api/auth');
@@ -26,7 +26,7 @@ describe('Server API', () => {
         .expect(200);
 
       expect(response.body.status).toBe('ok');
-      expect(response.body.service).toBe('n8n-clone-backend');
+      expect(response.body.service).toBe('node-drop-backend');
       expect(response.body.version).toBe('1.0.0');
       expect(response.body.timestamp).toBeDefined();
     });

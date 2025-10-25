@@ -229,7 +229,7 @@ export class SecureExecutionService {
 
               // Check if the content is just a simple value (no operators or functions)
               const innerContent = wrappedMatch[1].trim();
-              // Check for n8n expression syntax patterns (but not URL slashes)
+              // Check for nodeDrop expression syntax patterns (but not URL slashes)
               // Allow simple values and URLs to be unwrapped
               const hasExpressionSyntax =
                 /[+\-*%()[\]<>=!&|]/.test(innerContent) ||
@@ -284,7 +284,7 @@ export class SecureExecutionService {
           const wrappedMatch = value.match(/^\{\{(.+)\}\}$/);
           if (wrappedMatch) {
             const innerContent = wrappedMatch[1].trim();
-            // Check for n8n expression syntax patterns (but not URL slashes)
+            // Check for nodeDrop expression syntax patterns (but not URL slashes)
             const hasExpressionSyntax =
               /[+\-*%()[\]<>=!&|]/.test(innerContent) ||
               innerContent.includes("{{") ||
@@ -334,9 +334,9 @@ export class SecureExecutionService {
         // Use the credentials mapping to find the credential ID for this type
         const credentialId = credentialsMapping[type];
         if (!credentialId) {
-          console.error(`No credential found for type '${type}'`, {
+          logger.error(`No credential found for type '${type}'`, {
             requestedType: type,
-            availableCredentials: credentialsMapping,
+            availableCredentials: Object.keys(credentialsMapping),
           });
           throw new Error(`No credential of type '${type}' available`);
         }
@@ -703,10 +703,7 @@ export class SecureExecutionService {
   private createSecureConsole() {
     return {
       log: (...args: any[]) => {
-        logger.debug(
-          "Sandbox console.log:",
-          args.map((arg) => this.sanitizeValue(arg))
-        );
+        // Sandbox console.log - disabled for cleaner output
       },
       error: (...args: any[]) => {
         logger.error(
@@ -721,10 +718,7 @@ export class SecureExecutionService {
         );
       },
       info: (...args: any[]) => {
-        logger.info(
-          "Sandbox console.info:",
-          args.map((arg) => this.sanitizeValue(arg))
-        );
+        // Sandbox console.info - disabled for cleaner output
       },
     };
   }

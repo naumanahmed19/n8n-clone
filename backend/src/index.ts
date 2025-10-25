@@ -1,4 +1,4 @@
-// Main entry point for the n8n clone backend
+// Main entry point for the node drop backend
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -21,6 +21,8 @@ import googleRoutes from "./routes/google";
 import { nodeTypeRoutes } from "./routes/node-types";
 import { nodeRoutes } from "./routes/nodes";
 import oauthRoutes from "./routes/oauth";
+import { publicFormsRoutes } from "./routes/public-forms";
+import { publicChatsRoutes } from "./routes/public-chats";
 import triggerRoutes from "./routes/triggers";
 import userRoutes from "./routes/user.routes";
 import variableRoutes from "./routes/variables";
@@ -69,26 +71,105 @@ global.prisma = prisma;
 async function initializeNodeSystems() {
   try {
     // First, ensure built-in nodes are loaded
-    console.log("⏳ Initializing built-in nodes...");
     await nodeService.waitForInitialization();
-    console.log("✅ Built-in nodes initialized");
+
+    // Check if nodes were successfully registered
+    const nodeTypes = await nodeService.getNodeTypes();
+    console.log(`📦 Found ${nodeTypes.length} registered node types`);
+
+    if (nodeTypes.length === 0) {
+      console.log("🔄 No nodes found, attempting to register discovered nodes...");
+      try {
+        await nodeService.registerDiscoveredNodes();
+        const newNodeTypes = await nodeService.getNodeTypes();
+        console.log(`✅ Successfully registered ${newNodeTypes.length} node types`);
+      } catch (registrationError) {
+        console.error("❌ Failed to register nodes:", registrationError);
+      }
+    } else {
+      console.log(`✅ Node types already registered: ${nodeTypes.length}`);
+      
+      // Even if some nodes were found, try to register any missing ones
+      try {
+        // Import and use node discovery directly
+        const { nodeDiscovery } = await import("./utils/NodeDiscovery");
+        const allNodeDefinitions = await nodeDiscovery.getAllNodeDefinitions();
+        console.log(`🔍 Discovered ${allNodeDefinitions.length} node definitions`);
+
+        let newRegistrations = 0;
+        for (const nodeDefinition of allNodeDefinitions) {
+          try {
+            const result = await nodeService.registerNode(nodeDefinition);
+            if (result.success) {
+              newRegistrations++;
+            }
+          } catch (error) {
+            // Silently continue on registration errors
+          }
+        }
+        
+        if (newRegistrations > 0) {
+          console.log(`✅ Registered ${newRegistrations} additional nodes`);
+        }
+      } catch (registrationError) {
+        console.warn("⚠️ Failed to check for additional nodes:", registrationError);
+      }
+    }
 
     // Then, load custom nodes
-    console.log("⏳ Initializing custom node system...");
     await nodeLoader.initialize();
-    console.log("✅ Custom node system initialized");
+    console.log("🔌 Custom node loader initialized");
   } catch (error) {
     console.error("❌ Failed to initialize node systems:", error);
-    throw error;
+    // Don't throw the error - allow the application to start
   }
 }
 
 // Basic middleware
 app.use(helmet());
+// Configure CORS origins
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : [
+    process.env.FRONTEND_URL || "http://localhost:3000",
+    "http://localhost:8080", // For widget examples
+    "http://localhost:8081", // Alternative widget port
+    "http://localhost:9000", // Widget examples server
+    "http://127.0.0.1:8080", // Alternative localhost
+    "http://127.0.0.1:8081", // Alternative localhost
+    "http://127.0.0.1:9000", // Alternative localhost
+  ];
+
+// Dynamic CORS origin function
+const corsOriginFunction = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  // Allow requests with no origin (like mobile apps or curl requests)
+  if (!origin) return callback(null, true);
+
+  // Check if origin is in allowed list
+  if (corsOrigins.includes(origin)) {
+    return callback(null, true);
+  }
+
+  // For development, allow all localhost and 127.0.0.1 origins
+  if (process.env.NODE_ENV === 'development' &&
+    (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return callback(null, true);
+  }
+
+  // Log rejected origins for debugging
+  console.warn(`CORS: Rejected origin: ${origin}`);
+  return callback(new Error('Not allowed by CORS'), false);
+};
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: corsOriginFunction,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
 app.use(compression());
@@ -103,22 +184,42 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    service: "n8n-clone-backend",
-    version: "1.0.0",
-    websocket: {
-      connected_users: socketService.getConnectedUsersCount(),
-    },
-  });
+app.get("/health", async (req, res) => {
+  try {
+    const nodeTypes = await nodeService.getNodeTypes();
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      service: "node-drop-backend",
+      version: "1.0.0",
+      hot_reload: "BACKEND HOT RELOAD WORKING!",
+      websocket: {
+        connected_users: socketService.getConnectedUsersCount(),
+      },
+      nodes: {
+        registered_count: nodeTypes.length,
+        status: nodeTypes.length > 0 ? "ok" : "no_nodes_registered"
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      service: "node-drop-backend",
+      version: "1.0.0",
+      error: "Failed to check node status",
+      nodes: {
+        registered_count: 0,
+        status: "error"
+      },
+    });
+  }
 });
 
 // Basic route
 app.get("/", (req, res) => {
   res.json({
-    message: "n8n Clone Backend API",
+    message: "node drop Backend API",
     version: "1.0.0",
     endpoints: {
       auth: "/api/auth",
@@ -139,6 +240,8 @@ app.get("/", (req, res) => {
       oauth: "/api/oauth",
       google: "/api/google",
       health: "/health",
+      publicForms: "/api/public/forms/{formId}",
+      publicFormSubmit: "/api/public/forms/{formId}/submit",
     },
   });
 });
@@ -162,6 +265,10 @@ app.use("/api/execution-recovery", executionRecoveryRoutes);
 app.use("/api/oauth", oauthRoutes);
 app.use("/api/google", googleRoutes);
 
+// Public API routes (no authentication required)
+app.use("/api/public/forms", publicFormsRoutes);
+app.use("/api/public/chats", publicChatsRoutes);
+
 // Webhook routes (public endpoints without /api prefix for easier external integration)
 app.use("/webhook", webhookRoutes);
 
@@ -173,7 +280,7 @@ app.use(errorHandler);
 
 // Start server
 httpServer.listen(PORT, async () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT} - BACKEND HOT RELOAD WORKS!`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔌 Socket.io enabled for real-time updates`);
   console.log(`🔗 API endpoints:`);

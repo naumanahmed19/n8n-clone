@@ -14,10 +14,15 @@ const credentialService = new CredentialService();
 const GOOGLE_OAUTH_CONFIG = {
   authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
   tokenUrl: "https://oauth2.googleapis.com/token",
-  scopes: [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/drive.readonly",
-  ],
+  scopes: {
+    googleSheetsOAuth2: [
+      "https://www.googleapis.com/auth/spreadsheets.readonly",
+      "https://www.googleapis.com/auth/drive.readonly",
+    ],
+    googleDriveOAuth2: [
+      "https://www.googleapis.com/auth/drive",
+    ],
+  },
 };
 
 /**
@@ -34,6 +39,7 @@ router.get(
       clientId: queryClientId,
       clientSecret: queryClientSecret,
       credentialName,
+      credentialType,
     } = req.query;
 
     let clientId: string;
@@ -69,12 +75,17 @@ router.get(
       process.env.FRONTEND_URL || "http://localhost:3000"
     }/oauth/callback`;
 
+    // Determine credential type and scopes
+    const finalCredentialType = credentialType as string || "googleSheetsOAuth2";
+    const scopes = GOOGLE_OAUTH_CONFIG.scopes[finalCredentialType as keyof typeof GOOGLE_OAUTH_CONFIG.scopes] || GOOGLE_OAUTH_CONFIG.scopes.googleSheetsOAuth2;
+
     // Encode credential data in state parameter
     const stateData = {
       credentialId: credentialId as string | undefined,
       clientId: queryClientId as string | undefined,
       clientSecret: queryClientSecret as string | undefined,
       credentialName: credentialName as string | undefined,
+      credentialType: finalCredentialType,
       userId: req.user!.id,
     };
     const state = Buffer.from(JSON.stringify(stateData)).toString("base64");
@@ -84,7 +95,7 @@ router.get(
     authUrl.searchParams.append("client_id", clientId);
     authUrl.searchParams.append("redirect_uri", callbackUrl);
     authUrl.searchParams.append("response_type", "code");
-    authUrl.searchParams.append("scope", GOOGLE_OAUTH_CONFIG.scopes.join(" "));
+    authUrl.searchParams.append("scope", scopes.join(" "));
     authUrl.searchParams.append("access_type", "offline"); // To get refresh token
     authUrl.searchParams.append("prompt", "consent"); // Force consent to get refresh token
     authUrl.searchParams.append("state", state); // Pass encoded state
@@ -122,7 +133,7 @@ router.post(
       throw new AppError("Invalid state parameter", 400);
     }
 
-    const { credentialId, clientId, clientSecret, credentialName, userId } =
+    const { credentialId, clientId, clientSecret, credentialName, credentialType, userId } =
       stateData;
 
     // Verify user matches
@@ -187,11 +198,14 @@ router.post(
       try {
         if (isNewCredential) {
           // Create new credential with all data including tokens
+          const defaultName = credentialType === "googleDriveOAuth2" 
+            ? `Google Drive OAuth2 - ${new Date().toLocaleDateString()}`
+            : `Google Sheets OAuth2 - ${new Date().toLocaleDateString()}`;
+            
           finalCredential = await credentialService.createCredential(
             req.user!.id,
-            credentialName ||
-              `Google Sheets OAuth2 - ${new Date().toLocaleDateString()}`,
-            "googleSheetsOAuth2",
+            credentialName || defaultName,
+            credentialType || "googleSheetsOAuth2",
             {
               clientId: finalClientId,
               clientSecret: finalClientSecret,

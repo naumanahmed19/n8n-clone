@@ -45,6 +45,9 @@ export function useReactFlowInteractions() {
   const [connectionInProgress, setConnectionInProgress] =
     useState<Connection | null>(null);
 
+  // Add ref to track connection state as fallback when state gets reset
+  const connectionRef = useRef<Connection | null>(null);
+
   // Use the useReactFlow hook to get the ReactFlow instance directly
   const reactFlowInstance = useReactFlow();
 
@@ -127,7 +130,6 @@ export function useReactFlowInteractions() {
 
       // Take snapshot at the start of resize operation (only once)
       if (isResizeStart && !resizeSnapshotTaken.current) {
-        console.log("🔷 Resize started - blocking sync");
         const { saveToHistory } = useWorkflowStore.getState();
         saveToHistory("Resize group");
         resizeSnapshotTaken.current = true;
@@ -135,7 +137,6 @@ export function useReactFlowInteractions() {
 
       // Only sync to Zustand when resize is COMPLETE, not during continuous resizing
       if (isResizeComplete && reactFlowInstance) {
-        console.log("✅ Resize complete - syncing to Zustand");
         // Use a short delay to ensure React Flow state is updated
         setTimeout(() => {
           const { workflow, updateWorkflow, setDirty } =
@@ -168,13 +169,7 @@ export function useReactFlowInteractions() {
                   ...(rfNode.height !== undefined && { height: rfNode.height }),
                 };
 
-                console.log("📏 Group node resize:", {
-                  id: rfNode.id,
-                  rfNode_width: rfNode.width,
-                  rfNode_height: rfNode.height,
-                  rfNode_style: rfNode.style,
-                  merged_style: style,
-                });
+
 
                 updatedNodes.push({
                   ...baseGroupNode,
@@ -199,7 +194,6 @@ export function useReactFlowInteractions() {
             resizeSnapshotTaken.current = false;
             isResizing.current = false;
             blockSync.current = false;
-            console.log("🔓 Unblocked sync after resize");
           }
         }, 0);
       }
@@ -502,12 +496,14 @@ export function useReactFlowInteractions() {
       }
     ) => {
       if (params.nodeId && params.handleType === "source") {
-        setConnectionInProgress({
+        const connection = {
           source: params.nodeId,
           sourceHandle: params.handleId ?? null,
           target: "",
           targetHandle: null,
-        });
+        };
+        setConnectionInProgress(connection);
+        connectionRef.current = connection;
       }
     },
     []
@@ -516,17 +512,23 @@ export function useReactFlowInteractions() {
   // Handle connection end - if dropped on canvas, show add node dialog
   const handleConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent) => {
-      if (!connectionInProgress || !reactFlowInstance) {
+      // Use ref as fallback if state is null
+      const activeConnection = connectionInProgress || connectionRef.current;
+
+      if (!activeConnection || !reactFlowInstance) {
         setConnectionInProgress(null);
+        connectionRef.current = null;
         return;
       }
 
-      const targetIsPane = (event.target as HTMLElement).classList.contains(
-        "react-flow__pane"
-      );
+      // Check if the target is the canvas pane or any child of the pane
+      const target = event.target as HTMLElement;
+      const targetIsPane = target.classList.contains("react-flow__pane") ||
+        target.closest(".react-flow__pane") !== null;
 
-      if (targetIsPane && connectionInProgress.source) {
+      if (targetIsPane && activeConnection.source) {
         // Connection was dropped on the canvas (not on a node)
+        // We'll create a default node at the drop position and connect it automatically
         // Get the mouse position
         const clientX =
           "clientX" in event
@@ -544,6 +546,7 @@ export function useReactFlowInteractions() {
         const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
         if (!reactFlowBounds) {
           setConnectionInProgress(null);
+          connectionRef.current = null;
           return;
         }
 
@@ -555,14 +558,15 @@ export function useReactFlowInteractions() {
 
         // Open the add node dialog at the drop position with source connection context
         openDialog(position, {
-          sourceNodeId: connectionInProgress.source,
+          sourceNodeId: activeConnection.source,
           targetNodeId: "", // Empty target since we're adding a new node
-          sourceOutput: connectionInProgress.sourceHandle || undefined,
+          sourceOutput: activeConnection.sourceHandle || undefined,
           targetInput: undefined,
         });
       }
 
       setConnectionInProgress(null);
+      connectionRef.current = null;
     },
     [connectionInProgress, reactFlowInstance, openDialog]
   );
@@ -614,20 +618,20 @@ export function useReactFlowInteractions() {
         const existingGroupNode = existingNodesMap.get(rfNode.id);
         const groupNode: WorkflowNode = existingGroupNode
           ? {
-              ...existingGroupNode, // Preserve all existing fields (name, description, etc.)
-              position: rfNode.position,
-              style: rfNode.style as any,
-            }
+            ...existingGroupNode, // Preserve all existing fields (name, description, etc.)
+            position: rfNode.position,
+            style: rfNode.style as any,
+          }
           : {
-              // New group node
-              id: rfNode.id,
-              type: "group",
-              name: "",
-              parameters: rfNode.data || {},
-              position: rfNode.position,
-              disabled: false,
-              style: rfNode.style as any,
-            };
+            // New group node
+            id: rfNode.id,
+            type: "group",
+            name: "",
+            parameters: rfNode.data || {},
+            position: rfNode.position,
+            disabled: false,
+            style: rfNode.style as any,
+          };
         updatedNodes.push(groupNode);
       } else if (existingNode) {
         // Update existing regular node with current position and parent info

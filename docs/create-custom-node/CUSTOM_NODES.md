@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Custom Node Development System provides a complete toolkit for creating, managing, and distributing custom nodes for the n8n clone platform. This system includes both backend services and a frontend interface for seamless node development and deployment.
+The Custom Node Development System provides a complete toolkit for creating, managing, and distributing custom nodes for the node drop platform. This system includes both backend services and a frontend interface for seamless node development and deployment.
 
 ## Table of Contents
 
@@ -290,7 +290,6 @@ npm run node-cli test /path/to/your/node \
 GET /api/custom-nodes/packages
 POST /api/custom-nodes/packages/validate
 POST /api/custom-nodes/packages/load
-DELETE /api/custom-nodes/packages/:packageName
 POST /api/custom-nodes/packages/:packageName/reload
 ```
 

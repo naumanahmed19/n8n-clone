@@ -67,7 +67,7 @@ export function WorkflowEdge({
         strokeWidth={20}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        style={{ cursor: 'pointer', pointerEvents: 'stroke' }}
+        style={{ cursor: 'pointer', pointerEvents: 'all' }}
       />
 
       {/* Add node button */}

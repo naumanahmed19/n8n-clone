@@ -1,4 +1,6 @@
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { HelpCircle } from 'lucide-react'
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { FieldRenderer } from './FieldRenderer'
 import { FieldValidator } from './FieldValidator'
@@ -156,8 +158,8 @@ export const FormGenerator = forwardRef<FormGeneratorRef, FormGeneratorProps>(({
 
   return (
     <div className={cn('space-y-6', className)}>
-      {visibleFields.map((field) => (
-        <FieldWrapper key={field.name} field={field} values={values} allFields={fields}>
+      {visibleFields.map((field, index) => (
+        <FieldWrapper key={`${field.name}-${index}`} field={field} values={values} allFields={fields}>
           <div className={cn('space-y-2', fieldClassName)}>
             <FormFieldLabel 
               field={field}
@@ -217,15 +219,35 @@ interface FormFieldLabelProps {
 }
 
 function FormFieldLabel({ field, showRequiredIndicator, requiredIndicator }: FormFieldLabelProps) {
-  // Don't show label for boolean, switch, and custom component types
-  if (field.type === 'boolean' || field.type === 'switch' || field.type === 'custom') {
+  // Don't show label for boolean, switch, custom component types, and collection with multipleValues (RepeatingField)
+  // RepeatingField renders its own header with displayName
+  if (
+    field.type === 'boolean' || 
+    field.type === 'switch' || 
+    field.type === 'custom' ||
+    (field.type === 'collection' && field.typeOptions?.multipleValues)
+  ) {
     return null
   }
 
   return (
-    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-      {field.displayName}
-      {field.required && showRequiredIndicator && requiredIndicator}
+    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1.5">
+      <span>
+        {field.displayName}
+        {field.required && showRequiredIndicator && requiredIndicator}
+      </span>
+      {field.tooltip && (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p>{field.tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </label>
   )
 }

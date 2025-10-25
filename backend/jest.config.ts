@@ -40,7 +40,7 @@ const config: Config = {
   setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.ts"],
 
   // Module path mapping
-  moduleNameMapping: {
+  moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@services/(.*)$": "<rootDir>/src/services/$1",
     "^@utils/(.*)$": "<rootDir>/src/utils/$1",
@@ -67,26 +67,7 @@ const config: Config = {
     },
   },
 
-  // Test suites organization
-  projects: [
-    {
-      displayName: "Unit Tests",
-      testMatch: ["<rootDir>/src/__tests__/unit/**/*.test.ts"],
-      testTimeout: 10000,
-    },
-    {
-      displayName: "Integration Tests",
-      testMatch: ["<rootDir>/src/__tests__/integration/**/*.test.ts"],
-      testTimeout: 30000,
-      setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.integration.ts"],
-    },
-    {
-      displayName: "Performance Tests",
-      testMatch: ["<rootDir>/src/__tests__/performance/**/*.test.ts"],
-      testTimeout: 60000,
-      setupFilesAfterEnv: ["<rootDir>/src/__tests__/setup.performance.ts"],
-    },
-  ],
+
 
   // Module resolution
   moduleFileExtensions: ["ts", "js", "json"],
@@ -94,26 +75,9 @@ const config: Config = {
   // Ignore patterns
   testPathIgnorePatterns: ["/node_modules/", "/dist/", "/coverage/"],
 
-  // Watch plugins for development
-  watchPlugins: [
-    "jest-watch-typeahead/filename",
-    "jest-watch-typeahead/testname",
-  ],
 
-  // Reporter configuration
-  reporters: [
-    "default",
-    [
-      "jest-junit",
-      {
-        outputDirectory: "coverage",
-        outputName: "junit.xml",
-        suiteNameTemplate: "{filepath}",
-        classNameTemplate: "{classname}",
-        titleTemplate: "{title}",
-      },
-    ],
-  ],
+
+
 
   // Cache configuration
   cacheDirectory: "<rootDir>/.jest-cache",

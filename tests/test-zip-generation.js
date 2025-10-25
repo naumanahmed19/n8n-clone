@@ -5,8 +5,6 @@ const fs = require("fs");
 const path = require("path");
 
 async function testZipGeneration() {
-  console.log("Testing zip generation...");
-
   const generator = new NodeTemplateGenerator();
 
   const options = {
@@ -26,10 +24,6 @@ async function testZipGeneration() {
     const result = await generator.generateNodePackageZip(options);
 
     if (result.success) {
-      console.log("✅ Zip generation successful!");
-      console.log("Filename:", result.filename);
-      console.log("Zip size:", result.zipBuffer.length, "bytes");
-
       // Save the zip file to test it
       const testOutputPath = path.join(
         __dirname,
@@ -38,13 +32,11 @@ async function testZipGeneration() {
       );
       fs.mkdirSync(path.dirname(testOutputPath), { recursive: true });
       fs.writeFileSync(testOutputPath, result.zipBuffer);
-      console.log("✅ Zip file saved to:", testOutputPath);
     } else {
-      console.log("❌ Zip generation failed:");
-      console.log("Errors:", result.errors);
+      throw new Error(`Zip generation failed: ${result.errors?.join(', ')}`);
     }
   } catch (error) {
-    console.log("❌ Test failed:", error.message);
+    throw new Error(`Test failed: ${error.message}`);
   }
 }
 

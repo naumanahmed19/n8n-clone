@@ -1,7 +1,7 @@
 import { nodeService } from "@/services/node";
 import { NodeType } from "@/types";
 import { updateNodeTypesCache } from "@/utils/nodeTypeClassification";
-import { create } from "zustand";
+import { createWithEqualityFn } from "zustand/traditional";
 
 // Extended node type that might have additional properties for custom nodes
 interface ExtendedNodeType extends NodeType {
@@ -18,6 +18,7 @@ interface NodeTypesState {
   // Loading states
   isLoading: boolean;
   isRefetching: boolean;
+  hasFetched: boolean;
 
   // Error state
   error: string | null;
@@ -37,11 +38,12 @@ interface NodeTypesState {
   getActiveNodeTypesByCategory: () => Record<string, ExtendedNodeType[]>;
 }
 
-export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
+export const useNodeTypesStore = createWithEqualityFn<NodeTypesState>((set, get) => ({
   // Initial state
   nodeTypes: [],
   isLoading: false,
   isRefetching: false,
+  hasFetched: false,
   error: null,
 
   // Actions
@@ -64,6 +66,7 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
       set({
         nodeTypes: response,
         isLoading: false,
+        hasFetched: true,
         error: null,
       });
     } catch (error: any) {
@@ -94,6 +97,7 @@ export const useNodeTypesStore = create<NodeTypesState>((set, get) => ({
       set({
         nodeTypes: response,
         isRefetching: false,
+        hasFetched: true,
         error: null,
       });
     } catch (error: any) {
@@ -224,6 +228,7 @@ export const useNodeTypes = () => {
     // Loading states
     isLoading: store.isLoading,
     isRefetching: store.isRefetching,
+    hasFetched: store.hasFetched,
 
     // Error
     error: store.error,

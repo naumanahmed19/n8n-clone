@@ -1,6 +1,6 @@
 # Node Execution System Documentation
 
-This directory contains comprehensive documentation for the n8n-clone node execution system, including architectural decisions, flow diagrams, and business logic explanations.
+This directory contains comprehensive documentation for the node-drop node execution system, including architectural decisions, flow diagrams, and business logic explanations.
 
 ## Documentation Structure
 

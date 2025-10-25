@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { createServer } from "http";
-import app from "../../index";
+import app from "../index";
 
 // Integration test specific setup
 let testServer: any;

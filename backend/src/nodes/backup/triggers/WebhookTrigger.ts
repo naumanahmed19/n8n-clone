@@ -2,7 +2,7 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
+} from "../../../types/node.types";
 
 export const WebhookTriggerNode: NodeDefinition = {
   type: "webhook-trigger",

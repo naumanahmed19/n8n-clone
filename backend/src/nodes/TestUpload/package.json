@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A test node for upload functionality",
   "main": "TestUpload.node.js",
-  "n8n": {
+  "nodeDrop": {
     "nodes": ["TestUpload.node.js"]
   }
 }

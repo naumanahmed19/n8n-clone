@@ -6,6 +6,7 @@ import {
   TriggerAutocomplete,
   TriggerOnAutocomplete,
   WebhookUrlGenerator,
+  WidgetEmbedGenerator,
   WorkflowAutocomplete,
 } from "@/components/workflow/node-config/custom-fields";
 import { CodeEditor } from "./custom-fields/CodeEditor";
@@ -23,6 +24,7 @@ export const customFieldComponents: Record<string, any> = {
   WorkflowAutocomplete,
   TriggerAutocomplete,
   WebhookUrlGenerator,
+  WidgetEmbedGenerator,
   CodeEditor,
 };
 

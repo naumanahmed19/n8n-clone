@@ -2,7 +2,7 @@ import {
   NodeDefinition,
   NodeInputData,
   NodeOutputData,
-} from "../../types/node.types";
+} from "../../../types/node.types";
 
 /**
  * Example node demonstrating both standard properties and custom template components

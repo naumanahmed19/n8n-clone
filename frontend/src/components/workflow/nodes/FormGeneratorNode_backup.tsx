@@ -1,27 +1,19 @@
 import { Button } from '@/components/ui/button'
-import { FormGenerator } from '@/components/ui/form-generator/FormGenerator'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+
 import { FormFieldConfig } from '@/components/ui/form-generator/types'
 import { useExecutionControls } from '@/hooks/workflow'
 import { useWorkflowStore } from '@/stores'
 import { Node, NodeProps } from '@xyflow/react'
 import { ClipboardList, Send } from 'lucide-react'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { BaseNodeWrapper } from './BaseNodeWrapper'
 
-interface FormField {
-  fieldType: string
-  fieldLabel: string
-  fieldName: string
-  placeholder?: string
-  required?: boolean
-  defaultValue?: string
-  options?: string
-  min?: number
-  max?: number
-  rows?: number
-  accept?: string
-  helpText?: string
-}
+
 
 interface FormGeneratorNodeData extends Record<string, unknown> {
   label: string
@@ -158,37 +150,37 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {}
     
-    formFields.forEach(field => {
+    formFieldConfigs.forEach(field => {
       if (field.required) {
-        const value = formValues[field.fieldName]
+        const value = formValues[field.name]
         if (!value || (typeof value === 'string' && value.trim() === '')) {
-          newErrors[field.fieldName] = `${field.fieldLabel} is required`
+          newErrors[field.name] = `${field.displayName} is required`
         }
       }
       
       // Email validation
-      if (field.fieldType === 'email' && formValues[field.fieldName]) {
+      if (field.type === 'email' && formValues[field.name]) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(formValues[field.fieldName])) {
-          newErrors[field.fieldName] = 'Please enter a valid email address'
+        if (!emailRegex.test(formValues[field.name])) {
+          newErrors[field.name] = 'Please enter a valid email address'
         }
       }
       
       // Number validation
-      if (field.fieldType === 'number' && formValues[field.fieldName]) {
-        const value = Number(formValues[field.fieldName])
-        if (field.min !== undefined && value < field.min) {
-          newErrors[field.fieldName] = `Value must be at least ${field.min}`
+      if (field.type === 'number' && formValues[field.name]) {
+        const value = Number(formValues[field.name])
+        if (field.validation?.min !== undefined && value < field.validation.min) {
+          newErrors[field.name] = `Value must be at least ${field.validation.min}`
         }
-        if (field.max !== undefined && value > field.max) {
-          newErrors[field.fieldName] = `Value must be at most ${field.max}`
+        if (field.validation?.max !== undefined && value > field.validation.max) {
+          newErrors[field.name] = `Value must be at most ${field.validation.max}`
         }
       }
     })
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }, [formFields, formValues])
+  }, [formFieldConfigs, formValues])
   
   // Handle form submission
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
@@ -230,7 +222,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
     } finally {
       setIsSubmitting(false)
     }
-  }, [isSubmitting, isExecuting, validateForm, id, parameters, formValues, updateNode, executeWorkflow, formTitle, formFields])
+  }, [isSubmitting, isExecuting, validateForm, id, parameters, formValues, updateNode, executeWorkflow, formTitle, formFieldConfigs])
   
   // Parse options string into array
   const parseOptions = useCallback((optionsStr: string) => {
@@ -240,33 +232,33 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
   }, [])
   
   // Render a single form field
-  const renderField = useCallback((field: FormField) => {
-    const value = formValues[field.fieldName] || ''
-    const error = errors[field.fieldName]
+  const renderField = useCallback((field: FormFieldConfig) => {
+    const value = formValues[field.name] || ''
+    const error = errors[field.name]
     
-    switch (field.fieldType) {
-      case 'text':
+    switch (field.type) {
+      case 'string':
       case 'email':
       case 'number':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName} className="text-xs font-medium">
-              {field.fieldLabel}
+          <div key={field.name} className="space-y-1.5">
+            <Label htmlFor={field.name} className="text-xs font-medium">
+              {field.displayName}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <Input
-              id={field.fieldName}
-              type={field.fieldType}
+              id={field.name}
+              type={field.type === 'string' ? 'text' : field.type}
               placeholder={field.placeholder}
               value={value}
-              onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+              onChange={(e) => handleFieldChange(field.name, e.target.value)}
               disabled={isSubmitting || isExecuting}
               className={`h-9 text-sm ${error ? 'border-red-500' : ''}`}
-              min={field.fieldType === 'number' ? field.min : undefined}
-              max={field.fieldType === 'number' ? field.max : undefined}
+              min={field.type === 'number' ? field.validation?.min : undefined}
+              max={field.type === 'number' ? field.validation?.max : undefined}
             />
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground">{field.helpText}</p>
+            {field.description && (
+              <p className="text-xs text-muted-foreground">{field.description}</p>
             )}
             {error && (
               <p className="text-xs text-red-500">{error}</p>
@@ -276,22 +268,22 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
       
       case 'textarea':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName} className="text-xs font-medium">
-              {field.fieldLabel}
+          <div key={field.name} className="space-y-1.5">
+            <Label htmlFor={field.name} className="text-xs font-medium">
+              {field.displayName}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <Textarea
-              id={field.fieldName}
+              id={field.name}
               placeholder={field.placeholder}
               value={value}
-              onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+              onChange={(e) => handleFieldChange(field.name, e.target.value)}
               disabled={isSubmitting || isExecuting}
               rows={field.rows || 3}
               className={`text-sm resize-none ${error ? 'border-red-500' : ''}`}
             />
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground">{field.helpText}</p>
+            {field.description && (
+              <p className="text-xs text-muted-foreground">{field.description}</p>
             )}
             {error && (
               <p className="text-xs text-red-500">{error}</p>
@@ -299,17 +291,17 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
           </div>
         )
       
-      case 'select':
-        const selectOptions = parseOptions(field.options || '')
+      case 'options':
+        const selectOptions = field.options || []
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName} className="text-xs font-medium">
-              {field.fieldLabel}
+          <div key={field.name} className="space-y-1.5">
+            <Label htmlFor={field.name} className="text-xs font-medium">
+              {field.displayName}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <Select
               value={value}
-              onValueChange={(val) => handleFieldChange(field.fieldName, val)}
+              onValueChange={(val) => handleFieldChange(field.name, val)}
               disabled={isSubmitting || isExecuting}
             >
               <SelectTrigger className={`h-9 text-sm ${error ? 'border-red-500' : ''}`}>
@@ -317,14 +309,14 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
               </SelectTrigger>
               <SelectContent>
                 {selectOptions.map(option => (
-                  <SelectItem key={option} value={option} className="text-sm">
-                    {option}
+                  <SelectItem key={option.value} value={option.value} className="text-sm">
+                    {option.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground">{field.helpText}</p>
+            {field.description && (
+              <p className="text-xs text-muted-foreground">{field.description}</p>
             )}
             {error && (
               <p className="text-xs text-red-500">{error}</p>
@@ -332,26 +324,26 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
           </div>
         )
       
-      case 'checkbox':
+      case 'boolean':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
+          <div key={field.name} className="space-y-1.5">
             <div className="flex items-center space-x-2">
               <Checkbox
-                id={field.fieldName}
+                id={field.name}
                 checked={value === true}
-                onCheckedChange={(checked) => handleFieldChange(field.fieldName, checked)}
+                onCheckedChange={(checked) => handleFieldChange(field.name, checked)}
                 disabled={isSubmitting || isExecuting}
               />
               <Label 
-                htmlFor={field.fieldName} 
+                htmlFor={field.name} 
                 className="text-xs font-medium cursor-pointer"
               >
-                {field.fieldLabel}
+                {field.displayName}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
               </Label>
             </div>
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground ml-6">{field.helpText}</p>
+            {field.description && (
+              <p className="text-xs text-muted-foreground ml-6">{field.description}</p>
             )}
             {error && (
               <p className="text-xs text-red-500 ml-6">{error}</p>
@@ -359,58 +351,25 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
           </div>
         )
       
-      case 'radio':
-        const radioOptions = parseOptions(field.options || '')
-        return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label className="text-xs font-medium">
-              {field.fieldLabel}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-            <RadioGroup
-              value={value}
-              onValueChange={(val) => handleFieldChange(field.fieldName, val)}
-              disabled={isSubmitting || isExecuting}
-              className="space-y-2"
-            >
-              {radioOptions.map(option => (
-                <div key={option} className="flex items-center space-x-2">
-                  <RadioGroupItem value={option} id={`${field.fieldName}-${option}`} />
-                  <Label 
-                    htmlFor={`${field.fieldName}-${option}`}
-                    className="text-xs font-normal cursor-pointer"
-                  >
-                    {option}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground">{field.helpText}</p>
-            )}
-            {error && (
-              <p className="text-xs text-red-500">{error}</p>
-            )}
-          </div>
-        )
+
       
-      case 'date':
+      case 'dateTime':
         return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName} className="text-xs font-medium">
-              {field.fieldLabel}
+          <div key={field.name} className="space-y-1.5">
+            <Label htmlFor={field.name} className="text-xs font-medium">
+              {field.displayName}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <Input
-              id={field.fieldName}
+              id={field.name}
               type="date"
               value={value}
-              onChange={(e) => handleFieldChange(field.fieldName, e.target.value)}
+              onChange={(e) => handleFieldChange(field.name, e.target.value)}
               disabled={isSubmitting || isExecuting}
               className={`h-9 text-sm ${error ? 'border-red-500' : ''}`}
             />
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground">{field.helpText}</p>
+            {field.description && (
+              <p className="text-xs text-muted-foreground">{field.description}</p>
             )}
             {error && (
               <p className="text-xs text-red-500">{error}</p>
@@ -418,38 +377,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
           </div>
         )
       
-      case 'file':
-        return (
-          <div key={field.fieldName} className="space-y-1.5">
-            <Label htmlFor={field.fieldName} className="text-xs font-medium">
-              {field.fieldLabel}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-            <Input
-              id={field.fieldName}
-              type="file"
-              accept={field.accept}
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  handleFieldChange(field.fieldName, {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type
-                  })
-                }
-              }}
-              disabled={isSubmitting || isExecuting}
-              className={`h-9 text-sm ${error ? 'border-red-500' : ''}`}
-            />
-            {field.helpText && (
-              <p className="text-xs text-muted-foreground">{field.helpText}</p>
-            )}
-            {error && (
-              <p className="text-xs text-red-500">{error}</p>
-            )}
-          </div>
-        )
+
       
       default:
         return null
@@ -458,29 +386,29 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
   
   // Header info
   const headerInfo = useMemo(() => 
-    formFields.length > 0 
-      ? `${formFields.length} field${formFields.length !== 1 ? 's' : ''}`
+    formFieldConfigs.length > 0 
+      ? `${formFieldConfigs.length} field${formFieldConfigs.length !== 1 ? 's' : ''}`
       : 'No fields configured',
-    [formFields.length]
+    [formFieldConfigs.length]
   )
   
   // Collapsed content - just show field count
   const collapsedContent = useMemo(() => (
     <div className="text-xs text-muted-foreground text-center py-1">
-      {formFields.length === 0 ? (
+      {formFieldConfigs.length === 0 ? (
         <p>Configure form fields in properties</p>
       ) : (
         <p>Click to expand and view form</p>
       )}
     </div>
-  ), [formFields.length])
+  ), [formFieldConfigs.length])
   
   // Expanded content - render the full form
   const expandedContent = useMemo(() => (
     <>
       {/* Form Area */}
       <div className="max-h-[400px] overflow-y-auto p-4">
-        {formFields.length === 0 ? (
+        {formFieldConfigs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <ClipboardList className="w-12 h-12 mb-2 opacity-50" />
             <p className="text-sm text-center">No form fields configured</p>
@@ -502,7 +430,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
             
             {/* Form Fields */}
             <div className="space-y-4">
-              {formFields.map(field => renderField(field))}
+              {formFieldConfigs.map(field => renderField(field))}
             </div>
             
             {/* Form-level error */}
@@ -537,7 +465,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
         )}
       </div>
     </>
-  ), [formFields, formTitle, formDescription, submitButtonText, isSubmitting, isExecuting, errors, handleSubmit, renderField])
+  ), [formFieldConfigs, formTitle, formDescription, submitButtonText, isSubmitting, isExecuting, errors, handleSubmit, renderField])
   
   return (
     <BaseNodeWrapper

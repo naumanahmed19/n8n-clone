@@ -15,7 +15,12 @@ const mockClearError = vi.fn()
 
 const renderLoginForm = () => {
   return render(
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <LoginForm />
     </BrowserRouter>
   )

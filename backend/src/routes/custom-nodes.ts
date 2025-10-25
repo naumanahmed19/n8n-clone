@@ -104,33 +104,6 @@ router.post("/packages/load", async (req: Request, res: Response) => {
 });
 
 /**
- * DELETE /api/custom-nodes/packages/:packageName
- * Unload a custom node package
- */
-router.delete("/packages/:packageName", async (req: Request, res: Response) => {
-  try {
-    const { packageName } = req.params;
-
-    const nodeLoader = global.nodeLoader as NodeLoader;
-    await nodeLoader.unloadNodePackage(packageName);
-
-    res.json({
-      success: true,
-      message: `Package ${packageName} unloaded successfully`,
-    });
-  } catch (error) {
-    logger.error("Failed to unload package", {
-      error,
-      packageName: req.params.packageName,
-    });
-    res.status(500).json({
-      success: false,
-      error: "Failed to unload package",
-    });
-  }
-});
-
-/**
  * POST /api/custom-nodes/packages/:packageName/reload
  * Reload a custom node package (for development)
  */
@@ -365,7 +338,7 @@ router.get("/marketplace/search", async (req: Request, res: Response) => {
 
     const marketplace = new NodeMarketplace({
       registryUrl:
-        process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+        process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
     });
 
     const filters = {
@@ -408,7 +381,7 @@ router.get(
 
       const marketplace = new NodeMarketplace({
         registryUrl:
-          process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+          process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
       });
 
       const packageInfo = await marketplace.getNodeInfo(packageId);
@@ -447,7 +420,7 @@ router.post("/marketplace/install", async (req: Request, res: Response) => {
 
     const marketplace = new NodeMarketplace({
       registryUrl:
-        process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+        process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
     });
 
     const result = await marketplace.installNode(packageId, {
@@ -506,7 +479,7 @@ router.post("/marketplace/publish", async (req: Request, res: Response) => {
 
     const marketplace = new NodeMarketplace({
       registryUrl:
-        process.env.NODE_MARKETPLACE_URL || "https://marketplace.n8n.io",
+        process.env.NODE_MARKETPLACE_URL || "https://marketplace.nodeDrop.io",
       apiKey: process.env.NODE_MARKETPLACE_API_KEY,
     });
 

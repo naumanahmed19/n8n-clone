@@ -1,32 +1,11 @@
-import { ToastContainer } from '@/components/ui/Toast'
-import { useGlobalToast } from '@/hooks/useToast'
-import { socketService } from '@/services/socket'
-import { useAuthStore } from '@/stores'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Outlet } from 'react-router-dom'
-import { Header } from './Header'
+import { BaseLayout } from './BaseLayout'
 
 export const Layout: React.FC = () => {
-  const { token, isAuthenticated } = useAuthStore()
-  const { toasts } = useGlobalToast()
-
-  useEffect(() => {
-    // Initialize socket connection when user is authenticated
-    if (isAuthenticated && token) {
-      socketService.initialize(token)
-    } else {
-      // Disconnect socket when user is not authenticated
-      socketService.disconnect()
-    }
-  }, [isAuthenticated, token])
-
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      <Header />
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
-      <ToastContainer toasts={toasts} position="top-right" />
-    </div>
+    <BaseLayout>
+      <Outlet />
+    </BaseLayout>
   )
 }

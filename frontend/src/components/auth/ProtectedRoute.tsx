@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores'
+import { socketService } from '@/services/socket'
 import { Loader2 } from 'lucide-react'
 import React, { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
@@ -28,8 +29,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Remove automatic guest login - users must explicitly choose guest mode
   }, [token, isAuthenticated, isLoading, getCurrentUser, hasTriedAuth])
 
+  // Initialize socket connection when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && token && token !== 'guest-token') {
+      // Initialize socket connection with current token
+      socketService.initialize(token).catch(error => {
+        console.error('Failed to initialize socket connection:', error)
+      })
+    } else if (!isAuthenticated) {
+      // Disconnect socket when user is not authenticated
+      socketService.disconnect()
+    }
+  }, [isAuthenticated, token])
+
   // Show loading spinner while checking authentication
-  if (isLoading || (token && !isAuthenticated && hasTriedAuth)) {
+  // Don't show loading for auth pages (login/register) as they have their own loading states
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
+  if ((isLoading || (token && !isAuthenticated && hasTriedAuth)) && !isAuthPage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

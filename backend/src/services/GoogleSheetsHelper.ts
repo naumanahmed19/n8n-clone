@@ -5,9 +5,9 @@
 
 const logger = {
   error: (message: string, extra?: any) => console.error(message, extra),
-  info: (message: string, extra?: any) => console.log(message, extra),
+  info: (message: string, extra?: any) => {}, // Disabled for cleaner output
   warn: (message: string, extra?: any) => console.warn(message, extra),
-  debug: (message: string, extra?: any) => console.debug(message, extra),
+  debug: (message: string, extra?: any) => {}, // Disabled for cleaner output
 };
 
 export interface GoogleSheetsCredentials {

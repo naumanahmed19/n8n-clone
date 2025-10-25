@@ -56,6 +56,7 @@ export class SocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private eventHandlers: Map<string, Set<SocketEventHandler>> = new Map();
+  private isConnecting = false;
 
   constructor() {
     // Don't auto-connect in constructor to avoid circular dependency
@@ -66,31 +67,41 @@ export class SocketService {
    * Connect to Socket.io server
    */
   private async connect(token?: string): Promise<void> {
-    // Dynamically import to avoid circular dependency
-    if (!token) {
-      const { useAuthStore } = await import('../stores/auth');
-      const authStore = useAuthStore.getState();
-      token = authStore.token || undefined;
-    }
-
-    if (!token) {
-      console.warn('No authentication token available for Socket.io connection');
+    if (this.isConnecting) {
       return;
     }
 
-    const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    this.isConnecting = true;
 
-    this.socket = io(serverUrl, {
-      auth: {
-        token
-      },
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: this.maxReconnectAttempts,
-      reconnectionDelay: this.reconnectDelay
-    });
+    try {
+      // Dynamically import to avoid circular dependency
+      if (!token) {
+        const { useAuthStore } = await import('../stores/auth');
+        const authStore = useAuthStore.getState();
+        token = authStore.token || undefined;
+      }
 
-    this.setupEventHandlers();
+      if (!token) {
+        console.warn('No authentication token available for Socket.io connection');
+        return;
+      }
+
+      const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+      this.socket = io(serverUrl, {
+        auth: {
+          token
+        },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: this.maxReconnectAttempts,
+        reconnectionDelay: this.reconnectDelay
+      });
+
+      this.setupEventHandlers();
+    } finally {
+      this.isConnecting = false;
+    }
   }
 
   /**
@@ -101,22 +112,22 @@ export class SocketService {
 
     // Connection events
     this.socket.on('connect', () => {
-      console.log('Connected to Socket.io server');
+      console.log('✅ Connected to Socket.io server');
       this.reconnectAttempts = 0;
       this.emit('socket-connected', { timestamp: new Date() });
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('Disconnected from Socket.io server:', reason);
+      console.log('❌ Disconnected from Socket.io server:', reason);
       this.emit('socket-disconnected', { reason, timestamp: new Date() });
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Socket.io connection error:', error);
+      console.error('🔴 Socket.io connection error:', error);
       this.reconnectAttempts++;
       
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error('Max reconnection attempts reached');
+        console.error('🚫 Max reconnection attempts reached');
         this.emit('socket-error', { error: error.message, timestamp: new Date() });
       }
     });
@@ -175,6 +186,9 @@ export class SocketService {
   public async subscribeToExecution(executionId: string): Promise<void> {
     await this.ensureConnected();
     
+    // Wait for connection to be established
+    await this.waitForConnection();
+    
     if (!this.socket?.connected) {
       console.warn('Socket not connected, cannot subscribe to execution');
       return;
@@ -188,8 +202,7 @@ export class SocketService {
    * Unsubscribe from execution updates
    */
   public async unsubscribeFromExecution(executionId: string): Promise<void> {
-    await this.ensureConnected();
-    
+    // Don't wait for connection when unsubscribing - just check if connected
     if (!this.socket?.connected) {
       console.warn('Socket not connected, cannot unsubscribe from execution');
       return;
@@ -205,12 +218,15 @@ export class SocketService {
   public async subscribeToWorkflow(workflowId: string): Promise<void> {
     await this.ensureConnected();
     
+    // Wait for connection to be established
+    await this.waitForConnection();
+    
     if (!this.socket?.connected) {
       console.warn('Socket not connected, cannot subscribe to workflow');
       return;
     }
 
-    console.log('Subscribing to workflow:', workflowId);
+    console.log('🔔 Subscribing to workflow:', workflowId);
     this.socket.emit('subscribe-workflow', workflowId);
   }
 
@@ -218,14 +234,13 @@ export class SocketService {
    * Unsubscribe from workflow updates
    */
   public async unsubscribeFromWorkflow(workflowId: string): Promise<void> {
-    await this.ensureConnected();
-    
+    // Don't wait for connection when unsubscribing - just check if connected
     if (!this.socket?.connected) {
       console.warn('Socket not connected, cannot unsubscribe from workflow');
       return;
     }
 
-    console.log('Unsubscribing from workflow:', workflowId);
+    console.log('🔕 Unsubscribing from workflow:', workflowId);
     this.socket.emit('unsubscribe-workflow', workflowId);
   }
 
@@ -294,9 +309,54 @@ export class SocketService {
    * Ensure socket is connected
    */
   private async ensureConnected(): Promise<void> {
-    if (!this.socket || !this.socket.connected) {
+    if (!this.socket || (!this.socket.connected && !this.isConnecting)) {
       await this.connect();
     }
+  }
+
+  /**
+   * Wait for socket connection to be established
+   */
+  private async waitForConnection(timeout: number = 5000): Promise<void> {
+    if (this.socket?.connected) {
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        reject(new Error('Socket not initialized'));
+        return;
+      }
+
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Connection timeout'));
+      }, timeout);
+
+      const onConnect = () => {
+        clearTimeout(timeoutId);
+        this.socket?.off('connect', onConnect);
+        this.socket?.off('connect_error', onError);
+        resolve();
+      };
+
+      const onError = (error: any) => {
+        clearTimeout(timeoutId);
+        this.socket?.off('connect', onConnect);
+        this.socket?.off('connect_error', onError);
+        reject(error);
+      };
+
+      this.socket.on('connect', onConnect);
+      this.socket.on('connect_error', onError);
+
+      // If already connected, resolve immediately
+      if (this.socket.connected) {
+        clearTimeout(timeoutId);
+        this.socket.off('connect', onConnect);
+        this.socket.off('connect_error', onError);
+        resolve();
+      }
+    });
   }
 
   /**

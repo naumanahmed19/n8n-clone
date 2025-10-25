@@ -18,7 +18,7 @@ describe("Flow Execution System Integration Tests", () => {
     process.env.NODE_ENV = "test";
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ||
-      "postgresql://test:test@localhost:5432/n8n_test";
+      "postgresql://test:test@localhost:5432/nd_test";
 
     prisma = new PrismaClient();
     await prisma.$connect();

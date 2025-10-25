@@ -383,18 +383,18 @@ function SchemaViewer({ data, level, keyName, expandedState, onExpandedChange }:
  * getRelevantData - Data Extraction Utility
  * 
  * PURPOSE:
- * - Extracts meaningful data from n8n execution results
+ * - Extracts meaningful data from nodeDrop execution results
  * - Handles nested execution metadata to find actual user data
  * - Standardizes different data structure patterns
  * 
- * N8N DATA PATTERNS:
+ * nodeDrop DATA PATTERNS:
  * - Array[0].json - Most common: data wrapped in execution array
  * - Array[0].main - Recursive: data in 'main' property  
  * - Object.json - Direct: data in 'json' property
  * - Raw values - Primitive data types
  * 
  * FILTERING:
- * - Returns first item from arrays (n8n executions often single-item)
+ * - Returns first item from arrays (nodeDrop executions often single-item)
  * - Unwraps execution metadata to reveal actual payload
  * - Falls back to raw data if no known patterns match
  */
@@ -402,11 +402,11 @@ function getRelevantData(executionData: any): any {
   // Extract the most relevant data from execution result
   // Usually the actual data is nested within execution metadata
   
-  // If it's an array, get the first item (common in n8n)
+  // If it's an array, get the first item (common in nodeDrop)
   if (Array.isArray(executionData) && executionData.length > 0) {
     const firstItem = executionData[0]
     
-    // If the first item has a 'json' property, use that (common n8n pattern)
+    // If the first item has a 'json' property, use that (common nodeDrop pattern)
     if (firstItem && typeof firstItem === 'object' && firstItem.json) {
       return firstItem.json
     }

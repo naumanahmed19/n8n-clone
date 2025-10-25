@@ -60,7 +60,12 @@ interface ReactFlowUIState {
   setShowControls: (show: boolean) => void;
   setBackgroundVariant: (variant: "dots" | "lines" | "cross") => void;
   setCompactMode: (compact: boolean) => void;
+  setPanOnDrag: (panOnDrag: boolean) => void;
+  setZoomOnScroll: (zoomOnScroll: boolean) => void;
   setExecutionPanelSize: (size: number) => void;
+
+  // Silent setters (don't trigger savePreferences)
+  setPreferencesFromAPI: (preferences: any) => void;
 
   // ReactFlow controls
   zoomIn: () => void;
@@ -164,6 +169,14 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
         set({ compactMode: compact });
         get().savePreferences();
       },
+      setPanOnDrag: (panOnDrag) => {
+        set({ panOnDrag });
+        get().savePreferences();
+      },
+      setZoomOnScroll: (zoomOnScroll) => {
+        set({ zoomOnScroll });
+        get().savePreferences();
+      },
       setExecutionPanelSize: (size) => set({ executionPanelSize: size }),
       setCanvasBoundaryX: (value) => {
         set({ canvasBoundaryX: value });
@@ -172,6 +185,41 @@ export const useReactFlowUIStore = createWithEqualityFn<ReactFlowUIState>()(
       setCanvasBoundaryY: (value) => {
         set({ canvasBoundaryY: value });
         get().savePreferences();
+      },
+
+      // Silent setter for loading from API (doesn't trigger savePreferences)
+      setPreferencesFromAPI: (preferences) => {
+        if (preferences.canvas) {
+          const updates: any = {};
+          if (preferences.canvas.showMinimap !== undefined) {
+            updates.showMinimap = preferences.canvas.showMinimap;
+          }
+          if (preferences.canvas.showBackground !== undefined) {
+            updates.showBackground = preferences.canvas.showBackground;
+          }
+          if (preferences.canvas.showControls !== undefined) {
+            updates.showControls = preferences.canvas.showControls;
+          }
+          if (preferences.canvas.backgroundVariant !== undefined) {
+            updates.backgroundVariant = preferences.canvas.backgroundVariant;
+          }
+          if (preferences.canvas.compactMode !== undefined) {
+            updates.compactMode = preferences.canvas.compactMode;
+          }
+          if (preferences.canvas.panOnDrag !== undefined) {
+            updates.panOnDrag = preferences.canvas.panOnDrag;
+          }
+          if (preferences.canvas.zoomOnScroll !== undefined) {
+            updates.zoomOnScroll = preferences.canvas.zoomOnScroll;
+          }
+          if (preferences.canvas.canvasBoundaryX !== undefined) {
+            updates.canvasBoundaryX = preferences.canvas.canvasBoundaryX;
+          }
+          if (preferences.canvas.canvasBoundaryY !== undefined) {
+            updates.canvasBoundaryY = preferences.canvas.canvasBoundaryY;
+          }
+          set(updates);
+        }
       },
 
       // Preferences persistence
