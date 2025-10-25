@@ -152,6 +152,10 @@ export const RegisterSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
 });
 
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+});
+
 // Response types
 export type ApiResponse<T = any> = {
   success: boolean;
@@ -182,3 +186,4 @@ export type ExecutionQueryRequest = z.infer<typeof ExecutionQuerySchema>;
 export type NodeQueryRequest = z.infer<typeof NodeQuerySchema>;
 export type LoginRequest = z.infer<typeof LoginSchema>;
 export type RegisterRequest = z.infer<typeof RegisterSchema>;
+export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordSchema>;
