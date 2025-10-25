@@ -25,11 +25,9 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
   Database,
   Key,
   LogOut,
-  Sparkles,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -109,13 +107,6 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => navigate('/executions')}>
                 <Activity />
                 Executions
@@ -134,10 +125,6 @@ export function NavUser({
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <BadgeCheck />
                 Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell />
