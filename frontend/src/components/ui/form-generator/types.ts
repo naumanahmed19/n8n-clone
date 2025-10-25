@@ -10,23 +10,23 @@ export interface FormFieldConfig {
   name: string;
   displayName: string;
   type:
-    | "string"
-    | "text"
-    | "number"
-    | "boolean"
-    | "options"
-    | "multiOptions"
-    | "json"
-    | "dateTime"
-    | "collection"
-    | "textarea"
-    | "password"
-    | "email"
-    | "url"
-    | "switch"
-    | "autocomplete"
-    | "credential"
-    | "custom";
+  | "string"
+  | "text"
+  | "number"
+  | "boolean"
+  | "options"
+  | "multiOptions"
+  | "json"
+  | "dateTime"
+  | "collection"
+  | "textarea"
+  | "password"
+  | "email"
+  | "url"
+  | "switch"
+  | "autocomplete"
+  | "credential"
+  | "custom";
   required?: boolean;
   default?: any;
   description?: string;
