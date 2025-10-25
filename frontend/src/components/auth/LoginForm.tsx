@@ -15,7 +15,7 @@ export const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [searchParams] = useSearchParams()
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
-  const { login, loginAsGuest, isLoading, error, clearError } = useAuthStore()
+  const { login, isLoading, error, clearError } = useAuthStore()
   const navigate = useNavigate()
 
   const form = useForm<LoginCredentials>({
@@ -35,14 +35,8 @@ export const LoginForm: React.FC = () => {
     }
   }
 
-  const handleGuestLogin = async () => {
-    try {
-      clearError()
-      await loginAsGuest()
-      navigate('/workflows')
-    } catch (error) {
-      // Error is handled by the store
-    }
+  const handleCreateAccount = () => {
+    navigate('/register')
   }
 
   useEffect(() => {
@@ -192,17 +186,9 @@ export const LoginForm: React.FC = () => {
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={handleGuestLogin}
-                disabled={isLoading}
+                onClick={handleCreateAccount}
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  'Continue as Guest'
-                )}
+                Create new account
               </Button>
             </form>
           </Form>
