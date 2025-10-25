@@ -238,13 +238,23 @@ export function WorkflowEditor({
             } else {
                 console.log('ðŸ”„ Syncing Zustand â†’ React Flow (not blocked)');
             }
-            setNodes(reactFlowNodes);
+            // Preserve current selection when syncing
+            const currentNodes = reactFlowInstance?.getNodes() || [];
+            const selectedNodeIds = currentNodes.filter(node => node.selected).map(node => node.id);
+
+            // Update nodes with preserved selection
+            const nodesWithSelection = reactFlowNodes.map(node => ({
+                ...node,
+                selected: selectedNodeIds.includes(node.id)
+            }));
+
+            setNodes(nodesWithSelection);
             setEdges(reactFlowEdges);
             prevWorkflowIdRef.current = workflowId;
         } else {
             console.log('â¸ï¸  Sync blocked - drag in progress');
         }
-    }, [workflowId, reactFlowNodes, reactFlowEdges, setNodes, setEdges, blockSync]);
+    }, [workflowId, reactFlowNodes, reactFlowEdges, setNodes, setEdges, blockSync, reactFlowInstance]);
 
     // Memoize node type map for O(1) lookups
     const nodeTypeMap = useMemo(() => {
