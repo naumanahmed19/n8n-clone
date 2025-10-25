@@ -135,7 +135,7 @@ export function UnifiedCredentialSelector({
               setSelectedCredentialType(allowedTypes[0])
               setShowCreateModal(true)
             }}
-            className="px-2 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center text-sm"
+            className="h-9 w-9 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center flex-shrink-0"
             title="Create new credential"
           >
             <Plus className="w-4 h-4" />
@@ -147,7 +147,7 @@ export function UnifiedCredentialSelector({
           <div className="relative group">
             <button
               type="button"
-              className="px-2 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center text-sm"
+              className="h-9 w-9 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center flex-shrink-0"
               title="Create new credential"
             >
               <Plus className="w-4 h-4" />
