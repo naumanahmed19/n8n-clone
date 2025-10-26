@@ -92,7 +92,7 @@ export function NodeContent({
                 "w-4 h-4",
                 isRunning && 'opacity-30'
               )}
-              style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+              crossOrigin="anonymous"
             />
             {/* Loading spinner overlay on icon */}
             {isRunning && (

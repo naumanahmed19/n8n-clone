@@ -6,13 +6,13 @@ import {
 
 export const ChatNode: NodeDefinition = {
   type: "chat",
-  displayName: "Chat One",
+  displayName: "Chat",
   name: "chat",
   group: ["communication", "ai"],
   version: 1,
   description:
     "Interactive chat interface - Send messages and trigger workflows. Can be used as a trigger or accept input from other nodes.",
-  icon: "💬",
+  icon: "lucide:message-circle",
   color: "#3b82f6",
   executionCapability: "trigger",
   defaults: {

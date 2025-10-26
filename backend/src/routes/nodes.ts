@@ -157,9 +157,9 @@ router.post(
       data: result.success ? result.data : undefined,
       error: result.error
         ? {
-            code: "NODE_EXECUTION_ERROR",
-            message: result.error.message,
-          }
+          code: "NODE_EXECUTION_ERROR",
+          message: result.error.message,
+        }
         : undefined,
     };
 
@@ -201,9 +201,9 @@ router.post(
       data: result.success ? result.data : undefined,
       error: result.error
         ? {
-            code: "LOAD_OPTIONS_ERROR",
-            message: result.error.message,
-          }
+          code: "LOAD_OPTIONS_ERROR",
+          message: result.error.message,
+        }
         : undefined,
     };
 
@@ -220,6 +220,11 @@ router.get(
   "/:type/icon",
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { type } = req.params;
+
+    // Validate node type to prevent path traversal attacks
+    if (!type || !/^[a-zA-Z0-9-_]+$/.test(type)) {
+      return res.status(400).json({ error: "Invalid node type" });
+    }
 
     try {
       // Get the node schema to find its icon path
@@ -268,6 +273,7 @@ router.get(
       // Set appropriate content type for SVG
       res.setHeader("Content-Type", "image/svg+xml");
       res.setHeader("Cache-Control", "public, max-age=86400"); // Cache for 1 day
+      //res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"); // Allow cross-origin loading
 
       // Send the file
       res.sendFile(iconPath);

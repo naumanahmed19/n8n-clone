@@ -199,7 +199,7 @@ export function NodeMarketplace({
                       src={IconComponent}
                       alt={pkg.name}
                       className="h-4 w-4"
-                      style={{ filter: 'brightness(0) invert(1)' }}
+                      crossOrigin="anonymous"
                     />
                   ) : (
                     <span className="text-white text-xs font-bold">

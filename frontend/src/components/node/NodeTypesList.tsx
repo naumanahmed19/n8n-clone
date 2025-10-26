@@ -383,7 +383,7 @@ export function NodeTypesList({ }: NodeTypesListProps) {
                           src={IconComponent}
                           alt={nodeType.displayName}
                           className="h-4 w-4"
-                          style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+                          crossOrigin="anonymous"
                         />
                       ) : (
                         <span className="text-white text-xs font-bold">

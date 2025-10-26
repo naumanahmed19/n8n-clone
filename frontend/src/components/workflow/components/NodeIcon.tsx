@@ -101,7 +101,7 @@ export const NodeIcon = memo(function NodeIcon({
                 src={IconComponent as string}
                 alt={icon || 'Node icon'}
                 className={`${iconSizeClasses[size]} ${isExecuting ? 'opacity-30' : ''}`}
-                style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+                crossOrigin="anonymous"
               />
               {isExecuting && (
                 <div className="absolute inset-0 flex items-center justify-center">

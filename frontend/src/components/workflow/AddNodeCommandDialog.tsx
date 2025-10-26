@@ -393,7 +393,7 @@ export function AddNodeCommandDialog({
                             src={IconComponent as string} 
                             alt={node.displayName}
                             className="w-4 h-4"
-                            style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
+                            crossOrigin="anonymous"
                           />
                         ) : IconComponent ? (
                           // @ts-ignore - IconComponent is LucideIcon here
