@@ -1,3 +1,4 @@
+import { NodeIconRenderer } from '@/components/common/NodeIconRenderer'
 import { Badge } from '@/components/ui/badge'
 import {
   CommandDialog,
@@ -11,7 +12,6 @@ import {
 import { useAddNodeDialogStore, useNodeTypes, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowConnection, WorkflowNode } from '@/types'
 import { fuzzyFilter } from '@/utils/fuzzySearch'
-import { getIconComponent, isTextIcon } from '@/utils/iconMapper'
 import { useReactFlow } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -372,11 +372,6 @@ export function AddNodeCommandDialog({
                   }
                   renderedNodeTypes.add(node.type)
                   
-                  // Get the appropriate icon component
-                  const IconComponent = getIconComponent(node.icon, node.type, node.group)
-                  const useTextIcon = !IconComponent && isTextIcon(node.icon)
-                  const isSvgPath = typeof IconComponent === 'string'
-                  
                   return (
                     <CommandItem
                       key={node.type}
@@ -384,26 +379,16 @@ export function AddNodeCommandDialog({
                       onSelect={() => handleSelectNode(node)}
                       className="flex items-center gap-3 p-3"
                     >
-                      <div 
-                        className={`w-8 h-8 flex items-center justify-center text-white flex-shrink-0 ${node.group.includes('trigger') ? 'rounded-full' : 'rounded-md'} shadow-sm`}
-                        style={{ backgroundColor: node.color || '#6b7280' }}
-                      >
-                        {isSvgPath ? (
-                          <img 
-                            src={IconComponent as string} 
-                            alt={node.displayName}
-                            className="w-4 h-4"
-                            crossOrigin="anonymous"
-                          />
-                        ) : IconComponent ? (
-                          // @ts-ignore - IconComponent is LucideIcon here
-                          <IconComponent className="w-4 h-4 text-white" />
-                        ) : useTextIcon ? (
-                          <span className="text-xs font-bold">{node.icon}</span>
-                        ) : (
-                          <span className="text-xs font-bold">{node.displayName.charAt(0).toUpperCase()}</span>
-                        )}
-                      </div>
+                      <NodeIconRenderer
+                        icon={node.icon}
+                        nodeType={node.type}
+                        nodeGroup={node.group}
+                        displayName={node.displayName}
+                        backgroundColor={node.color || '#6b7280'}
+                        isTrigger={node.group.includes('trigger')}
+                        size="md"
+                        className="flex-shrink-0 shadow-sm"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">
                           {node.displayName}

@@ -1,3 +1,4 @@
+import { NodeIconRenderer } from '@/components/common/NodeIconRenderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,7 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
-import { getIconComponent } from '@/utils/iconMapper'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
   AlertCircle,
@@ -66,9 +66,6 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
 
   const nodeExecutionResult = getNodeExecutionResult(node.id)
 
-  // Get icon component using the same utility as NodeTypesList
-  const IconComponent = getIconComponent(nodeType.icon, nodeType.type, nodeType.group)
-
   const getNodeStatusBadge = (status?: string) => {
     switch (status) {
       case 'success':
@@ -90,23 +87,15 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
       <div className="p-4 border-b bg-gray-50/50 h-[72px] flex items-center">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: nodeType.color || '#666' }}
-            >
-              {typeof IconComponent === 'string' ? (
-                <img
-                  src={IconComponent}
-                  alt={nodeType.displayName}
-                  className="w-5 h-5"
-                  crossOrigin="anonymous"
-                />
-              ) : IconComponent ? (
-                <IconComponent className="w-5 h-5" />
-              ) : (
-                nodeType.displayName.charAt(0).toUpperCase()
-              )}
-            </div>
+            <NodeIconRenderer
+              icon={nodeType.icon}
+              nodeType={nodeType.type}
+              nodeGroup={nodeType.group}
+              displayName={nodeType.displayName}
+              backgroundColor={nodeType.color}
+              size="lg"
+              className="rounded-lg"
+            />
             <div className="flex-1 min-w-0">
               {isEditingName && !readOnly ? (
                 <Input
