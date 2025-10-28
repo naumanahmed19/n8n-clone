@@ -6,7 +6,14 @@ import { CredentialService } from "../services/CredentialService";
 import { AppError } from "../utils/errors";
 
 const router = Router();
-const credentialService = new CredentialService();
+
+// Use global credential service instance (shared with core credentials)
+const getCredentialService = () => {
+  if (!global.credentialService) {
+    throw new Error("CredentialService not initialized");
+  }
+  return global.credentialService;
+};
 
 /**
  * Google OAuth2 Configuration
@@ -15,11 +22,19 @@ const GOOGLE_OAUTH_CONFIG = {
   authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
   tokenUrl: "https://oauth2.googleapis.com/token",
   scopes: {
+    googleOAuth2: [
+      // Core credential - comprehensive scopes for all Google services
+      "https://www.googleapis.com/auth/drive",
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/userinfo.email",
+    ],
     googleSheetsOAuth2: [
+      // Legacy credential
       "https://www.googleapis.com/auth/spreadsheets.readonly",
       "https://www.googleapis.com/auth/drive.readonly",
     ],
     googleDriveOAuth2: [
+      // Legacy credential
       "https://www.googleapis.com/auth/drive",
     ],
   },
@@ -46,7 +61,7 @@ router.get(
 
     if (credentialId) {
       // Editing existing credential - get from database
-      const credential = await credentialService.getCredential(
+      const credential = await getCredentialService().getCredential(
         credentialId as string,
         req.user!.id
       );
@@ -71,13 +86,12 @@ router.get(
     }
 
     // Build callback URL
-    const callbackUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    }/oauth/callback`;
+    const callbackUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"
+      }/oauth/callback`;
 
     // Determine credential type and scopes
-    const finalCredentialType = credentialType as string || "googleSheetsOAuth2";
-    const scopes = GOOGLE_OAUTH_CONFIG.scopes[finalCredentialType as keyof typeof GOOGLE_OAUTH_CONFIG.scopes] || GOOGLE_OAUTH_CONFIG.scopes.googleSheetsOAuth2;
+    const finalCredentialType = credentialType as string || "googleOAuth2";
+    const scopes = GOOGLE_OAUTH_CONFIG.scopes[finalCredentialType as keyof typeof GOOGLE_OAUTH_CONFIG.scopes] || GOOGLE_OAUTH_CONFIG.scopes.googleOAuth2;
 
     // Encode credential data in state parameter
     const stateData = {
@@ -147,7 +161,7 @@ router.post(
 
     if (credentialId) {
       // Editing existing credential - get from database
-      const credential = await credentialService.getCredential(
+      const credential = await getCredentialService().getCredential(
         credentialId,
         req.user!.id
       );
@@ -168,9 +182,8 @@ router.post(
       isNewCredential = true;
     }
 
-    const callbackUrl = `${
-      process.env.FRONTEND_URL || "http://localhost:3000"
-    }/oauth/callback`;
+    const callbackUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"
+      }/oauth/callback`;
 
     try {
       // Exchange authorization code for tokens
@@ -198,14 +211,17 @@ router.post(
       try {
         if (isNewCredential) {
           // Create new credential with all data including tokens
-          const defaultName = credentialType === "googleDriveOAuth2" 
-            ? `Google Drive OAuth2 - ${new Date().toLocaleDateString()}`
-            : `Google Sheets OAuth2 - ${new Date().toLocaleDateString()}`;
-            
-          finalCredential = await credentialService.createCredential(
+          let defaultName = `Google OAuth2 - ${new Date().toLocaleDateString()}`;
+          if (credentialType === "googleDriveOAuth2") {
+            defaultName = `Google Drive OAuth2 - ${new Date().toLocaleDateString()}`;
+          } else if (credentialType === "googleSheetsOAuth2") {
+            defaultName = `Google Sheets OAuth2 - ${new Date().toLocaleDateString()}`;
+          }
+
+          finalCredential = await getCredentialService().createCredential(
             req.user!.id,
             credentialName || defaultName,
-            credentialType || "googleSheetsOAuth2",
+            credentialType || "googleOAuth2",
             {
               clientId: finalClientId,
               clientSecret: finalClientSecret,
@@ -218,12 +234,12 @@ router.post(
           );
         } else {
           // Update existing credential with tokens
-          const existingCredential = await credentialService.getCredential(
+          const existingCredential = await getCredentialService().getCredential(
             credentialId,
             req.user!.id
           );
 
-          finalCredential = await credentialService.updateCredential(
+          finalCredential = await getCredentialService().updateCredential(
             credentialId,
             req.user!.id,
             {
@@ -259,10 +275,9 @@ router.post(
       // If it's an axios error (from token exchange), format it appropriately
       if (error.response?.data) {
         throw new AppError(
-          `Failed to exchange authorization code: ${
-            error.response.data.error_description ||
-            error.response.data.error ||
-            error.message
+          `Failed to exchange authorization code: ${error.response.data.error_description ||
+          error.response.data.error ||
+          error.message
           }`,
           400
         );
@@ -289,7 +304,7 @@ router.post(
     }
 
     // Get credential
-    const credential = await credentialService.getCredential(
+    const credential = await getCredentialService().getCredential(
       credentialId,
       req.user!.id
     );
@@ -326,7 +341,7 @@ router.post(
       const { access_token, expires_in, token_type } = tokenResponse.data;
 
       // Update credential with new access token
-      const updatedCredential = await credentialService.updateCredential(
+      const updatedCredential = await getCredentialService().updateCredential(
         credentialId,
         req.user!.id,
         {
@@ -354,8 +369,7 @@ router.post(
         error.response?.data || error.message
       );
       throw new AppError(
-        `Failed to refresh token: ${
-          error.response?.data?.error_description || error.message
+        `Failed to refresh token: ${error.response?.data?.error_description || error.message
         }`,
         400
       );
@@ -373,7 +387,7 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { credentialId } = req.params;
 
-    const credential = await credentialService.getCredential(
+    const credential = await getCredentialService().getCredential(
       credentialId,
       req.user!.id
     );

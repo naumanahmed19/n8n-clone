@@ -1,8 +1,15 @@
-const GoogleDriveOAuth2Credentials = {
-  name: "googleDriveOAuth2",
-  displayName: "Google Drive OAuth2",
-  documentationUrl: "https://developers.google.com/drive/api/v3/about-auth",
-  icon: "🗂️",
+import { CredentialType, CredentialData } from "../services/CredentialService";
+
+/**
+ * Generic Google OAuth2 Credential
+ * Can be used by Google Drive, Google Sheets, Gmail, and other Google services
+ * Each service can specify its own scopes when using this credential
+ */
+export const GoogleOAuth2Credentials: CredentialType = {
+  name: "googleOAuth2",
+  displayName: "Google OAuth2",
+  description: "OAuth2 authentication for Google services (Drive, Sheets, Gmail, etc.)",
+  icon: "🔐",
   color: "#4285F4",
   testable: true,
   properties: [
@@ -36,17 +43,23 @@ const GoogleDriveOAuth2Credentials = {
       description: "OAuth2 Client Secret from Google Cloud Console",
       placeholder: "GOCSPX-***",
     },
+    {
+      displayName: "Scopes",
+      name: "scopes",
+      type: "string",
+      required: false,
+      description: "Comma-separated list of OAuth2 scopes (optional, defaults will be used)",
+      placeholder: "https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/spreadsheets",
+    },
     // Note: accessToken and refreshToken are stored in the credential
     // but not shown in the form - they're automatically filled via OAuth
   ],
 
   /**
-   * Test the Google Drive OAuth2 connection
+   * Test the Google OAuth2 connection
    */
-  async test(data) {
+  async test(data: CredentialData) {
     try {
-      const { google } = require("googleapis");
-
       // Validate required fields
       if (!data.clientId || !data.clientSecret) {
         return {
@@ -57,11 +70,21 @@ const GoogleDriveOAuth2Credentials = {
 
       // For OAuth2 testing, we need the access token
       if (!data.accessToken) {
+        // If no access token yet, just validate the format of client ID and secret
+        if (data.clientId.length < 10 || data.clientSecret.length < 10) {
+          return {
+            success: false,
+            message: "Client ID or Client Secret appears to be invalid"
+          };
+        }
         return {
-          success: false,
-          message: "Please complete OAuth2 authorization first"
+          success: true,
+          message: "Credentials format is valid. Complete OAuth2 authorization to test the connection."
         };
       }
+
+      // Dynamically import googleapis to avoid dependency issues
+      const { google } = require("googleapis");
 
       // Create OAuth2 auth
       const auth = new google.auth.OAuth2(
@@ -74,29 +97,14 @@ const GoogleDriveOAuth2Credentials = {
         refresh_token: data.refreshToken
       });
 
-      // Create Drive API client
-      const drive = google.drive({ version: "v3", auth });
-
       // Test the connection by getting user info
-      const response = await drive.about.get({
-        fields: "user,storageQuota"
-      });
+      const oauth2 = google.oauth2({ version: "v2", auth });
+      const response = await oauth2.userinfo.get();
 
-      if (response.data && response.data.user) {
-        const user = response.data.user;
-        const quota = response.data.storageQuota;
-        
-        let message = `Connected successfully as ${user.displayName || user.emailAddress}`;
-        
-        if (quota && quota.limit) {
-          const usedGB = Math.round((parseInt(quota.usage) / (1024 * 1024 * 1024)) * 100) / 100;
-          const limitGB = Math.round((parseInt(quota.limit) / (1024 * 1024 * 1024)) * 100) / 100;
-          message += ` (${usedGB}GB / ${limitGB}GB used)`;
-        }
-
+      if (response.data && response.data.email) {
         return {
           success: true,
-          message
+          message: `Connected successfully as ${response.data.email}`
         };
       }
 
@@ -104,7 +112,7 @@ const GoogleDriveOAuth2Credentials = {
         success: true,
         message: "Connection successful"
       };
-    } catch (error) {
+    } catch (error: any) {
       // Handle specific Google API errors
       if (error.code === 401) {
         return {
@@ -115,11 +123,6 @@ const GoogleDriveOAuth2Credentials = {
         return {
           success: false,
           message: "Access denied. Please check your API permissions and scopes."
-        };
-      } else if (error.code === 404) {
-        return {
-          success: false,
-          message: "Google Drive API not found. Please enable the Drive API in your Google Cloud Console."
         };
       } else if (error.message && error.message.includes("invalid_grant")) {
         return {
@@ -135,5 +138,3 @@ const GoogleDriveOAuth2Credentials = {
     }
   }
 };
-
-module.exports = GoogleDriveOAuth2Credentials;
