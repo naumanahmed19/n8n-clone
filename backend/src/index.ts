@@ -50,6 +50,14 @@ const PORT = process.env.PORT || 4000;
 const prisma = new PrismaClient();
 const nodeService = new NodeService(prisma);
 const credentialService = new CredentialService();
+
+// Register core credentials (OAuth2, HTTP Basic Auth, API Key, etc.)
+try {
+  credentialService.registerCoreCredentials();
+} catch (error) {
+  console.error("❌ Failed to register core credentials:", error);
+}
+
 const nodeLoader = new NodeLoader(nodeService, credentialService, prisma);
 const socketService = new SocketService(httpServer);
 

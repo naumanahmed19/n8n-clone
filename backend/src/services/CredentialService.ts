@@ -55,6 +55,7 @@ export class CredentialService {
   private encryptionKey: string;
   private algorithm = "aes-256-cbc";
   private credentialTypeRegistry = new Map<string, CredentialType>();
+  private coreCredentialsRegistered = false;
 
   constructor() {
     this.prisma = new PrismaClient();
@@ -68,6 +69,33 @@ export class CredentialService {
     }
 
     this.encryptionKey = keyString;
+  }
+
+  /**
+   * Register core credential types
+   * This should be called once during application initialization
+   */
+  registerCoreCredentials(): void {
+    if (this.coreCredentialsRegistered) {
+      logger.info("Core credentials already registered, skipping");
+      return;
+    }
+
+    try {
+      // Import core credentials
+      const { CoreCredentials } = require("../credentials");
+
+      // Register each core credential
+      for (const credential of CoreCredentials) {
+        this.registerCredentialType(credential);
+      }
+
+      this.coreCredentialsRegistered = true;
+      logger.info(`✅ Registered ${CoreCredentials.length} core credential types`);
+    } catch (error) {
+      logger.error("Failed to register core credentials:", error);
+      throw error;
+    }
   }
 
   /**

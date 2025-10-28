@@ -32,7 +32,12 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
   outputs: ["main"],
   credentials: [
     {
-      name: "googleSheetsOAuth2",
+      name: "googleOAuth2",  // Core credential (NEW)
+      displayName: "Google OAuth2",
+      properties: [],
+    },
+    {
+      name: "googleSheetsOAuth2",  // Legacy credential (for backward compatibility)
       displayName: "Google Sheets OAuth2",
       properties: [],
     },
@@ -46,7 +51,7 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
       default: "",
       description: "Select Google Sheets credentials to connect to the API",
       placeholder: "Select credentials...",
-      allowedTypes: ["googleSheetsOAuth2"],
+      allowedTypes: ["googleOAuth2", "googleSheetsOAuth2"],
     },
     {
       displayName: "Spreadsheet",
@@ -411,8 +416,20 @@ export const GoogleSheetsTriggerNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    // Get credentials for Google Sheets API
-    const credentials = await this.getCredentials("googleSheetsOAuth2");
+    // Get credentials for Google Sheets API (try core credential first, then legacy)
+    let credentials;
+    try {
+      credentials = await this.getCredentials("googleOAuth2");
+      this.logger?.info("[GoogleSheets] Using core Google OAuth2 credential");
+    } catch (error) {
+      // Fall back to legacy credential for backward compatibility
+      try {
+        credentials = await this.getCredentials("googleSheetsOAuth2");
+        this.logger?.warn("[GoogleSheets] Using legacy googleSheetsOAuth2 credential. Please migrate to googleOAuth2 for better credential reuse across Google services.");
+      } catch (error) {
+        throw new Error("No Google Sheets credentials found. Please configure either googleOAuth2 or googleSheetsOAuth2 credentials.");
+      }
+    }
 
     const spreadsheetId = this.getNodeParameter("spreadsheetId") as string;
     const sheetName = this.getNodeParameter("sheetName") as string;

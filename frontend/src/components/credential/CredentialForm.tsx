@@ -34,7 +34,7 @@ export function CredentialForm({
   const [isTesting, setIsTesting] = useState(false)
   const [isAuthenticating, setIsAuthenticating] = useState(false)
 
-  const isOAuthCredential = credentialType.name === 'googleSheetsOAuth2' || credentialType.name === 'googleDriveOAuth2'
+  const isOAuthCredential = credentialType.name === 'googleOAuth2' || credentialType.name === 'googleSheetsOAuth2' || credentialType.name === 'googleDriveOAuth2'
 
   // Memoize fields array to prevent recreating on every render
   const fields = useMemo((): FormFieldConfig[] => [

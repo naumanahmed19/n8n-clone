@@ -22,7 +22,7 @@ const GoogleDriveNode = {
             required: false
         },
         {
-            name: "googleDriveOAuth2",
+            name: "googleOAuth2",  // Core credential
             required: false
         }
     ],
@@ -35,7 +35,7 @@ const GoogleDriveNode = {
             default: "",
             description: "Select Google Drive credentials",
             placeholder: "Select credentials...",
-            allowedTypes: ["googleDriveServiceAccount", "googleDriveOAuth2"]
+            allowedTypes: ["googleDriveServiceAccount", "googleOAuth2"]
         },
         {
             displayName: "Operation",
@@ -352,30 +352,22 @@ const GoogleDriveNode = {
         let credentialType;
         try {
             // Get the credential that was selected by the user
-            // The system maps the authentication field to the first allowed type,
-            // but we need to determine the actual type from the credential data
             let credentials = null;
 
-            // Try to get the credential using the mapped type (first allowed type)
+            // Try service account first
             try {
                 credentials = await this.getCredentials("googleDriveServiceAccount");
-                if (credentials) {
-                    // Check if this is actually a service account credential
-                    if (credentials.serviceAccountEmail && credentials.privateKey) {
-                        credentialType = "serviceAccount";
-                    } else if (credentials.clientId && credentials.clientSecret) {
-                        // This is actually an OAuth2 credential, but mapped to service account
-                        credentialType = "oauth2";
-                    }
+                if (credentials && credentials.serviceAccountEmail && credentials.privateKey) {
+                    credentialType = "serviceAccount";
                 }
             } catch (error) {
-                // Credential not available
+                // Service account not available
             }
 
-            // If we didn't get a credential or couldn't determine type, try OAuth2 directly
+            // If no service account, try OAuth2 core credential
             if (!credentials || !credentialType) {
                 try {
-                    credentials = await this.getCredentials("googleDriveOAuth2");
+                    credentials = await this.getCredentials("googleOAuth2");
                     if (credentials && credentials.clientId && credentials.clientSecret) {
                         credentialType = "oauth2";
                     }
@@ -735,31 +727,23 @@ const GoogleDriveNode = {
         async getFolders() {
             try {
                 // Get the credential that was selected by the user
-                // The system maps the authentication field to the first allowed type,
-                // but we need to determine the actual type from the credential data
                 let credentials = null;
                 let credentialType = null;
 
-                // Try to get the credential using the mapped type (first allowed type)
+                // Try service account first
                 try {
                     credentials = await this.getCredentials("googleDriveServiceAccount");
-                    if (credentials) {
-                        // Check if this is actually a service account credential
-                        if (credentials.serviceAccountEmail && credentials.privateKey) {
-                            credentialType = "serviceAccount";
-                        } else if (credentials.clientId && credentials.clientSecret) {
-                            // This is actually an OAuth2 credential, but mapped to service account
-                            credentialType = "oauth2";
-                        }
+                    if (credentials && credentials.serviceAccountEmail && credentials.privateKey) {
+                        credentialType = "serviceAccount";
                     }
                 } catch (error) {
-                    // Credential not available
+                    // Service account not available
                 }
 
-                // If we didn't get a credential or couldn't determine type, try OAuth2 directly
+                // If no service account, try OAuth2 core credential
                 if (!credentials || !credentialType) {
                     try {
-                        credentials = await this.getCredentials("googleDriveOAuth2");
+                        credentials = await this.getCredentials("googleOAuth2");
                         if (credentials && credentials.clientId && credentials.clientSecret) {
                             credentialType = "oauth2";
                         }
@@ -906,26 +890,20 @@ const GoogleDriveNode = {
                 let credentials = null;
                 let credentialType = null;
 
-                // Try to get the credential using the mapped type (first allowed type)
+                // Try service account first
                 try {
                     credentials = await this.getCredentials("googleDriveServiceAccount");
-                    if (credentials) {
-                        // Check if this is actually a service account credential
-                        if (credentials.serviceAccountEmail && credentials.privateKey) {
-                            credentialType = "serviceAccount";
-                        } else if (credentials.clientId && credentials.clientSecret) {
-                            // This is actually an OAuth2 credential, but mapped to service account
-                            credentialType = "oauth2";
-                        }
+                    if (credentials && credentials.serviceAccountEmail && credentials.privateKey) {
+                        credentialType = "serviceAccount";
                     }
                 } catch (error) {
-                    // Credential not available
+                    // Service account not available
                 }
 
-                // If we didn't get a credential or couldn't determine type, try OAuth2 directly
+                // If no service account, try OAuth2 core credential
                 if (!credentials || !credentialType) {
                     try {
-                        credentials = await this.getCredentials("googleDriveOAuth2");
+                        credentials = await this.getCredentials("googleOAuth2");
                         if (credentials && credentials.clientId && credentials.clientSecret) {
                             credentialType = "oauth2";
                         }
@@ -1041,26 +1019,20 @@ const GoogleDriveNode = {
                 let credentials = null;
                 let credentialType = null;
 
-                // Try to get the credential using the mapped type (first allowed type)
+                // Try service account first
                 try {
                     credentials = await this.getCredentials("googleDriveServiceAccount");
-                    if (credentials) {
-                        // Check if this is actually a service account credential
-                        if (credentials.serviceAccountEmail && credentials.privateKey) {
-                            credentialType = "serviceAccount";
-                        } else if (credentials.clientId && credentials.clientSecret) {
-                            // This is actually an OAuth2 credential, but mapped to service account
-                            credentialType = "oauth2";
-                        }
+                    if (credentials && credentials.serviceAccountEmail && credentials.privateKey) {
+                        credentialType = "serviceAccount";
                     }
                 } catch (error) {
-                    // Credential not available
+                    // Service account not available
                 }
 
-                // If we didn't get a credential or couldn't determine type, try OAuth2 directly
+                // If no service account, try OAuth2 core credential
                 if (!credentials || !credentialType) {
                     try {
-                        credentials = await this.getCredentials("googleDriveOAuth2");
+                        credentials = await this.getCredentials("googleOAuth2");
                         if (credentials && credentials.clientId && credentials.clientSecret) {
                             credentialType = "oauth2";
                         }

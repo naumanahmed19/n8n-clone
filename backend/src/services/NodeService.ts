@@ -1162,7 +1162,7 @@ export class NodeService {
           }
 
           // Try to get credential ID from credentials object
-          // First try by credential type, then by field name
+          // First try by credential type directly
           let credentialId = credentials[credentialType];
 
           if (!credentialId) {
@@ -1173,6 +1173,23 @@ export class NodeService {
               if (mappedType === credentialType && credentials[fieldName]) {
                 credentialId = credentials[fieldName];
                 break;
+              }
+            }
+          }
+
+          // If still not found, check all credential fields and match by actual credential type
+          if (!credentialId) {
+            for (const [fieldName, value] of Object.entries(credentials)) {
+              if (value && (typeof value === "string" || typeof value === "number")) {
+                try {
+                  const credential = await credentialService.getCredentialById(String(value));
+                  if (credential && credential.type === credentialType) {
+                    credentialId = value;
+                    break;
+                  }
+                } catch (error) {
+                  // Continue checking other fields
+                }
               }
             }
           }
