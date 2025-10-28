@@ -18,5 +18,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    minify: 'esbuild',
+    target: 'es2015',
   },
 });

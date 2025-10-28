@@ -2,7 +2,7 @@
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { Background, BackgroundVariant, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowControls } from './WorkflowControls'
 import { WorkflowEdge } from './edges'
@@ -74,6 +74,15 @@ export function WorkflowCanvas({
     onEdgesDelete: handleEdgesDelete,
 }: WorkflowCanvasProps) {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
+    
+    // Ensure the canvas is focusable for keyboard events (fixes production build issues)
+    useEffect(() => {
+        const wrapper = reactFlowWrapper.current;
+        if (wrapper) {
+            // Focus the wrapper on mount to ensure keyboard events work
+            wrapper.focus();
+        }
+    }, []);
     
     // Get panOnDrag and zoomOnScroll settings from store
     const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
@@ -189,7 +198,22 @@ export function WorkflowCanvas({
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
-            <div className="h-full" ref={combinedRef} style={{ backgroundColor }}>
+            <div 
+                className="h-full" 
+                ref={(node) => {
+                    // Combine refs
+                    if (typeof combinedRef === 'function') {
+                        combinedRef(node);
+                    } else if (combinedRef) {
+                        (combinedRef as any).current = node;
+                    }
+                    if (node) {
+                        (reactFlowWrapper as any).current = node;
+                    }
+                }}
+                style={{ backgroundColor, outline: 'none' }} 
+                tabIndex={0}
+            >
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -223,8 +247,9 @@ export function WorkflowCanvas({
                     // nodeExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
                     attributionPosition="bottom-left"
                     selectNodesOnDrag={false}
-                    multiSelectionKeyCode="Shift"
+                    multiSelectionKeyCode={['Shift']}
                     selectionMode={SelectionMode.Partial}
+                    selectionOnDrag={false}
                     fitView
                     fitViewOptions={{ padding: 0.3, maxZoom: 1.5 }}
                     defaultViewport={{ x: 0, y: 0, zoom: 1.5 }}
