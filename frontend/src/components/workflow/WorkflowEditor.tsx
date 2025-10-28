@@ -227,6 +227,7 @@ export function WorkflowEditor({
     // Only sync when workflow ID changes (new workflow loaded) OR when blockSync is false
     const workflowId = workflow?.id;
     const prevWorkflowIdRef = useRef<string | undefined>();
+    const prevReactFlowNodesRef = useRef<any[]>([]);
 
     useEffect(() => {
         const workflowChanged = workflowId !== prevWorkflowIdRef.current;
@@ -242,13 +243,38 @@ export function WorkflowEditor({
             const currentNodes = reactFlowInstance?.getNodes() || [];
             const selectedNodeIds = currentNodes.filter(node => node.selected).map(node => node.id);
 
-            // Update nodes with preserved selection
-            const nodesWithSelection = reactFlowNodes.map(node => ({
-                ...node,
-                selected: selectedNodeIds.includes(node.id)
-            }));
+            // Check if the node structure actually changed (not just execution state)
+            const prevNodeIds = prevReactFlowNodesRef.current.map(n => n.id).sort().join(',');
+            const newNodeIds = reactFlowNodes.map(n => n.id).sort().join(',');
+            const nodesStructureChanged = prevNodeIds !== newNodeIds;
 
-            setNodes(nodesWithSelection);
+            // Only update if structure changed OR workflow changed
+            // This prevents overwriting selection during execution state updates
+            if (nodesStructureChanged || workflowChanged) {
+                // Update nodes with preserved selection
+                const nodesWithSelection = reactFlowNodes.map(node => ({
+                    ...node,
+                    selected: selectedNodeIds.includes(node.id)
+                }));
+
+                setNodes(nodesWithSelection);
+                prevReactFlowNodesRef.current = reactFlowNodes;
+            } else {
+                // Just update node data without touching selection
+                setNodes((currentNodes) =>
+                    currentNodes.map(currentNode => {
+                        const updatedNode = reactFlowNodes.find(n => n.id === currentNode.id);
+                        if (updatedNode) {
+                            return {
+                                ...updatedNode,
+                                selected: currentNode.selected // Preserve current selection
+                            };
+                        }
+                        return currentNode;
+                    })
+                );
+            }
+
             setEdges(reactFlowEdges);
             prevWorkflowIdRef.current = workflowId;
         } else {
