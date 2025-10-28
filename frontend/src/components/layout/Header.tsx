@@ -4,7 +4,6 @@ import {
     Activity,
     Bell,
     ChevronDown,
-    Key,
     LogOut,
     Menu,
     Package,
@@ -88,10 +87,6 @@ export const Header: React.FC = () => {
               <Link to="/workflows" className={navLinkClass('/workflows')}>
                 <Workflow className="w-4 h-4" />
                 <span>Workflows</span>
-              </Link>
-              <Link to="/credentials" className={navLinkClass('/credentials')}>
-                <Key className="w-4 h-4" />
-                <span>Credentials</span>
               </Link>
               <Link to="/executions" className={navLinkClass('/executions')}>
                 <Activity className="w-4 h-4" />
@@ -226,17 +221,6 @@ export const Header: React.FC = () => {
             >
               <Workflow className="w-4 h-4" />
               <span>Workflows</span>
-            </Link>
-            <Link
-              to="/credentials"
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${isActiveRoute('/credentials')
-                  ? 'text-primary-600 bg-primary-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <Key className="w-4 h-4" />
-              <span>Credentials</span>
             </Link>
             <Link
               to="/executions"

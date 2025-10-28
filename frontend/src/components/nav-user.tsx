@@ -26,7 +26,6 @@ import {
   Bell,
   ChevronsUpDown,
   Database,
-  Key,
   LogOut,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -110,10 +109,6 @@ export function NavUser({
               <DropdownMenuItem onClick={() => navigate('/executions')}>
                 <Activity />
                 Executions
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/credentials')}>
-                <Key />
-                Credentials
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/custom-nodes')}>
                 <Database />
