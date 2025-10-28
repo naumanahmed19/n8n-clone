@@ -4,7 +4,6 @@ import { Toaster } from '@/components/ui/sonner'
 
 import { SidebarContextProvider, ThemeProvider } from '@/contexts'
 import {
-    CredentialsPage,
     CustomNodesPage,
     ExecutionsPage,
     ForgotPasswordPage,
@@ -107,7 +106,6 @@ function App() {
           >
             <Route index element={<Navigate to="/workflows" replace />} />
             <Route path="executions" element={<ExecutionsPage />} />
-            <Route path="credentials" element={<CredentialsPage />} />
             <Route path="custom-nodes" element={<CustomNodesPage />} />
             <Route path="profile" element={<ProfilePage />} />
           

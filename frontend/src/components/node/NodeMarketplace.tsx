@@ -1,9 +1,9 @@
+import { NodeIconRenderer } from '@/components/common/NodeIconRenderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 import { useCustomNodeStore } from '@/stores/customNode'
 import { NodePackageMetadata } from '@/types/customNode'
-import { getIconComponent } from '@/utils/iconMapper'
 import {
   Command,
   Download,
@@ -181,8 +181,6 @@ export function NodeMarketplace({
       {/* Results in flat list */}
       <div className="p-3 space-y-0">
         {searchResults?.packages?.map((pkg) => {
-          // Get icon component using the utility function (fallback to Command)
-          const IconComponent = getIconComponent(pkg.keywords?.[0], pkg.name, pkg.keywords || []) || Command
           const isInstalling = installingNodes.has(pkg.id)
 
           return (
@@ -191,22 +189,15 @@ export function NodeMarketplace({
               className="bg-card hover:bg-sidebar-accent hover:text-sidebar-accent-foreground p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-pointer group min-h-16 transition-colors"
             >
               <div className="flex items-start gap-3 mb-2">
-                <div className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md mt-0.5 bg-primary">
-                  {IconComponent && typeof IconComponent !== 'string' ? (
-                    <IconComponent className="h-4 w-4 text-white" />
-                  ) : typeof IconComponent === 'string' ? (
-                    <img
-                      src={IconComponent}
-                      alt={pkg.name}
-                      className="h-4 w-4"
-                      style={{ filter: 'brightness(0) invert(1)' }}
-                    />
-                  ) : (
-                    <span className="text-white text-xs font-bold">
-                      {pkg.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
+                <NodeIconRenderer
+                  icon={pkg.keywords?.[0]}
+                  nodeType={pkg.name}
+                  nodeGroup={pkg.keywords || []}
+                  displayName={pkg.name}
+                  backgroundColor="hsl(var(--primary))"
+                  size="md"
+                  className="shrink-0 mt-0.5"
+                />
                 
                 <div className="flex-1 min-w-0">
                   <div className="font-medium break-words">

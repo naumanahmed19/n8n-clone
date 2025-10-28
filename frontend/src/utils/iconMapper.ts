@@ -42,6 +42,7 @@ import {
   Webhook,
   Zap,
 } from "lucide-react";
+import { env } from "../config/env";
 
 /**
  * Type for icon component or SVG path
@@ -175,7 +176,7 @@ export function getIconComponent(
       return null;
     }
     // Return backend API endpoint for the node's icon
-    return `/api/nodes/${nodeType}/icon`;
+    return `${env.API_BASE_URL}/nodes/${nodeType}/icon`;
   }
 
   // Check for svg: prefix (custom SVG files)

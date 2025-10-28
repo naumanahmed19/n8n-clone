@@ -88,7 +88,7 @@ async function initializeNodeSystems() {
       }
     } else {
       console.log(`✅ Node types already registered: ${nodeTypes.length}`);
-      
+
       // Even if some nodes were found, try to register any missing ones
       try {
         // Import and use node discovery directly
@@ -107,7 +107,7 @@ async function initializeNodeSystems() {
             // Silently continue on registration errors
           }
         }
-        
+
         if (newRegistrations > 0) {
           console.log(`✅ Registered ${newRegistrations} additional nodes`);
         }

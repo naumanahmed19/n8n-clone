@@ -1,3 +1,4 @@
+import { NodeIconRenderer } from '@/components/common/NodeIconRenderer'
 import { CustomNodeUpload } from '@/components/customNode/CustomNodeUpload'
 import { NodeMarketplace } from '@/components/node/NodeMarketplace'
 import { NodesHeader } from '@/components/node/NodesHeader'
@@ -11,7 +12,6 @@ import { globalToastManager } from '@/hooks/useToast'
 import { nodeTypeService } from '@/services/nodeType'
 import { useNodeTypes } from '@/stores'
 import { NodeType } from '@/types'
-import { getIconComponent } from '@/utils/iconMapper'
 import {
   ChevronDown,
   ChevronRight,
@@ -343,10 +343,6 @@ export function NodeTypesList({ }: NodeTypesListProps) {
           {expandedCategories[group.category] && (
             <div className="p-3 space-y-0">
               {group.nodeTypes.map((nodeType) => {
-                // Get icon component using the utility function
-                const IconComponent = getIconComponent(nodeType.icon, nodeType.type, nodeType.group) || Command
-
-
                 const nodeElement = (
                   <div
                     className={`bg-card hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-start gap-3 p-3 text-sm leading-tight border border-border rounded-md mb-2 cursor-move group min-h-16 transition-colors ${(nodeType as ExtendedNodeType).active === false ? 'opacity-50 bg-muted/30' : ''
@@ -371,26 +367,15 @@ export function NodeTypesList({ }: NodeTypesListProps) {
                       target.style.transform = 'scale(1)'
                     }}
                   >
-                    <div
-                      className="w-8 h-8 shrink-0 flex items-center justify-center rounded-md mt-0.5"
-                      style={{ backgroundColor: nodeType.color || '#666' }}
-                    >
-                      {IconComponent && typeof IconComponent !== 'string' ? (
-                        <IconComponent className="h-4 w-4 text-white" />
-                      ) : typeof IconComponent === 'string' ? (
-                        // SVG icon from file
-                        <img
-                          src={IconComponent}
-                          alt={nodeType.displayName}
-                          className="h-4 w-4"
-                          style={{ filter: 'brightness(0) invert(1)' }} // Make SVG white
-                        />
-                      ) : (
-                        <span className="text-white text-xs font-bold">
-                          {nodeType.icon || nodeType.displayName.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <NodeIconRenderer
+                      icon={nodeType.icon}
+                      nodeType={nodeType.type}
+                      nodeGroup={nodeType.group}
+                      displayName={nodeType.displayName}
+                      backgroundColor={nodeType.color}
+                      size="md"
+                      className="shrink-0 mt-0.5"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium break-words">
                         <div className="flex items-start gap-2 flex-wrap">

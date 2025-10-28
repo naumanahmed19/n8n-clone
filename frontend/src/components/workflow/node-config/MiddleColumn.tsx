@@ -1,3 +1,4 @@
+import { NodeIconRenderer } from '@/components/common/NodeIconRenderer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,7 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useNodeConfigDialogStore, useWorkflowStore } from '@/stores'
 import { NodeType, WorkflowNode } from '@/types'
-import { getIconComponent } from '@/utils/iconMapper'
 import { NodeValidator } from '@/utils/nodeValidation'
 import {
   AlertCircle,
@@ -46,10 +46,10 @@ interface MiddleColumnProps {
 }
 
 export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = false }: MiddleColumnProps) {
-  const { 
-    nodeName, 
-    isDisabled, 
-    isEditingName, 
+  const {
+    nodeName,
+    isDisabled,
+    isEditingName,
     isExecuting,
     validationErrors,
     activeTab,
@@ -59,15 +59,12 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
     setActiveTab
   } = useNodeConfigDialogStore()
 
-  const { 
+  const {
     getNodeExecutionResult,
     executionState
   } = useWorkflowStore()
 
   const nodeExecutionResult = getNodeExecutionResult(node.id)
-
-  // Get icon component using the same utility as NodeTypesList
-  const IconComponent = getIconComponent(nodeType.icon, nodeType.type, nodeType.group)
 
   const getNodeStatusBadge = (status?: string) => {
     switch (status) {
@@ -90,18 +87,15 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
       <div className="p-4 border-b bg-gray-50/50 h-[72px] flex items-center">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-              style={{ backgroundColor: nodeType.color || '#666' }}
-            >
-              {typeof IconComponent === 'string' ? (
-                <img src={IconComponent} alt={nodeType.displayName} className="w-5 h-5" />
-              ) : IconComponent ? (
-                <IconComponent className="w-5 h-5" />
-              ) : (
-                nodeType.displayName.charAt(0).toUpperCase()
-              )}
-            </div>
+            <NodeIconRenderer
+              icon={nodeType.icon}
+              nodeType={nodeType.type}
+              nodeGroup={nodeType.group}
+              displayName={nodeType.displayName}
+              backgroundColor={nodeType.color}
+              size="lg"
+              className="rounded-lg"
+            />
             <div className="flex-1 min-w-0">
               {isEditingName && !readOnly ? (
                 <Input
@@ -113,18 +107,16 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
                       setIsEditingName(false)
                     }
                   }}
-                  className={`text-sm font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 ${
-                    NodeValidator.getFieldError(validationErrors, 'name') ? 'text-red-600' : ''
-                  }`}
+                  className={`text-sm font-semibold border-none bg-transparent p-0 h-auto focus-visible:ring-0 ${NodeValidator.getFieldError(validationErrors, 'name') ? 'text-red-600' : ''
+                    }`}
                   placeholder="Node name..."
                   autoFocus
                 />
               ) : (
                 <div
                   onClick={() => !readOnly && setIsEditingName(true)}
-                  className={`text-sm font-semibold px-1 py-0.5 rounded transition-colors ${
-                    readOnly ? '' : 'cursor-pointer hover:bg-gray-100'
-                  }`}
+                  className={`text-sm font-semibold px-1 py-0.5 rounded transition-colors ${readOnly ? '' : 'cursor-pointer hover:bg-gray-100'
+                    }`}
                 >
                   {nodeName || nodeType.displayName}
                 </div>
@@ -154,10 +146,10 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
                 <span className="text-xs">Run Node</span>
               </Button>
             )}
-            
+
             {/* Node Status Badge */}
             {nodeExecutionResult && getNodeStatusBadge(nodeExecutionResult.status)}
-            
+
             {/* Info Hover Card */}
             <HoverCard>
               <HoverCardTrigger asChild>
@@ -175,15 +167,15 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
                     {nodeType.description}
                   </p>
                   <div className="text-xs text-gray-500">
-                    • Configure node parameters<br/>
-                    • Set up credentials if required<br/>
-                    • Test node execution<br/>
+                    • Configure node parameters<br />
+                    • Set up credentials if required<br />
+                    • Test node execution<br />
                     • View response data and documentation
                   </div>
                 </div>
               </HoverCardContent>
             </HoverCard>
-            
+
             {/* More Actions Dropdown - Hidden in read-only mode */}
             {!readOnly && (
               <DropdownMenu>
@@ -193,7 +185,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => updateDisabled(!isDisabled)}
                     className="flex items-center space-x-2"
                   >
@@ -205,7 +197,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
                     <span>{isDisabled ? 'Enable Node' : 'Disable Node'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={onDelete}
                     className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
@@ -223,36 +215,36 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
         <div className="px-4 border-b border-gray-200">
           <div className="flex space-x-0 -mb-px">
             <TabsList className="h-auto p-0 bg-transparent grid w-full grid-cols-5 shadow-none">
-              <TabsTrigger 
-                value="config" 
+              <TabsTrigger
+                value="config"
                 className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span className="font-medium">Config</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
+              <TabsTrigger
+                value="settings"
                 className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span className="font-medium">Settings</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="test" 
+              <TabsTrigger
+                value="test"
                 className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Play className="w-3.5 h-3.5" />
                 <span className="font-medium">Test</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="response" 
+              <TabsTrigger
+                value="response"
                 className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Database className="w-3.5 h-3.5" />
                 <span className="font-medium">Response</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="docs" 
+              <TabsTrigger
+                value="docs"
                 className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <FileText className="w-4 h-4" />
