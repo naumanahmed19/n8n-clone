@@ -186,9 +186,6 @@ export class SocketService {
   public async subscribeToExecution(executionId: string): Promise<void> {
     await this.ensureConnected();
     
-    // Wait for connection to be established
-    await this.waitForConnection();
-    
     if (!this.socket?.connected) {
       console.warn('Socket not connected, cannot subscribe to execution');
       return;
@@ -217,9 +214,6 @@ export class SocketService {
    */
   public async subscribeToWorkflow(workflowId: string): Promise<void> {
     await this.ensureConnected();
-    
-    // Wait for connection to be established
-    await this.waitForConnection();
     
     if (!this.socket?.connected) {
       console.warn('Socket not connected, cannot subscribe to workflow');
@@ -311,6 +305,13 @@ export class SocketService {
   private async ensureConnected(): Promise<void> {
     if (!this.socket || (!this.socket.connected && !this.isConnecting)) {
       await this.connect();
+      // Wait for the socket to be initialized after connect() completes
+      if (this.socket) {
+        await this.waitForConnection();
+      }
+    } else if (this.socket && !this.socket.connected) {
+      // Socket exists but not connected, wait for connection
+      await this.waitForConnection();
     }
   }
 
