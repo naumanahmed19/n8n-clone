@@ -11,13 +11,9 @@
  * - Perfect isolation between concurrent trigger executions
  */
 
-export enum NodeExecutionStatus {
-  IDLE = "idle",
-  RUNNING = "running",
-  COMPLETED = "completed",
-  FAILED = "failed",
-  QUEUED = "queued",
-}
+import { NodeExecutionStatus } from "@/types/execution";
+
+export { NodeExecutionStatus };
 
 export interface ExecutionContext {
   executionId: string;
@@ -79,6 +75,72 @@ export class ExecutionContextManager {
    */
   setCurrentExecution(executionId: string | null): void {
     this.currentExecutionId = executionId;
+  }
+
+  /**
+   * Replace a temporary execution ID with the real one
+   * This is used when we start execution with a temp ID for immediate UI feedback,
+   * then replace it with the real ID from the API response
+   */
+  replaceExecutionId(oldExecutionId: string, newExecutionId: string): void {
+    const context = this.executions.get(oldExecutionId);
+    if (!context) return;
+
+    // Update execution ID in context
+    context.executionId = newExecutionId;
+
+    // Move to new key in executions map
+    this.executions.delete(oldExecutionId);
+    this.executions.set(newExecutionId, context);
+
+    // Update node-to-execution mappings
+    for (const nodeId of context.affectedNodeIds) {
+      const executions = this.nodeToExecutions.get(nodeId);
+      if (executions) {
+        executions.delete(oldExecutionId);
+        executions.add(newExecutionId);
+      }
+    }
+
+    // Update current execution ID if it was the old one
+    if (this.currentExecutionId === oldExecutionId) {
+      this.currentExecutionId = newExecutionId;
+    }
+  }
+
+  /**
+   * Update node status in a specific execution
+   * This is a convenience method that calls the appropriate set method
+   */
+  updateNodeStatus(
+    nodeId: string,
+    status: NodeExecutionStatus,
+    executionId: string
+  ): void {
+    switch (status) {
+      case NodeExecutionStatus.QUEUED:
+        this.setNodeQueued(executionId, nodeId);
+        break;
+      case NodeExecutionStatus.RUNNING:
+        this.setNodeRunning(executionId, nodeId);
+        break;
+      case NodeExecutionStatus.COMPLETED:
+        this.setNodeCompleted(executionId, nodeId);
+        break;
+      case NodeExecutionStatus.FAILED:
+        this.setNodeFailed(executionId, nodeId);
+        break;
+      case NodeExecutionStatus.IDLE:
+        // Remove from all sets
+        const context = this.executions.get(executionId);
+        if (context) {
+          context.runningNodes.delete(nodeId);
+          context.queuedNodes.delete(nodeId);
+          context.completedNodes.delete(nodeId);
+          context.failedNodes.delete(nodeId);
+        }
+        break;
+    }
   }
 
   /**

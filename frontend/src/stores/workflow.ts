@@ -1125,6 +1125,28 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
               executionId: undefined, // Will be set when we get response
             });
 
+            // CRITICAL FIX: Initialize execution context IMMEDIATELY with temporary ID
+            // This ensures nodes show loading spinner right away, before API call completes
+            const tempExecutionId = `temp_${Date.now()}`;
+            const affectedNodes = getAffectedNodes(nodeId, workflow);
+            const { executionManager } = get();
+            executionManager.startExecution(
+              tempExecutionId,
+              nodeId,
+              affectedNodes
+            );
+            executionManager.setCurrentExecution(tempExecutionId);
+
+            // Mark trigger node as executing immediately
+            executionManager.updateNodeStatus(
+              nodeId,
+              NodeExecutionStatus.RUNNING,
+              tempExecutionId
+            );
+
+            // OPTIMIZATION: Trigger Zustand update to notify subscribers
+            set({ executionManager, executionStateVersion: get().executionStateVersion + 1 });
+
             get().addExecutionLog({
               timestamp: new Date().toISOString(),
               level: "info",
@@ -1168,20 +1190,14 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
                 executionId: executionResponse.executionId,
               });
 
-              // NEW: Initialize execution context with proper isolation
-              const affectedNodes = getAffectedNodes(nodeId, workflow);
+              // CRITICAL FIX: Replace temporary execution ID with real one
+              // This maintains the loading state while transitioning to real execution tracking
               const { executionManager } = get();
-              executionManager.startExecution(
-                executionResponse.executionId,
-                nodeId,
-                affectedNodes
-              );
-              executionManager.setCurrentExecution(
-                executionResponse.executionId
-              );
+              executionManager.replaceExecutionId(tempExecutionId, executionResponse.executionId);
+              executionManager.setCurrentExecution(executionResponse.executionId);
 
               // OPTIMIZATION: Trigger Zustand update to notify subscribers
-              set({ executionManager });
+              set({ executionManager, executionStateVersion: get().executionStateVersion + 1 });
 
               // Set this as the current tracked execution to prevent conflicts
               get().setCurrentExecutionId(executionResponse.executionId);
