@@ -122,13 +122,14 @@ export class FlowExecutionEngine extends EventEmitter {
     userId: string,
     inputData?: NodeInputData,
     options: FlowExecutionOptions = {},
-    workflowData?: Workflow // Optional workflow data to avoid database load
+    workflowData?: Workflow, // Optional workflow data to avoid database load
+    executionId?: string // Optional execution ID (for trigger-initiated executions)
   ): Promise<FlowExecutionResult> {
-    const executionId = uuidv4();
+    const finalExecutionId = executionId || uuidv4();
 
     try {
       const context = await this.createExecutionContext(
-        executionId,
+        finalExecutionId,
         workflowId,
         userId,
         nodeId,
@@ -147,11 +148,11 @@ export class FlowExecutionEngine extends EventEmitter {
 
       return result;
     } catch (error) {
-      logger.error("Flow execution failed", { executionId, nodeId, error });
+      logger.error("Flow execution failed", { executionId: finalExecutionId, nodeId, error });
       throw error;
     } finally {
-      this.activeExecutions.delete(executionId);
-      this.nodeQueue.delete(executionId);
+      this.activeExecutions.delete(finalExecutionId);
+      this.nodeQueue.delete(finalExecutionId);
     }
   }
 
@@ -164,13 +165,14 @@ export class FlowExecutionEngine extends EventEmitter {
     userId: string,
     triggerData?: any,
     options: FlowExecutionOptions = {},
-    workflowData?: Workflow // Optional workflow data to avoid database load
+    workflowData?: Workflow, // Optional workflow data to avoid database load
+    executionId?: string // Optional execution ID (for trigger-initiated executions)
   ): Promise<FlowExecutionResult> {
-    const executionId = uuidv4();
+    const finalExecutionId = executionId || uuidv4();
 
     try {
       const context = await this.createExecutionContext(
-        executionId,
+        finalExecutionId,
         workflowId,
         userId,
         triggerId,
@@ -195,14 +197,14 @@ export class FlowExecutionEngine extends EventEmitter {
       return result;
     } catch (error) {
       logger.error("Trigger execution failed", {
-        executionId,
+        executionId: finalExecutionId,
         triggerId,
         error,
       });
       throw error;
     } finally {
-      this.activeExecutions.delete(executionId);
-      this.nodeQueue.delete(executionId);
+      this.activeExecutions.delete(finalExecutionId);
+      this.nodeQueue.delete(finalExecutionId);
     }
   }
 

@@ -84,7 +84,8 @@ export class ExecutionService {
     triggerData?: any,
     options: ExecutionOptions = {},
     triggerNodeId?: string, // Optional specific trigger node ID
-    workflowData?: { nodes?: any[]; connections?: any[]; settings?: any } // Optional workflow data
+    workflowData?: { nodes?: any[]; connections?: any[]; settings?: any }, // Optional workflow data
+    executionId?: string // Optional execution ID (for trigger-initiated executions)
   ): Promise<ExecutionResult> {
     try {
 
@@ -205,7 +206,8 @@ export class ExecutionService {
             manual: true,
             isolatedExecution: false,
           },
-          parsedWorkflow // Pass the workflow data
+          parsedWorkflow, // Pass the workflow data
+          executionId // Pass the execution ID if provided
         );
       } else {
         // Execute from first node or specified starting node
@@ -232,7 +234,8 @@ export class ExecutionService {
             manual: true,
             isolatedExecution: false,
           },
-          parsedWorkflow // Pass the workflow data
+          parsedWorkflow, // Pass the workflow data
+          executionId // Pass the execution ID if provided
         );
       }
 

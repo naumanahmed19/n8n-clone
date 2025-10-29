@@ -522,7 +522,8 @@ export class TriggerManager extends EventEmitter {
           nodes: workflow.nodes,
           connections: workflow.connections,
           settings: workflow.settings,
-        }
+        },
+        context.executionId // Pass the execution ID from the trigger context
       );
 
       await this.handleTriggerCompletion(context, result);
