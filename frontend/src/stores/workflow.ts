@@ -37,14 +37,8 @@ import {
 import { devtools } from "zustand/middleware";
 import { createWithEqualityFn } from "zustand/traditional";
 
-// Import socket service types
-interface ExecutionLogEntry {
-  timestamp: string;
-  level: "info" | "warn" | "error" | "debug";
-  nodeId?: string;
-  message: string;
-  data?: any;
-}
+// Import execution types from central location
+import type { ExecutionLogEntry } from "@/types/execution";
 
 interface WorkflowStore extends WorkflowEditorState {
   // Title management state

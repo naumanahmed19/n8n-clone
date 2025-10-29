@@ -1,52 +1,18 @@
 import { io, Socket } from 'socket.io-client';
+import type {
+  ExecutionEvent,
+  ExecutionProgress,
+  ExecutionLogEntry,
+  NodeExecutionEvent,
+} from '@/types/execution';
 
-export interface ExecutionEvent {
-  executionId: string;
-  type: 'started' | 'node-started' | 'node-completed' | 'node-failed' | 'completed' | 'failed' | 'cancelled';
-  nodeId?: string;
-  data?: any;
-  error?: {
-    message: string;
-    stack?: string;
-    nodeId?: string;
-    timestamp: Date;
-  };
-  timestamp: Date;
-}
-
-export interface ExecutionProgress {
-  executionId: string;
-  totalNodes: number;
-  completedNodes: number;
-  failedNodes: number;
-  currentNode?: string;
-  status: 'running' | 'success' | 'error' | 'cancelled';
-  startedAt: Date;
-  finishedAt?: Date;
-  error?: {
-    message: string;
-    stack?: string;
-    nodeId?: string;
-    timestamp: Date;
-  };
-}
-
-export interface ExecutionLogEntry {
-  executionId: string;
-  level: 'info' | 'warn' | 'error' | 'debug';
-  message: string;
-  nodeId?: string;
-  data?: any;
-  timestamp: Date;
-}
-
-export interface NodeExecutionEvent {
-  executionId: string;
-  nodeId: string;
-  type: 'started' | 'completed' | 'failed';
-  data?: any;
-  timestamp: string;
-}
+// Re-export types for convenience
+export type {
+  ExecutionEvent,
+  ExecutionProgress,
+  ExecutionLogEntry,
+  NodeExecutionEvent,
+};
 
 export type SocketEventHandler<T = any> = (data: T) => void;
 
