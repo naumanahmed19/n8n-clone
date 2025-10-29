@@ -2,7 +2,7 @@
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { Background, BackgroundVariant, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowControls } from './WorkflowControls'
 import { WorkflowEdge } from './edges'
@@ -86,6 +86,15 @@ export function WorkflowCanvas({
     
     // Get panOnDrag and zoomOnScroll settings from store
     const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
+    
+    // Wrap selection change handler to debug in production
+    const wrappedSelectionChange = useCallback((params: any) => {
+        console.log('[WorkflowCanvas] Selection changed:', {
+            nodes: params.nodes.length,
+            nodeIds: params.nodes.map((n: any) => n.id)
+        });
+        handleSelectionChange(params);
+    }, [handleSelectionChange]);
     
     // Use custom hooks for better code organization
     const { edgeStyle, connectionLineStyle, isDarkMode } = useReactFlowStyles()
@@ -225,7 +234,7 @@ export function WorkflowCanvas({
                     onInit={onInit}
                     onDrop={dropHandler}
                     onDragOver={dragOverHandler}
-                    onSelectionChange={handleSelectionChange}
+                    onSelectionChange={wrappedSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     onNodeDragStart={nodeDragStartHandler}
                     onNodeDrag={nodeDragHandler}
@@ -247,9 +256,10 @@ export function WorkflowCanvas({
                     // nodeExtent={[[-canvasBoundaryX, -canvasBoundaryY], [canvasBoundaryX, canvasBoundaryY]]}
                     attributionPosition="bottom-left"
                     selectNodesOnDrag={false}
-                    multiSelectionKeyCode={['Shift']}
-                    selectionMode={SelectionMode.Partial}
                     selectionOnDrag={false}
+                    selectionKeyCode={null}
+                    multiSelectionKeyCode="Shift"
+                    selectionMode={SelectionMode.Partial}
                     fitView
                     fitViewOptions={{ padding: 0.3, maxZoom: 1.5 }}
                     defaultViewport={{ x: 0, y: 0, zoom: 1.5 }}
