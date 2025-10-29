@@ -178,6 +178,12 @@ export class SocketService {
       console.log('Unsubscribed from workflow:', data.workflowId);
       this.emit('workflow-unsubscribed', data);
     });
+
+    // Webhook test mode event
+    this.socket.on('webhook-test-triggered', (data) => {
+      console.log('🧪 Webhook test triggered (socket.ts):', data);
+      this.emit('webhook-test-triggered', data);
+    });
   }
 
   /**

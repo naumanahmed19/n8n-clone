@@ -482,7 +482,8 @@ export class TriggerService {
 
   async handleWebhookTrigger(
     webhookId: string,
-    request: WebhookRequest
+    request: WebhookRequest,
+    testMode: boolean = false
   ): Promise<{ success: boolean; executionId?: string; error?: string }> {
     try {
       const trigger = this.webhookTriggers.get(webhookId);
@@ -663,13 +664,61 @@ export class TriggerService {
         result.status === "started" ? "processing" : "pending";
       await this.updateTriggerEvent(triggerEvent);
 
-      // Emit real-time update
-      this.socketService.emitToUser(trigger.workflowId, "trigger-executed", {
-        triggerId: trigger.id,
-        executionId: result.executionId,
-        type: "webhook",
-        status: result.status,
-      });
+      // Emit real-time update to workflow room
+      this.socketService.getServer()
+        .to(`workflow:${trigger.workflowId}`)
+        .emit("trigger-executed", {
+          triggerId: trigger.id,
+          executionId: result.executionId,
+          type: "webhook",
+          status: result.status,
+          testMode,
+          timestamp: new Date().toISOString(),
+        });
+
+      // If in test mode, also emit a webhook-test event for frontend to subscribe to execution
+      if (testMode) {
+        const eventData = {
+          webhookId,
+          executionId: result.executionId,
+          workflowId: trigger.workflowId,
+          triggerNodeId: trigger.nodeId,
+          timestamp: new Date().toISOString(),
+        };
+        
+        console.log(`🧪🧪🧪 TEST MODE DETECTED - Emitting webhook-test-triggered to workflow:${trigger.workflowId}`);
+        console.log(`🧪🧪🧪 Event data:`, JSON.stringify(eventData, null, 2));
+        
+        // Debug: Log all workflow rooms
+        this.socketService.logWorkflowRooms();
+        
+        // Check how many clients are in the workflow room
+        const room = this.socketService.getServer().sockets.adapter.rooms.get(`workflow:${trigger.workflowId}`);
+        const clientCount = room ? room.size : 0;
+        console.log(`🧪🧪🧪 Clients in workflow:${trigger.workflowId} room: ${clientCount}`);
+        
+        if (clientCount === 0) {
+          console.log(`⚠️  WARNING: No clients subscribed to workflow:${trigger.workflowId}!`);
+          console.log(`⚠️  The frontend might not be subscribed to the workflow room.`);
+          console.log(`⚠️  This usually means the socket disconnected or never joined the room.`);
+        }
+        
+        logger.info(`🧪 Emitting webhook-test-triggered to workflow:${trigger.workflowId}`, eventData);
+        
+        this.socketService.getServer()
+          .to(`workflow:${trigger.workflowId}`)
+          .emit("webhook-test-triggered", eventData);
+        
+        console.log(`🧪🧪🧪 Event emitted successfully to ${clientCount} client(s)`);
+        
+        logger.info(`🧪 Webhook test mode - execution visible in editor`, {
+          webhookId,
+          executionId: result.executionId,
+          workflowId: trigger.workflowId,
+        });
+      } else {
+        console.log(`ℹ️  Test mode NOT detected (testMode = ${testMode})`);
+      }
 
       return {
         success: true,

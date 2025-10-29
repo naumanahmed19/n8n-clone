@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Copy, Globe, RefreshCw, TestTube } from "lucide-react";
+import { executionWebSocket } from "@/services/ExecutionWebSocket";
+import { Check, Copy, Globe, Loader2, Play, RefreshCw, Square, TestTube } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface WebhookUrlGeneratorProps {
@@ -26,6 +27,25 @@ export function WebhookUrlGenerator({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedTest, setCopiedTest] = useState(false);
   const [copiedProd, setCopiedProd] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  
+  // Check if ExecutionWebSocket is already connected
+  const [isListening, setIsListening] = useState(() => executionWebSocket.isConnected());
+  
+  // Update listening state when component mounts or dialog reopens
+  useEffect(() => {
+    const checkConnection = () => {
+      setIsListening(executionWebSocket.isConnected());
+    };
+    
+    // Check immediately
+    checkConnection();
+    
+    // Check periodically in case connection state changes
+    const interval = setInterval(checkConnection, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Get base URLs from environment or use defaults
   const getBaseUrl = (environment: "test" | "production") => {
@@ -124,6 +144,46 @@ export function WebhookUrlGenerator({
 
   const testWebhookUrl = constructWebhookUrl("test");
   const productionWebhookUrl = constructWebhookUrl("production");
+  
+  // Add ?test=true to test URL for visualization
+  const testWebhookUrlWithVisualization = `${testWebhookUrl}?test=true`;
+  
+  // Start listening for webhook executions
+  const startListening = async () => {
+    setIsConnecting(true);
+    try {
+      console.log('🔌 Connecting ExecutionWebSocket for webhook listening...');
+      
+      // Connect the ExecutionWebSocket (singleton instance)
+      await executionWebSocket.connect();
+      
+      setIsListening(true);
+      console.log('✅ Started listening for webhook executions');
+      console.log('💡 Now trigger your webhook with ?test=true to see execution in real-time');
+      
+    } catch (error) {
+      console.error('❌ Failed to start listening:', error);
+      setIsListening(false);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+  
+  // Stop listening for webhook executions
+  const stopListening = () => {
+    try {
+      console.log('🔌 Disconnecting ExecutionWebSocket...');
+      
+      // Disconnect the ExecutionWebSocket
+      executionWebSocket.disconnect();
+      
+      setIsListening(false);
+      console.log('✅ Stopped listening for webhook executions');
+      
+    } catch (error) {
+      console.error('❌ Failed to stop listening:', error);
+    }
+  };
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string, type: "test" | "production") => {
@@ -180,10 +240,10 @@ export function WebhookUrlGenerator({
         </div>
 
         {/* Test URL Content */}
-        <TabsContent value="test" className="mt-0">
+        <TabsContent value="test" className="mt-0 space-y-2">
           <div className="flex gap-2">
             <Input
-              value={testWebhookUrl}
+              value={testWebhookUrlWithVisualization}
               readOnly
               disabled={disabled}
               className="font-mono text-xs h-9 bg-blue-50 border-blue-200"
@@ -192,9 +252,10 @@ export function WebhookUrlGenerator({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => copyToClipboard(testWebhookUrl, "test")}
+              onClick={() => copyToClipboard(testWebhookUrlWithVisualization, "test")}
               disabled={disabled || !webhookId}
               className="shrink-0 h-9 w-9 p-0"
+              title="Copy test URL with visualization"
             >
               {copiedTest ? (
                 <Check className="w-3.5 h-3.5 text-green-600" />
@@ -203,6 +264,41 @@ export function WebhookUrlGenerator({
               )}
             </Button>
           </div>
+          
+          {/* Start/Stop Listening Button for Webhooks */}
+          {urlType === "webhook" && (
+            <Button
+              type="button"
+              variant={isListening ? "default" : "outline"}
+              size="sm"
+              onClick={isListening ? stopListening : startListening}
+              disabled={disabled || !webhookId || isConnecting}
+              className="w-full h-8 text-xs"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                  Connecting...
+                </>
+              ) : isListening ? (
+                <>
+                  <Square className="w-3 h-3 mr-1.5" />
+                  Stop Listening
+                </>
+              ) : (
+                <>
+                  <Play className="w-3 h-3 mr-1.5" />
+                  Start Listening
+                </>
+              )}
+            </Button>
+          )}
+          
+          {isListening && urlType === "webhook" && (
+            <p className="text-xs text-muted-foreground">
+              💡 Trigger the webhook above to see execution in real-time
+            </p>
+          )}
         </TabsContent>
 
         {/* Production URL Content */}

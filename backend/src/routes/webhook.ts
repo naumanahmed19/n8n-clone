@@ -29,8 +29,15 @@ const getNodeService = () => {
 const workflowService = new WorkflowService(prisma);
 const executionHistoryService = new ExecutionHistoryService(prisma);
 const credentialService = new CredentialService();
-const httpServer = createServer();
-const socketService = new SocketService(httpServer);
+
+// Use the global socketService instead of creating a new instance
+// This ensures we use the same Socket.IO server that the frontend is connected to
+const getSocketService = () => {
+  if (!global.socketService) {
+    throw new Error("SocketService not initialized. Make sure the server is properly started.");
+  }
+  return global.socketService;
+};
 
 // Lazy initialization for services that depend on NodeService
 let executionService: ExecutionService;
@@ -54,7 +61,7 @@ const ensureTriggerServiceInitialized = async () => {
       prisma,
       workflowService,
       getExecutionService(),
-      socketService,
+      getSocketService(), // Use global socketService
       getNodeService(),
       executionHistoryService,
       credentialService
@@ -102,6 +109,11 @@ router.all(
     console.log(`📝 Body:`, req.body);
     console.log(`📝 Query:`, req.query);
 
+    // Check for test mode - if ?test=true or ?visualize=true, notify frontend before executing
+    const testMode = req.query.test === 'true' || req.query.visualize === 'true';
+
+    console.log(`🔍 Test mode detection: req.query.test = "${req.query.test}", testMode = ${testMode}`);
+
     const webhookRequest = {
       method: req.method,
       path: req.path,
@@ -116,7 +128,8 @@ router.all(
       const triggerService = await ensureTriggerServiceInitialized();
       const result = await triggerService.handleWebhookTrigger(
         webhookId,
-        webhookRequest
+        webhookRequest,
+        testMode // Pass test mode flag
       );
 
       if (result.success) {
@@ -125,8 +138,11 @@ router.all(
         );
         res.status(200).json({
           success: true,
-          message: "Webhook received and workflow triggered",
+          message: testMode
+            ? "Webhook received - execution will be visible in editor"
+            : "Webhook received and workflow triggered",
           executionId: result.executionId,
+          testMode,
           timestamp: new Date().toISOString(),
         });
       } else {
@@ -134,8 +150,8 @@ router.all(
         const statusCode = result.error?.includes("not found")
           ? 404
           : result.error?.includes("authentication")
-          ? 401
-          : 400;
+            ? 401
+            : 400;
 
         res.status(statusCode).json({
           success: false,
@@ -169,6 +185,11 @@ router.all(
     console.log(`📝 Body:`, req.body);
     console.log(`📝 Query:`, req.query);
 
+    // Check for test mode - if ?test=true or ?visualize=true, notify frontend before executing
+    const testMode = req.query.test === 'true' || req.query.visualize === 'true';
+
+    console.log(`🔍 Test mode detection: req.query.test = "${req.query.test}", testMode = ${testMode}`);
+
     const webhookRequest = {
       method: req.method,
       path: req.path,
@@ -183,7 +204,8 @@ router.all(
       const triggerService = await ensureTriggerServiceInitialized();
       const result = await triggerService.handleWebhookTrigger(
         webhookId,
-        webhookRequest
+        webhookRequest,
+        testMode // Pass test mode flag
       );
 
       if (result.success) {
@@ -192,8 +214,11 @@ router.all(
         );
         res.status(200).json({
           success: true,
-          message: "Webhook received and workflow triggered",
+          message: testMode
+            ? "Webhook received - execution will be visible in editor"
+            : "Webhook received and workflow triggered",
           executionId: result.executionId,
+          testMode,
           timestamp: new Date().toISOString(),
         });
       } else {
@@ -201,8 +226,8 @@ router.all(
         const statusCode = result.error?.includes("not found")
           ? 404
           : result.error?.includes("authentication")
-          ? 401
-          : 400;
+            ? 401
+            : 400;
 
         res.status(statusCode).json({
           success: false,

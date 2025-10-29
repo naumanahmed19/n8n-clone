@@ -3107,6 +3107,51 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
                 message: `Real-time connection error: ${data.error}`,
               });
             });
+
+            // Handle webhook test mode triggers
+            socketService.on("webhook-test-triggered", async (data: any) => {
+              const { workflow } = get();
+              
+              // Only process if this is the current workflow
+              if (!workflow || workflow.id !== data.workflowId) {
+                return;
+              }
+
+              console.log("🧪 [WorkflowEditor] Webhook test triggered:", data);
+
+              // Only auto-subscribe if ExecutionWebSocket is already connected
+              // This respects the user's choice to "Start Listening" or not
+              if (executionWebSocket.isConnected()) {
+                console.log("✅ ExecutionWebSocket is connected, subscribing to execution");
+                
+                // Subscribe to this execution to see it in real-time
+                await get().subscribeToExecution(data.executionId);
+
+                // Set the execution state to track this execution
+                get().setExecutionState({
+                  executionId: data.executionId,
+                  status: "running",
+                  progress: 0,
+                });
+
+                // Add log entry
+                get().addExecutionLog({
+                  timestamp: new Date().toISOString(),
+                  level: "info",
+                  message: `🧪 Webhook test triggered - watching execution in real-time`,
+                  data: {
+                    executionId: data.executionId,
+                    webhookId: data.webhookId,
+                    triggerNodeId: data.triggerNodeId,
+                  },
+                });
+
+                console.log("✅ [WorkflowEditor] Subscribed to webhook execution:", data.executionId);
+              } else {
+                console.log("ℹ️ ExecutionWebSocket not connected - skipping auto-subscribe");
+                console.log("💡 Click 'Start Listening' in the webhook node to see executions in real-time");
+              }
+            });
           } catch (error) {
             console.error("Failed to setup socket listeners:", error);
           }
@@ -3128,6 +3173,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
             socketService.off("socket-connected", () => {});
             socketService.off("socket-disconnected", () => {});
             socketService.off("socket-error", () => {});
+            socketService.off("webhook-test-triggered", () => {});
           } catch (error) {
             console.error("Failed to cleanup socket listeners:", error);
           }

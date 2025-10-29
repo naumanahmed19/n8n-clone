@@ -133,6 +133,9 @@ export class SocketService {
 
       // Handle disconnect
       socket.on("disconnect", () => {
+        console.log(`🔌 User ${authSocket.userId} DISCONNECTED from Socket.io - Socket ID: ${socket.id}`);
+        const rooms = Array.from(socket.rooms);
+        console.log(`🔌 Socket was in rooms:`, rooms);
         logger.info(`User ${authSocket.userId} disconnected from Socket.io`);
         this.authenticatedSockets.delete(authSocket.userId);
       });
@@ -248,16 +251,23 @@ export class SocketService {
     socket: AuthenticatedSocket,
     workflowId: string
   ): void {
+    console.log(`📡 User ${socket.userId} subscribing to workflow:${workflowId}`);
     logger.debug(`User ${socket.userId} subscribing to workflow ${workflowId}`);
 
     // Join workflow-specific room
     socket.join(`workflow:${workflowId}`);
+    
+    // Log the rooms this socket is in
+    const rooms = Array.from(socket.rooms);
+    console.log(`📡 Socket ${socket.id} is now in rooms:`, rooms);
 
     // Confirm subscription
     socket.emit("workflow-subscribed", {
       workflowId,
       timestamp: new Date().toISOString(),
     });
+    
+    console.log(`✅ Workflow subscription confirmed for workflow:${workflowId}`);
   }
 
   /**
@@ -267,6 +277,7 @@ export class SocketService {
     socket: AuthenticatedSocket,
     workflowId: string
   ): void {
+    console.log(`📡 User ${socket.userId} UNSUBSCRIBING from workflow:${workflowId}`);
     logger.debug(
       `User ${socket.userId} unsubscribing from workflow ${workflowId}`
     );
@@ -506,6 +517,32 @@ export class SocketService {
    */
   public getServer(): SocketIOServer {
     return this.io;
+  }
+
+  /**
+   * Debug: Get all rooms and their clients
+   */
+  public getAllRooms(): Map<string, Set<string>> {
+    return this.io.sockets.adapter.rooms;
+  }
+
+  /**
+   * Debug: Log all workflow rooms
+   */
+  public logWorkflowRooms(): void {
+    const rooms = this.getAllRooms();
+    console.log('\n📊 === SOCKET ROOMS DEBUG ===');
+    console.log(`Total rooms: ${rooms.size}`);
+    
+    rooms.forEach((clients, roomName) => {
+      if (roomName.startsWith('workflow:')) {
+        console.log(`  ${roomName}: ${clients.size} client(s)`);
+        clients.forEach(clientId => {
+          console.log(`    - ${clientId}`);
+        });
+      }
+    });
+    console.log('📊 === END DEBUG ===\n');
   }
 
   /**

@@ -54,16 +54,40 @@ export function WorkflowEditorPage() {
 
     console.log('[WorkflowEditor] Subscribing to workflow:', id)
     
-    // Subscribe to workflow updates (async)
+    let isSubscribed = false;
+    let subscriptionAttempts = 0;
+    const maxAttempts = 3;
+    
+    // Subscribe to workflow updates with retry logic
     const subscribeToWorkflow = async () => {
       try {
+        subscriptionAttempts++;
+        console.log(`[WorkflowEditor] Subscription attempt ${subscriptionAttempts} for workflow:`, id)
+        
         await socketService.subscribeToWorkflow(id)
+        isSubscribed = true;
+        console.log('[WorkflowEditor] ✅ Successfully subscribed to workflow:', id)
       } catch (error) {
         console.error('[WorkflowEditor] Failed to subscribe to workflow:', error)
+        
+        // Retry if not at max attempts
+        if (subscriptionAttempts < maxAttempts) {
+          console.log(`[WorkflowEditor] Retrying subscription in 1 second...`)
+          setTimeout(subscribeToWorkflow, 1000)
+        }
       }
     }
     
+    // Initial subscription
     subscribeToWorkflow()
+    
+    // Also re-subscribe when socket reconnects
+    const handleSocketConnected = () => {
+      console.log('[WorkflowEditor] Socket reconnected, re-subscribing to workflow:', id)
+      subscribeToWorkflow()
+    }
+    
+    socketService.on('socket-connected', handleSocketConnected)
 
     // Listen for execution events
     const handleExecutionEvent = (event: any) => {
@@ -99,26 +123,48 @@ export function WorkflowEditorPage() {
       console.log('📝 [WorkflowEditor] Execution log:', log)
     }
 
+    const handleWebhookTestTriggered = async (data: any) => {
+      console.log('🧪 [WorkflowEditor] Webhook test triggered:', data)
+      console.log('🧪 [WorkflowEditor] Current workflow ID:', id)
+      console.log('🧪 [WorkflowEditor] Event workflow ID:', data.workflowId)
+      
+      // Subscribe to this execution to see it in real-time
+      try {
+        await socketService.subscribeToExecution(data.executionId)
+        console.log('✅ [WorkflowEditor] Subscribed to webhook execution:', data.executionId)
+      } catch (error) {
+        console.error('❌ [WorkflowEditor] Failed to subscribe to execution:', error)
+      }
+    }
+
     // Register event listeners
+    console.log('[WorkflowEditor] Registering event listeners including webhook-test-triggered')
     socketService.on('execution-event', handleExecutionEvent)
     socketService.on('execution-progress', handleExecutionProgress)
     socketService.on('node-execution-event', handleNodeExecutionEvent)
     socketService.on('execution-log', handleExecutionLog)
+    socketService.on('webhook-test-triggered', handleWebhookTestTriggered)
+    console.log('[WorkflowEditor] Event listeners registered')
 
     // Cleanup: unsubscribe and remove listeners when component unmounts or workflow changes
     return () => {
-      console.log('[WorkflowEditor] Unsubscribing from workflow:', id)
-      
-      // Unsubscribe from workflow (async but don't wait)
-      socketService.unsubscribeFromWorkflow(id).catch(error => {
-        console.error('[WorkflowEditor] Failed to unsubscribe from workflow:', error)
-      })
+      // Only unsubscribe if we actually subscribed
+      if (isSubscribed) {
+        console.log('[WorkflowEditor] Unsubscribing from workflow:', id)
+        
+        // Unsubscribe from workflow (async but don't wait)
+        socketService.unsubscribeFromWorkflow(id).catch(error => {
+          console.error('[WorkflowEditor] Failed to unsubscribe from workflow:', error)
+        })
+      }
       
       // Remove event listeners
       socketService.off('execution-event', handleExecutionEvent)
       socketService.off('execution-progress', handleExecutionProgress)
       socketService.off('node-execution-event', handleNodeExecutionEvent)
       socketService.off('execution-log', handleExecutionLog)
+      socketService.off('webhook-test-triggered', handleWebhookTestTriggered)
+      socketService.off('socket-connected', handleSocketConnected)
     }
   }, [id])
 
