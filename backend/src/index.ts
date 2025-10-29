@@ -46,6 +46,11 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
 
+// Set server timeout to prevent gateway timeouts (5 minutes)
+httpServer.timeout = 300000; // 5 minutes
+httpServer.keepAliveTimeout = 65000; // 65 seconds (slightly higher than typical load balancer timeout)
+httpServer.headersTimeout = 66000; // Slightly higher than keepAliveTimeout
+
 // Initialize services
 const prisma = new PrismaClient();
 const nodeService = new NodeService(prisma);

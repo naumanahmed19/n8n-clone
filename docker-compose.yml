@@ -48,6 +48,7 @@ services:
       - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - PORT=4000
+      - NODE_OPTIONS=--max-old-space-size=2048
     volumes:
       - custom_nodes_data:/app/custom-nodes
       - temp_data:/app/temp
@@ -63,9 +64,16 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     user: "1001:1001"
     networks:
       - node-drop-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
 
   frontend:
     build:
