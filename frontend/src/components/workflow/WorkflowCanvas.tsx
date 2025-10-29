@@ -2,7 +2,7 @@
 import { useReactFlowStyles } from '@/hooks/useReactFlowStyles'
 import { useReactFlowUIStore } from '@/stores'
 import { Background, BackgroundVariant, Edge, EdgeTypes, MiniMap, Node, NodeTypes, ReactFlow, SelectionMode } from '@xyflow/react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { WorkflowCanvasContextMenu } from './WorkflowCanvasContextMenu'
 import { WorkflowControls } from './WorkflowControls'
 import { WorkflowEdge } from './edges'
@@ -74,28 +74,10 @@ export function WorkflowCanvas({
     onEdgesDelete: handleEdgesDelete,
 }: WorkflowCanvasProps) {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
-    
-    // Ensure the canvas is focusable for keyboard events (fixes production build issues)
-    useEffect(() => {
-        const wrapper = reactFlowWrapper.current;
-        if (wrapper) {
-            // Focus the wrapper on mount to ensure keyboard events work
-            wrapper.focus();
-        }
-    }, []);
-    
+
     // Get panOnDrag and zoomOnScroll settings from store
     const { panOnDrag, zoomOnScroll, reactFlowInstance } = useReactFlowUIStore()
-    
-    // Wrap selection change handler to debug in production
-    const wrappedSelectionChange = useCallback((params: any) => {
-        console.log('[WorkflowCanvas] Selection changed:', {
-            nodes: params.nodes.length,
-            nodeIds: params.nodes.map((n: any) => n.id)
-        });
-        handleSelectionChange(params);
-    }, [handleSelectionChange]);
-    
+
     // Use custom hooks for better code organization
     const { edgeStyle, connectionLineStyle, isDarkMode } = useReactFlowStyles()
     const combinedRef = useReactFlowAutoLayout({
@@ -105,17 +87,17 @@ export function WorkflowCanvas({
         delay: 50,
         additionalRef: reactFlowWrapper
     })
-    
+
     // Determine if interactions should be disabled
     const isDisabled = readOnly || executionMode
-    
+
     // Memoize background variant to prevent unnecessary recalculations
-    const displayBackgroundVariant = useMemo(() => 
+    const displayBackgroundVariant = useMemo(() =>
         isDisabled ? BackgroundVariant.Cross : (backgroundVariant as any),
         [isDisabled, backgroundVariant]
     )
-    
-    const backgroundColor = useMemo(() => 
+
+    const backgroundColor = useMemo(() =>
         isDisabled ? 'hsl(var(--muted))' : undefined,
         [isDisabled]
     )
@@ -134,95 +116,80 @@ export function WorkflowCanvas({
     }), [isDarkMode])
 
     // Memoize disabled handlers (undefined) vs enabled handlers
-    const nodesChangeHandler = useMemo(() => 
+    const nodesChangeHandler = useMemo(() =>
         isDisabled ? undefined : handleNodesChange,
         [isDisabled, handleNodesChange]
     )
-    
-    const edgesChangeHandler = useMemo(() => 
+
+    const edgesChangeHandler = useMemo(() =>
         isDisabled ? undefined : handleEdgesChange,
         [isDisabled, handleEdgesChange]
     )
-    
-    const connectHandler = useMemo(() => 
+
+    const connectHandler = useMemo(() =>
         isDisabled ? undefined : handleConnect,
         [isDisabled, handleConnect]
     )
-    
-    const connectStartHandler = useMemo(() => 
+
+    const connectStartHandler = useMemo(() =>
         isDisabled ? undefined : handleConnectStart,
         [isDisabled, handleConnectStart]
     )
-    
-    const connectEndHandler = useMemo(() => 
+
+    const connectEndHandler = useMemo(() =>
         isDisabled ? undefined : handleConnectEnd,
         [isDisabled, handleConnectEnd]
     )
-    
-    const dropHandler = useMemo(() => 
+
+    const dropHandler = useMemo(() =>
         isDisabled ? undefined : handleDrop,
         [isDisabled, handleDrop]
     )
-    
-    const dragOverHandler = useMemo(() => 
+
+    const dragOverHandler = useMemo(() =>
         isDisabled ? undefined : handleDragOver,
         [isDisabled, handleDragOver]
     )
-    
+
     // Memoize undo/redo snapshot handlers
-    const nodeDragStartHandler = useMemo(() => 
+    const nodeDragStartHandler = useMemo(() =>
         isDisabled ? undefined : handleNodeDragStart,
         [isDisabled, handleNodeDragStart]
     )
-    
-    const nodeDragHandler = useMemo(() => 
+
+    const nodeDragHandler = useMemo(() =>
         isDisabled ? undefined : handleNodeDrag,
         [isDisabled, handleNodeDrag]
     )
-    
-    const nodeDragStopHandler = useMemo(() => 
+
+    const nodeDragStopHandler = useMemo(() =>
         isDisabled ? undefined : handleNodeDragStop,
         [isDisabled, handleNodeDragStop]
     )
-    
-    const selectionDragStartHandler = useMemo(() => 
+
+    const selectionDragStartHandler = useMemo(() =>
         isDisabled ? undefined : handleSelectionDragStart,
         [isDisabled, handleSelectionDragStart]
     )
-    
-    const selectionDragStopHandler = useMemo(() => 
+
+    const selectionDragStopHandler = useMemo(() =>
         isDisabled ? undefined : handleSelectionDragStop,
         [isDisabled, handleSelectionDragStop]
     )
-    
-    const nodesDeleteHandler = useMemo(() => 
+
+    const nodesDeleteHandler = useMemo(() =>
         isDisabled ? undefined : handleNodesDelete,
         [isDisabled, handleNodesDelete]
     )
-    
-    const edgesDeleteHandler = useMemo(() => 
+
+    const edgesDeleteHandler = useMemo(() =>
         isDisabled ? undefined : handleEdgesDelete,
         [isDisabled, handleEdgesDelete]
     )
 
     return (
         <WorkflowCanvasContextMenu readOnly={isDisabled}>
-            <div 
-                className="h-full" 
-                ref={(node) => {
-                    // Combine refs
-                    if (typeof combinedRef === 'function') {
-                        combinedRef(node);
-                    } else if (combinedRef) {
-                        (combinedRef as any).current = node;
-                    }
-                    if (node) {
-                        (reactFlowWrapper as any).current = node;
-                    }
-                }}
-                style={{ backgroundColor, outline: 'none' }} 
-                tabIndex={0}
-            >
+            <div className="h-full" ref={combinedRef} style={{ backgroundColor }}>
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -234,7 +201,7 @@ export function WorkflowCanvas({
                     onInit={onInit}
                     onDrop={dropHandler}
                     onDragOver={dragOverHandler}
-                    onSelectionChange={wrappedSelectionChange}
+                    onSelectionChange={handleSelectionChange}
                     onNodeDoubleClick={(event, node) => handleNodeDoubleClick(event, node.id)}
                     onNodeDragStart={nodeDragStartHandler}
                     onNodeDrag={nodeDragHandler}
@@ -278,9 +245,9 @@ export function WorkflowCanvas({
                         />
                     )}
                     {showBackground && (
-                        <Background 
-                            variant={displayBackgroundVariant} 
-                            gap={isDisabled ? 20 : 12} 
+                        <Background
+                            variant={displayBackgroundVariant}
+                            gap={isDisabled ? 20 : 12}
                             size={isDisabled ? 2 : 1}
                             color={isDisabled ? '#cbd5e1' : undefined}
                         />
