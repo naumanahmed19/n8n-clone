@@ -161,6 +161,10 @@ export class ExecutionContextManager {
     context.status = "completed";
     context.endTime = Date.now();
 
+    // Clear all running nodes since execution is complete
+    context.runningNodes.clear();
+    context.queuedNodes.clear();
+
     // If this was the current execution, clear it
     if (this.currentExecutionId === executionId) {
       this.currentExecutionId = null;

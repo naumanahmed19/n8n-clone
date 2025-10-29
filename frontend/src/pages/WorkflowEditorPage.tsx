@@ -22,11 +22,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 export function WorkflowEditorPage() {
   const { id, executionId } = useParams<{ id: string; executionId?: string }>()
   const navigate = useNavigate()
-  const { 
-    workflow, 
-    setWorkflow, 
-    setLoading, 
-    isLoading, 
+  const {
+    workflow,
+    setWorkflow,
+    setLoading,
+    isLoading,
     setExecutionMode,
     setNodeExecutionResult,
     clearExecutionState
@@ -37,9 +37,9 @@ export function WorkflowEditorPage() {
   const { activeNodeTypes: nodeTypes, isLoading: isLoadingNodeTypes, fetchNodeTypes } = useNodeTypes()
   const [execution, setExecution] = useState<ExecutionDetails | null>(null)
   const [isLoadingExecution, setIsLoadingExecution] = useState(false)
-  
+
   // Workflow operations for toolbar
-  const { 
+  const {
     saveWorkflow,
   } = useWorkflowOperations()
 
@@ -53,23 +53,23 @@ export function WorkflowEditorPage() {
     if (!id || id === 'new') return
 
     console.log('[WorkflowEditor] Subscribing to workflow:', id)
-    
+
     let isSubscribed = false;
     let subscriptionAttempts = 0;
     const maxAttempts = 3;
-    
+
     // Subscribe to workflow updates with retry logic
     const subscribeToWorkflow = async () => {
       try {
         subscriptionAttempts++;
         console.log(`[WorkflowEditor] Subscription attempt ${subscriptionAttempts} for workflow:`, id)
-        
+
         await socketService.subscribeToWorkflow(id)
         isSubscribed = true;
         console.log('[WorkflowEditor] ✅ Successfully subscribed to workflow:', id)
       } catch (error) {
         console.error('[WorkflowEditor] Failed to subscribe to workflow:', error)
-        
+
         // Retry if not at max attempts
         if (subscriptionAttempts < maxAttempts) {
           console.log(`[WorkflowEditor] Retrying subscription in 1 second...`)
@@ -77,92 +77,45 @@ export function WorkflowEditorPage() {
         }
       }
     }
-    
+
     // Initial subscription
     subscribeToWorkflow()
-    
+
     // Also re-subscribe when socket reconnects
     const handleSocketConnected = () => {
       console.log('[WorkflowEditor] Socket reconnected, re-subscribing to workflow:', id)
       subscribeToWorkflow()
     }
-    
+
     socketService.on('socket-connected', handleSocketConnected)
 
-    // Listen for execution events
-    const handleExecutionEvent = (event: any) => {
-      console.log('🟢 [WorkflowEditor] Execution event received:', {
-        type: event.type,
-        executionId: event.executionId,
-        nodeId: event.nodeId,
-        status: event.status,
-        timestamp: event.timestamp,
-        data: event.data
-      })
-    }
+    // NOTE: Execution events are now handled by the workflow store via ExecutionWebSocket
+    // We don't need duplicate listeners here - the store will update and trigger re-renders
 
-    const handleExecutionProgress = (progress: any) => {
-      console.log('🔵 [WorkflowEditor] Execution progress:', {
-        executionId: progress.executionId,
-        completedNodes: progress.completedNodes,
-        totalNodes: progress.totalNodes,
-        status: progress.status
-      })
-    }
-
-    const handleNodeExecutionEvent = (nodeEvent: any) => {
-      console.log('🟡 [WorkflowEditor] Node execution event:', {
-        executionId: nodeEvent.executionId,
-        nodeId: nodeEvent.nodeId,
-        type: nodeEvent.type,
-        status: nodeEvent.status
-      })
-    }
-
-    const handleExecutionLog = (log: any) => {
-      console.log('📝 [WorkflowEditor] Execution log:', log)
-    }
-
+    // Listen for webhook test triggers and auto-subscribe to execution
     const handleWebhookTestTriggered = async (data: any) => {
-      console.log('🧪 [WorkflowEditor] Webhook test triggered:', data)
-      console.log('🧪 [WorkflowEditor] Current workflow ID:', id)
-      console.log('🧪 [WorkflowEditor] Event workflow ID:', data.workflowId)
-      
-      // Subscribe to this execution to see it in real-time
       try {
         await socketService.subscribeToExecution(data.executionId)
-        console.log('✅ [WorkflowEditor] Subscribed to webhook execution:', data.executionId)
       } catch (error) {
-        console.error('❌ [WorkflowEditor] Failed to subscribe to execution:', error)
+        console.error('Failed to subscribe to webhook execution:', error)
       }
     }
 
-    // Register event listeners
-    console.log('[WorkflowEditor] Registering event listeners including webhook-test-triggered')
-    socketService.on('execution-event', handleExecutionEvent)
-    socketService.on('execution-progress', handleExecutionProgress)
-    socketService.on('node-execution-event', handleNodeExecutionEvent)
-    socketService.on('execution-log', handleExecutionLog)
     socketService.on('webhook-test-triggered', handleWebhookTestTriggered)
-    console.log('[WorkflowEditor] Event listeners registered')
 
     // Cleanup: unsubscribe and remove listeners when component unmounts or workflow changes
     return () => {
       // Only unsubscribe if we actually subscribed
       if (isSubscribed) {
         console.log('[WorkflowEditor] Unsubscribing from workflow:', id)
-        
+
         // Unsubscribe from workflow (async but don't wait)
         socketService.unsubscribeFromWorkflow(id).catch(error => {
           console.error('[WorkflowEditor] Failed to unsubscribe from workflow:', error)
         })
       }
-      
+
       // Remove event listeners
-      socketService.off('execution-event', handleExecutionEvent)
-      socketService.off('execution-progress', handleExecutionProgress)
-      socketService.off('node-execution-event', handleNodeExecutionEvent)
-      socketService.off('execution-log', handleExecutionLog)
       socketService.off('webhook-test-triggered', handleWebhookTestTriggered)
       socketService.off('socket-connected', handleSocketConnected)
     }
@@ -251,11 +204,11 @@ export function WorkflowEditorPage() {
             } else if (nodeExec.status === 'running') {
               status = 'success'
             }
-            
+
             // Calculate duration
             const startTime = nodeExec.startedAt ? new Date(nodeExec.startedAt).getTime() : Date.now()
             const endTime = nodeExec.finishedAt ? new Date(nodeExec.finishedAt).getTime() : Date.now()
-            
+
             setNodeExecutionResult(nodeExec.nodeId, {
               nodeId: nodeExec.nodeId,
               nodeName: nodeExec.nodeId,
@@ -424,27 +377,27 @@ export function WorkflowEditorPage() {
       >
         <AppSidebar />
         <SidebarInset>
-        {/* Show execution toolbar when in execution mode */}
-        {executionId && execution ? (
-          <ExecutionToolbar
-            execution={execution}
-            onBack={() =>  navigate(`/workflows/${id}`, { replace: true })}
-          />
-        ) : (
-          <WorkflowToolbar
-            onSave={handleSave}
-          />
-        )}
-        
-        <div className="flex flex-1 flex-col h-full overflow-hidden">
-          <WorkflowEditorWrapper 
-            nodeTypes={nodeTypes}
-            readOnly={!!executionId}
-            executionMode={!!executionId}
-          />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+          {/* Show execution toolbar when in execution mode */}
+          {executionId && execution ? (
+            <ExecutionToolbar
+              execution={execution}
+              onBack={() => navigate(`/workflows/${id}`, { replace: true })}
+            />
+          ) : (
+            <WorkflowToolbar
+              onSave={handleSave}
+            />
+          )}
+
+          <div className="flex flex-1 flex-col h-full overflow-hidden">
+            <WorkflowEditorWrapper
+              nodeTypes={nodeTypes}
+              readOnly={!!executionId}
+              executionMode={!!executionId}
+            />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     </TooltipProvider>
   )
 }
