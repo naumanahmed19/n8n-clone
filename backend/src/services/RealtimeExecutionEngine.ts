@@ -211,7 +211,7 @@ export class RealtimeExecutionEngine extends EventEmitter {
                 context.userId,
                 { timeout: 30000 },
                 context.workflowId,
-                // node.settings // Pass node settings (includes continueOnFail)
+                node.settings // Pass node settings (includes continueOnFail)
             );
 
             const duration = Date.now() - startTime;

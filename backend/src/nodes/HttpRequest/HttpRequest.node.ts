@@ -121,8 +121,8 @@ export const HttpRequestNode: NodeDefinition = {
   execute: async function (
     inputData: NodeInputData
   ): Promise<NodeOutputData[]> {
-    const method = (await this.getNodeParameter("method")) as string;
-    const url = (await this.getNodeParameter("url")) as string;
+    const method = this.getNodeParameter("method") as string;
+    const url = this.getNodeParameter("url") as string;
 
     // Debug logging to see what we actually received
     this.logger.info("HTTP Request - Parameter values received", {
@@ -133,16 +133,16 @@ export const HttpRequestNode: NodeDefinition = {
     });
 
     const headers =
-      ((await this.getNodeParameter("headers")) as Record<string, string>) ||
+      (this.getNodeParameter("headers") as Record<string, string>) ||
       {};
-    const body = await this.getNodeParameter("body");
+    const body = this.getNodeParameter("body");
     const timeout =
-      ((await this.getNodeParameter("timeout")) as number) || 30000;
-    const followRedirects = (await this.getNodeParameter(
+      (this.getNodeParameter("timeout") as number) || 30000;
+    const followRedirects = this.getNodeParameter(
       "followRedirects"
-    )) as boolean;
+    ) as boolean;
     const maxRedirects =
-      ((await this.getNodeParameter("maxRedirects")) as number) || 5;
+      (this.getNodeParameter("maxRedirects") as number) || 5;
 
     // Get settings from Settings tab
     const continueOnFail = this.settings?.continueOnFail ?? false;
@@ -424,12 +424,7 @@ export const HttpRequestNode: NodeDefinition = {
         responseTime: result.responseTime,
       });
 
-      const output = [{ main: [{ json: result }] }];
-      this.logger.info("HTTP Request returning output", {
-        outputStructure: JSON.stringify(output).substring(0, 300),
-      });
-
-      return output;
+      return [{ main: [{ json: result }] }];
     } catch (error) {
       // Handle final error after all retries
       const httpError = error as any;

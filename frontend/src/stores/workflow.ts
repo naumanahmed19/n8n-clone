@@ -2158,13 +2158,6 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
         const currentResults = get().realTimeResults;
         const existingResult = currentResults.get(nodeId);
 
-        console.log('[Workflow Store] updateNodeExecutionResult called:', {
-          nodeId,
-          hasData: !!result.data,
-          dataSample: result.data ? JSON.stringify(result.data).substring(0, 200) : 'none',
-          status: result.status,
-        });
-
         const updatedResult: NodeExecutionResult = {
           nodeId,
           nodeName: result.nodeName || existingResult?.nodeName || "Unknown",
@@ -2681,15 +2674,6 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
                   break;
 
                 case "completed":
-                  console.log('[Workflow Store] Node completed event received:', {
-                    nodeId: nodeEvent.nodeId,
-                    nodeName,
-                    hasData: !!nodeEvent.data,
-                    hasOutputData: !!nodeEvent.data?.outputData,
-                    dataKeys: nodeEvent.data ? Object.keys(nodeEvent.data) : [],
-                    outputDataSample: nodeEvent.data?.outputData ? JSON.stringify(nodeEvent.data.outputData).substring(0, 200) : 'none',
-                  });
-
                   // Update node execution result
                   get().updateNodeExecutionResult(nodeEvent.nodeId, {
                     nodeId: nodeEvent.nodeId,
