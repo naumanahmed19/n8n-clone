@@ -18,10 +18,10 @@ import { getNodeStatusClasses } from '../utils/nodeStyleUtils'
 export interface BaseNodeWrapperProps {
   /** Node ID */
   id: string
-  
+
   /** Whether the node is selected */
   selected: boolean
-  
+
   /** Node data */
   data: {
     label: string
@@ -36,40 +36,40 @@ export interface BaseNodeWrapperProps {
     outputs?: string[]
     executionCapability?: 'trigger' | 'action' | 'transform' | 'condition'
   }
-  
+
   /** Whether the node is read-only */
   isReadOnly?: boolean
-  
+
   /** Whether the node is expanded */
   isExpanded: boolean
-  
+
   /** Handler for expand/collapse toggle */
   onToggleExpand: () => void
-  
+
   /** Icon component to display in header (optional if nodeConfig is provided) */
   Icon?: LucideIcon
-  
+
   /** Background color for the icon */
   iconColor?: string
-  
+
   /** Width of the node when collapsed */
   collapsedWidth?: string
-  
+
   /** Width of the node when expanded */
   expandedWidth?: string
-  
+
   /** Content to display when collapsed */
   collapsedContent?: ReactNode
-  
+
   /** Content to display when expanded */
   expandedContent?: ReactNode
-  
+
   /** Additional info to show in header (e.g., "3 messages") */
   headerInfo?: string
-  
+
   /** Custom content to render in the collapsed view (e.g., for CustomNode with icon and toolbar) */
   customContent?: ReactNode
-  
+
   /** If no customContent, use default node rendering with these props */
   nodeConfig?: {
     icon?: string
@@ -80,34 +80,34 @@ export interface BaseNodeWrapperProps {
     imageUrl?: string
     nodeType?: string  // Added to support file: icons
   }
-  
+
   /** Custom metadata to render below node (like NodeMetadata component) */
   customMetadata?: ReactNode
-  
+
   /** Whether to show label below the node (like CustomNode) */
   showLabelBelow?: boolean
-  
+
   /** Whether to enable expand/collapse functionality */
   canExpand?: boolean
-  
+
   /** Custom class name for the wrapper */
   className?: string
-  
+
   /** Whether to show input handle */
   showInputHandle?: boolean
-  
+
   /** Whether to show output handle */
   showOutputHandle?: boolean
-  
+
   /** Custom input handle color */
   inputHandleColor?: string
-  
+
   /** Custom output handle color */
   outputHandleColor?: string
-  
+
   /** Custom on double click handler - if not provided, will open properties dialog */
   onDoubleClick?: (e: React.MouseEvent) => void
-  
+
   /** Toolbar options */
   toolbar?: {
     showToolbar?: boolean
@@ -120,6 +120,9 @@ export interface BaseNodeWrapperProps {
     onRetry?: (nodeId: string, nodeType: string) => void
     onToggleDisabled?: (nodeId: string, disabled: boolean) => void
   }
+
+  /** Node enhancements (badges, overlays, etc.) from enhancement registry */
+  nodeEnhancements?: ReactNode[]
 }
 
 /**
@@ -172,6 +175,7 @@ export function BaseNodeWrapper({
   customMetadata,
   canExpand = true,
   nodeConfig,
+  nodeEnhancements,
 }: BaseNodeWrapperProps) {
   // Use node actions hook for context menu functionality
   const {
@@ -188,7 +192,7 @@ export function BaseNodeWrapper({
 
   // Get copy/paste functions from store
   const { copy, cut, paste, canCopy, canPaste } = useCopyPasteStore()
-  
+
   // Import useReactFlow to check if node is in a group
   const { getNode, getNodes } = useReactFlow()
   const currentNode = getNode(id)
@@ -204,28 +208,31 @@ export function BaseNodeWrapper({
   const canGroup = selectedNodesForGrouping.length >= 1
 
   // Use execution hook for toolbar functionality and visual state
-  const { 
+  const {
     nodeExecutionState,
     nodeVisualState,
-    handleExecuteNode, 
-    handleRetryNode 
+    handleExecuteNode,
+    handleRetryNode
   } = useNodeExecution(id, data.nodeType)
-  
+
   // Get execution state from store for toolbar
-  const { executionState } = useWorkflowStore()
-  
+  const { executionState, getNodeExecutionResult } = useWorkflowStore()
+
+  // Get node execution result for start time (for countdown timer)
+  const nodeExecutionResult = getNodeExecutionResult(id)
+
   // Get compact mode from UI store
   const { compactMode } = useReactFlowUIStore()
-  
+
   // Determine effective node status from visual state or data.status
   // Priority: nodeVisualState > data.status for consistent styling across execution modes
-  const effectiveStatus = nodeVisualState?.status 
+  const effectiveStatus = nodeVisualState?.status
     ? (nodeVisualState.status === NodeExecutionStatus.RUNNING ? 'running' :
-       nodeVisualState.status === NodeExecutionStatus.COMPLETED ? 'success' :
-       nodeVisualState.status === NodeExecutionStatus.FAILED ? 'error' :
-       nodeVisualState.status === NodeExecutionStatus.SKIPPED ? 'skipped' :
-       nodeVisualState.status === NodeExecutionStatus.QUEUED ? 'running' :
-       data.status)
+      nodeVisualState.status === NodeExecutionStatus.COMPLETED ? 'success' :
+        nodeVisualState.status === NodeExecutionStatus.FAILED ? 'error' :
+          nodeVisualState.status === NodeExecutionStatus.SKIPPED ? 'skipped' :
+            nodeVisualState.status === NodeExecutionStatus.QUEUED ? 'running' :
+              data.status)
     : data.status
 
   // Handle double-click to open properties dialog
@@ -242,7 +249,7 @@ export function BaseNodeWrapper({
   const handleToggleExpandClick = useCallback(() => {
     onToggleExpand()
   }, [onToggleExpand])
-  
+
   // Local state for tracking which output connector is hovered (for default rendering)
   const [hoveredOutput, setHoveredOutput] = React.useState<string | null>(null)
 
@@ -268,9 +275,8 @@ export function BaseNodeWrapper({
                   <div className="relative">
                     <div
                       onDoubleClick={handleDoubleClick}
-                      className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${
-                        getNodeStatusClasses(effectiveStatus, selected, data.disabled)
-                      } ${className}`}
+                      className={`relative bg-card rounded-lg border shadow-sm transition-all duration-200 hover:shadow-md ${getNodeStatusClasses(effectiveStatus, selected, data.disabled)
+                        } ${className}`}
                       style={{ width: effectiveCollapsedWidth }}
                     >
                       {/* Dynamic Handles */}
@@ -306,16 +312,20 @@ export function BaseNodeWrapper({
                       {customContent ? (
                         customContent
                       ) : nodeConfig ? (
-                        <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
-                          <NodeIcon 
-                            config={nodeConfig}
-                            isExecuting={nodeExecutionState.isExecuting}
-                          />
-                          {!compactMode && (
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-sm font-medium truncate">{data.label}</span>
-                            </div>
-                          )}
+                        <div className="relative">
+                          <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
+                            <NodeIcon
+                              config={nodeConfig}
+                              isExecuting={nodeExecutionState.isExecuting}
+                            />
+                            {!compactMode && (
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="text-sm font-medium truncate">{data.label}</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Render node enhancements (badges, overlays, etc.) */}
+                          {nodeEnhancements}
                         </div>
                       ) : (
                         <>
@@ -329,7 +339,7 @@ export function BaseNodeWrapper({
                             onToggleExpand={handleToggleExpandClick}
                             isExecuting={nodeExecutionState.isExecuting}
                           />
-                          
+
                           {/* Optional collapsed content */}
                           {collapsedContent && (
                             <div>
@@ -338,7 +348,7 @@ export function BaseNodeWrapper({
                           )}
                         </>
                       )}
-                      
+
                       {/* Bottom Expand Button - Only in compact mode when collapsed and can expand */}
                       {canExpand && !!expandedContent && (
                         <button
@@ -359,7 +369,7 @@ export function BaseNodeWrapper({
                     )}
                   </div>
                 </ContextMenuTrigger>
-                
+
                 <NodeContextMenu
                   onOpenProperties={handleOpenProperties}
                   onExecute={handleExecuteFromContext}
@@ -398,10 +408,9 @@ export function BaseNodeWrapper({
           <div className="relative">
             <div
               onDoubleClick={handleDoubleClick}
-              
-              className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-sm transition-all duration-200 hover:shadow-md ${
-               getNodeStatusClasses(effectiveStatus, selected, data.disabled)
-              } ${className}`}
+
+              className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-sm transition-all duration-200 hover:shadow-md ${getNodeStatusClasses(effectiveStatus, selected, data.disabled)
+                } ${className}`}
               style={{ width: effectiveCollapsedWidth }}
             >
               {/* Dynamic Handles */}
@@ -437,16 +446,20 @@ export function BaseNodeWrapper({
               {customContent ? (
                 customContent
               ) : nodeConfig ? (
-                <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
-                  <NodeIcon 
-                    config={nodeConfig}
-                    isExecuting={nodeExecutionState.isExecuting}
-                  />
-                  {!compactMode && (
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-sm font-medium truncate">{data.label}</span>
-                    </div>
-                  )}
+                <div className="relative">
+                  <div className={`flex items-center ${compactMode ? 'justify-center gap-0 p-2' : 'gap-2 p-3'}`}>
+                    <NodeIcon
+                      config={nodeConfig}
+                      isExecuting={nodeExecutionState.isExecuting}
+                    />
+                    {!compactMode && (
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-medium truncate">{data.label}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Render node enhancements (badges, overlays, etc.) */}
+                  {nodeEnhancements}
                 </div>
               ) : (
                 <>
@@ -460,7 +473,7 @@ export function BaseNodeWrapper({
                     onToggleExpand={handleToggleExpandClick}
                     isExecuting={nodeExecutionState.isExecuting}
                   />
-                  
+
                   {/* Optional collapsed content */}
                   {collapsedContent && (
                     <div>
@@ -469,7 +482,7 @@ export function BaseNodeWrapper({
                   )}
                 </>
               )}
-              
+
               {/* Bottom Expand Button - Only in compact mode when collapsed and can expand */}
               {compactMode && canExpand && !!expandedContent && (
                 <button
@@ -490,7 +503,7 @@ export function BaseNodeWrapper({
             )}
           </div>
         </ContextMenuTrigger>
-        
+
         <NodeContextMenu
           onOpenProperties={handleOpenProperties}
           onExecute={handleExecuteFromContext}
@@ -521,9 +534,8 @@ export function BaseNodeWrapper({
           <div
             onDoubleClick={handleDoubleClick}
 
-            className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-lg transition-all duration-200 hover:shadow-xl ${
-             getNodeStatusClasses(effectiveStatus, selected, data.disabled)
-            } ${className}`}
+            className={`relative bg-card rounded-lg ${compactMode ? 'border-2' : 'border'} shadow-lg transition-all duration-200 hover:shadow-xl ${getNodeStatusClasses(effectiveStatus, selected, data.disabled)
+              } ${className}`}
             style={{ width: effectiveExpandedWidth }}
           >
             {/* Dynamic Handles */}
@@ -572,7 +584,7 @@ export function BaseNodeWrapper({
           </div>
         </div>
       </ContextMenuTrigger>
-      
+
       <NodeContextMenu
         onOpenProperties={handleOpenProperties}
         onExecute={handleExecuteFromContext}

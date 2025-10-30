@@ -3,6 +3,7 @@ import type { NodeType } from '@/types'
 import { Node, NodeProps } from '@xyflow/react'
 import { memo, useMemo } from 'react'
 import { NodeMetadata } from './components/NodeMetadata'
+import { nodeEnhancementRegistry } from './enhancements'
 import { useNodeExecution } from './hooks/useNodeExecution'
 import { BaseNodeWrapper } from './nodes/BaseNodeWrapper'
 
@@ -45,12 +46,12 @@ export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeP
   // OPTIMIZATION: Use Zustand selector to prevent unnecessary re-renders
   // Get read-only state from store (only true when viewing past execution)
   const readOnly = useWorkflowStore(state => state.readOnly)
-  
+
   // Use custom hooks for node visual state
-  const { nodeVisualState } = useNodeExecution(id, data.nodeType)
+  const { nodeVisualState, nodeExecutionState } = useNodeExecution(id, data.nodeType)
 
   // Check if this is a trigger node (memoize to prevent recalculation)
-  const isTrigger = useMemo(() => 
+  const isTrigger = useMemo(() =>
     data.executionCapability === 'trigger',
     [data.executionCapability]
   )
@@ -78,6 +79,19 @@ export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeP
     nodeType: data.nodeType,  // Pass nodeType for file: icon resolution
   }), [nodeIcon, nodeColor, isTrigger, data.inputs, data.outputs, data.parameters?.imageUrl, data.nodeType])
 
+  // Render node enhancements (badges, overlays, etc.) using the registry
+  const nodeEnhancements = useMemo(() => {
+    const enhancements = nodeEnhancementRegistry.renderOverlays({
+      nodeId: id,
+      nodeType: data.nodeType,
+      parameters: data.parameters,
+      isExecuting: nodeExecutionState.isExecuting,
+      executionResult: data.executionResult,
+    })
+    
+    return enhancements
+  }, [id, data.nodeType, data.parameters, nodeExecutionState.isExecuting, data.executionResult])
+
   // Memoize toolbar config
   const toolbarConfig = useMemo(() => ({
     showToolbar: true,
@@ -95,11 +109,12 @@ export const CustomNode = memo(function CustomNode({ data, selected, id }: NodeP
       data={data}
       isReadOnly={readOnly}
       isExpanded={false}
-      onToggleExpand={() => {}}
+      onToggleExpand={() => { }}
       canExpand={false}
       nodeConfig={nodeConfig}
       customMetadata={customMetadata}
       toolbar={toolbarConfig}
+      nodeEnhancements={nodeEnhancements}
     />
   )
 })
