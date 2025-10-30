@@ -286,6 +286,13 @@ export class ExecutionWebSocket {
     if (this.socket.disconnected && !this.socket.connected) return "connecting";
     return "error";
   }
+
+  /**
+   * Get the socket instance (for direct emit calls)
+   */
+  getSocket() {
+    return this.socket;
+  }
 }
 
 // Create singleton instance

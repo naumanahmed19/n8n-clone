@@ -110,8 +110,38 @@ const DelayNode = {
 
     const startTime = Date.now();
 
-    // Execute the delay
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    // Execute the delay with progress updates every second
+    await new Promise((resolve) => {
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, delayMs - elapsed);
+        const progress = Math.min(100, Math.round((elapsed / delayMs) * 100));
+
+        // Emit progress update if available
+        if (this.emitProgress) {
+          this.emitProgress({
+            progress,
+            message: `Waiting... ${Math.ceil(remaining / 1000)}s remaining`,
+            data: {
+              elapsed,
+              remaining,
+              total: delayMs,
+            },
+          });
+        }
+
+        if (elapsed >= delayMs) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 1000); // Update every second
+
+      // Fallback timeout
+      setTimeout(() => {
+        clearInterval(interval);
+        resolve();
+      }, delayMs + 100);
+    });
 
     const endTime = Date.now();
     const actualDelay = endTime - startTime;

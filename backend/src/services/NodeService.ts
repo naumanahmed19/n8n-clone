@@ -474,6 +474,14 @@ export class NodeService {
         outputValidation.sanitizedData as NodeOutputData[]
       );
 
+      logger.info("Node execution completed successfully", {
+        nodeType,
+        executionId: execId,
+        outputDataLength: standardizedOutput.main?.length || 0,
+        hasMetadata: !!standardizedOutput.metadata,
+        outputSample: standardizedOutput.main?.[0] ? JSON.stringify(standardizedOutput.main[0]).substring(0, 200) : 'none',
+      });
+
       // Cleanup execution resources
       await this.secureExecutionService.cleanupExecution(execId);
 

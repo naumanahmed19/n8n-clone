@@ -424,7 +424,12 @@ export const HttpRequestNode: NodeDefinition = {
         responseTime: result.responseTime,
       });
 
-      return [{ main: [{ json: result }] }];
+      const output = [{ main: [{ json: result }] }];
+      this.logger.info("HTTP Request returning output", {
+        outputStructure: JSON.stringify(output).substring(0, 300),
+      });
+
+      return output;
     } catch (error) {
       // Handle final error after all retries
       const httpError = error as any;

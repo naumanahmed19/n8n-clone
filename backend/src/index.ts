@@ -35,8 +35,11 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 // Import services
 import { PrismaClient } from "@prisma/client";
 import { CredentialService } from "./services/CredentialService";
+import { ExecutionService } from "./services/ExecutionService";
+import ExecutionHistoryService from "./services/ExecutionHistoryService";
 import { NodeLoader } from "./services/NodeLoader";
 import { NodeService } from "./services/NodeService";
+import { RealtimeExecutionEngine } from "./services/RealtimeExecutionEngine";
 import { SocketService } from "./services/SocketService";
 
 // Load environment variables
@@ -66,18 +69,98 @@ try {
 const nodeLoader = new NodeLoader(nodeService, credentialService, prisma);
 const socketService = new SocketService(httpServer);
 
+// Initialize ExecutionService (for HTTP endpoints)
+const executionHistoryService = new ExecutionHistoryService(prisma);
+const executionService = new ExecutionService(
+  prisma,
+  nodeService,
+  executionHistoryService
+);
+
+// Initialize RealtimeExecutionEngine (for WebSocket execution)
+const realtimeExecutionEngine = new RealtimeExecutionEngine(prisma, nodeService);
+
+// Connect RealtimeExecutionEngine events to SocketService
+realtimeExecutionEngine.on("execution-started", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "started",
+    timestamp: data.timestamp,
+  });
+});
+
+realtimeExecutionEngine.on("node-started", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "node-started",
+    nodeId: data.nodeId,
+    data: { nodeName: data.nodeName, nodeType: data.nodeType },
+    timestamp: data.timestamp,
+  });
+});
+
+realtimeExecutionEngine.on("node-completed", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "node-completed",
+    nodeId: data.nodeId,
+    data: { outputData: data.outputData, duration: data.duration },
+    timestamp: data.timestamp,
+  });
+});
+
+realtimeExecutionEngine.on("node-failed", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "node-failed",
+    nodeId: data.nodeId,
+    error: data.error,
+    timestamp: data.timestamp,
+  });
+});
+
+realtimeExecutionEngine.on("execution-completed", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "completed",
+    data: { duration: data.duration },
+    timestamp: data.timestamp,
+  });
+});
+
+realtimeExecutionEngine.on("execution-failed", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "failed",
+    error: data.error,
+    timestamp: data.timestamp,
+  });
+});
+
+realtimeExecutionEngine.on("execution-cancelled", (data) => {
+  socketService.broadcastExecutionEvent(data.executionId, {
+    executionId: data.executionId,
+    type: "cancelled",
+    timestamp: data.timestamp,
+  });
+});
+
 // Make services available globally for other services
 declare global {
   var socketService: SocketService;
   var nodeLoader: NodeLoader;
   var nodeService: NodeService;
   var credentialService: CredentialService;
+  var executionService: ExecutionService;
+  var realtimeExecutionEngine: RealtimeExecutionEngine;
   var prisma: PrismaClient;
 }
 global.socketService = socketService;
 global.nodeLoader = nodeLoader;
 global.nodeService = nodeService;
 global.credentialService = credentialService;
+global.executionService = executionService;
+global.realtimeExecutionEngine = realtimeExecutionEngine;
 global.prisma = prisma;
 
 // Initialize node systems

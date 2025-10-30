@@ -131,6 +131,14 @@ export class SocketService {
         this.handleWorkflowUnsubscription(authSocket, workflowId);
       });
 
+      // Handle workflow execution start (NEW)
+      socket.on(
+        "start-workflow-execution",
+        async (data: any, callback?: Function) => {
+          await this.handleStartWorkflowExecution(authSocket, data, callback);
+        }
+      );
+
       // Handle disconnect
       socket.on("disconnect", () => {
         console.log(`🔌 User ${authSocket.userId} DISCONNECTED from Socket.io - Socket ID: ${socket.id}`);
@@ -612,6 +620,74 @@ export class SocketService {
       } else {
         // Update buffer with filtered events
         this.executionEventBuffer.set(executionId, filteredEvents);
+      }
+    }
+  }
+
+  /**
+   * Handle workflow execution start via WebSocket
+   */
+  private async handleStartWorkflowExecution(
+    socket: AuthenticatedSocket,
+    data: {
+      workflowId: string;
+      triggerData?: any;
+      options?: any;
+      triggerNodeId?: string;
+      workflowData?: { nodes?: any[]; connections?: any[]; settings?: any };
+    },
+    callback?: Function
+  ): Promise<void> {
+    try {
+      logger.info(`User ${socket.userId} starting workflow execution via WebSocket`, {
+        workflowId: data.workflowId,
+        triggerNodeId: data.triggerNodeId,
+      });
+
+      // Get RealtimeExecutionEngine from global
+      const globalAny = global as any;
+      if (!globalAny.realtimeExecutionEngine) {
+        throw new Error("RealtimeExecutionEngine not available");
+      }
+
+      // Validate required data
+      if (!data.workflowData?.nodes || !data.workflowData?.connections) {
+        throw new Error("Workflow data (nodes and connections) is required");
+      }
+
+      if (!data.triggerNodeId) {
+        throw new Error("Trigger node ID is required");
+      }
+
+      // Start execution (returns immediately with execution ID)
+      const executionId = await globalAny.realtimeExecutionEngine.startExecution(
+        data.workflowId,
+        socket.userId,
+        data.triggerNodeId,
+        data.triggerData,
+        data.workflowData.nodes,
+        data.workflowData.connections
+      );
+
+      // Return execution ID immediately
+      if (callback) {
+        callback({
+          success: true,
+          executionId,
+          message: "Workflow execution started",
+        });
+      }
+
+      logger.info(`Workflow execution started: ${executionId}`);
+
+    } catch (error: any) {
+      logger.error(`Failed to start workflow execution:`, error);
+
+      if (callback) {
+        callback({
+          success: false,
+          error: error.message || "Failed to start execution",
+        });
       }
     }
   }
