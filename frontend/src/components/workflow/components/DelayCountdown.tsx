@@ -13,27 +13,37 @@ interface DelayCountdownProps {
 
 export function DelayCountdown({ totalMs, startTime, isRunning, timeUnit }: DelayCountdownProps) {
   const [remainingMs, setRemainingMs] = useState(totalMs)
+  const [localStartTime, setLocalStartTime] = useState<number | null>(null)
 
   useEffect(() => {
+    // When execution starts, capture the start time ONCE
+    if (isRunning && localStartTime === null) {
+      setLocalStartTime(Date.now())
+    }
+
+    // When execution stops, reset everything
     if (!isRunning) {
       setRemainingMs(totalMs)
+      setLocalStartTime(null)
+    }
+  }, [isRunning, totalMs, localStartTime])
+
+  useEffect(() => {
+    // Only run countdown when we're running AND have a start time
+    if (!isRunning || localStartTime === null) {
       return
     }
 
-    // If no startTime provided when running, use current time
-    const startTimestamp = startTime 
-      ? (typeof startTime === 'string' ? new Date(startTime).getTime() : startTime)
-      : Date.now()
+    let isMounted = true
 
     const updateCountdown = () => {
-      const now = Date.now()
-      const elapsed = now - startTimestamp
-      const remaining = Math.max(0, totalMs - elapsed)
-      setRemainingMs(remaining)
+      if (!isMounted) return
 
-      if (remaining <= 0) {
-        setRemainingMs(0)
-      }
+      const now = Date.now()
+      const elapsed = now - localStartTime
+      const remaining = Math.max(0, totalMs - elapsed)
+
+      setRemainingMs(remaining)
     }
 
     // Update immediately
@@ -42,8 +52,12 @@ export function DelayCountdown({ totalMs, startTime, isRunning, timeUnit }: Dela
     // Update every 100ms for smooth countdown
     const interval = setInterval(updateCountdown, 100)
 
-    return () => clearInterval(interval)
-  }, [isRunning, startTime, totalMs])
+    // Cleanup function
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [isRunning, localStartTime, totalMs])
 
   // Format the display based on time unit
   const formatTime = (ms: number): string => {

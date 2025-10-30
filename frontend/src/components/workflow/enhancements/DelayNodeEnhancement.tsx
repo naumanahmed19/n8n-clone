@@ -5,7 +5,7 @@ export const delayNodeEnhancement: NodeEnhancement = {
   nodeTypes: ['delay'],
   
   renderOverlay: (context) => {
-    const { parameters, isExecuting, executionResult } = context
+    const { nodeId, parameters, isExecuting, executionResult } = context
     
     // Check if delay parameters are configured
     if (!parameters?.amount || !parameters?.timeUnit) {
@@ -19,8 +19,12 @@ export const delayNodeEnhancement: NodeEnhancement = {
       parameters.timeUnit === 'hours' ? 3600000 : 1000
     )
 
+    // Use a key that changes on each execution to force re-mount
+    // This ensures the timer resets properly between executions
+    const key = `${nodeId}-${executionResult?.startTime || 'idle'}`
+
     return (
-      <div className="absolute bottom-1 right-1 z-10">
+      <div key={key} className="absolute bottom-1 right-1 z-10">
         <DelayCountdown
           totalMs={totalMs}
           startTime={executionResult?.startTime}
