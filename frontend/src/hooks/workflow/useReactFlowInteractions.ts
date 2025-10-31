@@ -48,6 +48,9 @@ export function useReactFlowInteractions() {
   // Add ref to track connection state as fallback when state gets reset
   const connectionRef = useRef<Connection | null>(null);
 
+  // Track if a connection was successfully made
+  const connectionMadeRef = useRef<boolean>(false);
+
   // Use the useReactFlow hook to get the ReactFlow instance directly
   const reactFlowInstance = useReactFlow();
 
@@ -390,6 +393,9 @@ export function useReactFlowInteractions() {
     (connection) => {
       if (!connection.source || !connection.target) return;
 
+      // Mark that a connection was successfully made
+      connectionMadeRef.current = true;
+
       const newConnection: WorkflowConnection = {
         id: `${connection.source}-${connection.target}-${Date.now()}`,
         sourceNodeId: connection.source,
@@ -496,6 +502,9 @@ export function useReactFlowInteractions() {
       }
     ) => {
       if (params.nodeId && params.handleType === "source") {
+        // Reset the connection made flag
+        connectionMadeRef.current = false;
+
         const connection = {
           source: params.nodeId,
           sourceHandle: params.handleId ?? null,
@@ -518,55 +527,63 @@ export function useReactFlowInteractions() {
       if (!activeConnection || !reactFlowInstance) {
         setConnectionInProgress(null);
         connectionRef.current = null;
+        connectionMadeRef.current = false;
         return;
       }
 
-      // Check if the target is the canvas pane or any child of the pane
-      const target = event.target as HTMLElement;
-      const targetIsPane = target.classList.contains("react-flow__pane") ||
-        target.closest(".react-flow__pane") !== null;
-
-      if (targetIsPane && activeConnection.source) {
-        // Connection was dropped on the canvas (not on a node)
-        // We'll create a default node at the drop position and connect it automatically
-        // Get the mouse position
-        const clientX =
-          "clientX" in event
-            ? event.clientX
-            : (event as TouchEvent).touches[0].clientX;
-        const clientY =
-          "clientY" in event
-            ? event.clientY
-            : (event as TouchEvent).touches[0].clientY;
-
-        // Get the ReactFlow wrapper element from the DOM
-        const reactFlowWrapper = document.querySelector(
-          ".react-flow"
-        ) as HTMLElement;
-        const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
-        if (!reactFlowBounds) {
+      // Use a small delay to allow handleConnect to fire first if a connection was made
+      setTimeout(() => {
+        // If a connection was successfully made to an existing node, don't open the dialog
+        if (connectionMadeRef.current) {
           setConnectionInProgress(null);
           connectionRef.current = null;
+          connectionMadeRef.current = false;
           return;
         }
 
-        // Convert screen coordinates to flow coordinates
-        const position = reactFlowInstance.screenToFlowPosition({
-          x: clientX - reactFlowBounds.left,
-          y: clientY - reactFlowBounds.top,
-        });
+        // Connection was not made to an existing node, so it was dropped on canvas
+        if (activeConnection.source) {
+          // Get the mouse position
+          const clientX =
+            "clientX" in event
+              ? event.clientX
+              : (event as TouchEvent).touches[0].clientX;
+          const clientY =
+            "clientY" in event
+              ? event.clientY
+              : (event as TouchEvent).touches[0].clientY;
 
-        // Open the add node dialog at the drop position with source connection context
-        openDialog(position, {
-          sourceNodeId: activeConnection.source,
-          targetNodeId: "", // Empty target since we're adding a new node
-          sourceOutput: activeConnection.sourceHandle || undefined,
-          targetInput: undefined,
-        });
-      }
+          // Get the ReactFlow wrapper element from the DOM
+          const reactFlowWrapper = document.querySelector(
+            ".react-flow"
+          ) as HTMLElement;
+          const reactFlowBounds = reactFlowWrapper?.getBoundingClientRect();
+          if (!reactFlowBounds) {
+            setConnectionInProgress(null);
+            connectionRef.current = null;
+            connectionMadeRef.current = false;
+            return;
+          }
 
-      setConnectionInProgress(null);
-      connectionRef.current = null;
+          // Convert screen coordinates to flow coordinates
+          const position = reactFlowInstance.screenToFlowPosition({
+            x: clientX - reactFlowBounds.left,
+            y: clientY - reactFlowBounds.top,
+          });
+
+          // Open the add node dialog at the drop position with source connection context
+          openDialog(position, {
+            sourceNodeId: activeConnection.source,
+            targetNodeId: "", // Empty target since we're adding a new node
+            sourceOutput: activeConnection.sourceHandle || undefined,
+            targetInput: undefined,
+          });
+        }
+
+        setConnectionInProgress(null);
+        connectionRef.current = null;
+        connectionMadeRef.current = false;
+      }, 0);
     },
     [connectionInProgress, reactFlowInstance, openDialog]
   );
