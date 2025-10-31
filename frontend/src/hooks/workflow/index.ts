@@ -43,6 +43,7 @@
  *
  */
 
+export { useAutoLayout } from "./useAutoLayout";
 export { useCopyPaste } from "./useCopyPaste";
 export { default as useDetachNodes } from "./useDetachNodes";
 export { useExecutionControls } from "./useExecutionControls";

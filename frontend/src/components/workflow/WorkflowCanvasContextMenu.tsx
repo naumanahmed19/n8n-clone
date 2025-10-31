@@ -8,10 +8,12 @@ import {
     ContextMenuSubTrigger,
     ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { useWorkflowOperations } from '@/hooks/workflow';
+import { useAutoLayout, useWorkflowOperations } from '@/hooks/workflow';
 import { useCopyPasteStore, useReactFlowUIStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores';
 import { useReactFlow } from '@xyflow/react';
 import {
+    ArrowDownToLine,
+    ArrowRightToLine,
     CheckCircle,
     Clipboard,
     Copy,
@@ -28,6 +30,7 @@ import {
     Maximize,
     Minimize2,
     MousePointerClick,
+    Network,
     Palette,
     Play,
     Plus,
@@ -79,6 +82,9 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
 
   // ReactFlow instance for select all
   const { getNodes, setNodes } = useReactFlow()
+
+  // Auto-layout functions
+  const { applyHorizontalLayout, applyVerticalLayout } = useAutoLayout()
 
   // ReactFlow UI state from store
   const {
@@ -205,6 +211,34 @@ export const WorkflowCanvasContextMenu = memo(function WorkflowCanvasContextMenu
           <Redo className="mr-2 h-4 w-4" />
           Redo
         </ContextMenuItem>
+
+        <ContextMenuSeparator />
+
+        {/* Auto Layout */}
+        <ContextMenuSub>
+          <ContextMenuSubTrigger className="cursor-pointer" disabled={readOnly}>
+            <Network className="mr-2 h-4 w-4" />
+            Auto Layout
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-48">
+            <ContextMenuItem
+              onClick={applyHorizontalLayout}
+              disabled={readOnly}
+              className="cursor-pointer"
+            >
+              <ArrowRightToLine className="mr-2 h-4 w-4" />
+              Horizontal Layout
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={applyVerticalLayout}
+              disabled={readOnly}
+              className="cursor-pointer"
+            >
+              <ArrowDownToLine className="mr-2 h-4 w-4" />
+              Vertical Layout
+            </ContextMenuItem>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
 
         <ContextMenuSeparator />
 
