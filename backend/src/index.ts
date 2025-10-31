@@ -23,6 +23,7 @@ import { nodeRoutes } from "./routes/nodes";
 import oauthRoutes from "./routes/oauth";
 import { publicFormsRoutes } from "./routes/public-forms";
 import { publicChatsRoutes } from "./routes/public-chats";
+import { scheduleJobsRoutes } from "./routes/schedule-jobs";
 import triggerRoutes from "./routes/triggers";
 import userRoutes from "./routes/user.routes";
 import variableRoutes from "./routes/variables";
@@ -79,6 +80,27 @@ const executionService = new ExecutionService(
 
 // Initialize RealtimeExecutionEngine (for WebSocket execution)
 const realtimeExecutionEngine = new RealtimeExecutionEngine(prisma, nodeService);
+
+// Import WorkflowService, TriggerService singleton, and ScheduleJobManager
+import { WorkflowService } from "./services/WorkflowService";
+import { initializeTriggerService, getTriggerService } from "./services/triggerServiceSingleton";
+import { ScheduleJobManager } from "./services/ScheduleJobManager";
+
+// Initialize WorkflowService (needed by TriggerService)
+const workflowService = new WorkflowService(prisma);
+
+// Initialize ScheduleJobManager (for persistent schedule jobs)
+const scheduleJobManager = new ScheduleJobManager(
+  prisma,
+  executionService,
+  {
+    redis: {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD,
+    },
+  }
+);
 
 // Connect RealtimeExecutionEngine events to SocketService
 realtimeExecutionEngine.on("execution-started", (data) => {
@@ -153,6 +175,8 @@ declare global {
   var credentialService: CredentialService;
   var executionService: ExecutionService;
   var realtimeExecutionEngine: RealtimeExecutionEngine;
+  var workflowService: WorkflowService;
+  var scheduleJobManager: ScheduleJobManager;
   var prisma: PrismaClient;
 }
 global.socketService = socketService;
@@ -161,6 +185,8 @@ global.nodeService = nodeService;
 global.credentialService = credentialService;
 global.executionService = executionService;
 global.realtimeExecutionEngine = realtimeExecutionEngine;
+global.workflowService = workflowService;
+global.scheduleJobManager = scheduleJobManager;
 global.prisma = prisma;
 
 // Initialize node systems
@@ -353,6 +379,7 @@ app.use("/api/node-types", nodeTypeRoutes);
 app.use("/api/credentials", credentialRoutes);
 app.use("/api/variables", variableRoutes);
 app.use("/api/triggers", triggerRoutes);
+app.use("/api/schedule-jobs", scheduleJobsRoutes);
 app.use("/api/custom-nodes", customNodeRoutes);
 app.use("/api/flow-execution", flowExecutionRoutes);
 app.use("/api/execution-control", executionControlRoutes);
@@ -394,6 +421,32 @@ httpServer.listen(PORT, async () => {
 
   // Initialize node systems after server starts
   await initializeNodeSystems();
+
+  // Initialize TriggerService singleton to load active triggers
+  try {
+    console.log(`⏰ Initializing TriggerService...`);
+    await initializeTriggerService(
+      prisma,
+      workflowService,
+      executionService,
+      socketService,
+      nodeService,
+      executionHistoryService,
+      credentialService
+    );
+    console.log(`✅ TriggerService initialized - active triggers loaded`);
+  } catch (error) {
+    console.error(`❌ Failed to initialize TriggerService:`, error);
+  }
+
+  // Initialize ScheduleJobManager for persistent schedule jobs
+  try {
+    console.log(`📅 Initializing ScheduleJobManager...`);
+    await scheduleJobManager.initialize();
+    console.log(`✅ ScheduleJobManager initialized - schedule jobs loaded from Redis`);
+  } catch (error) {
+    console.error(`❌ Failed to initialize ScheduleJobManager:`, error);
+  }
 });
 
 // Graceful shutdown
@@ -401,6 +454,7 @@ process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully...");
   await nodeLoader.cleanup();
   await socketService.shutdown();
+  await scheduleJobManager.shutdown();
   await prisma.$disconnect();
   httpServer.close(() => {
     console.log("Server closed");
@@ -412,6 +466,7 @@ process.on("SIGINT", async () => {
   console.log("SIGINT received, shutting down gracefully...");
   await nodeLoader.cleanup();
   await socketService.shutdown();
+  await scheduleJobManager.shutdown();
   await prisma.$disconnect();
   httpServer.close(() => {
     console.log("Server closed");

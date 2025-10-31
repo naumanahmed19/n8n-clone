@@ -274,6 +274,16 @@ export class WorkflowService {
         }
       }
 
+      // Sync schedule jobs with ScheduleJobManager
+      if (global.scheduleJobManager && (normalizedTriggers || data.active !== undefined)) {
+        try {
+          await global.scheduleJobManager.syncWorkflowJobs(id);
+        } catch (error) {
+          console.error(`Error syncing schedule jobs for workflow ${id}:`, error);
+          // Don't fail the update if job sync fails
+        }
+      }
+
       return workflow;
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -1005,6 +1015,80 @@ export class WorkflowService {
         "Failed to delete category",
         500,
         "CATEGORY_DELETE_ERROR"
+      );
+    }
+  }
+
+  /**
+   * Get upcoming scheduled executions for a workflow
+   */
+  async getUpcomingExecutions(workflow: any, limit: number = 10) {
+    try {
+      const { getNextExecutionTimes, describeCronExpression } = await import(
+        "../utils/cronUtils"
+      );
+
+      const triggers = (workflow.triggers as any[]) || [];
+      const scheduleTriggers = triggers.filter((t) => {
+        // If active is undefined, treat as true (for backwards compatibility)
+        const isActive = t.active !== undefined ? t.active : true;
+        return t.type === "schedule" && isActive;
+      });
+
+      if (scheduleTriggers.length === 0) {
+        return {
+          workflowId: workflow.id,
+          workflowName: workflow.name,
+          active: workflow.active,
+          upcomingExecutions: [],
+          message: "No active schedule triggers found",
+        };
+      }
+
+      const upcomingExecutions: any[] = [];
+
+      for (const trigger of scheduleTriggers) {
+        const cronExpression = trigger.settings?.cronExpression;
+        const timezone = trigger.settings?.timezone || "UTC";
+        const scheduleMode = trigger.settings?.scheduleMode || "cron";
+
+        if (!cronExpression) continue;
+
+        try {
+          const nextTimes = getNextExecutionTimes(cronExpression, limit, timezone);
+          const description = describeCronExpression(cronExpression);
+
+          upcomingExecutions.push({
+            triggerId: trigger.id,
+            triggerNodeId: trigger.nodeId,
+            triggerType: "schedule",
+            scheduleMode,
+            cronExpression,
+            timezone,
+            description,
+            nextExecutions: nextTimes,
+          });
+        } catch (error) {
+          console.error(
+            `Error calculating next execution times for trigger ${trigger.id}:`,
+            error
+          );
+        }
+      }
+
+      return {
+        workflowId: workflow.id,
+        workflowName: workflow.name,
+        active: workflow.active,
+        upcomingExecutions,
+        totalTriggers: scheduleTriggers.length,
+      };
+    } catch (error) {
+      console.error("Error getting upcoming executions:", error);
+      throw new AppError(
+        "Failed to get upcoming executions",
+        500,
+        "UPCOMING_EXECUTIONS_ERROR"
       );
     }
   }
