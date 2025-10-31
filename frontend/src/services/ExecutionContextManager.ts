@@ -351,62 +351,31 @@ export class ExecutionContextManager {
    * Get the status of a node in the current execution (filtered)
    */
   getNodeStatus(nodeId: string): NodeStatusInfo {
-    // If no current execution, check all executions (including completed ones)
-    if (!this.currentExecutionId) {
-      const executions = this.nodeToExecutions.get(nodeId);
-      if (!executions) {
+    // CRITICAL FIX: Always use current execution if it exists
+    // Don't fall back to old executions - this causes cross-trigger contamination
+    if (this.currentExecutionId) {
+      const context = this.executions.get(this.currentExecutionId);
+      if (context && context.affectedNodeIds.has(nodeId)) {
+        // Node belongs to current execution, return its status
+        return {
+          status: this.getNodeStatusInExecution(nodeId, this.currentExecutionId),
+          executionId: this.currentExecutionId,
+          lastUpdated: Date.now(),
+        };
+      } else {
+        // Node doesn't belong to current execution, return IDLE
+        // This prevents showing error states from previous executions
         return {
           status: NodeExecutionStatus.IDLE,
           executionId: null,
           lastUpdated: Date.now(),
         };
       }
+    }
 
-      // FIX: Find the most recent execution (running OR completed/failed)
-      // This ensures single node execution status persists after completion
-      let mostRecentExecution: {
-        executionId: string;
-        context: ExecutionContext;
-      } | null = null;
-
-      for (const executionId of executions) {
-        const context = this.executions.get(executionId);
-        if (!context) continue;
-
-        // Prioritize running executions
-        if (context.status === "running") {
-          return {
-            status: this.getNodeStatusInExecution(nodeId, executionId),
-            executionId,
-            lastUpdated: Date.now(),
-          };
-        }
-
-        // Track most recent completed/failed execution
-        if (
-          !mostRecentExecution ||
-          context.startTime > mostRecentExecution.context.startTime
-        ) {
-          mostRecentExecution = { executionId, context };
-        }
-      }
-
-      // If no running execution, return status from most recent completed execution
-      if (mostRecentExecution) {
-        const nodeStatus = this.getNodeStatusInExecution(
-          nodeId,
-          mostRecentExecution.executionId
-        );
-        // Only return completed/failed status, not idle
-        if (nodeStatus !== NodeExecutionStatus.IDLE) {
-          return {
-            status: nodeStatus,
-            executionId: mostRecentExecution.executionId,
-            lastUpdated: Date.now(),
-          };
-        }
-      }
-
+    // No current execution - check for most recent execution (running OR just completed)
+    const executions = this.nodeToExecutions.get(nodeId);
+    if (!executions) {
       return {
         status: NodeExecutionStatus.IDLE,
         executionId: null,
@@ -414,10 +383,46 @@ export class ExecutionContextManager {
       };
     }
 
-    // Return status from current execution only
+    // Find the most recent execution that contains this node
+    let mostRecentExecution: { executionId: string; context: ExecutionContext } | null = null;
+    
+    for (const executionId of executions) {
+      const context = this.executions.get(executionId);
+      if (!context) continue;
+
+      // Prioritize running executions
+      if (context.status === "running") {
+        return {
+          status: this.getNodeStatusInExecution(nodeId, executionId),
+          executionId,
+          lastUpdated: Date.now(),
+        };
+      }
+
+      // Track most recent execution (including completed/failed)
+      if (!mostRecentExecution || context.startTime > mostRecentExecution.context.startTime) {
+        mostRecentExecution = { executionId, context };
+      }
+    }
+
+    // Return status from most recent execution if it just completed
+    // But only if the node was actually in that execution's affected nodes
+    if (mostRecentExecution && mostRecentExecution.context.affectedNodeIds.has(nodeId)) {
+      const nodeStatus = this.getNodeStatusInExecution(nodeId, mostRecentExecution.executionId);
+      // Only return non-idle status (completed/failed)
+      if (nodeStatus !== NodeExecutionStatus.IDLE) {
+        return {
+          status: nodeStatus,
+          executionId: mostRecentExecution.executionId,
+          lastUpdated: Date.now(),
+        };
+      }
+    }
+
+    // No relevant execution found
     return {
-      status: this.getNodeStatusInExecution(nodeId, this.currentExecutionId),
-      executionId: this.currentExecutionId,
+      status: NodeExecutionStatus.IDLE,
+      executionId: null,
       lastUpdated: Date.now(),
     };
   }

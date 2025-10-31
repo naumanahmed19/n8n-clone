@@ -1124,12 +1124,43 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
             const tempExecutionId = `temp_${Date.now()}`;
             const affectedNodes = getAffectedNodes(nodeId, workflow);
             const { executionManager } = get();
+
+            // CRITICAL: Clear old completed executions to prevent cross-trigger contamination
+            const allExecutions: string[] = Array.from((executionManager as any).executions.keys());
+            allExecutions.forEach((execId) => {
+              const exec = (executionManager as any).executions.get(execId);
+              // Clear completed/failed/cancelled executions from ExecutionContextManager
+              if (exec && (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'cancelled')) {
+                executionManager.clearExecution(execId);
+                // Also clear from ProgressTracker
+                get().progressTracker.clearExecution(execId);
+              }
+            });
+
+            // CRITICAL: Clear ALL node visual states in flowExecutionState
+            const currentFlowState = get().flowExecutionState;
+            currentFlowState.nodeVisualStates.clear();
+            set({ flowExecutionState: { ...currentFlowState } });
+
+            // CRITICAL: Clear ALL node visual states before starting new execution
+            // This prevents success/error states from previous trigger executions from persisting
+            if (workflow?.nodes) {
+              workflow.nodes.forEach((node: any) => {
+                // Clear state for ALL nodes, not just ones outside this execution
+                // Nodes in this execution will get their state set when execution starts
+                get().progressTracker.updateNodeStatus(tempExecutionId, node.id, NodeExecutionStatus.IDLE, {});
+              });
+            }
+
             executionManager.startExecution(
               tempExecutionId,
               nodeId,
               affectedNodes
             );
             executionManager.setCurrentExecution(tempExecutionId);
+
+            // Force state update to trigger re-render with cleared states
+            set({ executionManager, executionStateVersion: get().executionStateVersion + 1 });
 
             // Mark trigger node as executing immediately
             executionManager.updateNodeStatus(
@@ -2380,7 +2411,15 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
 
         switch (data.type) {
           case "node-started":
-            if (data.nodeId) {
+            if (data.nodeId && data.executionId) {
+              // CRITICAL: Check if node belongs to this execution before updating
+              const { executionManager } = get();
+              if (!executionManager.isNodeInExecution(data.executionId, data.nodeId)) {
+                // Node doesn't belong to this execution, ignore the event
+                console.warn(`Ignoring node-started event for node ${data.nodeId} - not in execution ${data.executionId}`);
+                break;
+              }
+
               get().progressTracker.setCurrentExecution(data.executionId);
               get().updateNodeExecutionState(data.nodeId, NodeExecutionStatus.RUNNING, {
                 startTime: Date.now(),
@@ -2397,7 +2436,15 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
             break;
 
           case "node-completed":
-            if (data.nodeId) {
+            if (data.nodeId && data.executionId) {
+              // CRITICAL: Check if node belongs to this execution before updating
+              const { executionManager } = get();
+              if (!executionManager.isNodeInExecution(data.executionId, data.nodeId)) {
+                // Node doesn't belong to this execution, ignore the event
+                console.warn(`Ignoring node-completed event for node ${data.nodeId} - not in execution ${data.executionId}`);
+                break;
+              }
+
               // Update node execution result for Results tab
               get().updateNodeExecutionResult(data.nodeId, {
                 nodeId: data.nodeId,
@@ -2426,7 +2473,15 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
             break;
 
           case "node-failed":
-            if (data.nodeId) {
+            if (data.nodeId && data.executionId) {
+              // CRITICAL: Check if node belongs to this execution before updating
+              const { executionManager } = get();
+              if (!executionManager.isNodeInExecution(data.executionId, data.nodeId)) {
+                // Node doesn't belong to this execution, ignore the event
+                console.warn(`Ignoring node-failed event for node ${data.nodeId} - not in execution ${data.executionId}`);
+                break;
+              }
+
               get().updateNodeExecutionState(data.nodeId, NodeExecutionStatus.FAILED, {
                 endTime: timestamp,
                 error: data.error,
@@ -2784,7 +2839,8 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStore>()(
               if (executionWebSocket.isConnected()) {
                 // Initialize execution context so nodes can be tracked
                 const { executionManager } = get();
-                const affectedNodes = workflow?.nodes?.map(n => n.id) || [];
+                // FIXED: Only include nodes reachable from this trigger, not all workflow nodes
+                const affectedNodes = workflow ? getAffectedNodes(data.triggerNodeId, workflow) : [];
 
                 executionManager.startExecution(
                   data.executionId,
