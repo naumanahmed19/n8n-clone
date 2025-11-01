@@ -60,6 +60,7 @@ export interface WorkflowSettings {
   saveDataSuccessExecution?: "all" | "none";
   saveManualExecutions?: boolean;
   callerPolicy?: "workflowsFromSameOwner" | "workflowsFromAList" | "any";
+  showSetupPanel?: boolean;
 }
 
 export interface WorkflowMetadata {

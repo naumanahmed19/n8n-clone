@@ -33,6 +33,7 @@ export function WorkflowSettingsModal({
   const [category, setCategory] = useState(workflow.category || '')
   const [tags, setTags] = useState(workflow.tags || [])
   const [newTag, setNewTag] = useState('')
+  const [showSetupPanel, setShowSetupPanel] = useState(workflow.settings?.showSetupPanel ?? false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Reset form when workflow changes
@@ -41,6 +42,7 @@ export function WorkflowSettingsModal({
     setDescription(workflow.description || '')
     setCategory(workflow.category || '')
     setTags(workflow.tags || [])
+    setShowSetupPanel(workflow.settings?.showSetupPanel ?? false)
   }, [workflow])
 
   const handleAddTag = () => {
@@ -61,7 +63,11 @@ export function WorkflowSettingsModal({
         name: name.trim(),
         description: description.trim(),
         category: category || undefined,
-        tags
+        tags,
+        settings: {
+          ...workflow.settings,
+          showSetupPanel
+        }
       }
       await onSave(updates)
       onClose()
@@ -128,6 +134,23 @@ export function WorkflowSettingsModal({
               showDeleteOption={true}
             />
           </div>
+
+          {/* Show Setup Panel */}
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="showSetupPanel"
+              checked={showSetupPanel}
+              onChange={(e) => setShowSetupPanel(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="showSetupPanel" className="cursor-pointer">
+              Show Setup Panel
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            Display the floating setup panel on the canvas for quick credential and variable configuration
+          </p>
 
           {/* Tags */}
           <div className="space-y-2">

@@ -438,6 +438,11 @@ class WorkflowService {
     );
     return response;
   }
+
+  async getWorkflowTemplate(workflowId: string): Promise<any> {
+    const response = await api.get(`/workflows/${workflowId}/template`);
+    return response.data;
+  }
 }
 
 export const workflowService = new WorkflowService();

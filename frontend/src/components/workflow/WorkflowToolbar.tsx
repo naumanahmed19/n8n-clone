@@ -17,6 +17,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { workflowService } from '@/services'
 import { useAddNodeDialogStore, useWorkflowStore, useWorkflowToolbarStore } from '@/stores'
 import { useEnvironmentStore } from '@/stores/environment'
 import { getEnvironmentLabel } from '@/types/environment'
@@ -457,13 +458,28 @@ export function WorkflowToolbar({
           isOpen={showSettingsModal}
           workflow={workflow}
           onClose={() => setShowSettingsModal(false)}
-          onSave={(updates) => {
+          onSave={async (updates) => {
+            // Update local state
             updateWorkflow(updates)
             setDirty(true)
+            
+            // Save to database immediately
+            try {
+              await workflowService.updateWorkflow(workflow.id, updates)
+              // Reload to get fresh data
+              const freshWorkflow = await workflowService.getWorkflow(workflow.id)
+              setWorkflow(freshWorkflow)
+              setDirty(false)
+            } catch (error) {
+              console.error('Failed to save workflow settings:', error)
+            }
+            
             setShowSettingsModal(false)
           }}
         />
       )}
+      
+
     </TooltipProvider>
   )
 }

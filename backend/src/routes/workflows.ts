@@ -8,6 +8,8 @@ import {
   validateQuery,
 } from "../middleware/validation";
 import { WorkflowService } from "../services/WorkflowService";
+import { WorkflowTemplateService } from "../services/WorkflowTemplateService";
+import { NodeService } from "../services/NodeService";
 import {
   ApiResponse,
   CreateWorkflowSchema,
@@ -19,6 +21,8 @@ import {
 const router = Router();
 const prisma = new PrismaClient();
 const workflowService = new WorkflowService(prisma);
+const nodeService = new NodeService(prisma);
+const templateService = new WorkflowTemplateService(nodeService);
 
 // POST /api/workflows/migrate-triggers - Migrate existing workflows to add active property to triggers
 router.post(
@@ -338,6 +342,38 @@ router.post(
     const response: ApiResponse = {
       success: true,
       data: validation,
+    };
+
+    res.json(response);
+  })
+);
+
+// GET /api/workflows/:id/template - Get workflow template metadata
+router.get(
+  "/:id/template",
+  authenticateToken,
+  validateParams(IdParamSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const workflow = await workflowService.getWorkflow(
+      req.params.id,
+      req.user!.id
+    );
+    
+    // Convert workflow to expected format
+    const workflowData = {
+      ...workflow,
+      description: workflow.description || undefined,
+    };
+    
+    const templateMetadata = await templateService.analyzeWorkflow(workflowData as any);
+    const setupChecklist = templateService.generateSetupChecklist(templateMetadata);
+
+    const response: ApiResponse = {
+      success: true,
+      data: {
+        ...templateMetadata,
+        setupChecklist,
+      },
     };
 
     res.json(response);

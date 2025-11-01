@@ -28,6 +28,7 @@ import { ChatDialog } from './ChatDialog'
 import { CustomNode } from './CustomNode'
 import { ExecutionPanel } from './ExecutionPanel'
 import { NodeConfigDialog } from './NodeConfigDialog'
+import { WorkflowSetupPanel } from './WorkflowSetupPanel'
 import { AnnotationNode, ChatInterfaceNode, FormGeneratorNode, GroupNode, ImagePreviewNode } from './nodes'
 import { WorkflowCanvas } from './WorkflowCanvas'
 import { WorkflowErrorBoundary } from './WorkflowErrorBoundary'
@@ -417,6 +418,17 @@ export function WorkflowEditor({
                     open={showAddNodeDialog}
                     onOpenChange={closeDialog}
                     position={position}
+                />
+            )}
+
+            {/* Workflow Setup Panel - Floating button */}
+            {!readOnly && workflow && workflow.settings?.showSetupPanel && (
+                <WorkflowSetupPanel
+                    workflowId={workflow.id}
+                    onConfigurationSaved={() => {
+                        // Reload workflow to reflect changes
+                        window.location.reload()
+                    }}
                 />
             )}
         </div>
