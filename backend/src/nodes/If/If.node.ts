@@ -7,36 +7,35 @@
 
 export const IfNode: NodeDefinition = {
   type: BuiltInNodeTypes.IF,
-  displayName: "IF",
+  displayName: "IF x",
   name: "if",
   group: ["transform"],
   version: 1,
   description: "Route data based on conditional logic",
   icon: "fa:code-branch",
-  color: "#9C27B0",
+  color: "#f0752eff",
   defaults: {
-    value1: "",
-    operation: "equal",
-    value2: "",
+    condition: {
+      key: "",
+      expression: "equal",
+      value: "",
+    },
   },
   inputs: ["main"],
   outputs: ["true", "false"],
   properties: [
     {
-      displayName: "Value 1",
-      name: "value1",
-      type: "string",
+      displayName: "Condition",
+      name: "condition",
+      type: "conditionRow",
       required: true,
-      default: "",
+      default: {
+        key: "",
+        expression: "equal",
+        value: "",
+      },
       description:
-        "First value to compare. Use {{json.fieldName}} to reference input data. Available fields will be shown in execution logs.",
-    },
-    {
-      displayName: "Operation",
-      name: "operation",
-      type: "options",
-      required: true,
-      default: "equal",
+        "Define the condition to evaluate. Use {{json.fieldName}} to reference input data.",
       options: [
         { name: "Equal", value: "equal" },
         { name: "Not Equal", value: "notEqual" },
@@ -52,19 +51,10 @@ export const IfNode: NodeDefinition = {
         { name: "Is Not Empty", value: "isNotEmpty" },
         { name: "Regex", value: "regex" },
       ],
-    },
-    {
-      displayName: "Value 2",
-      name: "value2",
-      type: "string",
-      required: false,
-      default: "",
-      description:
-        "Second value to compare (not needed for isEmpty/isNotEmpty). Use {{json.fieldName}} to reference input data. Available fields will be shown in execution logs.",
-      displayOptions: {
-        hide: {
-          operation: ["isEmpty", "isNotEmpty"],
-        },
+      componentProps: {
+        keyPlaceholder: "Key 1 (e.g., {{json.fieldName}})",
+        valuePlaceholder: "Value 2 (e.g., {{json.fieldName}})",
+        expressionPlaceholder: "Select operation",
       },
     },
   ],
@@ -144,12 +134,18 @@ export const IfNode: NodeDefinition = {
         continue;
       }
 
-      // Get parameters with automatic resolution for this specific item
-      const value1 = (await this.getNodeParameter("value1", i)) as string;
-      const operation = (await this.getNodeParameter("operation", i)) as string;
-      const value2 = (await this.getNodeParameter("value2", i)) as string;
+      // Get condition parameter with automatic resolution for this specific item
+      const condition = (await this.getNodeParameter("condition", i)) as {
+        key: string;
+        expression: string;
+        value: string;
+      };
 
-      const conditionResult = evaluateCondition(value1, operation, value2);
+      const conditionResult = evaluateCondition(
+        condition.key,
+        condition.expression,
+        condition.value
+      );
 
       const wrappedItem = { json: item };
 

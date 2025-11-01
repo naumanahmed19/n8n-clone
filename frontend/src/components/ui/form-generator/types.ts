@@ -26,7 +26,8 @@ export interface FormFieldConfig {
   | "switch"
   | "autocomplete"
   | "credential"
-  | "custom";
+  | "custom"
+  | "conditionRow";
   required?: boolean;
   default?: any;
   description?: string;

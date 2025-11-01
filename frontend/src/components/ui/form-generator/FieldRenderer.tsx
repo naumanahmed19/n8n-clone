@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarDays, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
+import { ConditionRow } from './ConditionRow'
 import { getCustomComponent } from './customComponentRegistry'
 import { DynamicAutocomplete } from './DynamicAutocomplete'
 import { ExpressionInput } from './ExpressionInput'
@@ -510,6 +511,22 @@ export function FieldRenderer({
           />
           <CalendarDays className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
+      )
+
+    case 'conditionRow':
+      return (
+        <ConditionRow
+          value={value || { key: '', expression: '', value: '' }}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          disabled={disabled || field.disabled}
+          error={error}
+          nodeId={nodeId}
+          expressionOptions={field.options}
+          keyPlaceholder={field.componentProps?.keyPlaceholder}
+          valuePlaceholder={field.componentProps?.valuePlaceholder}
+          expressionPlaceholder={field.componentProps?.expressionPlaceholder}
+        />
       )
 
     default:

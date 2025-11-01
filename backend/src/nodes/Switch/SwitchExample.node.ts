@@ -84,22 +84,17 @@ export const SwitchNode: NodeDefinition = {
             description: "Name for this output branch",
           },
           {
-            displayName: "Field",
-            name: "field",
-            type: "string",
+            displayName: "Rule",
+            name: "rule",
+            type: "conditionRow",
             required: true,
-            default: "",
+            default: {
+              key: "",
+              expression: "equals",
+              value: "",
+            },
             description:
-              "Field name to check in each item. Use 'id' or 'user.name' for nested fields. Do NOT use array indices like json[0].id - that will reference a specific item instead of checking each item.",
-            placeholder: "id",
-          },
-          {
-            displayName: "Condition",
-            name: "condition",
-            type: "options",
-            required: true,
-            default: "equals",
-            description: "Condition to evaluate",
+              "Define the condition for this output. Field name to check (e.g., 'id' or 'user.name'). Do NOT use array indices.",
             options: [
               { name: "Equals", value: "equals" },
               { name: "Not Equals", value: "notEquals" },
@@ -115,18 +110,10 @@ export const SwitchNode: NodeDefinition = {
               { name: "Is Not Empty", value: "isNotEmpty" },
               { name: "Regex Match", value: "regex" },
             ],
-          },
-          {
-            displayName: "Value",
-            name: "value",
-            type: "string",
-            required: false,
-            default: "",
-            description: "Value to compare against",
-            displayOptions: {
-              hide: {
-                condition: ["isEmpty", "isNotEmpty"],
-              },
+            componentProps: {
+              keyPlaceholder: "Field (e.g., id or user.name)",
+              valuePlaceholder: "Value to compare",
+              expressionPlaceholder: "Select condition",
             },
           },
         ],
@@ -269,9 +256,17 @@ export const SwitchNode: NodeDefinition = {
         for (let i = 0; i < outputs.length; i++) {
           const output = outputs[i];
           const outputConfig = output.values || output; // Handle both nested and flat structure
-          const field = outputConfig.field;
-          const condition = outputConfig.condition;
-          const value = outputConfig.value;
+          
+          // Extract rule from conditionRow or fallback to old structure
+          const rule = outputConfig.rule || {
+            key: outputConfig.field,
+            expression: outputConfig.condition,
+            value: outputConfig.value,
+          };
+          
+          const field = rule.key;
+          const condition = rule.expression;
+          const value = rule.value;
 
           if (evaluateCondition(item, field, condition, value)) {
             if (!routedOutputs[i]) {

@@ -63,7 +63,8 @@ export interface NodeProperty {
     | "collection"
     | "autocomplete"
     | "credential" // New: Support for credential selector
-    | "custom"; // New: Support for custom components
+    | "custom" // New: Support for custom components
+    | "conditionRow"; // New: Support for condition row (key-expression-value)
   required?: boolean;
   default?: any;
   description?: string;
