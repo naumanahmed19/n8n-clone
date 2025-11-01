@@ -35,11 +35,12 @@ interface ChatInterfaceNodeData extends Record<string, unknown> {
 type ChatInterfaceNodeType = Node<ChatInterfaceNodeData>
 
 export const ChatInterfaceNode = memo(function ChatInterfaceNode({ data, selected, id }: NodeProps<ChatInterfaceNodeType>) {
-  const { executionState, updateNode, workflow, lastExecutionResult } = useWorkflowStore()
+  const { updateNode, workflow, lastExecutionResult, executionManager } = useWorkflowStore()
   const { executeWorkflow } = useExecutionControls()
   // For chat nodes, only set read-only during actual execution, not just when execution ID exists
   const isReadOnly = false // Chat should always be interactive
-  const isExecuting = executionState.status === 'running'
+  // Only consider this node as executing if it's actually in the current execution path
+  const isExecuting = executionManager.isNodeExecutingInCurrent(id)
   
   // Memoize parameters object to prevent recreation on every render
   const parameters = useMemo(() => data.parameters || {}, [data.parameters])
