@@ -178,13 +178,13 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
   )
 
   // Collapsed content
-  const collapsedContent = useMemo(() => (
-    <>
-      {formFieldConfigs.length === 0 ? (
-        <div className="text-xs text-muted-foreground text-center "><p>Configure form fields in properties</p></div>
-      ) : null}
-    </>
-  ), [formFieldConfigs.length])
+  // const collapsedContent = useMemo(() => (
+  //   <>
+  //     {formFieldConfigs.length === 0 ? (
+  //       <div className="text-xs text-muted-foreground text-center "><p>Configure form fields in properties</p></div>
+  //     ) : null}
+  //   </>
+  // ), [formFieldConfigs.length])
 
   // Expanded content
   const expandedContent = useMemo(() => (
@@ -255,8 +255,7 @@ export const FormGeneratorNode = memo(function FormGeneratorNode({
       iconColor="bg-green-500"
       collapsedWidth="200px"
       expandedWidth="380px"
-      headerInfo={headerInfo}
-      collapsedContent={collapsedContent}
+  
       expandedContent={expandedContent}
       showInputHandle={false}
       showOutputHandle={true}
