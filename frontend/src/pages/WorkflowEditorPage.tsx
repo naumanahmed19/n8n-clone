@@ -319,10 +319,10 @@ export function WorkflowEditorPage() {
 
   if (isLoading || isLoadingNodeTypes || isLoadingExecution) {
     return (
-      <div className="flex items-center justify-center h-screen w-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen w-screen bg-background">
         <div className="flex items-center space-x-2">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="text-gray-600">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-muted-foreground">
             {isLoadingExecution ? 'Loading execution...' : isLoadingNodeTypes ? 'Loading node types...' : 'Loading workflow...'}
           </span>
         </div>
@@ -332,14 +332,14 @@ export function WorkflowEditorPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen w-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen w-screen bg-background">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Workflow</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h2 className="text-xl font-semibold mb-2">Error Loading Workflow</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <button
             onClick={() => navigate('/workflows')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
           >
             Back to Workflows
           </button>
@@ -350,14 +350,14 @@ export function WorkflowEditorPage() {
 
   if (!workflow) {
     return (
-      <div className="flex items-center justify-center h-screen w-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen w-screen bg-background">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workflow Not Found</h2>
-          <p className="text-gray-600 mb-4">The requested workflow could not be found.</p>
+          <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Workflow Not Found</h2>
+          <p className="text-muted-foreground mb-4">The requested workflow could not be found.</p>
           <button
             onClick={() => navigate('/workflows')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
           >
             Back to Workflows
           </button>
