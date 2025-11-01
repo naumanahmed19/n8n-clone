@@ -84,7 +84,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
   return (
     <div className="flex w-full h-full flex-col">
       {/* Node Title Section */}
-      <div className="p-4 border-b bg-gray-50/50 h-[72px] flex items-center">
+      <div className="p-4 border-b bg-muted/30 dark:bg-muted/20 h-[72px] flex items-center">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <NodeIconRenderer
@@ -115,7 +115,7 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
               ) : (
                 <div
                   onClick={() => !readOnly && setIsEditingName(true)}
-                  className={`text-sm font-semibold px-1 py-0.5 rounded transition-colors ${readOnly ? '' : 'cursor-pointer hover:bg-gray-100'
+                  className={`text-sm font-semibold px-1 py-0.5 rounded transition-colors ${readOnly ? '' : 'cursor-pointer hover:bg-muted'
                     }`}
                 >
                   {nodeName || nodeType.displayName}
@@ -212,40 +212,40 @@ export function MiddleColumn({ node, nodeType, onDelete, onExecute, readOnly = f
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="px-4 border-b border-gray-200">
+        <div className="px-4 border-b">
           <div className="flex space-x-0 -mb-px">
             <TabsList className="h-auto p-0 bg-transparent grid w-full grid-cols-5 shadow-none">
               <TabsTrigger
                 value="config"
-                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span className="font-medium">Config</span>
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span className="font-medium">Settings</span>
               </TabsTrigger>
               <TabsTrigger
                 value="test"
-                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Play className="w-3.5 h-3.5" />
                 <span className="font-medium">Test</span>
               </TabsTrigger>
               <TabsTrigger
                 value="response"
-                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <Database className="w-3.5 h-3.5" />
                 <span className="font-medium">Response</span>
               </TabsTrigger>
               <TabsTrigger
                 value="docs"
-                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 data-[state=active]:border-black data-[state=active]:text-black data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
+                className="flex items-center space-x-1.5 px-3 py-2 border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none bg-transparent shadow-none transition-all duration-200 text-sm"
               >
                 <FileText className="w-4 h-4" />
                 <span className="font-medium">Docs</span>

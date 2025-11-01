@@ -546,7 +546,7 @@ export function InputsColumn({ node }: InputsColumnProps) {
 
   if (inputNodes.length === 0) {
     return (
-      <div className="flex w-full h-full border-r border-gray-200 flex-col">
+      <div className="flex w-full h-full border-r flex-col">
         <div className="p-4 border-b h-[72px] flex items-center">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-2">
@@ -590,7 +590,7 @@ export function InputsColumn({ node }: InputsColumnProps) {
   }
 
   return (
-    <div className="flex w-full h-full border-r border-gray-200 flex-col">
+    <div className="flex w-full h-full border-r flex-col">
       <div className="border-b">
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
